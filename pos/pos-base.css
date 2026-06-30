@@ -1,9 +1,9 @@
-/* BRON POS — shared base styles */
+/* Logos POS — shared base styles */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --azul:  #660b0b; --azul-h: #520909;
+  --azul:  #2563eb; --azul-h: #1d4ed8;
   --verde: #16a34a; --rojo:   #B91C1C;
   --gris1: #F0EEEB; --gris2: #E2DDD8; --gris3: #9B9590;
   --texto: #111111; --borde: #D5D0CA;
@@ -19,7 +19,7 @@ body { font-family: system-ui,-apple-system,sans-serif; font-size:14px; backgrou
 .nav-brand img { height:28px; width:auto; display:block; }
 .nav-link { color:rgba(255,255,255,.55); text-decoration:none; padding:5px 12px; border-radius:6px; font-size:var(--fs-sm); font-weight:500; transition:background .12s, color .12s; }
 .nav-link:hover { background:rgba(255,255,255,.1); color:white; }
-.nav-link.activo { background:rgba(102,11,11,.7); color:white; font-weight:600; }
+.nav-link.activo { background:var(--azul); color:white; font-weight:600; }
 .nav-drop { position:relative; }
 .nav-drop-toggle { display:inline-flex; align-items:center; }
 .nav-drop-menu {
@@ -35,7 +35,7 @@ body { font-family: system-ui,-apple-system,sans-serif; font-size:14px; backgrou
 }
 .nav-drop-menu a { display:block; padding:7px 10px; border-radius:6px; color:rgba(255,255,255,.75); text-decoration:none; font-size:var(--fs-sm); font-weight:500; white-space:nowrap; transition:background .12s, color .12s; }
 .nav-drop-menu a:hover { background:rgba(255,255,255,.1); color:white; }
-.nav-drop-menu a.activo { background:rgba(102,11,11,.7); color:white; font-weight:600; }
+.nav-drop-menu a.activo { background:var(--azul); color:white; font-weight:600; }
 .nav-spacer { flex:1; }
 .nav-caja-select { background:#1A1A1A; color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.18); border-radius:6px; padding:5px 8px; font-size:var(--fs-sm); font-weight:600; font-family:inherit; margin-right:8px; outline:none; transition:border-color 140ms ease-out; }
 .nav-caja-select:hover, .nav-caja-select:focus { border-color:rgba(255,255,255,.4); }

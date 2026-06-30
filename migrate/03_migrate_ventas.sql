@@ -2,7 +2,7 @@
 -- Criterio: BORRADO=0, esventa=1, Fecha >= 46023 (2026-01-01 en serial Delphi)
 -- Incluye CAE de ventas_electronicas cuando existe
 
-USE bron;
+USE logos;
 
 INSERT INTO ventas (id, fecha, cliente_id, vendedor_id, total, tipo_comprobante, numero_afip, cae, estado)
 SELECT
@@ -27,4 +27,4 @@ ON DUPLICATE KEY UPDATE
     numero_afip      = VALUES(numero_afip),
     cae              = VALUES(cae);
 
-SELECT CONCAT('Ventas migradas: ', COUNT(*)) AS resultado FROM bron.ventas;
+SELECT CONCAT('Ventas migradas: ', COUNT(*)) AS resultado FROM logos.ventas;

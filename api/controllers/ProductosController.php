@@ -158,6 +158,59 @@ class ProductosController {
         ]);
     }
 
+    public function post(): void {
+        $body = json_decode(file_get_contents('php://input'), true);
+        if (!$body) json(400, ['error' => 'Body JSON inválido']);
+
+        $nombre       = trim($body['nombre'] ?? '');
+        if ($nombre === '') json(400, ['error' => 'El nombre es requerido']);
+
+        $codigo        = trim($body['codigo']       ?? '') ?: null;
+        $precio        = isset($body['precio_venta']) && $body['precio_venta'] !== null ? (float)$body['precio_venta'] : null;
+        $costo         = isset($body['costo_actual']) && $body['costo_actual'] !== null ? (float)$body['costo_actual'] : null;
+        $marca         = trim($body['marca']        ?? '') ?: null;
+        $proveedor     = trim($body['proveedor']    ?? '') ?: null;
+        $categoria     = trim($body['categoria']    ?? '') ?: null;
+        $subcategoria  = trim($body['subcategoria'] ?? '') ?: null;
+        $stock_min     = isset($body['stock_minimo'])  && $body['stock_minimo']  !== null ? (float)$body['stock_minimo']  : null;
+        $stock_inicial = isset($body['stock_inicial']) && $body['stock_inicial'] !== null ? (float)$body['stock_inicial'] : 0;
+        $activo        = isset($body['activo']) ? ($body['activo'] ? 1 : 0) : 1;
+
+        $db = DB::get();
+
+        if ($codigo !== null) {
+            $dup = $db->prepare("SELECT id FROM productos WHERE codigo = ? AND activo = 1 LIMIT 1");
+            $dup->execute([$codigo]);
+            if ($dup->fetch()) json(409, ['error' => "Ya existe un producto activo con el código \"$codigo\""]);
+        }
+
+        $db->beginTransaction();
+        try {
+            $db->prepare("
+                INSERT INTO productos
+                    (nombre, codigo, precio_venta, costo_actual, marca, proveedor,
+                     categoria, subcategoria, stock_minimo, stock_actual, activo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ")->execute([$nombre, $codigo, $precio, $costo, $marca, $proveedor,
+                         $categoria, $subcategoria, $stock_min, $stock_inicial, $activo]);
+
+            $newId = (int)$db->lastInsertId();
+
+            if ($stock_inicial > 0) {
+                $db->prepare("
+                    INSERT INTO movimientos_stock (producto_id, tipo, cantidad, fecha)
+                    VALUES (?, 'entrada', ?, NOW())
+                ")->execute([$newId, $stock_inicial]);
+            }
+
+            $db->commit();
+            json(201, ['id' => $newId, 'nombre' => $nombre]);
+        } catch (Throwable $e) {
+            $db->rollBack();
+            json(500, ['error' => $e->getMessage()]);
+        }
+    }
+
     public function put(int $id): void {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!$body) json(400, ['error' => 'Body JSON inválido']);

@@ -48,8 +48,8 @@ class InstalacionController {
     public function probarConexion(): void {
         $body   = json_decode(file_get_contents('php://input'), true) ?: [];
         $host   = trim($body['host'] ?? '127.0.0.1');
-        $port   = (int)($body['port'] ?? 3307);
-        $dbname = trim($body['dbname'] ?? 'bron');
+        $port   = (int)($body['port'] ?? 3306);
+        $dbname = trim($body['dbname'] ?? 'logos');
         $user   = trim($body['user'] ?? 'root');
         $pass   = (string)($body['pass'] ?? '');
 
@@ -84,8 +84,8 @@ class InstalacionController {
         $body   = json_decode(file_get_contents('php://input'), true) ?: [];
         $modo   = $body['modo'] ?? '';
         $host   = trim($body['host'] ?? '127.0.0.1');
-        $port   = (int)($body['port'] ?? 3307);
-        $dbname = trim($body['dbname'] ?? 'bron');
+        $port   = (int)($body['port'] ?? 3306);
+        $dbname = trim($body['dbname'] ?? 'logos');
         $user   = trim($body['user'] ?? 'root');
         $pass   = (string)($body['pass'] ?? '');
 
@@ -108,27 +108,36 @@ class InstalacionController {
 
                 $appPass = bin2hex(random_bytes(12));
                 $passEsc = $pdo->quote($appPass);
-                $pdo->exec("DROP USER IF EXISTS 'bron_app'@'%'");
-                $pdo->exec("CREATE USER 'bron_app'@'%' IDENTIFIED BY $passEsc");
-                $pdo->exec("GRANT ALL PRIVILEGES ON `$dbname`.* TO 'bron_app'@'%'");
+                $pdo->exec("DROP USER IF EXISTS 'logos_app'@'%'");
+                $pdo->exec("CREATE USER 'logos_app'@'%' IDENTIFIED BY $passEsc");
+                $pdo->exec("GRANT ALL PRIVILEGES ON `$dbname`.* TO 'logos_app'@'%'");
                 $pdo->exec("FLUSH PRIVILEGES");
             } catch (\Throwable $e) {
                 json(500, ['error' => 'No se pudo crear la base/usuario de aplicación: ' . $e->getMessage()]);
             }
 
-            $schemaFile = __DIR__ . '/../../install/schema_limpio.sql';
-            if (!is_file($schemaFile)) json(500, ['error' => 'No se encontró install/schema_limpio.sql']);
+            // Verificar si el esquema ya existe antes de importar
+            $tieneEsquema = false;
+            try {
+                $pdo->exec("USE `" . str_replace('`', '', $dbname) . "`");
+                $tieneEsquema = (bool)$pdo->query("SHOW TABLES LIKE 'usuarios'")->fetch();
+            } catch (\Throwable $e) {}
 
-            $passArg = '-p' . $appPass . ' ';
-            $cmd = '"' . self::MYSQL_BIN . '" --default-character-set=utf8mb4 -h' . $host . ' -P' . $port .
-                   ' -ubron_app ' . $passArg . $dbname . ' < "' . $schemaFile . '" 2>&1';
-            exec($cmd, $salida, $codigo);
-            if ($codigo !== 0) {
-                json(500, ['error' => 'Falló la creación del esquema: ' . implode(' ', $salida)]);
+            if (!$tieneEsquema) {
+                $schemaFile = __DIR__ . '/../../install/schema_limpio.sql';
+                if (!is_file($schemaFile)) json(500, ['error' => 'No se encontró install/schema_limpio.sql']);
+
+                $passArg = '-p' . $appPass . ' ';
+                $cmd = '"' . self::MYSQL_BIN . '" --default-character-set=utf8mb4 -h' . $host . ' -P' . $port .
+                       ' -ulogos_app ' . $passArg . $dbname . ' < "' . $schemaFile . '" 2>&1';
+                exec($cmd, $salida, $codigo);
+                if ($codigo !== 0) {
+                    json(500, ['error' => 'Falló la creación del esquema: ' . implode(' ', $salida)]);
+                }
             }
 
             $finalHost = '127.0.0.1';
-            $finalUser = 'bron_app';
+            $finalUser = 'logos_app';
             $finalPass = $appPass;
         } else {
             try {
@@ -138,7 +147,7 @@ class InstalacionController {
                 json(400, ['error' => 'No se pudo usar esa base: ' . $e->getMessage()]);
             }
             if (!$tieneEsquema) {
-                json(400, ['error' => 'No se encontró el esquema de BRON en esa base. ¿Es el servidor correcto y ya está instalado?']);
+                json(400, ['error' => 'No se encontró el esquema de Logos en esa base. ¿Es el servidor correcto y ya está instalado?']);
             }
             $finalHost = $host;
             $finalUser = $user;
@@ -159,8 +168,30 @@ class InstalacionController {
         json(200, [
             'ok'   => true,
             'modo' => $modo,
-            'credenciales_servidor' => $modo === 'servidor' ? ['user' => 'bron_app', 'pass' => $appPass, 'host' => $host, 'port' => $port, 'dbname' => $dbname] : null,
+            'credenciales_servidor' => $modo === 'servidor' ? ['user' => 'logos_app', 'pass' => $appPass, 'host' => $host, 'port' => $port, 'dbname' => $dbname] : null,
         ]);
+    }
+
+    // ── Recuperar ID del admin durante el setup (no expone contraseñas) ──
+    public function adminId(): void {
+        $db = DB::get();
+
+        // Solo responde mientras el sistema no esté completamente configurado
+        $negocioOk = false;
+        try {
+            $row = $db->query("SELECT razon_social FROM configuracion WHERE id = 1")->fetch();
+            $negocioOk = $row && trim((string)$row['razon_social']) !== '';
+        } catch (\Throwable $e) {}
+        $hayCaja = (int)$db->query("SELECT COUNT(*) FROM cajas WHERE activo = 1")->fetchColumn() > 0;
+
+        if ($negocioOk && $hayCaja) {
+            json(403, ['error' => 'Sistema ya configurado. Iniciá sesión normalmente.']);
+        }
+
+        $admin = $db->query("SELECT id FROM usuarios WHERE rol = 'admin' AND activo = 1 LIMIT 1")->fetch();
+        if (!$admin) json(404, ['error' => 'No hay administrador registrado aún.']);
+
+        json(200, ['id' => (int)$admin['id']]);
     }
 
     // ── Crear el primer administrador (solo si no existe ninguno) ────

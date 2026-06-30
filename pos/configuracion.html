@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRON — Configuración</title>
+<title>Logos — Configuración</title>
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
@@ -50,6 +50,10 @@
 .btn-row { display:flex; gap:12px; align-items:center; margin-top:10px; flex-wrap:wrap; }
 
 .logo-row { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+.swatch { width:36px; height:36px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:transform 120ms ease-out, border-color 120ms ease-out; position:relative; flex-shrink:0; }
+.swatch:hover { transform:scale(1.15); }
+.swatch.activo { border-color:var(--texto); transform:scale(1.1); }
+.swatch[title]:hover::after { content:attr(title); position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:#111; color:#fff; font-size:11px; font-weight:600; padding:3px 8px; border-radius:5px; white-space:nowrap; pointer-events:none; }
 .logo-preview { width:72px; height:72px; border:1.5px solid var(--borde); border-radius:10px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--gris1); flex-shrink:0; }
 .logo-preview img { max-width:100%; max-height:100%; object-fit:contain; }
 
@@ -147,12 +151,18 @@ table.cajas input[type="text"]:focus { border-color:var(--azul); }
       <div class="card">
         <div class="card-titulo">Logo</div>
         <div class="logo-row">
-          <div class="logo-preview" id="logo-preview"><img src="/BRON/logo_background.png?t=0" id="logo-preview-img" alt=""></div>
+          <div class="logo-preview" id="logo-preview"><img src="/Logos/logo_background.png?t=0" id="logo-preview-img" alt=""></div>
           <div>
             <input type="file" id="logo-file" accept="image/png,image/jpeg,image/gif,image/webp">
             <div class="form-hint">Se usa en el menú de todas las páginas y en los comprobantes PDF.</div>
           </div>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Color del sistema</div>
+        <div id="tema-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:4px"></div>
+        <div class="form-hint">El color principal afecta botones, bordes y destacados en todo el sistema.</div>
       </div>
 
       <div class="card">
@@ -164,7 +174,7 @@ table.cajas input[type="text"]:focus { border-color:var(--azul); }
           </div>
           <div class="form-group full">
             <label class="form-label">Carpeta donde guardar copia de cada comprobante</label>
-            <input class="form-input" id="cfg-carpeta_comprobantes" placeholder="C:\BRON\comprobantes">
+            <input class="form-input" id="cfg-carpeta_comprobantes" placeholder="C:\Logos\comprobantes">
             <div class="form-hint">Ruta en este servidor. Se guarda una copia automática de cada comprobante generado.</div>
           </div>
         </div>
@@ -188,7 +198,7 @@ table.cajas input[type="text"]:focus { border-color:var(--azul); }
         <div class="form-grid">
           <div class="form-group full">
             <label class="form-label">Carpeta de backups</label>
-            <input class="form-input" id="cfg-carpeta_backups" placeholder="C:\BRON\backups">
+            <input class="form-input" id="cfg-carpeta_backups" placeholder="C:\Logos\backups">
           </div>
         </div>
         <div class="btn-row">
@@ -289,7 +299,7 @@ table.cajas input[type="text"]:focus { border-color:var(--azul); }
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
-const API = '/BRON/api';
+const API = '/Logos/api';
 const $   = id => document.getElementById(id);
 
 let toastTimer = null;
@@ -346,6 +356,40 @@ async function cargarConfig() {
     ? 'Clave configurada. '
     : 'Todavía no hay clave configurada — los usuarios no Admin podrán eliminar libremente. ')
     + 'Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.';
+  renderSwatches(configActual.color_tema || 'bordo');
+}
+
+let temaSeleccionado = 'bordo';
+
+function renderSwatches(temaActual) {
+  temaSeleccionado = temaActual;
+  const temas = window.LOGOS_TEMAS || {};
+  const wrap  = $('tema-swatches');
+  wrap.innerHTML = '';
+  Object.entries(temas).forEach(([key, t]) => {
+    const btn = document.createElement('button');
+    btn.className = 'swatch' + (key === temaActual ? ' activo' : '');
+    btn.title = t.label;
+    btn.style.background = t.primary;
+    btn.addEventListener('click', async () => {
+      temaSeleccionado = key;
+      wrap.querySelectorAll('.swatch').forEach(s => s.classList.remove('activo'));
+      btn.classList.add('activo');
+      window.LOGOS_aplicarTema(key);
+      // Guardar inmediatamente sin recolectar todo el formulario
+      try {
+        const r = await fetch(`${API}/configuracion`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...recolectarConfig(), color_tema: key }),
+        });
+        const d = await r.json();
+        if (!r.ok) toast(d.error || 'Error al guardar el tema', 'err');
+        else toast(`Tema ${t.label} aplicado`, 'ok');
+      } catch { toast('Error de conexión', 'err'); }
+    });
+    wrap.appendChild(btn);
+  });
 }
 
 async function cargarImpresoras() {
@@ -379,6 +423,7 @@ function recolectarConfig() {
     carpeta_comprobantes: $('cfg-carpeta_comprobantes').value.trim(),
     carpeta_backups:      $('cfg-carpeta_backups').value.trim(),
     clave_autorizacion:   $('cfg-clave_autorizacion').value,
+    color_tema:           temaSeleccionado,
   };
 }
 
@@ -613,9 +658,9 @@ $('btn-reset-fabrica').addEventListener('click', async () => {
       btn.disabled = false; btn.textContent = 'Restablecer de fábrica';
       return;
     }
-    localStorage.removeItem('bron_sesion');
+    localStorage.removeItem('logos_sesion');
     sessionStorage.clear();
-    location.href = '/BRON/pos/instalar.html';
+    location.href = '/Logos/pos/instalar.html';
   } catch (e) {
     toast('Error de conexión', 'err');
     btn.disabled = false; btn.textContent = 'Restablecer de fábrica';

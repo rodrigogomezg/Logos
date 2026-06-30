@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRON — Listado de operaciones</title>
+<title>Logos — Listado de operaciones</title>
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
@@ -93,7 +93,7 @@ tfoot td.r { text-align:right; font-variant-numeric:tabular-nums; }
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
-const API = '/BRON/api';
+const API = '/Logos/api';
 const $   = id => document.getElementById(id);
 
 let toastTimer = null;
@@ -130,7 +130,7 @@ function montoColumna(v, tipo) {
   return v.tipo_pago === tipo ? Number(v.total) : 0;
 }
 
-const esAdmin = window.BRON_SESION?.rol === 'admin';
+const esAdmin = window.LOGOS_SESION?.rol === 'admin';
 let ventasCache = [];
 
 async function init() {
@@ -154,7 +154,7 @@ async function init() {
 async function cargar() {
   const params = new URLSearchParams();
   params.set('limit', '500');
-  const cajaId = esAdmin ? $('fil-caja').value : window.BRON_SESION?.caja_id;
+  const cajaId = esAdmin ? $('fil-caja').value : window.LOGOS_SESION?.caja_id;
   if (cajaId) params.set('caja_id', cajaId);
   if ($('fil-desde').value) params.set('fecha_desde', $('fil-desde').value);
   if ($('fil-hasta').value) params.set('fecha_hasta', $('fil-hasta').value);
@@ -220,12 +220,12 @@ async function accionEditar(id) {
     const v = await r.json();
     if (!r.ok) { toast(v.error || 'Error al cargar la venta', 'err'); return; }
     try {
-      localStorage.setItem('bron_editar_venta', JSON.stringify(v));
+      localStorage.setItem('logos_editar_venta', JSON.stringify(v));
     } catch {
       toast('Sin espacio en el navegador para cargar la venta en el editor.', 'err');
       return;
     }
-    sessionStorage.setItem('bron_volver_tras_editar', location.href);
+    sessionStorage.setItem('logos_volver_tras_editar', location.href);
     location.href = 'index.html';
   } catch {
     toast('Error de conexión', 'err');

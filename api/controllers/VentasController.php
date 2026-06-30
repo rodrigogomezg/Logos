@@ -987,7 +987,7 @@ class VentasController {
             json(400, ['error' => 'No hay impresora configurada. Configurala en Configuración.']);
         }
 
-        $tmp = sys_get_temp_dir() . '/bron_comprobante_' . $venta['numero'] . '.pdf';
+        $tmp = sys_get_temp_dir() . '/logos_comprobante_' . $venta['numero'] . '.pdf';
         file_put_contents($tmp, $dompdf->output());
 
         $ok = SilentPrint::imprimir($tmp, $config['impresora_nombre']);

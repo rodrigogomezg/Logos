@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRON — Cierres históricos</title>
+<title>Logos — Cierres históricos</title>
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
@@ -127,7 +127,7 @@ tbody tr:hover .btn-del-mov { opacity:1; }
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
-const API = '/BRON/api';
+const API = '/Logos/api';
 const $   = id => document.getElementById(id);
 
 let toastTimer = null;
@@ -148,7 +148,7 @@ function esc(s) {
     ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 }
 
-const esAdmin = window.BRON_SESION?.rol === 'admin';
+const esAdmin = window.LOGOS_SESION?.rol === 'admin';
 let turnosCache  = [];
 let turnoElimActual = null;
 
@@ -173,7 +173,7 @@ async function init() {
 
 async function cargar() {
   const params = new URLSearchParams();
-  const cajaId = esAdmin ? $('fil-caja').value : window.BRON_SESION?.caja_id;
+  const cajaId = esAdmin ? $('fil-caja').value : window.LOGOS_SESION?.caja_id;
   if (cajaId) params.set('caja_id', cajaId);
   if ($('fil-desde').value) params.set('desde', $('fil-desde').value);
   if ($('fil-hasta').value) params.set('hasta', $('fil-hasta').value);

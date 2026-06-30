@@ -1,9 +1,9 @@
--- Elimina TODAS las ventas de la base de datos BRON.
+-- Elimina TODAS las ventas de la base de datos Logos.
 -- Revierte el efecto en stock y en cuenta corriente.
 -- Clientes, productos y proveedores NO se tocan.
 --
--- Ejecutar desde phpMyAdmin: importar este archivo en la BD bron
--- o desde consola: mysql -u root -P 3307 bron < 08_limpiar_ventas.sql
+-- Ejecutar desde phpMyAdmin: importar este archivo en la BD logos
+-- o desde consola: mysql -u root -P 3306 logos < 08_limpiar_ventas.sql
 
 START TRANSACTION;
 

@@ -13,8 +13,8 @@ class DB {
             $local = self::estaConfigurado() ? require __DIR__ . '/db.local.php' : [];
             self::$config = array_merge([
                 'host'   => '127.0.0.1',
-                'port'   => 3307,
-                'dbname' => 'bron',
+                'port'   => 3306,
+                'dbname' => 'logos',
                 'user'   => 'root',
                 'pass'   => '',
             ], $local);

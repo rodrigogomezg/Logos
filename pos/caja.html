@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRON — Caja</title>
+<title>Logos — Caja</title>
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
@@ -81,7 +81,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
-const API = '/BRON/api';
+const API = '/Logos/api';
 const $   = id => document.getElementById(id);
 
 let toastTimer = null;
@@ -98,7 +98,7 @@ function fmt(n) {
   return '$' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-const cajaId = window.BRON_SESION?.caja_id ?? null;
+const cajaId = window.LOGOS_SESION?.caja_id ?? null;
 let estadoActual  = null; // datos del turno actual / sugerencia
 
 async function cargar() {
@@ -122,7 +122,7 @@ async function cargar() {
 function renderNoAplica() {
   $('contenido-inner').innerHTML = `
     <div class="card">
-      <div class="no-aplica">Esta caja (<strong>${esc(window.BRON_SESION?.caja_nombre || '')}</strong>) no maneja apertura ni cierre de turno.</div>
+      <div class="no-aplica">Esta caja (<strong>${esc(window.LOGOS_SESION?.caja_nombre || '')}</strong>) no maneja apertura ni cierre de turno.</div>
     </div>`;
 }
 
@@ -130,7 +130,7 @@ function renderApertura(fondoSugerido) {
   $('contenido-inner').innerHTML = `
     <div class="card">
       <div class="card-titulo">
-        Abrir caja — ${esc(window.BRON_SESION?.caja_nombre || '')}
+        Abrir caja — ${esc(window.LOGOS_SESION?.caja_nombre || '')}
         <span class="estado-pill cerrado"><span class="dot"></span>Sin turno abierto</span>
       </div>
       <div class="form-grid">
@@ -171,7 +171,7 @@ function renderTurnoAbierto(data) {
   $('contenido-inner').innerHTML = `
     <div class="card">
       <div class="card-titulo">
-        Turno actual — ${esc(window.BRON_SESION?.caja_nombre || '')}
+        Turno actual — ${esc(window.LOGOS_SESION?.caja_nombre || '')}
         <span class="estado-pill abierto"><span class="dot"></span>Abierto</span>
       </div>
       <p class="form-hint" style="margin-bottom:16px;">Abierto por ${esc(t.usuario_nombre)} el ${new Date(t.abierto_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' })} · Fondo inicial ${fmt(t.fondo_inicial)}</p>

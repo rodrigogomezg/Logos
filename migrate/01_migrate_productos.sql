@@ -4,7 +4,7 @@
 --   activos (BORRADO=0)  → activo=1
 --   borrados que aparecen en ventas 2026 (BORRADO=1) → activo=0 (referencia histórica)
 
-USE bron;
+USE logos;
 
 INSERT INTO productos (id, codigo, nombre, categoria, subcategoria, precio_venta, costo_actual, stock_actual, stock_minimo, activo)
 SELECT
@@ -29,7 +29,7 @@ WHERE s.tipo = 0
           -- productos borrados que aparecen en ventas 2026
           SELECT DISTINCT sm.productoid
           FROM   professionalplus.stock_movimiento sm
-          INNER JOIN bron.ventas v ON v.id = sm.enlacepadreid
+          INNER JOIN logos.ventas v ON v.id = sm.enlacepadreid
           WHERE  sm.tipo = 0 AND sm.enlacepadreid > 0 AND sm.movimiento <> 0
       )
   )
@@ -40,4 +40,4 @@ ON DUPLICATE KEY UPDATE
     stock_actual  = VALUES(stock_actual),
     stock_minimo  = VALUES(stock_minimo);
 
-SELECT CONCAT('Productos migrados: ', COUNT(*)) AS resultado FROM bron.productos;
+SELECT CONCAT('Productos migrados: ', COUNT(*)) AS resultado FROM logos.productos;

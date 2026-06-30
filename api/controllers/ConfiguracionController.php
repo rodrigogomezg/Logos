@@ -11,6 +11,8 @@ class ConfiguracionController {
     }
 
     private function sanitizar(array $config): array {
+        $config['afip_configurado'] = !empty($config['afip_cert']);
+        unset($config['afip_cert'], $config['afip_key']);
         $config['clave_autorizacion_configurada'] = !empty($config['clave_autorizacion_hash']);
         unset($config['clave_autorizacion_hash']);
         return $config;
@@ -25,17 +27,21 @@ class ConfiguracionController {
         if ($razonSocial === '') json(400, ['error' => 'razon_social es requerido']);
         if ($cuit === '')        json(400, ['error' => 'cuit es requerido']);
 
+        $coloresTema = ['azul','verde','rojo','naranja','violeta','rosa','indigo','teal','gris','negro'];
+        $colorTema   = in_array($body['color_tema'] ?? '', $coloresTema, true) ? $body['color_tema'] : null;
+
         $claveAutorizacion = trim($body['clave_autorizacion'] ?? '');
         $claveHash = $claveAutorizacion !== '' ? password_hash($claveAutorizacion, PASSWORD_DEFAULT) : null;
 
         DB::get()->prepare("
             INSERT INTO configuracion
-                (id, razon_social, cuit, condicion_iva, domicilio, iibb, telefono, website,
+                (id, razon_social, nombre_fantasia, cuit, condicion_iva, domicilio, iibb, telefono, website,
                  punto_venta, iva_porcentaje, impresora_nombre, carpeta_comprobantes, carpeta_backups,
-                 clave_autorizacion_hash, actualizado_en)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                 clave_autorizacion_hash, color_tema, actualizado_en)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ON DUPLICATE KEY UPDATE
                 razon_social         = VALUES(razon_social),
+                nombre_fantasia      = VALUES(nombre_fantasia),
                 cuit                 = VALUES(cuit),
                 condicion_iva        = VALUES(condicion_iva),
                 domicilio            = VALUES(domicilio),
@@ -48,9 +54,11 @@ class ConfiguracionController {
                 carpeta_comprobantes = VALUES(carpeta_comprobantes),
                 carpeta_backups      = VALUES(carpeta_backups),
                 clave_autorizacion_hash = COALESCE(?, clave_autorizacion_hash),
+                color_tema           = COALESCE(?, color_tema),
                 actualizado_en       = NOW()
         ")->execute([
             $razonSocial,
+            trim($body['nombre_fantasia'] ?? '') ?: null,
             $cuit,
             trim($body['condicion_iva'] ?? '') ?: 'Responsable Inscripto',
             trim($body['domicilio'] ?? '') ?: null,
@@ -62,12 +70,49 @@ class ConfiguracionController {
             trim($body['impresora_nombre'] ?? '') ?: null,
             trim($body['carpeta_comprobantes'] ?? '') ?: null,
             trim($body['carpeta_backups'] ?? '') ?: null,
-            $claveHash,
-            $claveHash,
+            $claveHash,   // INSERT clave_autorizacion_hash
+            $colorTema,   // INSERT color_tema
+            $claveHash,   // UPDATE COALESCE clave_autorizacion_hash
+            $colorTema,   // UPDATE COALESCE color_tema
         ]);
 
         Configuracion::invalidar();
         json(200, $this->sanitizar(Configuracion::get()));
+    }
+
+    public function subirCertAfip(): void {
+        if (empty($_FILES['cert_p12']) || $_FILES['cert_p12']['error'] !== UPLOAD_ERR_OK) {
+            json(400, ['error' => 'No se recibió el archivo .p12']);
+        }
+
+        $contenido = file_get_contents($_FILES['cert_p12']['tmp_name']);
+        $pass      = (string)($_POST['cert_pass'] ?? '');
+        $certs     = [];
+
+        if (!openssl_pkcs12_read($contenido, $certs, $pass)) {
+            json(400, ['error' => 'No se pudo leer el certificado. Verificá que el archivo y la contraseña sean correctos.']);
+        }
+
+        $cert = $certs['cert'] ?? null;
+        $key  = $certs['pkey'] ?? null;
+        if (!$cert || !$key) {
+            json(400, ['error' => 'El archivo .p12 no contiene certificado y clave válidos.']);
+        }
+
+        $entorno = (($_POST['entorno'] ?? '') === 'produccion') ? 'produccion' : 'homologacion';
+
+        DB::get()->prepare("
+            INSERT INTO configuracion (id, afip_cert, afip_key, afip_entorno, actualizado_en)
+            VALUES (1, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE
+                afip_cert    = VALUES(afip_cert),
+                afip_key     = VALUES(afip_key),
+                afip_entorno = VALUES(afip_entorno),
+                actualizado_en = NOW()
+        ")->execute([$cert, $key, $entorno]);
+
+        Configuracion::invalidar();
+        json(200, ['ok' => true, 'entorno' => $entorno]);
     }
 
     public function listarImpresoras(): void {
@@ -93,7 +138,7 @@ class ConfiguracionController {
             json(500, ['error' => 'No se pudo guardar el logo']);
         }
 
-        json(200, ['ok' => true, 'path' => '/BRON/logo_background.png?' . time()]);
+        json(200, ['ok' => true, 'path' => '/Logos/logo_background.png?' . time()]);
     }
 
     public function probarImpresion(): void {
@@ -105,11 +150,11 @@ class ConfiguracionController {
 
         $options = new Dompdf\Options();
         $dompdf  = new Dompdf\Dompdf($options);
-        $dompdf->loadHtml('<html><body style="font-family:sans-serif;"><h1>Prueba de impresión BRON</h1><p>Si ves esta hoja impresa, la impresora quedó configurada correctamente.</p></body></html>');
+        $dompdf->loadHtml('<html><body style="font-family:sans-serif;"><h1>Prueba de impresión</h1><p>Si ves esta hoja impresa, la impresora quedó configurada correctamente.</p></body></html>');
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
 
-        $tmp = sys_get_temp_dir() . '/bron_prueba_impresion.pdf';
+        $tmp = sys_get_temp_dir() . '/logos_prueba_impresion.pdf';
         file_put_contents($tmp, $dompdf->output());
 
         $ok = SilentPrint::imprimir($tmp, $impresora);
@@ -125,7 +170,7 @@ class ConfiguracionController {
         if (!$carpeta) json(400, ['error' => 'No hay carpeta de backups configurada']);
         if (!is_dir($carpeta)) json(400, ['error' => 'La carpeta de backups no existe: ' . $carpeta]);
 
-        $archivo   = rtrim($carpeta, '\\/') . '/bron_backup_' . date('Ymd_His') . '.sql';
+        $archivo   = rtrim($carpeta, '\\/') . '/logos_backup_' . date('Ymd_His') . '.sql';
         $mysqldump = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
         $c    = DB::config();
         $pass = $c['pass'] !== '' ? '-p' . $c['pass'] . ' ' : '';
@@ -160,7 +205,7 @@ class ConfiguracionController {
         if (!is_dir($carpeta)) @mkdir($carpeta, 0777, true);
         if (!is_dir($carpeta)) json(500, ['error' => 'No se pudo crear la carpeta de backups: ' . $carpeta]);
 
-        $archivo   = rtrim($carpeta, '\\/') . '/bron_pre_reset_' . date('Ymd_His') . '.sql';
+        $archivo   = rtrim($carpeta, '\\/') . '/logos_pre_reset_' . date('Ymd_His') . '.sql';
         $mysqldump = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
         $pass      = $c['pass'] !== '' ? '-p' . $c['pass'] . ' ' : '';
         $cmd       = '"' . $mysqldump . '" -h' . $c['host'] . ' -P' . $c['port'] . ' -u' . $c['user'] . ' ' . $pass . $c['dbname'] . ' > "' . $archivo . '" 2>&1';

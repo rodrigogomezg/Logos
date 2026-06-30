@@ -1,8 +1,8 @@
--- BRON DB Schema
+-- Logos DB Schema
 -- Ejecutar primero: crea la base y todas las tablas
 
-CREATE DATABASE IF NOT EXISTS bron CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE bron;
+CREATE DATABASE IF NOT EXISTS logos CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE logos;
 
 CREATE TABLE IF NOT EXISTS productos (
     id            INT            NOT NULL AUTO_INCREMENT PRIMARY KEY,

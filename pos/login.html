@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>BRON — Ingresar</title>
+<title>Logos — Ingresar</title>
 <link rel="stylesheet" href="pos-base.css">
 <style>
   body { background:#1A1A1A; align-items:center; justify-content:center; }
@@ -55,7 +55,7 @@
 <body>
 
 <div class="login-box">
-  <img src="/BRON/logo_background.png" alt="BRON">
+  <img src="/Logos/logo_background.png" alt="Logos" id="login-logo">
 
   <div class="paso activo" id="paso-usuarios">
     <div class="titulo">¿Quién está usando la caja?</div>
@@ -77,9 +77,36 @@
 </div>
 
 <script>
-const API = '/BRON/api';
+// Aplica el tema cacheado sincrónicamente antes del primer paint
+(function () {
+  try {
+    var c = JSON.parse(localStorage.getItem('logos_tema') || 'null');
+    if (c && c[0] && c[1]) {
+      document.documentElement.style.setProperty('--azul',   c[0]);
+      document.documentElement.style.setProperty('--azul-h', c[1]);
+    }
+  } catch(e) {}
+})();
+
+const API = '/Logos/api';
 let usuarioActual = null;
 let pin = '';
+
+const LOGOS_TEMAS_LOGIN = {
+  azul:    ['#2563eb','#1d4ed8'], verde:   ['#16a34a','#15803d'],
+  rojo:    ['#dc2626','#b91c1c'], naranja: ['#ea580c','#c2410c'],
+  violeta: ['#7c3aed','#6d28d9'], rosa:    ['#db2777','#be185d'],
+  indigo:  ['#4f46e5','#4338ca'], teal:    ['#0d9488','#0f766e'],
+  gris:    ['#4b5563','#374151'], negro:   ['#1f2937','#111827'],
+};
+fetch(`${API}/configuracion`).then(r => r.ok ? r.json() : null).then(cfg => {
+  const t = cfg && LOGOS_TEMAS_LOGIN[cfg.color_tema];
+  if (t) {
+    document.documentElement.style.setProperty('--azul',   t[0]);
+    document.documentElement.style.setProperty('--azul-h', t[1]);
+    try { localStorage.setItem('logos_tema', JSON.stringify(t)); } catch(e) {}
+  }
+}).catch(() => {});
 
 function mostrarPaso(id) {
   document.querySelectorAll('.paso').forEach(p => p.classList.remove('activo'));
@@ -188,14 +215,14 @@ function mostrarSelectorCaja(usuario, cajas) {
 }
 
 function iniciarSesion(usuario, caja) {
-  localStorage.setItem('bron_sesion', JSON.stringify({
+  localStorage.setItem('logos_sesion', JSON.stringify({
     usuario_id: usuario.id,
     nombre: usuario.nombre,
     rol: usuario.rol,
     caja_id: caja.id,
     caja_nombre: caja.nombre
   }));
-  location.href = '/BRON/pos/';
+  location.href = '/Logos/pos/';
 }
 
 document.getElementById('pin-volver').onclick = () => {
@@ -222,7 +249,7 @@ async function chequearInstalacion() {
     const estado = await fetch(`${API}/instalacion/estado`).then(r => r.json());
     if (estado.requiere_conexion || estado.requiere_schema || estado.requiere_admin ||
         estado.requiere_negocio || estado.requiere_caja) {
-      location.href = '/BRON/pos/instalar.html';
+      location.href = '/Logos/pos/instalar.html';
       return true;
     }
   } catch (e) {
@@ -233,6 +260,7 @@ async function chequearInstalacion() {
 
 renderPad();
 chequearInstalacion().then(redirigido => { if (!redirigido) cargarUsuarios(); });
+document.getElementById('login-logo').src = '/Logos/logo_background.png?v=' + Date.now();
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRON — POS</title>
+<title>Logos — POS</title>
 <link rel="stylesheet" href="pos-base.css">
 <style>
 /* ── LAYOUT ── */
@@ -1136,17 +1136,17 @@ label.envio-toggle {
 <script>
 'use strict';
 
-const API = '/BRON/api';
+const API = '/Logos/api';
 
 // ── Turno de caja: bloquear venta si no hay uno abierto ──
 (async function verificarTurnoAbierto() {
-  const cajaId = window.BRON_SESION?.caja_id;
+  const cajaId = window.LOGOS_SESION?.caja_id;
   if (!cajaId) return;
   try {
     const res  = await fetch(`${API}/caja-turnos/actual?caja_id=${cajaId}`);
     const data = await res.json();
     if (!data.no_aplica && !data.turno) {
-      location.href = '/BRON/pos/caja.html';
+      location.href = '/Logos/pos/caja.html';
     }
   } catch (e) { /* si falla la verificación, no se bloquea la venta */ }
 })();
@@ -1957,8 +1957,8 @@ async function confirmarVenta() {
 
   const body = {
     cliente_id:       clienteActual?.id ?? null,
-    caja_id:          window.cajaOperativaId?.() ?? window.BRON_SESION?.caja_id ?? null,
-    usuario_id:       window.BRON_SESION?.usuario_id ?? null,
+    caja_id:          window.cajaOperativaId?.() ?? window.LOGOS_SESION?.caja_id ?? null,
+    usuario_id:       window.LOGOS_SESION?.usuario_id ?? null,
     tipo_comprobante: $('tipo-comp').value,
     tipo_pago: esMixto ? 'mixto' : $('tipo-pago-sel').value,
     pagos: esMixto
@@ -1991,9 +1991,9 @@ async function confirmarVenta() {
     const accion = editandoVentaId ? 'Actualizado' : '✓';
     toast_(`${accion}  ${body.tipo_comprobante} N° ${d.numero}  —  ${fmt(d.total)}`, 'ok');
     const uvData = { id: d.id, tipo_comprobante: body.tipo_comprobante, numero: d.numero, total: d.total };
-    const volverA = sessionStorage.getItem('bron_volver_tras_editar');
+    const volverA = sessionStorage.getItem('logos_volver_tras_editar');
     if (volverA) {
-      sessionStorage.removeItem('bron_volver_tras_editar');
+      sessionStorage.removeItem('logos_volver_tras_editar');
       location.href = volverA;
       return;
     }
@@ -2207,17 +2207,17 @@ function salirModoEdicion() {
 $('edit-banner-cancel').addEventListener('click', () => {
   salirModoEdicion();
   nuevaVenta();
-  const volverA = sessionStorage.getItem('bron_volver_tras_editar');
+  const volverA = sessionStorage.getItem('logos_volver_tras_editar');
   if (volverA) {
-    sessionStorage.removeItem('bron_volver_tras_editar');
+    sessionStorage.removeItem('logos_volver_tras_editar');
     location.href = volverA;
   }
 });
 
 (async function initEditarVenta() {
-  const raw = localStorage.getItem('bron_editar_venta');
+  const raw = localStorage.getItem('logos_editar_venta');
   if (!raw) return;
-  localStorage.removeItem('bron_editar_venta');
+  localStorage.removeItem('logos_editar_venta');
   let v;
   try { v = JSON.parse(raw); } catch { return; }
 
@@ -2296,9 +2296,9 @@ $('edit-banner-cancel').addEventListener('click', () => {
 
 // Carga venta copiada desde ventas.html (localStorage)
 (async function initCopiaVenta() {
-  const raw = localStorage.getItem('bron_copia_venta');
+  const raw = localStorage.getItem('logos_copia_venta');
   if (!raw) return;
-  localStorage.removeItem('bron_copia_venta');
+  localStorage.removeItem('logos_copia_venta');
   let datos;
   try { datos = JSON.parse(raw); } catch { return; }
 
@@ -2332,8 +2332,10 @@ function hayVentaActiva() {
   return items.length > 0 || editandoVentaId !== null;
 }
 
+let abandonandoIntencionalmente = false;
+
 window.addEventListener('beforeunload', e => {
-  if (!hayVentaActiva()) return;
+  if (!hayVentaActiva() || abandonandoIntencionalmente) return;
   e.preventDefault();
   e.returnValue = '';
 });
@@ -2344,6 +2346,7 @@ document.querySelectorAll('.nav-link, .nav-brand').forEach(link => {
     e.preventDefault();
     const destino = link.getAttribute('href');
     if (window.confirm('¿Abandonar la venta actual? Los ítems se perderán.')) {
+      abandonandoIntencionalmente = true;
       window.location.href = destino;
     }
   });

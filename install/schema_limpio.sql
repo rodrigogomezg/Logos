@@ -11,7 +11,7 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `caja_movimientos` (
+CREATE TABLE IF NOT EXISTS `caja_movimientos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `turno_id` int(11) NOT NULL,
   `tipo` enum('ingreso','retiro','transferencia') NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE `caja_movimientos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `caja_turnos` (
+CREATE TABLE IF NOT EXISTS `caja_turnos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `caja_id` int(11) NOT NULL,
   `usuario_id` int(11) NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE `caja_turnos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `cajas` (
+CREATE TABLE IF NOT EXISTS `cajas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `tipo` enum('venta','compra') NOT NULL DEFAULT 'venta',
@@ -60,7 +60,7 @@ CREATE TABLE `cajas` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `cc_asignaciones` (
+CREATE TABLE IF NOT EXISTS `cc_asignaciones` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `movimiento_id` int(11) NOT NULL,
   `venta_id` int(11) DEFAULT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE `cc_asignaciones` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `clientes` (
+CREATE TABLE IF NOT EXISTS `clientes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(255) NOT NULL,
   `cuit` varchar(20) DEFAULT NULL,
@@ -97,7 +97,7 @@ CREATE TABLE `clientes` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `compra_items` (
+CREATE TABLE IF NOT EXISTS `compra_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `compra_id` int(11) NOT NULL,
   `producto_id` int(11) NOT NULL,
@@ -112,7 +112,7 @@ CREATE TABLE `compra_items` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `compra_pagos` (
+CREATE TABLE IF NOT EXISTS `compra_pagos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `compra_id` int(11) NOT NULL,
   `tipo_pago` varchar(20) NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE `compra_pagos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `compras` (
+CREATE TABLE IF NOT EXISTS `compras` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fecha` date NOT NULL,
   `proveedor_id` int(11) DEFAULT NULL,
@@ -145,9 +145,10 @@ CREATE TABLE `compras` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `configuracion` (
+CREATE TABLE IF NOT EXISTS `configuracion` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `razon_social` varchar(255) NOT NULL DEFAULT '',
+  `nombre_fantasia` varchar(255) DEFAULT NULL,
   `cuit` varchar(20) NOT NULL DEFAULT '',
   `condicion_iva` varchar(50) NOT NULL DEFAULT 'Responsable Inscripto',
   `domicilio` varchar(255) DEFAULT NULL,
@@ -159,14 +160,18 @@ CREATE TABLE `configuracion` (
   `impresora_nombre` varchar(255) DEFAULT NULL,
   `carpeta_comprobantes` varchar(500) DEFAULT NULL,
   `carpeta_backups` varchar(500) DEFAULT NULL,
+  `afip_cert` text DEFAULT NULL,
+  `afip_key` text DEFAULT NULL,
+  `afip_entorno` enum('homologacion','produccion') NOT NULL DEFAULT 'homologacion',
   `clave_autorizacion_hash` varchar(255) DEFAULT NULL,
+  `color_tema` varchar(30) NOT NULL DEFAULT 'bordo',
   `actualizado_en` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `cuenta_corriente_movimientos` (
+CREATE TABLE IF NOT EXISTS `cuenta_corriente_movimientos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `entidad_tipo` enum('cliente','proveedor') NOT NULL,
   `entidad_id` int(11) NOT NULL,
@@ -185,7 +190,7 @@ CREATE TABLE `cuenta_corriente_movimientos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `movimientos_stock` (
+CREATE TABLE IF NOT EXISTS `movimientos_stock` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `producto_id` int(11) NOT NULL,
   `tipo` varchar(20) NOT NULL,
@@ -200,7 +205,7 @@ CREATE TABLE `movimientos_stock` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `productos` (
+CREATE TABLE IF NOT EXISTS `productos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `codigo` varchar(50) NOT NULL,
   `nombre` varchar(255) NOT NULL,
@@ -222,7 +227,7 @@ CREATE TABLE `productos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `productos_import_detalle` (
+CREATE TABLE IF NOT EXISTS `productos_import_detalle` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `lote_id` int(11) NOT NULL,
   `producto_id` int(11) DEFAULT NULL,
@@ -237,7 +242,7 @@ CREATE TABLE `productos_import_detalle` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `productos_import_lotes` (
+CREATE TABLE IF NOT EXISTS `productos_import_lotes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `proveedor` varchar(150) NOT NULL,
   `archivo` varchar(255) NOT NULL,
@@ -253,7 +258,7 @@ CREATE TABLE `productos_import_lotes` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `productos_import_plantillas` (
+CREATE TABLE IF NOT EXISTS `productos_import_plantillas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `proveedor` varchar(150) NOT NULL,
   `mapeo` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`mapeo`)),
@@ -265,7 +270,7 @@ CREATE TABLE `productos_import_plantillas` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `proveedores` (
+CREATE TABLE IF NOT EXISTS `proveedores` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(255) NOT NULL,
   `cuit` varchar(20) DEFAULT NULL,
@@ -277,7 +282,7 @@ CREATE TABLE `proveedores` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `usuarios` (
+CREATE TABLE IF NOT EXISTS `usuarios` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `pin_hash` varchar(255) NOT NULL,
@@ -289,7 +294,7 @@ CREATE TABLE `usuarios` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `vendedores` (
+CREATE TABLE IF NOT EXISTS `vendedores` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
@@ -297,7 +302,7 @@ CREATE TABLE `vendedores` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `venta_items` (
+CREATE TABLE IF NOT EXISTS `venta_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `venta_id` int(11) NOT NULL,
   `producto_id` int(11) NOT NULL,
@@ -314,7 +319,7 @@ CREATE TABLE `venta_items` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `venta_pagos` (
+CREATE TABLE IF NOT EXISTS `venta_pagos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `venta_id` int(11) NOT NULL,
   `tipo_pago` varchar(20) NOT NULL,
@@ -325,7 +330,7 @@ CREATE TABLE `venta_pagos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `ventas` (
+CREATE TABLE IF NOT EXISTS `ventas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fecha` date NOT NULL,
   `cliente_id` int(11) DEFAULT NULL,

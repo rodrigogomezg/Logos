@@ -21,8 +21,8 @@ function json(int $status, mixed $data): never {
     exit;
 }
 
-// Parsear URI: /BRON/api/productos/123 → ['productos', '123']
-$base = '/BRON/api';
+// Parsear URI: /Logos/api/productos/123 → ['productos', '123']
+$base = '/Logos/api';
 $uri  = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $path = substr($uri, strlen($base));
 $path = trim($path, '/');
@@ -46,6 +46,7 @@ try {
             $ctrl = new InstalacionController();
             match (true) {
                 $metodo === 'GET'  && $accion === 'estado'           => $ctrl->estado(),
+                $metodo === 'GET'  && $accion === 'admin-id'         => $ctrl->adminId(),
                 $metodo === 'POST' && $accion === 'probar-conexion'   => $ctrl->probarConexion(),
                 $metodo === 'POST' && $accion === 'instalar'          => $ctrl->instalar(),
                 $metodo === 'POST' && $accion === 'admin'             => $ctrl->crearAdmin(),
@@ -56,13 +57,16 @@ try {
         'productos' => (function () use ($metodo, $id, $accion) {
             require_once __DIR__ . '/controllers/ProductosController.php';
             $ctrl = new ProductosController();
-            if ($metodo === 'PUT' || $metodo === 'DELETE' || ($metodo === 'POST' && in_array($accion, ['bulk', 'eliminar-bulk'], true))) {
+            if ($metodo === 'PUT' || $metodo === 'DELETE' ||
+                ($metodo === 'POST' && in_array($accion, ['bulk', 'eliminar-bulk'], true)) ||
+                ($metodo === 'POST' && $id === null && $accion === null)) {
                 Auth::requireAdmin();
             }
             match (true) {
                 $metodo === 'GET'    && $id !== null              => $ctrl->get($id),
                 $metodo === 'GET'    && isset($_GET['page'])      => $ctrl->listar(),
                 $metodo === 'GET'                                 => $ctrl->search(),
+                $metodo === 'POST'   && $id === null && $accion === null => $ctrl->post(),
                 $metodo === 'PUT'    && $id !== null              => $ctrl->put($id),
                 $metodo === 'DELETE' && $id !== null              => $ctrl->eliminar($id),
                 $metodo === 'POST'   && $accion === 'bulk'        => $ctrl->bulk(),
@@ -190,6 +194,7 @@ try {
                 $metodo === 'GET'  && $accion === 'impresoras'      => $ctrl->listarImpresoras(),
                 $metodo === 'GET'                                    => $ctrl->get(),
                 $metodo === 'PUT'                                    => $ctrl->actualizar(),
+                $metodo === 'POST' && $accion === 'cert-afip'         => $ctrl->subirCertAfip(),
                 $metodo === 'POST' && $accion === 'logo'             => $ctrl->subirLogo(),
                 $metodo === 'POST' && $accion === 'probar-impresion' => $ctrl->probarImpresion(),
                 $metodo === 'POST' && $accion === 'backup'           => $ctrl->backupAhora(),

@@ -187,7 +187,7 @@ $margenInferior = $tieneCae ? '72mm' : '42mm';
 <table class="cab">
   <tr>
     <td class="cab-logo">
-      <img src="<?= cp_esc($logo) ?>" alt="BRON">
+      <img src="<?= cp_esc($logo) ?>" alt="">
       <div class="cab-empresa">
         <strong><?= cp_esc($config['razon_social']) ?></strong>
         CUIT: <?= cp_esc(cp_cuit($config['cuit'])) ?> — <?= cp_esc($config['condicion_iva']) ?><br>

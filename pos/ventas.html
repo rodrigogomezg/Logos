@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRON — Ventas</title>
+<title>Logos — Ventas</title>
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
@@ -696,9 +696,9 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
 
 <script>
 'use strict';
-const API = '/BRON/api';
+const API = '/Logos/api';
 const $ = id => document.getElementById(id);
-const esAdmin = window.BRON_SESION?.rol === 'admin';
+const esAdmin = window.LOGOS_SESION?.rol === 'admin';
 
 // ── Utilidades ─────────────────────────────────────────
 function actualizarFecha() {
@@ -1141,7 +1141,7 @@ function accionMail() {
   if (!ventaSeleccionada) return;
   const v = ventaSeleccionada;
   $('mail-desc').textContent = `Venta #${v.numero}  ·  ${fmt(v.total)}  ·  ${v.cliente_nombre ?? 'Consumidor final'}`;
-  $('mail-asunto').value = `Comprobante N° ${v.numero} — BRON`;
+  $('mail-asunto').value = `Comprobante N° ${v.numero} — ${window.LOGOS_EMPRESA || 'Logos'}`;
   $('mail-email').value  = '';
   $('overlay-mail').classList.add('abierto');
   setTimeout(() => $('mail-email').focus(), 150);
@@ -1245,12 +1245,12 @@ async function accionCopiar() {
       })),
     };
     try {
-      localStorage.setItem('bron_copia_venta', JSON.stringify(datos));
+      localStorage.setItem('logos_copia_venta', JSON.stringify(datos));
     } catch {
       toast_('Sin espacio en el navegador para copiar la venta.', 'err');
       return;
     }
-    window.location.href = '/BRON/pos/';
+    window.location.href = '/Logos/pos/';
   } catch (e) {
     toast_(e.message, 'err');
   }
@@ -1282,12 +1282,12 @@ async function accionEditarItems() {
   try {
     const v = await cargarDetalle(ventaSeleccionada.id);
     try {
-      localStorage.setItem('bron_editar_venta', JSON.stringify(v));
+      localStorage.setItem('logos_editar_venta', JSON.stringify(v));
     } catch {
       toast_('Sin espacio en el navegador para cargar la venta en el editor.', 'err');
       return;
     }
-    sessionStorage.setItem('bron_volver_tras_editar', location.href);
+    sessionStorage.setItem('logos_volver_tras_editar', location.href);
     window.location.href = 'index.html';
   } catch (e) {
     toast_(e.message, 'err');

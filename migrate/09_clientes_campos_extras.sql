@@ -1,5 +1,5 @@
 -- Agrega campos de contacto, domicilio y observaciones a la tabla clientes
--- Ejecutar: mysql -u root -P 3307 bron < 09_clientes_campos_extras.sql
+-- Ejecutar: mysql -u root -P 3306 logos < 09_clientes_campos_extras.sql
 
 ALTER TABLE clientes
   ADD COLUMN email         VARCHAR(255) NULL AFTER condicion_iva,

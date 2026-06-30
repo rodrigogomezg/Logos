@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRON — Productos</title>
+<title>Logos — Productos</title>
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
@@ -106,7 +106,13 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
 .estado-vacio { padding:50px 20px; text-align:center; color:var(--gris3); font-size:14px; }
 
 /* Paginación */
-.pag-bar { padding:8px 16px; border-top:2px solid var(--gris2); background:var(--gris1); display:flex; align-items:center; justify-content:center; gap:12px; flex-shrink:0; }
+.pag-bar { padding:8px 16px; border-top:2px solid var(--gris2); background:var(--gris1); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.pag-nav { display:flex; align-items:center; gap:12px; }
+.pag-right { display:flex; align-items:center; gap:8px; }
+.btn-group { display:flex; border:1.5px solid var(--borde); border-radius:7px; overflow:hidden; flex-shrink:0; }
+.btn-group-item { padding:7px 14px; background:white; color:var(--texto); border:none; font-size:var(--fs-sm); font-weight:600; cursor:pointer; white-space:nowrap; text-decoration:none; display:flex; align-items:center; transition:background .12s; }
+.btn-group-item:hover { background:var(--gris2); }
+.btn-group-item + .btn-group-item { border-left:1.5px solid var(--borde); }
 .btn-pag { padding:5px 14px; background:white; border:1.5px solid var(--borde); border-radius:7px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; color:var(--texto); transition:background .1s; white-space:nowrap; }
 .btn-pag:hover:not(:disabled) { background:var(--gris2); }
 .btn-pag:disabled { color:var(--gris3); cursor:not-allowed; border-color:var(--gris2); }
@@ -217,8 +223,10 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
   </select>
   <button class="btn-limpiar" id="btn-limpiar">× Limpiar filtros</button>
   <div class="toolbar-sep"></div>
-  <a href="/BRON/pos/importar.html" class="btn-bulk-alt" id="btn-importar" style="display:none;text-decoration:none">Importar productos</a>
-  <span class="info-total" id="info-total"></span>
+  <div class="btn-group" id="grupo-admin" style="display:none">
+    <button class="btn-group-item" id="btn-nuevo-prod" onclick="abrirModalNuevo()">+ Nuevo producto</button>
+    <a href="/Logos/pos/importar.html" class="btn-group-item" id="btn-importar" style="text-decoration:none">↑ Importar</a>
+  </div>
 </div>
 
 <div class="tab-bar">
@@ -280,18 +288,23 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
 
   </div>
   <div class="pag-bar">
-    <button id="btn-prev" class="btn-pag" disabled>← Anterior</button>
-    <div class="pag-info">
-      Página <input type="number" id="pag-input" value="1" min="1"> de <span id="pag-total">1</span>
+    <span class="info-total" id="info-total" style="min-width:140px"></span>
+    <div class="pag-nav">
+      <button id="btn-prev" class="btn-pag" disabled>← Anterior</button>
+      <div class="pag-info">
+        Página <input type="number" id="pag-input" value="1" min="1"> de <span id="pag-total">1</span>
+      </div>
+      <button id="btn-next" class="btn-pag" disabled>Siguiente →</button>
     </div>
-    <button id="btn-next" class="btn-pag" disabled>Siguiente →</button>
-    <div class="pag-sep" id="sep-perpage"></div>
-    <select id="per-page-sel">
-      <option value="100">100 / pág</option>
-      <option value="200">200 / pág</option>
-      <option value="500">500 / pág</option>
-      <option value="1000">1000 / pág</option>
-    </select>
+    <div class="pag-right">
+      <div class="pag-sep" id="sep-perpage"></div>
+      <select id="per-page-sel">
+        <option value="100">100 / pág</option>
+        <option value="200">200 / pág</option>
+        <option value="500">500 / pág</option>
+        <option value="1000">1000 / pág</option>
+      </select>
+    </div>
   </div>
 </div>
 
@@ -361,6 +374,73 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
   </div>
 </div>
 
+<!-- Modal: Nuevo producto -->
+<div class="m-overlay" id="overlay-nuevo">
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="nuevo-prod-h">
+    <div class="m-head">
+      <div class="m-head-info">
+        <h3 id="nuevo-prod-h">Nuevo producto</h3>
+        <div class="m-head-sub">Completá los datos del producto. Solo el nombre es obligatorio.</div>
+      </div>
+      <button class="m-cerrar" onclick="cerrarModalNuevo()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="m-body">
+      <div class="form-grid">
+        <div class="form-group fg-full">
+          <label class="form-label">Nombre *</label>
+          <input type="text" id="n-nombre" class="form-input" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Código</label>
+          <input type="text" id="n-codigo" class="form-input" autocomplete="off">
+          <span id="n-codigo-error" style="font-size:11px;color:var(--rojo);display:none"></span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Precio venta</label>
+          <input type="number" id="n-precio" class="form-input" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Costo actual</label>
+          <input type="number" id="n-costo" class="form-input" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Proveedor</label>
+          <input type="text" id="n-proveedor" class="form-input" list="dl-proveedores" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Marca</label>
+          <input type="text" id="n-marca" class="form-input" list="dl-marcas" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rubro</label>
+          <input type="text" id="n-categoria" class="form-input" list="dl-categorias" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Subcategoría</label>
+          <input type="text" id="n-subcategoria" class="form-input" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stock inicial</label>
+          <input type="number" id="n-stock-inicial" class="form-input" min="0" step="0.001" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stock mínimo</label>
+          <input type="number" id="n-stock-min" class="form-input" min="0" step="0.001" placeholder="0">
+        </div>
+        <div class="form-group fg-full">
+          <label class="check-label">
+            <input type="checkbox" id="n-activo" checked> Producto activo
+          </label>
+        </div>
+      </div>
+    </div>
+    <div class="m-foot">
+      <button class="btn-sec" onclick="cerrarModalNuevo()">Cancelar</button>
+      <button class="btn-pri" id="btn-guardar-nuevo" onclick="guardarNuevoProducto()">Crear producto</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: Bulk action -->
 <div class="m-overlay" id="overlay-bulk">
   <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="bulk-titulo">
@@ -415,9 +495,9 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <script>
-const API = '/BRON/api';
+const API = '/Logos/api';
 const $   = id => document.getElementById(id);
-const esAdmin = window.BRON_SESION?.rol === 'admin';
+const esAdmin = window.LOGOS_SESION?.rol === 'admin';
 
 // ── Estado compartido ────────────────────────────────────────
 let tabActivo  = 'datos';
@@ -665,6 +745,65 @@ function actualizarBulkBar() {
     $('bulk-count').textContent = `${n.toLocaleString('es-AR')} producto${s?'s':''} seleccionado${s?'s':''}`;
     $('btn-sel-filtrados').style.display = '';
     $('btn-sel-filtrados').textContent = `Seleccionar todos los ${nFmt} del filtro`;
+  }
+}
+
+// ── Modal nuevo producto ──────────────────────────────────────
+function abrirModalNuevo() {
+  ['n-nombre','n-codigo','n-precio','n-costo','n-proveedor',
+   'n-marca','n-categoria','n-subcategoria','n-stock-inicial','n-stock-min'].forEach(id => $(id).value = '');
+  $('n-activo').checked = true;
+  $('n-codigo-error').style.display = 'none';
+  $('btn-guardar-nuevo').disabled = false;
+  $('btn-guardar-nuevo').textContent = 'Crear producto';
+  $('overlay-nuevo').classList.add('abierto');
+  setTimeout(() => $('n-nombre').focus(), 50);
+}
+function cerrarModalNuevo() { $('overlay-nuevo').classList.remove('abierto'); }
+
+async function guardarNuevoProducto() {
+  const nombre = $('n-nombre').value.trim();
+  if (!nombre) { toast('El nombre es requerido', 'err'); $('n-nombre').focus(); return; }
+
+  $('n-codigo-error').style.display = 'none';
+
+  const body = {
+    nombre,
+    codigo:        $('n-codigo').value.trim()        || null,
+    precio_venta:  $('n-precio').value !== ''        ? parseFloat($('n-precio').value)        : null,
+    costo_actual:  $('n-costo').value  !== ''        ? parseFloat($('n-costo').value)         : null,
+    proveedor:     $('n-proveedor').value.trim()     || null,
+    marca:         $('n-marca').value.trim()         || null,
+    categoria:     $('n-categoria').value.trim()     || null,
+    subcategoria:  $('n-subcategoria').value.trim()  || null,
+    stock_inicial: $('n-stock-inicial').value !== '' ? parseFloat($('n-stock-inicial').value) : null,
+    stock_minimo:  $('n-stock-min').value !== ''     ? parseFloat($('n-stock-min').value)     : null,
+    activo:        $('n-activo').checked,
+  };
+
+  const btn = $('btn-guardar-nuevo');
+  btn.disabled = true; btn.textContent = 'Creando…';
+
+  try {
+    const res  = await fetch(`${API}/productos`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (res.status === 409) {
+      const errEl = $('n-codigo-error');
+      errEl.textContent = data.error;
+      errEl.style.display = '';
+      $('n-codigo').focus();
+      btn.disabled = false; btn.textContent = 'Crear producto';
+      return;
+    }
+    if (!res.ok) throw new Error(data.error || 'Error al crear');
+    cerrarModalNuevo();
+    toast(`${nombre} — producto creado`, 'ok');
+    pagDatos = 1; cargarDatos();
+  } catch (e) {
+    toast(e.message, 'err');
+    btn.disabled = false; btn.textContent = 'Crear producto';
   }
 }
 
@@ -1023,7 +1162,7 @@ $('hist-cerrar').addEventListener('click', cerrarHistorial);
 (async function init() {
   actualizarFecha();
   setInterval(actualizarFecha, 60000);
-  if (esAdmin) $('btn-importar').style.display = '';
+  if (esAdmin) $('grupo-admin').style.display = '';
   await cargarFiltros();
   cargarDatos();
 
@@ -1083,10 +1222,12 @@ $('hist-cerrar').addEventListener('click', cerrarHistorial);
     if ($('overlay-eliminar-prod').classList.contains('abierto')) { cerrarModalEliminar(); return; }
     if ($('overlay-hist').classList.contains('abierto'))   { cerrarHistorial(); return; }
     if ($('overlay-bulk').classList.contains('abierto'))   { cerrarModalBulk(); return; }
+    if ($('overlay-nuevo').classList.contains('abierto'))  { cerrarModalNuevo(); return; }
     if ($('overlay-editar').classList.contains('abierto')) { cerrarModalEditar(); return; }
     if (editando) cancelarEditar();
   });
 
+  $('overlay-nuevo').addEventListener('click',          e => { if (e.target === $('overlay-nuevo'))          cerrarModalNuevo(); });
   $('overlay-editar').addEventListener('click',        e => { if (e.target === $('overlay-editar'))        cerrarModalEditar(); });
   $('overlay-bulk').addEventListener('click',          e => { if (e.target === $('overlay-bulk'))          cerrarModalBulk(); });
   $('overlay-eliminar-prod').addEventListener('click', e => { if (e.target === $('overlay-eliminar-prod')) cerrarModalEliminar(); });

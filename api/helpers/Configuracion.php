@@ -20,6 +20,7 @@ class Configuracion {
         return [
             'id'                   => 1,
             'razon_social'         => '',
+            'nombre_fantasia'      => null,
             'cuit'                 => '',
             'condicion_iva'        => 'Responsable Inscripto',
             'domicilio'            => null,
@@ -31,7 +32,11 @@ class Configuracion {
             'impresora_nombre'     => null,
             'carpeta_comprobantes' => null,
             'carpeta_backups'      => null,
+            'afip_cert'            => null,
+            'afip_key'             => null,
+            'afip_entorno'         => 'homologacion',
             'clave_autorizacion_hash' => null,
+            'color_tema'              => 'azul',
         ];
     }
 

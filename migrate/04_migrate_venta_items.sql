@@ -8,7 +8,7 @@
 -- Limitación conocida: si la venta tenía un descuento general (ventas.descuentopor > 0),
 -- los precios por ítem son de lista. El total del encabezado (ventas.total) sigue siendo exacto.
 
-USE bron;
+USE logos;
 
 INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
 SELECT
@@ -46,12 +46,12 @@ SELECT
 
 FROM professionalplus.stock_movimiento sm
 -- Solo movimientos de ventas 2026 ya migradas
-INNER JOIN bron.ventas                  v     ON v.id     = sm.enlacepadreid
+INNER JOIN logos.ventas                  v     ON v.id     = sm.enlacepadreid
 -- Necesitamos FechaADD (datetime exacto) para el lookup de precios
 INNER JOIN professionalplus.ventas      v_src ON v_src.Id = sm.enlacepadreid
-INNER JOIN bron.productos               p     ON p.id     = sm.productoid
+INNER JOIN logos.productos               p     ON p.id     = sm.productoid
 WHERE sm.tipo          = 0              -- tipo=0 → movimiento por venta
   AND sm.enlacepadreid > 0
   AND sm.movimiento   <> 0;
 
-SELECT CONCAT('Ítems de venta migrados: ', COUNT(*)) AS resultado FROM bron.venta_items;
+SELECT CONCAT('Ítems de venta migrados: ', COUNT(*)) AS resultado FROM logos.venta_items;

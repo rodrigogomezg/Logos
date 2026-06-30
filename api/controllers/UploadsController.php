@@ -5,7 +5,7 @@ class UploadsController {
     private const TIPOS_OK  = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
     private const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
     private const DIR_DISCO = __DIR__ . '/../../uploads/comprobantes/';
-    private const DIR_WEB   = '/BRON/uploads/comprobantes/';
+    private const DIR_WEB   = '/Logos/uploads/comprobantes/';
 
     public function subir(): void {
         if (empty($_FILES['archivo'])) {

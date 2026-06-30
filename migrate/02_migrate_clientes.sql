@@ -2,7 +2,7 @@
 -- Criterio: solo clientes con al menos una venta en 2026
 -- Delphi serial 2026-01-01 = 46023
 
-USE bron;
+USE logos;
 
 -- Clientes con ventas en 2026 (no borradas, tipo venta)
 INSERT INTO clientes (id, nombre, cuit, condicion_iva, limite_credito, saldo_cuenta_corriente)
@@ -36,4 +36,4 @@ ON DUPLICATE KEY UPDATE
     limite_credito         = VALUES(limite_credito),
     saldo_cuenta_corriente = VALUES(saldo_cuenta_corriente);
 
-SELECT CONCAT('Clientes migrados: ', COUNT(*)) AS resultado FROM bron.clientes;
+SELECT CONCAT('Clientes migrados: ', COUNT(*)) AS resultado FROM logos.clientes;

@@ -1,5 +1,5 @@
 -- Agrega observaciones a cc_movimientos y crea tabla de asignaciones pago-venta
--- Ejecutar: mysql -u root -P 3307 bron < 10_cc_asignaciones.sql
+-- Ejecutar: mysql -u root -P 3306 logos < 10_cc_asignaciones.sql
 
 ALTER TABLE cuenta_corriente_movimientos
   ADD COLUMN observaciones TEXT NULL AFTER referencia_id;

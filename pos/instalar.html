@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BRON — Configuración inicial</title>
+<title>Logos — Configuración inicial</title>
 <link rel="stylesheet" href="pos-base.css">
 <style>
   body { background:#1A1A1A; align-items:center; justify-content:center; padding:24px; }
-  .install-box { width:540px; max-width:100%; display:flex; flex-direction:column; align-items:center; gap:24px; }
-  .install-box img { height:44px; }
+  .install-box { width:560px; max-width:100%; display:flex; flex-direction:column; align-items:center; gap:24px; }
+  .install-box > img { height:44px; }
 
   .pasos-ind { display:flex; gap:6px; width:100%; }
   .paso-pill { flex:1; height:4px; border-radius:3px; background:rgba(255,255,255,.12); }
@@ -20,10 +20,11 @@
 
   .titulo { color:rgba(255,255,255,.92); font-size:20px; font-weight:700; letter-spacing:-.2px; }
   .sub { color:rgba(255,255,255,.5); font-size:14px; line-height:1.5; margin-top:-8px; }
+  .badge-opcional { display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; background:rgba(255,255,255,.1); color:rgba(255,255,255,.5); border-radius:4px; padding:2px 7px; margin-left:8px; vertical-align:middle; }
 
   .modo-row { display:flex; gap:10px; }
   .modo-btn { flex:1; padding:14px; background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.15); border-radius:10px; color:rgba(255,255,255,.8); font-size:14px; font-weight:600; cursor:pointer; text-align:left; line-height:1.4; }
-  .modo-btn.activo { border-color:var(--azul); background:rgba(102,11,11,.25); color:white; }
+  .modo-btn.activo { border-color:var(--azul); background:rgba(37,99,235,.15); color:white; }
 
   .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   .fg-full { grid-column:1/-1; }
@@ -32,7 +33,8 @@
   .form-input { padding:10px 12px; border:1.5px solid rgba(255,255,255,.15); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:rgba(255,255,255,.06); color:white; }
   .form-input:focus { border-color:var(--azul); }
   .form-input::placeholder { color:rgba(255,255,255,.3); }
-  .form-hint { font-size:11px; color:rgba(255,255,255,.4); }
+  select.form-input option { background:#1e1e1e; color:white; }
+  .form-hint { font-size:11px; color:rgba(255,255,255,.35); line-height:1.4; }
 
   .btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:4px; }
   .btn-pri { padding:11px 22px; background:var(--azul); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
@@ -42,104 +44,266 @@
   .btn-sec:hover { background:rgba(255,255,255,.15); }
 
   .aviso { font-size:14px; border-radius:8px; padding:11px 13px; line-height:1.5; }
-  .aviso.ok   { background:rgba(22,163,74,.15); color:#86EFAC; border:1px solid rgba(22,163,74,.3); }
-  .aviso.err  { background:rgba(185,28,28,.15); color:#FCA5A5; border:1px solid rgba(185,28,28,.3); }
+  .aviso.ok   { background:rgba(22,163,74,.15);  color:#86EFAC; border:1px solid rgba(22,163,74,.3); }
+  .aviso.err  { background:rgba(185,28,28,.15);  color:#FCA5A5; border:1px solid rgba(185,28,28,.3); }
   .aviso.info { background:rgba(59,130,246,.12); color:#93C5FD; border:1px solid rgba(59,130,246,.25); }
 
   .credenciales { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:8px; padding:14px; font-size:14px; color:white; line-height:1.7; }
   .credenciales b { color:#FCD34D; }
 
-  .cajas-lista { display:flex; flex-direction:column; gap:8px; }
-  .caja-row { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); border-radius:8px; padding:9px 12px; font-size:14px; color:white; }
-  .caja-row .tipo { color:rgba(255,255,255,.4); font-size:11px; text-transform:uppercase; margin-left:auto; }
+  .lista-creados { display:flex; flex-direction:column; gap:8px; }
+  .item-row { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); border-radius:8px; padding:9px 12px; font-size:14px; color:white; }
+  .item-row .meta { color:rgba(255,255,255,.4); font-size:11px; text-transform:uppercase; margin-left:auto; }
+  .item-row .del { background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; font-size:15px; padding:0 2px; margin-left:6px; }
+  .item-row .del:hover { color:#FCA5A5; }
 
-  .logo-actual { display:flex; align-items:center; gap:12px; }
-  .logo-actual img { height:36px; }
+  .sep { border:none; border-top:1px solid rgba(255,255,255,.08); margin:2px 0; }
+
+  .afip-info { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:14px; font-size:13px; color:rgba(255,255,255,.6); line-height:1.6; }
+  .afip-info ol { margin:8px 0 0 18px; padding:0; }
+  .afip-info li { margin-bottom:4px; }
+
+  /* Progreso del commit */
+  .prog-lista { display:flex; flex-direction:column; gap:4px; }
+  .prog-item { display:flex; align-items:center; gap:12px; font-size:14px; color:rgba(255,255,255,.7); padding:5px 0; }
+  .prog-icono { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; font-weight:700; }
+  .prog-item.esperando .prog-icono { background:rgba(255,255,255,.06); color:rgba(255,255,255,.25); }
+  .prog-item.ejecutando .prog-icono { background:rgba(59,130,246,.2); color:#93C5FD; animation:giro .9s linear infinite; }
+  .prog-item.ok  .prog-icono { background:rgba(22,163,74,.2); color:#86EFAC; }
+  .prog-item.err .prog-icono { background:rgba(185,28,28,.2); color:#FCA5A5; }
+  @keyframes giro { to { transform:rotate(360deg); } }
+
+  /* Resumen */
+  .resumen-fila { display:flex; align-items:flex-start; gap:8px; font-size:14px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+  .resumen-fila:last-child { border:none; }
+  .resumen-lbl { color:rgba(255,255,255,.4); min-width:130px; flex-shrink:0; }
+  .resumen-val { color:rgba(255,255,255,.85); }
+  .resumen-val.dim { color:rgba(255,255,255,.25); font-style:italic; }
 </style>
 </head>
 <body>
-
 <div class="install-box">
-  <img src="/BRON/logo_background.png" alt="BRON">
+  <img src="/Logos/logo_background.png" alt="Logos" id="wiz-logo">
   <div class="pasos-ind" id="pasos-ind"></div>
 
-  <!-- Conexión -->
+  <!-- ── 1. Conexión ──────────────────────────────────────────── -->
   <div class="panel" id="panel-conexion">
     <div class="titulo">Conexión a la base de datos</div>
     <div class="sub">Elegí cómo va a funcionar esta instalación.</div>
     <div class="modo-row">
-      <button class="modo-btn activo" id="modo-servidor" data-modo="servidor">Esta PC es el servidor<br><span style="opacity:.6;font-weight:400">Crea la base de datos acá</span></button>
-      <button class="modo-btn" id="modo-cliente" data-modo="cliente">Conectarme a un servidor<br><span style="opacity:.6;font-weight:400">Otra PC de la red ya lo tiene instalado</span></button>
+      <button class="modo-btn activo" data-modo="servidor">Esta PC es el servidor<br><span style="opacity:.6;font-weight:400">Crea la base de datos acá</span></button>
+      <button class="modo-btn" data-modo="cliente">Conectarme a un servidor<br><span style="opacity:.6;font-weight:400">Otra PC de la red ya lo tiene instalado</span></button>
     </div>
-
-    <div class="form-grid" id="conexion-form">
+    <div class="form-grid">
       <div class="form-group"><label class="form-label">Host</label><input class="form-input" id="cx-host" value="127.0.0.1"></div>
-      <div class="form-group"><label class="form-label">Puerto</label><input class="form-input" id="cx-port" type="number" value="3307"></div>
-      <div class="form-group fg-full"><label class="form-label">Nombre de la base</label><input class="form-input" id="cx-dbname" value="bron"></div>
+      <div class="form-group"><label class="form-label">Puerto</label><input class="form-input" id="cx-port" type="number" value="3306"></div>
+      <div class="form-group fg-full"><label class="form-label">Nombre de la base</label><input class="form-input" id="cx-dbname" value="logos"></div>
       <div class="form-group"><label class="form-label" id="cx-user-label">Usuario MySQL (con permiso de crear bases)</label><input class="form-input" id="cx-user" value="root"></div>
       <div class="form-group"><label class="form-label">Contraseña</label><input class="form-input" id="cx-pass" type="password"></div>
     </div>
-
     <div id="cx-resultado"></div>
     <div id="cx-credenciales" style="display:none"></div>
-
     <div class="btn-row">
       <button class="btn-sec" id="cx-btn-probar">Probar conexión</button>
       <button class="btn-pri" id="cx-btn-instalar">Instalar y continuar</button>
     </div>
   </div>
 
-  <!-- Admin -->
+  <!-- ── 2. Administrador (datos en memoria, no se guarda aún) ── -->
   <div class="panel" id="panel-admin">
     <div class="titulo">Crear el administrador</div>
-    <div class="sub">Va a ser el primer usuario del sistema, con acceso total.</div>
+    <div class="sub">Primer usuario del sistema, con acceso total a la configuración.</div>
+    <div class="aviso info" style="margin-top:0">
+      Estos datos <strong>no se guardan todavía</strong>. Todo se aplica al final del asistente.
+    </div>
     <div class="form-grid">
-      <div class="form-group fg-full"><label class="form-label">Nombre</label><input class="form-input" id="ad-nombre" placeholder="Ej: Admin"></div>
+      <div class="form-group fg-full"><label class="form-label">Nombre</label><input class="form-input" id="ad-nombre" placeholder="Ej: Rodrigo"></div>
       <div class="form-group"><label class="form-label">PIN (4 a 6 dígitos)</label><input class="form-input" id="ad-pin" type="password" inputmode="numeric" maxlength="6"></div>
       <div class="form-group"><label class="form-label">Confirmar PIN</label><input class="form-input" id="ad-pin2" type="password" inputmode="numeric" maxlength="6"></div>
     </div>
     <div id="ad-resultado"></div>
-    <div class="btn-row"><button class="btn-pri" id="ad-btn-crear">Crear y continuar</button></div>
+    <div class="btn-row"><button class="btn-pri" id="ad-btn-siguiente">Continuar</button></div>
   </div>
 
-  <!-- Negocio -->
+  <!-- ── 3. Datos del negocio ─────────────────────────────────── -->
   <div class="panel" id="panel-negocio">
     <div class="titulo">Datos del negocio</div>
-    <div class="sub">Se usan en los comprobantes impresos.</div>
+    <div class="sub">Se imprimen en todos los comprobantes. Podés editarlos después desde Configuración.</div>
     <div class="form-grid">
-      <div class="form-group fg-full"><label class="form-label">Razón social</label><input class="form-input" id="ng-razon"></div>
-      <div class="form-group"><label class="form-label">CUIT</label><input class="form-input" id="ng-cuit"></div>
-      <div class="form-group"><label class="form-label">Condición IVA</label><input class="form-input" id="ng-condicion" value="Responsable Inscripto"></div>
-      <div class="form-group fg-full"><label class="form-label">Domicilio</label><input class="form-input" id="ng-domicilio"></div>
-      <div class="form-group"><label class="form-label">Ingresos brutos</label><input class="form-input" id="ng-iibb"></div>
-      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="ng-telefono"></div>
-      <div class="form-group"><label class="form-label">Website</label><input class="form-input" id="ng-website"></div>
-      <div class="form-group"><label class="form-label">Punto de venta</label><input class="form-input" id="ng-pv" type="number" min="1" value="1"></div>
-      <div class="form-group fg-full"><label class="form-label">% IVA</label><input class="form-input" id="ng-iva" type="number" step="0.01" value="21"></div>
+      <div class="form-group fg-full">
+        <label class="form-label">Razón social (fiscal)</label>
+        <input class="form-input" id="ng-razon" placeholder="Ej: GOMEZ RODRIGO GABRIEL">
+      </div>
+      <div class="form-group fg-full">
+        <label class="form-label">Nombre comercial / fantasía</label>
+        <input class="form-input" id="ng-fantasia" placeholder="Ej: Ferretería Central">
+        <span class="form-hint">Nombre visible en el sistema. Si no tenés nombre de fantasía, dejalo igual a la razón social.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">CUIT</label>
+        <input class="form-input" id="ng-cuit" placeholder="20-12345678-9">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Condición IVA</label>
+        <select class="form-input" id="ng-condicion">
+          <option value="Responsable Inscripto">Responsable Inscripto</option>
+          <option value="Monotributista">Monotributista</option>
+          <option value="Exento">Exento</option>
+          <option value="Consumidor Final">Consumidor Final</option>
+        </select>
+      </div>
+      <div class="form-group fg-full">
+        <label class="form-label">Domicilio comercial</label>
+        <input class="form-input" id="ng-domicilio" placeholder="Calle, número, localidad, provincia">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ingresos Brutos (IIBB)</label>
+        <input class="form-input" id="ng-iibb" placeholder="Número de inscripción">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Teléfono</label>
+        <input class="form-input" id="ng-telefono" placeholder="11-1234-5678">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Website</label>
+        <input class="form-input" id="ng-website" placeholder="www.miempresa.com.ar">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Punto de venta AFIP</label>
+        <input class="form-input" id="ng-pv" type="number" min="1" max="9999" value="1">
+        <span class="form-hint">Número del PV habilitado en AFIP.</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">% IVA por defecto</label>
+        <select class="form-input" id="ng-iva">
+          <option value="21">21%</option>
+          <option value="10.5">10,5%</option>
+          <option value="27">27%</option>
+          <option value="0">0% (exento)</option>
+        </select>
+      </div>
     </div>
     <div id="ng-resultado"></div>
-    <div class="btn-row"><button class="btn-pri" id="ng-btn-guardar">Guardar y continuar</button></div>
+    <div class="btn-row"><button class="btn-pri" id="ng-btn-siguiente">Continuar</button></div>
   </div>
 
-  <!-- Logo -->
-  <div class="panel" id="panel-logo">
-    <div class="titulo">Logo</div>
-    <div class="sub">Aparece en el login y en los comprobantes. Podés omitirlo y subirlo después desde Configuración.</div>
-    <input type="file" id="lg-archivo" class="form-input" accept="image/*">
-    <div id="lg-resultado"></div>
+  <!-- ── 4. AFIP (opcional) ───────────────────────────────────── -->
+  <div class="panel" id="panel-afip">
+    <div class="titulo">Certificado AFIP <span class="badge-opcional">Opcional</span></div>
+    <div class="sub">Necesario para emitir Facturas Electrónicas A y B con CAE automático.</div>
+    <div class="afip-info">
+      Para obtener el certificado:
+      <ol>
+        <li>Ingresá al portal de AFIP con clave fiscal nivel 3</li>
+        <li>Ir a <strong>Administrador de Relaciones → Adherir Servicio → wsfe</strong></li>
+        <li>En <strong>Administración de Certificados Digitales</strong>, creá el certificado y descargá el <strong>.p12</strong></li>
+      </ol>
+      Si todavía no lo tenés, hacé clic en <em>Configurar después</em>.
+    </div>
+    <div class="form-grid">
+      <div class="form-group fg-full">
+        <label class="form-label">Archivo .p12</label>
+        <input class="form-input" id="af-archivo" type="file" accept=".p12,.pfx">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contraseña del certificado</label>
+        <input class="form-input" id="af-pass" type="password" placeholder="Contraseña del .p12">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Entorno AFIP</label>
+        <select class="form-input" id="af-entorno">
+          <option value="homologacion">Homologación (pruebas)</option>
+          <option value="produccion">Producción</option>
+        </select>
+      </div>
+    </div>
     <div class="btn-row">
-      <button class="btn-sec" id="lg-btn-omitir">Omitir</button>
-      <button class="btn-pri" id="lg-btn-subir">Subir y continuar</button>
+      <button class="btn-sec" id="af-btn-omitir">Configurar después</button>
+      <button class="btn-pri" id="af-btn-siguiente">Guardar y continuar</button>
     </div>
   </div>
 
-  <!-- Cajas -->
+  <!-- ── 5. Logo (opcional) ───────────────────────────────────── -->
+  <div class="panel" id="panel-logo">
+    <div class="titulo">Logo <span class="badge-opcional">Opcional</span></div>
+    <div class="sub">Aparece en la pantalla de login y en los comprobantes. Podés subirlo después desde Configuración.</div>
+    <input type="file" id="lg-archivo" class="form-input" accept="image/*">
+    <div class="btn-row">
+      <button class="btn-sec" id="lg-btn-omitir">Omitir</button>
+      <button class="btn-pri" id="lg-btn-siguiente">Guardar y continuar</button>
+    </div>
+  </div>
+
+  <!-- ── 6. Impresora (opcional) ──────────────────────────────── -->
+  <div class="panel" id="panel-impresora">
+    <div class="titulo">Impresora de comprobantes <span class="badge-opcional">Opcional</span></div>
+    <div class="sub">Impresora usada para imprimir facturas y tickets desde el sistema.</div>
+    <div class="form-group">
+      <label class="form-label">Impresora</label>
+      <select class="form-input" id="im-lista"><option value="">Detectando impresoras…</option></select>
+    </div>
+    <div id="im-resultado"></div>
+    <div class="btn-row">
+      <button class="btn-sec" id="im-btn-omitir">Configurar después</button>
+      <button class="btn-pri" id="im-btn-siguiente">Guardar y continuar</button>
+    </div>
+  </div>
+
+  <!-- ── 7. Carpetas (opcional) ───────────────────────────────── -->
+  <div class="panel" id="panel-carpetas">
+    <div class="titulo">Carpetas del sistema <span class="badge-opcional">Opcional</span></div>
+    <div class="sub">Dónde guardar los PDF de comprobantes y los backups de la base de datos.</div>
+    <div class="form-grid">
+      <div class="form-group fg-full">
+        <label class="form-label">Carpeta de comprobantes</label>
+        <input class="form-input" id="cp-comprobantes" value="C:\Logos\comprobantes">
+        <span class="form-hint">Se guardan los PDF de cada factura emitida.</span>
+      </div>
+      <div class="form-group fg-full">
+        <label class="form-label">Carpeta de backups</label>
+        <input class="form-input" id="cp-backups" value="C:\Logos\backups">
+        <span class="form-hint">Se guardan los backups manuales y automáticos de la base de datos.</span>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-sec" id="cp-btn-omitir">Configurar después</button>
+      <button class="btn-pri" id="cp-btn-siguiente">Guardar y continuar</button>
+    </div>
+  </div>
+
+  <!-- ── 8. Usuarios adicionales (opcional) ───────────────────── -->
+  <div class="panel" id="panel-usuarios">
+    <div class="titulo">Usuarios adicionales <span class="badge-opcional">Opcional</span></div>
+    <div class="sub">Agregá cajeros u operadores. Podés crear más usuarios después desde Configuración.</div>
+    <div class="lista-creados" id="us-lista"></div>
+    <hr class="sep" id="us-sep" style="display:none">
+    <div class="form-grid">
+      <div class="form-group fg-full"><label class="form-label">Nombre</label><input class="form-input" id="us-nombre" placeholder="Ej: María González"></div>
+      <div class="form-group"><label class="form-label">PIN (4 a 6 dígitos)</label><input class="form-input" id="us-pin" type="password" inputmode="numeric" maxlength="6"></div>
+      <div class="form-group"><label class="form-label">Confirmar PIN</label><input class="form-input" id="us-pin2" type="password" inputmode="numeric" maxlength="6"></div>
+      <div class="form-group fg-full">
+        <label class="form-label">Rol</label>
+        <select class="form-input" id="us-rol">
+          <option value="user">Vendedor / Cajero</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+    </div>
+    <div id="us-resultado"></div>
+    <div class="btn-row">
+      <button class="btn-sec" id="us-btn-continuar">Continuar sin agregar</button>
+      <button class="btn-pri" id="us-btn-agregar">Agregar usuario</button>
+    </div>
+  </div>
+
+  <!-- ── 9. Cajas ─────────────────────────────────────────────── -->
   <div class="panel" id="panel-cajas">
     <div class="titulo">Cajas</div>
-    <div class="sub">Creá al menos una caja para poder vender. Podés agregar más después desde Configuración.</div>
-    <div class="cajas-lista" id="cj-lista"></div>
+    <div class="sub">Creá al menos una caja para poder operar. Podés agregar más después.</div>
+    <div class="lista-creados" id="cj-lista"></div>
+    <hr class="sep" id="cj-sep" style="display:none">
     <div class="form-grid">
-      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="cj-nombre" placeholder="Ej: Caja 1"></div>
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="cj-nombre" placeholder="Ej: Caja Principal"></div>
       <div class="form-group">
         <label class="form-label">Tipo</label>
         <select class="form-input" id="cj-tipo"><option value="venta">Venta</option><option value="compra">Compra</option></select>
@@ -152,37 +316,65 @@
     </div>
   </div>
 
-  <!-- Listo -->
+  <!-- ── 10. Resumen + commit ─────────────────────────────────── -->
   <div class="panel" id="panel-listo">
-    <div class="titulo">Todo listo</div>
-    <div class="sub">BRON está configurado. Ya podés empezar a trabajar.</div>
-    <div class="btn-row"><button class="btn-pri" id="ls-btn-entrar">Ingresar al sistema</button></div>
+    <div class="titulo" id="ls-titulo">Revisá y confirmá</div>
+    <div class="sub" id="ls-sub">Todo se guarda cuando hacés clic en <strong>Instalar Logos</strong>. Si salís ahora, tendrás que empezar de nuevo.</div>
+
+    <!-- Resumen antes de confirmar -->
+    <div id="ls-resumen"></div>
+    <div class="btn-row" id="ls-confirmar-row">
+      <button class="btn-pri" id="ls-btn-instalar">Instalar Logos</button>
+    </div>
+
+    <!-- Progreso del commit -->
+    <div id="ls-progreso" class="prog-lista" style="display:none"></div>
+
+    <!-- Error -->
+    <div id="ls-error" style="display:none"></div>
+    <div class="btn-row" id="ls-retry-row" style="display:none">
+      <button class="btn-sec" id="ls-btn-retry">Reintentar</button>
+    </div>
+
+    <!-- Éxito -->
+    <div class="btn-row" id="ls-entrar-row" style="display:none">
+      <button class="btn-pri" id="ls-btn-entrar">Ingresar al sistema</button>
+    </div>
   </div>
 
-</div>
+</div><!-- /.install-box -->
 
 <script>
-const API = '/BRON/api';
-const $ = id => document.getElementById(id);
+const API = '/Logos/api';
+const $   = id => document.getElementById(id);
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
-function aviso(el, msg, tipo) { el.innerHTML = msg ? `<div class="aviso ${tipo}">${msg}</div>` : ''; }
+function aviso(el, msg, tipo) { el.innerHTML = msg ? `<div class="aviso ${tipo}">${esc(msg)}</div>` : ''; }
 
-let sesionPrevia = null;
-try { sesionPrevia = JSON.parse(localStorage.getItem('bron_sesion') || 'null'); } catch (e) {}
-let adminId = sesionPrevia?.usuario_id || null;
+// ── Datos del wizard — todo en memoria hasta el commit final ──────
+const wiz = {
+  admin:    null,   // { nombre, pin }
+  negocio:  null,   // { razon_social, cuit, ... }
+  afip:     null,   // { archivo: File, pass, entorno } o null si se omite
+  logo:     null,   // { archivo: File } o null si se omite
+  impresora: null,  // 'Nombre impresora' o null
+  carpetas: null,   // { comprobantes, backups } o null
+  usuarios: [],     // [{ nombre, pin, rol }, ...]
+  cajas:    [],     // [{ nombre, tipo }, ...]
+};
 
-function headersAdmin() {
-  return adminId ? { 'X-Usuario-Id': String(adminId) } : {};
-}
+// ── Advertir si el usuario intenta salir a mitad del wizard ───────
+let wizardActivo = false;
+window.addEventListener('beforeunload', e => {
+  if (wizardActivo) { e.preventDefault(); e.returnValue = ''; }
+});
 
-let pasos = [];
+// ── Navegación ────────────────────────────────────────────────────
+let pasos   = [];
 let pasoIdx = 0;
-let modoConexion = 'servidor';
-let cajasCreadas = [];
 
 function renderIndicador() {
-  $('pasos-ind').innerHTML = pasos.map((p, i) =>
-    `<div class="paso-pill${i === pasoIdx ? ' activo' : (i < pasoIdx ? ' hecho' : '')}"></div>`
+  $('pasos-ind').innerHTML = pasos.map((_, i) =>
+    `<div class="paso-pill${i === pasoIdx ? ' activo' : i < pasoIdx ? ' hecho' : ''}"></div>`
   ).join('');
 }
 
@@ -190,232 +382,405 @@ function mostrarPaso() {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
   $('panel-' + pasos[pasoIdx]).classList.add('activo');
   renderIndicador();
+  onEnterPaso(pasos[pasoIdx]);
 }
 
-function siguiente() {
-  if (pasoIdx < pasos.length - 1) { pasoIdx++; mostrarPaso(); }
+function siguiente() { if (pasoIdx < pasos.length - 1) { pasoIdx++; mostrarPaso(); } }
+
+function onEnterPaso(paso) {
+  if (paso === 'impresora') cargarImpresoras();
+  if (paso === 'listo')     renderResumen();
 }
 
-// ── Conexión ─────────────────────────────────────────────────────
+// ── Paso 1: Conexión — única que escribe a la BD inmediatamente ───
+let modoConexion = 'servidor';
+
 document.querySelectorAll('.modo-btn').forEach(b => b.addEventListener('click', () => {
   modoConexion = b.dataset.modo;
   document.querySelectorAll('.modo-btn').forEach(x => x.classList.toggle('activo', x === b));
   if (modoConexion === 'servidor') {
-    $('cx-host').value = '127.0.0.1';
-    $('cx-user').value = 'root';
+    $('cx-host').value = '127.0.0.1'; $('cx-user').value = 'root';
     $('cx-user-label').textContent = 'Usuario MySQL (con permiso de crear bases)';
   } else {
-    $('cx-host').value = '';
-    $('cx-host').placeholder = 'IP del servidor, ej: 192.168.1.50';
-    $('cx-user').value = 'bron_app';
-    $('cx-user-label').textContent = 'Usuario de la aplicación (lo generó el servidor)';
+    $('cx-host').value = ''; $('cx-host').placeholder = 'IP del servidor, ej: 192.168.1.50';
+    $('cx-user').value = 'logos_app';
+    $('cx-user-label').textContent = 'Usuario de la aplicación';
   }
-  $('cx-credenciales').style.display = 'none';
   aviso($('cx-resultado'), '', '');
+  $('cx-credenciales').style.display = 'none';
 }));
 
 function datosConexion() {
-  return {
-    modo: modoConexion,
-    host: $('cx-host').value.trim(),
-    port: parseInt($('cx-port').value) || 3307,
-    dbname: $('cx-dbname').value.trim(),
-    user: $('cx-user').value.trim(),
-    pass: $('cx-pass').value,
-  };
+  return { modo: modoConexion, host: $('cx-host').value.trim(),
+    port: parseInt($('cx-port').value) || 3306, dbname: $('cx-dbname').value.trim(),
+    user: $('cx-user').value.trim(), pass: $('cx-pass').value };
 }
 
 $('cx-btn-probar').addEventListener('click', async () => {
-  const d = datosConexion();
   aviso($('cx-resultado'), 'Probando…', 'info');
   try {
-    const res = await fetch(`${API}/instalacion/probar-conexion`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) });
-    const data = await res.json();
-    if (!data.ok) { aviso($('cx-resultado'), esc(data.error), 'err'); return; }
-    if (modoConexion === 'cliente' && !data.tiene_esquema) {
-      aviso($('cx-resultado'), data.base_existe ? 'La base existe pero no tiene instalado el esquema de BRON. Revisá los datos.' : 'No se encontró esa base en ese servidor.', 'err');
-      return;
+    const r = await fetch(`${API}/instalacion/probar-conexion`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(datosConexion()) });
+    const d = await r.json();
+    if (!d.ok) { aviso($('cx-resultado'), d.error, 'err'); return; }
+    if (modoConexion === 'cliente' && !d.tiene_esquema) {
+      aviso($('cx-resultado'), d.base_existe ? 'La base existe pero no tiene el esquema de Logos.' : 'No se encontró esa base.', 'err'); return;
     }
-    aviso($('cx-resultado'), modoConexion === 'servidor' ? 'Conexión OK. Lista para instalar.' : 'Conexión OK. Encontró la base de BRON.', 'ok');
-  } catch (e) {
-    aviso($('cx-resultado'), 'Error de conexión con el servidor web', 'err');
-  }
+    aviso($('cx-resultado'), 'Conexión OK.', 'ok');
+  } catch { aviso($('cx-resultado'), 'Error de conexión con el servidor web', 'err'); }
 });
 
 $('cx-btn-instalar').addEventListener('click', async () => {
   const d = datosConexion();
   if (!d.dbname) { aviso($('cx-resultado'), 'Ingresá el nombre de la base', 'err'); return; }
-  if (modoConexion === 'cliente' && !d.host) { aviso($('cx-resultado'), 'Ingresá el host del servidor', 'err'); return; }
-  const btn = $('cx-btn-instalar');
-  btn.disabled = true; btn.textContent = 'Instalando…';
+  const btn = $('cx-btn-instalar'); btn.disabled = true; btn.textContent = 'Instalando…';
   try {
-    const res = await fetch(`${API}/instalacion/instalar`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) });
-    const data = await res.json();
-    if (!res.ok) { aviso($('cx-resultado'), esc(data.error), 'err'); return; }
-    aviso($('cx-resultado'), 'Instalación de conexión completa.', 'ok');
+    const r    = await fetch(`${API}/instalacion/instalar`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) });
+    const data = await r.json();
+    if (!r.ok) { aviso($('cx-resultado'), data.error, 'err'); btn.disabled = false; btn.textContent = 'Instalar y continuar'; return; }
     if (data.credenciales_servidor) {
       const c = data.credenciales_servidor;
       $('cx-credenciales').style.display = 'block';
       $('cx-credenciales').innerHTML = `<div class="credenciales">
-        Usá estos datos para instalar las demás cajas en modo "Conectarme a un servidor":<br>
-        Host: <b>(la IP de esta PC en la red)</b><br>
-        Puerto: <b>${c.port}</b><br>
-        Base: <b>${esc(c.dbname)}</b><br>
-        Usuario: <b>${esc(c.user)}</b><br>
-        Contraseña: <b>${esc(c.pass)}</b><br><br>
-        Anotá esto ahora — no se vuelve a mostrar. También asegurate de habilitar el puerto ${c.port} en el Firewall de Windows para que otras PCs puedan conectarse.
+        Usá estos datos en otras PCs (modo <em>Conectarme a un servidor</em>):<br>
+        Host: <b>(IP de esta PC en la red)</b> &nbsp;Puerto: <b>${c.port}</b><br>
+        Base: <b>${esc(c.dbname)}</b> &nbsp;Usuario: <b>${esc(c.user)}</b> &nbsp;Contraseña: <b>${esc(c.pass)}</b><br>
+        <small style="opacity:.6">Anotalo ahora — no se vuelve a mostrar.</small>
       </div>`;
     }
-    btn.textContent = 'Continuar';
-    btn.disabled = false;
+    aviso($('cx-resultado'), 'Instalación completa.', 'ok');
+    btn.textContent = 'Continuar'; btn.disabled = false;
     btn.onclick = siguiente;
-  } catch (e) {
-    aviso($('cx-resultado'), 'Error de conexión con el servidor web', 'err');
-    btn.disabled = false; btn.textContent = 'Instalar y continuar';
-  }
+  } catch { aviso($('cx-resultado'), 'Error de conexión con el servidor web', 'err'); btn.disabled = false; btn.textContent = 'Instalar y continuar'; }
 });
 
-// ── Admin ────────────────────────────────────────────────────────
-$('ad-btn-crear').addEventListener('click', async () => {
+// ── Paso 2: Admin — validar y guardar en memoria ──────────────────
+$('ad-btn-siguiente').addEventListener('click', () => {
   const nombre = $('ad-nombre').value.trim();
-  const pin = $('ad-pin').value;
-  const pin2 = $('ad-pin2').value;
+  const pin    = $('ad-pin').value;
+  const pin2   = $('ad-pin2').value;
   if (!nombre) { aviso($('ad-resultado'), 'Ingresá un nombre', 'err'); return; }
   if (!/^\d{4,6}$/.test(pin)) { aviso($('ad-resultado'), 'El PIN debe ser numérico, de 4 a 6 dígitos', 'err'); return; }
   if (pin !== pin2) { aviso($('ad-resultado'), 'Los PIN no coinciden', 'err'); return; }
-  const btn = $('ad-btn-crear');
-  btn.disabled = true; btn.textContent = 'Creando…';
-  try {
-    const res = await fetch(`${API}/instalacion/admin`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ nombre, pin }) });
-    const data = await res.json();
-    if (!res.ok) { aviso($('ad-resultado'), esc(data.error), 'err'); return; }
-    adminId = data.id;
-    siguiente();
-  } catch (e) {
-    aviso($('ad-resultado'), 'Error de conexión', 'err');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Crear y continuar';
-  }
+  wiz.admin = { nombre, pin };
+  aviso($('ad-resultado'), '', '');
+  siguiente();
 });
 
-// ── Negocio ──────────────────────────────────────────────────────
-$('ng-btn-guardar').addEventListener('click', async () => {
+// ── Paso 3: Negocio — validar y guardar en memoria ────────────────
+$('ng-btn-siguiente').addEventListener('click', () => {
   const razon_social = $('ng-razon').value.trim();
-  const cuit = $('ng-cuit').value.trim();
+  const cuit         = $('ng-cuit').value.trim();
   if (!razon_social) { aviso($('ng-resultado'), 'La razón social es requerida', 'err'); return; }
-  if (!cuit) { aviso($('ng-resultado'), 'El CUIT es requerido', 'err'); return; }
-  const btn = $('ng-btn-guardar');
-  btn.disabled = true; btn.textContent = 'Guardando…';
-  try {
-    const res = await fetch(`${API}/configuracion`, {
-      method:'PUT', headers:{'Content-Type':'application/json', ...headersAdmin()},
-      body: JSON.stringify({
-        razon_social, cuit,
-        condicion_iva: $('ng-condicion').value.trim(),
-        domicilio: $('ng-domicilio').value.trim(),
-        iibb: $('ng-iibb').value.trim(),
-        telefono: $('ng-telefono').value.trim(),
-        website: $('ng-website').value.trim(),
-        punto_venta: parseInt($('ng-pv').value) || 1,
-        iva_porcentaje: parseFloat($('ng-iva').value) || 21,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) { aviso($('ng-resultado'), esc(data.error), 'err'); return; }
-    siguiente();
-  } catch (e) {
-    aviso($('ng-resultado'), 'Error de conexión', 'err');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Guardar y continuar';
-  }
+  if (!cuit)         { aviso($('ng-resultado'), 'El CUIT es requerido', 'err'); return; }
+  wiz.negocio = {
+    razon_social,
+    nombre_fantasia: $('ng-fantasia').value.trim() || razon_social,
+    cuit,
+    condicion_iva:  $('ng-condicion').value,
+    domicilio:      $('ng-domicilio').value.trim() || null,
+    iibb:           $('ng-iibb').value.trim() || null,
+    telefono:       $('ng-telefono').value.trim() || null,
+    website:        $('ng-website').value.trim() || null,
+    punto_venta:    parseInt($('ng-pv').value) || 1,
+    iva_porcentaje: parseFloat($('ng-iva').value) || 21,
+  };
+  aviso($('ng-resultado'), '', '');
+  siguiente();
 });
 
-// ── Logo ─────────────────────────────────────────────────────────
-$('lg-btn-omitir').addEventListener('click', siguiente);
-$('lg-btn-subir').addEventListener('click', async () => {
-  const archivo = $('lg-archivo').files[0];
-  if (!archivo) { siguiente(); return; }
-  const btn = $('lg-btn-subir');
-  btn.disabled = true; btn.textContent = 'Subiendo…';
-  try {
-    const fd = new FormData();
-    fd.append('logo', archivo);
-    const res = await fetch(`${API}/configuracion/logo`, { method:'POST', headers: headersAdmin(), body: fd });
-    const data = await res.json();
-    if (!res.ok) { aviso($('lg-resultado'), esc(data.error), 'err'); return; }
-    siguiente();
-  } catch (e) {
-    aviso($('lg-resultado'), 'Error de conexión', 'err');
-  } finally {
-    btn.disabled = false; btn.textContent = 'Subir y continuar';
-  }
+// ── Paso 4: AFIP — guardar referencia de archivo en memoria ───────
+$('af-btn-omitir').addEventListener('click', () => { wiz.afip = null; siguiente(); });
+$('af-btn-siguiente').addEventListener('click', () => {
+  const archivo = $('af-archivo').files[0];
+  wiz.afip = archivo ? { archivo, pass: $('af-pass').value, entorno: $('af-entorno').value } : null;
+  siguiente();
 });
 
-// ── Cajas ────────────────────────────────────────────────────────
-function renderCajas() {
-  $('cj-lista').innerHTML = cajasCreadas.map(c =>
-    `<div class="caja-row">${esc(c.nombre)}<span class="tipo">${c.tipo}</span></div>`
-  ).join('');
-  $('cj-btn-continuar').disabled = cajasCreadas.length === 0;
+// ── Paso 5: Logo — guardar referencia de archivo en memoria ───────
+$('lg-btn-omitir').addEventListener('click', () => { wiz.logo = null; siguiente(); });
+$('lg-btn-siguiente').addEventListener('click', () => {
+  wiz.logo = $('lg-archivo').files[0] ? { archivo: $('lg-archivo').files[0] } : null;
+  siguiente();
+});
+
+// ── Paso 6: Impresora ─────────────────────────────────────────────
+async function cargarImpresoras() {
+  $('im-lista').innerHTML = '<option value="">Detectando impresoras…</option>';
+  try {
+    const r    = await fetch(`${API}/configuracion/impresoras`);
+    const list = await r.json();
+    if (!Array.isArray(list) || !list.length) {
+      $('im-lista').innerHTML = '<option value="">No se encontraron impresoras instaladas</option>'; return;
+    }
+    $('im-lista').innerHTML = '<option value="">— Seleccioná una impresora —</option>' +
+      list.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+    if (list.length === 1) $('im-lista').value = list[0];
+  } catch { $('im-lista').innerHTML = '<option value="">Error al detectar impresoras</option>'; }
 }
 
-$('cj-btn-agregar').addEventListener('click', async () => {
-  const nombre = $('cj-nombre').value.trim();
-  const tipo = $('cj-tipo').value;
-  if (!nombre) { aviso($('cj-resultado'), 'Ingresá un nombre', 'err'); return; }
-  const btn = $('cj-btn-agregar');
-  btn.disabled = true;
-  try {
-    const res = await fetch(`${API}/cajas`, { method:'POST', headers:{'Content-Type':'application/json', ...headersAdmin()}, body:JSON.stringify({ nombre, tipo }) });
-    const data = await res.json();
-    if (!res.ok) { aviso($('cj-resultado'), esc(data.error), 'err'); return; }
-    cajasCreadas.push({ nombre, tipo, id: data.id });
-    $('cj-nombre').value = '';
-    aviso($('cj-resultado'), '', '');
-    renderCajas();
-  } catch (e) {
-    aviso($('cj-resultado'), 'Error de conexión', 'err');
-  } finally {
-    btn.disabled = false;
-  }
+$('im-btn-omitir').addEventListener('click', () => { wiz.impresora = null; siguiente(); });
+$('im-btn-siguiente').addEventListener('click', () => {
+  const imp = $('im-lista').value;
+  if (!imp) { aviso($('im-resultado'), 'Seleccioná una impresora o hacé clic en "Configurar después"', 'err'); return; }
+  aviso($('im-resultado'), '', '');
+  wiz.impresora = imp;
+  siguiente();
 });
+
+// ── Paso 7: Carpetas ──────────────────────────────────────────────
+$('cp-btn-omitir').addEventListener('click', () => { wiz.carpetas = null; siguiente(); });
+$('cp-btn-siguiente').addEventListener('click', () => {
+  wiz.carpetas = {
+    comprobantes: $('cp-comprobantes').value.trim() || null,
+    backups:      $('cp-backups').value.trim() || null,
+  };
+  siguiente();
+});
+
+// ── Paso 8: Usuarios adicionales ─────────────────────────────────
+function renderUsuarios() {
+  $('us-lista').innerHTML = wiz.usuarios.map((u, i) =>
+    `<div class="item-row">${esc(u.nombre)}<span class="meta">${u.rol === 'admin' ? 'Admin' : 'Vendedor'}</span>` +
+    `<button class="del" data-i="${i}" title="Quitar">✕</button></div>`
+  ).join('');
+  $('us-lista').querySelectorAll('.del').forEach(b => b.addEventListener('click', () => {
+    wiz.usuarios.splice(parseInt(b.dataset.i), 1); renderUsuarios();
+  }));
+  $('us-sep').style.display         = wiz.usuarios.length ? 'block' : 'none';
+  $('us-btn-continuar').textContent = wiz.usuarios.length ? 'Continuar' : 'Continuar sin agregar';
+}
+
+$('us-btn-continuar').addEventListener('click', siguiente);
+$('us-btn-agregar').addEventListener('click', () => {
+  const nombre = $('us-nombre').value.trim();
+  const pin    = $('us-pin').value;
+  const pin2   = $('us-pin2').value;
+  if (!nombre) { aviso($('us-resultado'), 'Ingresá un nombre', 'err'); return; }
+  if (!/^\d{4,6}$/.test(pin)) { aviso($('us-resultado'), 'El PIN debe ser numérico, de 4 a 6 dígitos', 'err'); return; }
+  if (pin !== pin2) { aviso($('us-resultado'), 'Los PIN no coinciden', 'err'); return; }
+  wiz.usuarios.push({ nombre, pin, rol: $('us-rol').value });
+  $('us-nombre').value = ''; $('us-pin').value = ''; $('us-pin2').value = '';
+  aviso($('us-resultado'), '', '');
+  renderUsuarios();
+});
+
+// ── Paso 9: Cajas ─────────────────────────────────────────────────
+function renderCajas() {
+  $('cj-lista').innerHTML = wiz.cajas.map((c, i) =>
+    `<div class="item-row">${esc(c.nombre)}<span class="meta">${c.tipo}</span>` +
+    `<button class="del" data-i="${i}" title="Quitar">✕</button></div>`
+  ).join('');
+  $('cj-lista').querySelectorAll('.del').forEach(b => b.addEventListener('click', () => {
+    wiz.cajas.splice(parseInt(b.dataset.i), 1); renderCajas();
+  }));
+  $('cj-sep').style.display      = wiz.cajas.length ? 'block' : 'none';
+  $('cj-btn-continuar').disabled = wiz.cajas.length === 0;
+}
+
+$('cj-btn-agregar').addEventListener('click', () => {
+  const nombre = $('cj-nombre').value.trim();
+  if (!nombre) { aviso($('cj-resultado'), 'Ingresá un nombre', 'err'); return; }
+  wiz.cajas.push({ nombre, tipo: $('cj-tipo').value });
+  $('cj-nombre').value = ''; aviso($('cj-resultado'), '', '');
+  renderCajas();
+});
+
 $('cj-btn-continuar').addEventListener('click', siguiente);
 
-// ── Listo ────────────────────────────────────────────────────────
-$('ls-btn-entrar').addEventListener('click', () => {
-  const primeraCaja = cajasCreadas[0];
-  if (adminId && primeraCaja) {
-    localStorage.setItem('bron_sesion', JSON.stringify({
-      usuario_id: adminId, nombre: $('ad-nombre').value.trim() || sesionPrevia?.nombre || 'Admin',
-      rol: 'admin', caja_id: primeraCaja.id, caja_nombre: primeraCaja.nombre,
-    }));
+// ── Paso 10: Resumen + Commit ─────────────────────────────────────
+function resumenVal(v) {
+  return v ? `<span class="resumen-val">${esc(v)}</span>` : `<span class="resumen-val dim">No configurado</span>`;
+}
+
+function renderResumen() {
+  $('ls-resumen').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0">
+      <div class="resumen-fila"><span class="resumen-lbl">Administrador</span>${resumenVal(wiz.admin?.nombre + ' — PIN •••')}</div>
+      <div class="resumen-fila"><span class="resumen-lbl">Empresa</span>${resumenVal(wiz.negocio?.razon_social)}</div>
+      <div class="resumen-fila"><span class="resumen-lbl">CUIT</span>${resumenVal(wiz.negocio?.cuit)}</div>
+      <div class="resumen-fila"><span class="resumen-lbl">Certificado AFIP</span>${resumenVal(wiz.afip?.archivo?.name)}</div>
+      <div class="resumen-fila"><span class="resumen-lbl">Logo</span>${resumenVal(wiz.logo?.archivo?.name)}</div>
+      <div class="resumen-fila"><span class="resumen-lbl">Impresora</span>${resumenVal(wiz.impresora)}</div>
+      <div class="resumen-fila"><span class="resumen-lbl">Usuarios extra</span>${resumenVal(wiz.usuarios.length ? wiz.usuarios.map(u => u.nombre).join(', ') : null)}</div>
+      <div class="resumen-fila"><span class="resumen-lbl">Cajas</span>${resumenVal(wiz.cajas.length ? wiz.cajas.map(c => c.nombre).join(', ') : null)}</div>
+    </div>`;
+}
+
+// Helpers de progreso visual
+function progAgregar(msg) {
+  const el = document.createElement('div');
+  el.className = 'prog-item esperando';
+  el.innerHTML = `<div class="prog-icono">·</div><span>${esc(msg)}</span>`;
+  $('ls-progreso').appendChild(el);
+  return el;
+}
+function progEstado(el, estado, icono) {
+  el.className = 'prog-item ' + estado;
+  el.querySelector('.prog-icono').textContent = icono;
+}
+
+let commitResult = null;
+
+async function ejecutarCommit() {
+  $('ls-confirmar-row').style.display = 'none';
+  $('ls-resumen').style.display       = 'none';
+  $('ls-error').style.display         = 'none';
+  $('ls-retry-row').style.display     = 'none';
+  $('ls-entrar-row').style.display    = 'none';
+  $('ls-progreso').innerHTML          = '';
+  $('ls-progreso').style.display      = 'flex';
+  $('ls-titulo').textContent          = 'Instalando Logos…';
+  $('ls-sub').textContent             = 'Esto toma unos segundos.';
+
+  try {
+    // 1. Crear administrador
+    const pAdm = progAgregar('Creando administrador…');
+    progEstado(pAdm, 'ejecutando', '↻');
+    let adminId;
+    const rAdm = await fetch(`${API}/instalacion/admin`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre: wiz.admin.nombre, pin: wiz.admin.pin }),
+    });
+    const dAdm = await rAdm.json();
+    if (!rAdm.ok) {
+      // Si el admin ya existe (commit interrumpido en un intento anterior), recuperar el ID
+      if (rAdm.status === 403) {
+        const rId = await fetch(`${API}/instalacion/admin-id`);
+        if (rId.ok) { adminId = (await rId.json()).id; }
+        else throw new Error('Ya existe un administrador. Hacé un reset de fábrica desde el login o contactá al soporte.');
+      } else {
+        throw new Error('Al crear el administrador: ' + (dAdm.error || ''));
+      }
+    } else {
+      adminId = dAdm.id;
+    }
+    progEstado(pAdm, 'ok', '✓');
+
+    const ah = { 'X-Usuario-Id': String(adminId) };
+    const jh = { 'Content-Type': 'application/json', ...ah };
+
+    // 2. Datos del negocio + opcionales de texto
+    const pNeg = progAgregar('Guardando datos del negocio…');
+    progEstado(pNeg, 'ejecutando', '↻');
+    const cfgBody = { ...wiz.negocio };
+    if (wiz.impresora) cfgBody.impresora_nombre          = wiz.impresora;
+    if (wiz.carpetas?.comprobantes) cfgBody.carpeta_comprobantes = wiz.carpetas.comprobantes;
+    if (wiz.carpetas?.backups)      cfgBody.carpeta_backups      = wiz.carpetas.backups;
+    const rCfg = await fetch(`${API}/configuracion`, { method: 'PUT', headers: jh, body: JSON.stringify(cfgBody) });
+    if (!rCfg.ok) { const d = await rCfg.json(); throw new Error('Al guardar configuración: ' + (d.error || '')); }
+    progEstado(pNeg, 'ok', '✓');
+
+    // 3. Certificado AFIP
+    if (wiz.afip) {
+      const pAf = progAgregar('Cargando certificado AFIP…');
+      progEstado(pAf, 'ejecutando', '↻');
+      const fd = new FormData();
+      fd.append('cert_p12', wiz.afip.archivo);
+      fd.append('cert_pass', wiz.afip.pass || '');
+      fd.append('entorno', wiz.afip.entorno || 'homologacion');
+      const rAf = await fetch(`${API}/configuracion/cert-afip`, { method: 'POST', headers: ah, body: fd });
+      if (!rAf.ok) { const d = await rAf.json(); throw new Error('Al cargar el certificado AFIP: ' + (d.error || '')); }
+      progEstado(pAf, 'ok', '✓');
+    }
+
+    // 4. Logo
+    if (wiz.logo) {
+      const pLg = progAgregar('Subiendo logo…');
+      progEstado(pLg, 'ejecutando', '↻');
+      const fd = new FormData(); fd.append('logo', wiz.logo.archivo);
+      const rLg = await fetch(`${API}/configuracion/logo`, { method: 'POST', headers: ah, body: fd });
+      if (!rLg.ok) { const d = await rLg.json(); throw new Error('Al subir el logo: ' + (d.error || '')); }
+      progEstado(pLg, 'ok', '✓');
+    }
+
+    // 5. Usuarios adicionales
+    for (const u of wiz.usuarios) {
+      const pU = progAgregar(`Creando usuario ${u.nombre}…`);
+      progEstado(pU, 'ejecutando', '↻');
+      const rU = await fetch(`${API}/usuarios`, { method: 'POST', headers: jh, body: JSON.stringify(u) });
+      if (!rU.ok) { const d = await rU.json(); throw new Error(`Al crear usuario ${u.nombre}: ` + (d.error || '')); }
+      progEstado(pU, 'ok', '✓');
+    }
+
+    // 6. Cajas
+    const cajasCreadas = [];
+    for (const c of wiz.cajas) {
+      const pC = progAgregar(`Creando caja ${c.nombre}…`);
+      progEstado(pC, 'ejecutando', '↻');
+      const rC = await fetch(`${API}/cajas`, { method: 'POST', headers: jh, body: JSON.stringify(c) });
+      const dC = await rC.json();
+      if (!rC.ok) throw new Error(`Al crear caja ${c.nombre}: ` + (dC.error || ''));
+      cajasCreadas.push({ ...c, id: dC.id });
+      progEstado(pC, 'ok', '✓');
+    }
+
+    commitResult = { adminId, adminNombre: wiz.admin.nombre, cajasCreadas };
+    $('ls-titulo').textContent      = '¡Logos instalado!';
+    $('ls-sub').textContent         = 'Todo quedó configurado correctamente.';
+    $('ls-entrar-row').style.display = 'flex';
+    wizardActivo = false;
+
+  } catch(e) {
+    $('ls-titulo').textContent       = 'Error durante la instalación';
+    $('ls-sub').textContent          = 'Revisá el error, corregí lo que sea necesario y volvé a intentar.';
+    $('ls-error').style.display      = 'block';
+    $('ls-error').innerHTML          = `<div class="aviso err">${esc(e.message)}</div>`;
+    $('ls-retry-row').style.display  = 'flex';
   }
-  location.href = '/BRON/pos/';
+}
+
+$('ls-btn-instalar').addEventListener('click', ejecutarCommit);
+$('ls-btn-retry').addEventListener('click', ejecutarCommit);
+
+$('ls-btn-entrar').addEventListener('click', () => {
+  const { adminId, adminNombre, cajasCreadas } = commitResult;
+  const primeraCaja = cajasCreadas[0];
+  if (primeraCaja) {
+    localStorage.setItem('logos_sesion', JSON.stringify({
+      usuario_id:  adminId,
+      nombre:      adminNombre,
+      rol:         'admin',
+      caja_id:     primeraCaja.id,
+      caja_nombre: primeraCaja.nombre,
+    }));
+    location.href = '/Logos/pos/';
+  } else {
+    location.href = '/Logos/pos/login.html';
+  }
 });
 
-// ── Init ─────────────────────────────────────────────────────────
+// ── Init ──────────────────────────────────────────────────────────
+document.getElementById('wiz-logo').src = '/Logos/logo_background.png?v=' + Date.now();
+
 (async function init() {
   let estado;
   try {
     estado = await fetch(`${API}/instalacion/estado`).then(r => r.json());
-  } catch (e) {
+  } catch {
     estado = { requiere_conexion: true, requiere_schema: false, requiere_admin: false, requiere_negocio: false, requiere_caja: false };
   }
 
-  if (estado.requiere_conexion || estado.requiere_schema) pasos.push('conexion');
-  if (estado.requiere_admin)   pasos.push('admin');
-  if (estado.requiere_negocio) { pasos.push('negocio'); pasos.push('logo'); }
-  if (estado.requiere_caja)    pasos.push('cajas');
-  pasos.push('listo');
-
   if (!estado.requiere_conexion && !estado.requiere_schema && !estado.requiere_admin &&
       !estado.requiere_negocio && !estado.requiere_caja) {
-    location.href = '/BRON/pos/login.html';
+    location.href = '/Logos/pos/login.html';
     return;
   }
 
+  if (estado.requiere_conexion || estado.requiere_schema) pasos.push('conexion');
+  pasos.push('admin');
+  pasos.push('negocio');
+  pasos.push('afip');
+  pasos.push('logo');
+  pasos.push('impresora');
+  pasos.push('carpetas');
+  pasos.push('usuarios');
+  pasos.push('cajas');
+  pasos.push('listo');
+
   renderCajas();
+  renderUsuarios();
   mostrarPaso();
+  wizardActivo = true;
 })();
 </script>
 </body>

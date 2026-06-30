@@ -52,28 +52,35 @@ class ClientesController {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!$body) json(400, ['error' => 'Body JSON inválido']);
 
-        $nombre    = isset($body['nombre'])        ? trim($body['nombre'])        : '';
-        $cuit      = isset($body['cuit'])          ? trim($body['cuit'])          : null;
-        $condicion = isset($body['condicion_iva']) ? trim($body['condicion_iva']) : null;
-        $domicilio = isset($body['domicilio'])     ? trim($body['domicilio'])     : null;
-        $provincia = isset($body['provincia'])     ? trim($body['provincia'])     : null;
-        $telefono  = isset($body['telefono'])      ? trim($body['telefono'])      : null;
-        $email     = isset($body['email'])         ? trim($body['email'])         : null;
+        $nombre        = isset($body['nombre'])         ? trim($body['nombre'])         : '';
+        $cuit          = isset($body['cuit'])           ? trim($body['cuit'])           : null;
+        $condicion     = isset($body['condicion_iva'])  ? trim($body['condicion_iva'])  : null;
+        $email         = isset($body['email'])          ? trim($body['email'])          : null;
+        $telefono      = isset($body['telefono'])       ? trim($body['telefono'])       : null;
+        $domicilio     = isset($body['domicilio'])      ? trim($body['domicilio'])      : null;
+        $localidad     = isset($body['localidad'])      ? trim($body['localidad'])      : null;
+        $provincia     = isset($body['provincia'])      ? trim($body['provincia'])      : null;
+        $limite        = isset($body['limite_credito']) && $body['limite_credito'] !== null
+                         ? (float)$body['limite_credito'] : null;
+        $observaciones = isset($body['observaciones'])  ? trim($body['observaciones'])  : null;
 
         if ($nombre === '') json(400, ['error' => 'El nombre es requerido']);
 
         $db = DB::get();
         $db->prepare("
-            INSERT INTO clientes (nombre, cuit, condicion_iva, domicilio, provincia, telefono, email)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clientes (nombre, cuit, condicion_iva, email, telefono, domicilio, localidad, provincia, limite_credito, observaciones)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ")->execute([
             $nombre,
-            $cuit      ?: null,
-            $condicion ?: null,
-            $domicilio ?: null,
-            $provincia ?: null,
-            $telefono  ?: null,
-            $email     ?: null,
+            $cuit          ?: null,
+            $condicion     ?: null,
+            $email         ?: null,
+            $telefono      ?: null,
+            $domicilio     ?: null,
+            $localidad     ?: null,
+            $provincia     ?: null,
+            $limite,
+            $observaciones ?: null,
         ]);
 
         $id = (int)$db->lastInsertId();
@@ -84,7 +91,7 @@ class ClientesController {
             'cuit'                    => $cuit      ?: null,
             'condicion_iva'           => $condicion ?: null,
             'saldo_cuenta_corriente'  => 0.0,
-            'limite_credito'          => 0.0,
+            'limite_credito'          => $limite ?? 0.0,
         ]);
     }
 
