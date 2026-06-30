@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — Movimientos de caja</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+
+.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
+.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+
+.filtros { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.fil-select, .fil-input { padding:8px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-family:inherit; outline:none; background:var(--gris1); transition:border-color 140ms ease-out, background 140ms ease-out; }
+.fil-select:focus, .fil-input:focus { border-color:var(--azul); background:white; }
+
+.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
+.contenido-inner { max-width:1300px; margin:0 auto; }
+
+.card { background:white; border:1px solid var(--borde); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.03); padding:0; overflow:hidden; }
+
+.btn-add {
+  width:36px; height:36px; border-radius:8px; border:1.5px solid var(--azul); background:var(--azul); color:white;
+  font-size:20px; font-weight:700; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:background 140ms ease-out, transform 120ms ease-out;
+}
+.btn-add:hover { background:var(--azul-h); }
+.btn-add:active { transform:scale(0.95); }
+
+.mov-tipos { display:flex; gap:10px; margin-bottom:16px; }
+.mov-tipo-btn { flex:1; padding:9px; border:1.5px solid var(--borde); border-radius:8px; background:white; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; transition:border-color 120ms ease-out, background 120ms ease-out, color 120ms ease-out; }
+.mov-tipo-btn.activo.ingreso { border-color:var(--verde); background:#F0FDF4; color:#15803D; }
+.mov-tipo-btn.activo.retiro  { border-color:var(--rojo); background:#FEF2F2; color:var(--rojo); }
+.mov-tipo-btn.activo.transferencia { border-color:#2563EB; background:#EFF6FF; color:#1D4ED8; }
+
+.form-group { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.form-input { padding:9px 12px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); transition:border-color 140ms ease-out, background 140ms ease-out; width:100%; }
+.form-input:focus { border-color:var(--azul); background:white; }
+
+.btn { padding:10px 20px; border:1.5px solid transparent; border-radius:8px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; font-family:inherit; transition:background 140ms ease-out, border-color 140ms ease-out, transform 120ms ease-out; }
+.btn:active { transform:scale(0.97); }
+.btn:disabled { opacity:.5; cursor:default; }
+.btn-ok { background:var(--azul); color:white; border-color:var(--azul); }
+.btn-ok:hover { background:var(--azul-h); border-color:var(--azul-h); }
+
+.ef-aviso {
+  background:#FEF2F2; border:1px solid #FECACA; border-radius:6px;
+  padding:10px 12px; font-size:12px; color:#7F1D1D;
+  display:none; margin-bottom:14px; line-height:1.5;
+}
+.ef-aviso.visible { display:block; }
+
+/* ── Modal base ── */
+.overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0);
+  z-index:500; align-items:flex-start; justify-content:center; padding-top:40px;
+  transition:background 200ms ease-out;
+}
+.overlay.abierto { display:flex; background:rgba(0,0,0,.45); }
+.modal {
+  background:white; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.25);
+  width:min(720px,95vw); max-height:calc(100vh - 80px); display:flex;
+  flex-direction:column; overflow:hidden;
+  opacity:0; transform:scale(.97) translateY(-8px);
+  transition:opacity 200ms cubic-bezier(0.23,1,0.32,1), transform 200ms cubic-bezier(0.23,1,0.32,1);
+}
+.overlay.abierto .modal { opacity:1; transform:scale(1) translateY(0); }
+.modal-sm { width:min(420px,95vw); }
+.modal-head {
+  padding:16px 20px; border-bottom:1px solid var(--gris2);
+  display:flex; align-items:center; gap:12px; flex-shrink:0;
+}
+.modal-head h2 { flex:1; font-size:16px; font-weight:700; }
+.modal-head .sub { font-weight:400; font-size:13px; color:var(--gris3); }
+.modal-close {
+  background:none; border:none; cursor:pointer; color:var(--gris3);
+  font-size:22px; line-height:1; padding:4px 8px; border-radius:6px;
+}
+.modal-close:hover { background:var(--gris1); }
+.modal-body { overflow-y:auto; padding:20px; flex:1; }
+
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:680px; }
+thead th { text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); padding:12px 16px; border-bottom:2px solid var(--gris2); white-space:nowrap; }
+thead th.r { text-align:right; }
+tbody td { padding:10px 16px; font-size:var(--fs-md); border-bottom:1px solid var(--gris2); white-space:nowrap; }
+tbody td.r { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr:hover { background:var(--gris1); }
+
+.tag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; padding:3px 9px; border-radius:6px; }
+.tag.ingreso { background:#DCFCE7; color:#15803D; }
+.tag.retiro  { background:#FEF2F2; color:var(--rojo); }
+.tag.transferencia { background:#EFF6FF; color:#1D4ED8; }
+
+.transf-medios { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.transf-medios .form-group { flex:1; margin-bottom:0; }
+.transf-flecha { color:var(--gris3); font-size:16px; padding-top:18px; }
+
+.vacio { text-align:center; padding:48px 20px; color:var(--gris3); font-size:var(--fs-md); }
+
+.col-acciones { width:34px; text-align:right; }
+.btn-del-mov { width:26px; height:26px; background:none; border:none; border-radius:5px; color:var(--gris3); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; opacity:0; transition:opacity .12s,background .12s,color .12s; padding:0; }
+tbody tr:hover .btn-del-mov { opacity:1; }
+.btn-del-mov:hover { background:#FEE2E2; color:var(--rojo); }
+
+.btn-sec { padding:10px 20px; background:white; color:var(--texto); border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; font-family:inherit; }
+.btn-sec:hover { background:var(--gris1); }
+.btn-danger { padding:10px 20px; background:var(--rojo); color:white; border:1.5px solid var(--rojo); border-radius:8px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; font-family:inherit; }
+.btn-danger:hover { background:#991B1B; border-color:#991B1B; }
+.modal-footer { padding:14px 20px; border-top:1px solid var(--gris2); display:flex; justify-content:flex-end; gap:10px; flex-shrink:0; }
+
+@media (max-width: 640px) {
+  .page-header h1 { font-size:19px; }
+}
+
+</style>
+</head>
+<body>
+
+<?php $nav_activo = 'movimientos'; include __DIR__ . '/nav.php'; ?>
+
+<div class="page-header">
+  <div>
+    <h1>Movimientos de caja</h1>
+    <p>Ingresos y retiros manuales de efectivo</p>
+  </div>
+  <div class="filtros">
+    <button class="btn-add" id="btn-nuevo-mov" title="Registrar movimiento" type="button">+</button>
+    <select class="fil-select" id="fil-caja" style="display:none;"></select>
+    <input class="fil-input" id="fil-desde" type="date">
+    <input class="fil-input" id="fil-hasta" type="date">
+  </div>
+</div>
+
+<div class="contenido">
+<div class="contenido-inner">
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Caja</th>
+            <th>Tipo</th>
+            <th>Medio</th>
+            <th>Motivo</th>
+            <th>Usuario</th>
+            <th class="r">Monto</th>
+            <th class="col-acciones"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="overlay" id="overlay-mov">
+  <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="mov-modal-h">
+    <div class="modal-head">
+      <h2 id="mov-modal-h">Registrar movimiento <span class="sub" id="reg-caja-nombre"></span></h2>
+      <button class="modal-close" id="mov-close" type="button" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="reg-sin-turno" class="ef-aviso">Esta caja no tiene un turno abierto. Abrila antes de registrar movimientos.</div>
+      <div id="reg-form">
+        <div class="mov-tipos">
+          <button type="button" class="mov-tipo-btn activo ingreso" id="reg-btn-ingreso" data-tipo="ingreso">+ Ingreso</button>
+          <button type="button" class="mov-tipo-btn retiro" id="reg-btn-retiro" data-tipo="retiro">− Retiro</button>
+          <button type="button" class="mov-tipo-btn transferencia" id="reg-btn-transferencia" data-tipo="transferencia">⇄ Transferencia</button>
+        </div>
+        <div class="form-group" id="reg-medio-simple-grp">
+          <label class="form-label">Medio de pago</label>
+          <select class="form-input" id="reg-medio">
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="tarjeta">Tarjeta</option>
+          </select>
+        </div>
+        <div class="transf-medios" id="reg-medio-transf-grp" style="display:none;">
+          <div class="form-group">
+            <label class="form-label">Desde</label>
+            <select class="form-input" id="reg-medio-origen">
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="tarjeta">Tarjeta</option>
+            </select>
+          </div>
+          <div class="transf-flecha">→</div>
+          <div class="form-group">
+            <label class="form-label">Hacia</label>
+            <select class="form-input" id="reg-medio-destino">
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia" selected>Transferencia</option>
+              <option value="tarjeta">Tarjeta</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Monto</label>
+          <input class="form-input" id="reg-monto" type="number" min="0" step="0.01" placeholder="0,00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Motivo</label>
+          <input class="form-input" id="reg-motivo" type="text" placeholder="Opcional">
+        </div>
+        <button class="btn btn-ok" id="reg-btn-guardar" style="width:100%">Registrar movimiento</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay-elim-mov">
+  <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="elim-mov-h">
+    <div class="modal-head">
+      <h2 id="elim-mov-h" style="color:var(--rojo)">Eliminar movimiento</h2>
+      <button class="modal-close" id="elim-mov-close" type="button" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="modal-body" id="elim-mov-body"></div>
+    <div class="modal-footer">
+      <button class="btn-sec" id="elim-mov-cancelar" type="button">Cancelar</button>
+      <button class="btn-danger" id="elim-mov-confirmar" type="button">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+const API = '/BRON/api';
+const $   = id => document.getElementById(id);
+
+let toastTimer = null;
+function toast(msg, tipo = '') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (tipo ? ' ' + tipo : '');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
+}
+function fmt(n) {
+  return '$' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+
+const esAdmin = window.BRON_SESION?.rol === 'admin';
+let cajasCache = [];
+let tipoMovActivo = 'ingreso';
+let movimientosCache = [];
+let movElimActual = null;
+
+async function init() {
+  if (esAdmin) {
+    const res = await fetch(`${API}/cajas`);
+    cajasCache = await res.json();
+    const sel = $('fil-caja');
+    sel.style.display = '';
+    sel.innerHTML = '<option value="">Todas las cajas</option>' +
+      cajasCache.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    sel.addEventListener('change', cargar);
+    document.getElementById('nav-caja-op')?.addEventListener('change', cargarEstadoRegistro);
+  }
+  $('btn-nuevo-mov').addEventListener('click', abrirModalMov);
+  $('mov-close').addEventListener('click', cerrarModalMov);
+  $('overlay-mov').addEventListener('click', e => { if (e.target.id === 'overlay-mov') cerrarModalMov(); });
+  $('reg-btn-ingreso').addEventListener('click', () => seleccionarTipoMov('ingreso'));
+  $('reg-btn-retiro').addEventListener('click', () => seleccionarTipoMov('retiro'));
+  $('reg-btn-transferencia').addEventListener('click', () => seleccionarTipoMov('transferencia'));
+  $('reg-btn-guardar').addEventListener('click', registrarMovimiento);
+  $('fil-desde').addEventListener('change', cargar);
+  $('fil-hasta').addEventListener('change', cargar);
+  $('elim-mov-close').addEventListener('click', cerrarModalEliminarMov);
+  $('elim-mov-cancelar').addEventListener('click', cerrarModalEliminarMov);
+  $('elim-mov-confirmar').addEventListener('click', confirmarEliminarMov);
+  $('overlay-elim-mov').addEventListener('click', e => { if (e.target.id === 'overlay-elim-mov') cerrarModalEliminarMov(); });
+  cargar();
+}
+
+function seleccionarTipoMov(tipo) {
+  tipoMovActivo = tipo;
+  $('reg-btn-ingreso').classList.toggle('activo', tipo === 'ingreso');
+  $('reg-btn-retiro').classList.toggle('activo', tipo === 'retiro');
+  $('reg-btn-transferencia').classList.toggle('activo', tipo === 'transferencia');
+  $('reg-medio-simple-grp').style.display = tipo === 'transferencia' ? 'none' : '';
+  $('reg-medio-transf-grp').style.display = tipo === 'transferencia' ? '' : 'none';
+}
+
+function abrirModalMov() {
+  $('reg-monto').value  = '';
+  $('reg-motivo').value = '';
+  $('reg-medio').value  = 'efectivo';
+  $('reg-medio-origen').value  = 'efectivo';
+  $('reg-medio-destino').value = 'transferencia';
+  seleccionarTipoMov('ingreso');
+  cargarEstadoRegistro();
+  $('overlay-mov').classList.add('abierto');
+}
+
+function cerrarModalMov() {
+  $('overlay-mov').classList.remove('abierto');
+}
+
+async function cargarEstadoRegistro() {
+  const cajaId = window.cajaOperativaId?.();
+  if (!cajaId) return;
+  const caja = cajasCache.find(c => c.id === cajaId);
+  $('reg-caja-nombre').textContent = '— ' + (caja ? caja.nombre : (window.BRON_SESION?.caja_nombre || '—'));
+
+  const res  = await fetch(`${API}/caja-turnos/actual?caja_id=${cajaId}`);
+  const data = await res.json();
+  const hayTurno = !data.no_aplica && !!data.turno;
+
+  $('reg-form').style.display = hayTurno ? '' : 'none';
+  $('reg-sin-turno').classList.toggle('visible', !hayTurno);
+}
+
+async function registrarMovimiento() {
+  const cajaId = window.cajaOperativaId?.();
+  const monto  = parseFloat($('reg-monto').value);
+  if (!cajaId || !monto || monto <= 0) { toast('Ingresá un monto válido', 'err'); return; }
+
+  const body = {
+    caja_id: cajaId,
+    tipo:    tipoMovActivo,
+    monto,
+    motivo:  $('reg-motivo').value.trim() || null,
+  };
+
+  if (tipoMovActivo === 'transferencia') {
+    const origen  = $('reg-medio-origen').value;
+    const destino = $('reg-medio-destino').value;
+    if (origen === destino) { toast('Elegí dos medios de pago distintos', 'err'); return; }
+    body.medio_pago         = origen;
+    body.medio_pago_destino = destino;
+  } else {
+    body.medio_pago = $('reg-medio').value;
+  }
+
+  const res = await fetch(`${API}/caja-movimientos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al registrar el movimiento', 'err'); return; }
+
+  toast('Movimiento registrado', 'ok');
+  cerrarModalMov();
+  cargar();
+}
+
+async function cargar() {
+  const params = new URLSearchParams();
+  const cajaId = esAdmin ? $('fil-caja').value : window.BRON_SESION?.caja_id;
+  if (cajaId) params.set('caja_id', cajaId);
+  if ($('fil-desde').value) params.set('desde', $('fil-desde').value);
+  if ($('fil-hasta').value) params.set('hasta', $('fil-hasta').value);
+
+  const res = await fetch(`${API}/caja-movimientos?${params.toString()}`);
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al cargar movimientos', 'err'); return; }
+
+  movimientosCache = data;
+
+  if (!data.length) {
+    $('tbody').innerHTML = '<tr><td colspan="8"><div class="vacio">No hay movimientos para los filtros aplicados.</div></td></tr>';
+    return;
+  }
+
+  const MEDIOS = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta' };
+  const TIPOS  = { ingreso: 'Ingreso', retiro: 'Retiro', transferencia: 'Transferencia' };
+  const SIGNOS = { ingreso: '+', retiro: '−', transferencia: '⇄' };
+  const svgDel = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+
+  $('tbody').innerHTML = data.map(m => `
+    <tr>
+      <td>${new Date(m.creado_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' })}</td>
+      <td>${esc(m.caja_nombre)}</td>
+      <td><span class="tag ${m.tipo}">${TIPOS[m.tipo]}</span></td>
+      <td>${m.tipo === 'transferencia' ? `${MEDIOS[m.medio_pago]} → ${MEDIOS[m.medio_pago_destino]}` : (MEDIOS[m.medio_pago] || '—')}</td>
+      <td>${esc(m.motivo || '—')}</td>
+      <td>${esc(m.usuario_nombre)}</td>
+      <td class="r">${SIGNOS[m.tipo]}${fmt(m.monto)}</td>
+      <td class="col-acciones"><button class="btn-del-mov" data-id="${m.id}" title="Eliminar">${svgDel}</button></td>
+    </tr>`).join('');
+
+  $('tbody').querySelectorAll('.btn-del-mov').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalEliminarMov(parseInt(btn.dataset.id)));
+  });
+}
+
+function abrirModalEliminarMov(id) {
+  const m = movimientosCache.find(x => x.id === id);
+  if (!m) return;
+  movElimActual = m;
+
+  const MEDIOS = { efectivo: 'Efectivo', transferencia: 'Transferencia', tarjeta: 'Tarjeta' };
+  const TIPOS  = { ingreso: 'Ingreso', retiro: 'Retiro', transferencia: 'Transferencia' };
+  $('elim-mov-body').innerHTML = `
+    <p>¿Eliminar este movimiento?</p>
+    <p style="margin-top:10px;color:var(--gris3);font-size:13px;line-height:1.6">
+      <strong>${esc(TIPOS[m.tipo])}</strong> de ${fmt(m.monto)} — ${esc(m.caja_nombre)}<br>
+      ${m.tipo === 'transferencia' ? `${esc(MEDIOS[m.medio_pago])} → ${esc(MEDIOS[m.medio_pago_destino])}` : esc(MEDIOS[m.medio_pago] || '')}
+      ${m.motivo ? ' · ' + esc(m.motivo) : ''}<br>
+      ${new Date(m.creado_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' })}
+    </p>`;
+  $('elim-mov-confirmar').disabled    = false;
+  $('elim-mov-confirmar').textContent = 'Eliminar';
+  $('overlay-elim-mov').classList.add('abierto');
+}
+
+function cerrarModalEliminarMov() {
+  $('overlay-elim-mov').classList.remove('abierto');
+  movElimActual = null;
+}
+
+async function confirmarEliminarMov() {
+  if (!movElimActual) return;
+  const btn = $('elim-mov-confirmar');
+  btn.disabled    = true;
+  btn.textContent = 'Eliminando…';
+
+  try {
+    const res  = await fetch(`${API}/caja-movimientos/${movElimActual.id}?caja_id=${movElimActual.caja_id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al eliminar el movimiento');
+
+    cerrarModalEliminarMov();
+    toast('Movimiento eliminado', 'ok');
+    cargar();
+  } catch (e) {
+    toast(e.message, 'err');
+    btn.disabled    = false;
+    btn.textContent = 'Eliminar';
+  }
+}
+
+function actualizarFecha() {
+  const f = $('fecha-hora');
+  if (f) f.textContent = new Date().toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' });
+}
+actualizarFecha();
+setInterval(actualizarFecha, 30000);
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — Configuración</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+
+/* Page header */
+.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; }
+.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
+.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+
+/* Tab bar */
+.tab-bar { background:white; border-bottom:1px solid var(--borde); display:flex; padding:0 clamp(20px, 4vw, 48px); flex-shrink:0; overflow-x:auto; scrollbar-width:none; }
+.tab-bar::-webkit-scrollbar { display:none; }
+.tab-btn { padding:13px 20px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.5px; border:none; background:none; cursor:pointer; color:var(--gris3); border-bottom:2px solid transparent; margin-bottom:-1px; transition:color 160ms cubic-bezier(0.23,1,0.32,1), border-color 160ms cubic-bezier(0.23,1,0.32,1); white-space:nowrap; flex-shrink:0; }
+.tab-btn:hover { color:var(--texto); }
+.tab-btn.activo { color:var(--azul); border-bottom-color:var(--azul); }
+
+/* Contenido */
+.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
+.contenido-inner { max-width:1680px; margin:0 auto; }
+.panel { display:none; }
+.panel.activo { display:block; }
+
+.card { background:white; border:1px solid var(--borde); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.03); padding:24px clamp(20px, 3vw, 30px); margin-bottom:20px; }
+.card-titulo { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--texto); padding-bottom:12px; margin-bottom:20px; border-bottom:1px solid var(--gris2); }
+
+.grid-2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:20px; align-items:start; }
+.grid-2 .card { margin-bottom:0; height:100%; }
+
+.form-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px 20px; }
+@media (max-width: 900px) { .form-grid { grid-template-columns:repeat(2, 1fr); } }
+@media (max-width: 560px) { .form-grid { grid-template-columns:1fr; } }
+.form-group { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.form-group.full { grid-column:1 / -1; }
+.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.form-input, .form-select { padding:9px 12px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); transition:border-color 140ms ease-out, background 140ms ease-out; width:100%; }
+.form-input:focus, .form-select:focus { border-color:var(--azul); background:white; }
+.form-hint { font-size:11px; color:var(--gris3); margin-top:2px; line-height:1.4; }
+
+.btn { padding:10px 20px; border:1.5px solid transparent; border-radius:8px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; font-family:inherit; transition:background 140ms ease-out, border-color 140ms ease-out, transform 120ms ease-out; }
+.btn:active { transform:scale(0.97); }
+.btn-ok { background:var(--azul); color:white; border-color:var(--azul); }
+.btn-ok:hover { background:var(--azul-h); border-color:var(--azul-h); }
+.btn-sec { background:white; color:var(--texto); border-color:var(--borde); }
+.btn-sec:hover { border-color:var(--gris3); background:var(--gris1); }
+.btn-row { display:flex; gap:12px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+
+.logo-row { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
+.logo-preview { width:72px; height:72px; border:1.5px solid var(--borde); border-radius:10px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--gris1); flex-shrink:0; }
+.logo-preview img { max-width:100%; max-height:100%; object-fit:contain; }
+
+.table-wrap { overflow-x:auto; border-radius:10px; }
+table.cajas { width:100%; border-collapse:collapse; min-width:480px; }
+table.cajas th { text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); padding:11px 10px; border-bottom:2px solid var(--texto); white-space:nowrap; }
+table.cajas td { padding:9px 10px; font-size:var(--fs-md); border-bottom:1px solid var(--gris2); }
+table.cajas tbody tr { transition:background 100ms ease-out; }
+table.cajas tbody tr:hover { background:var(--gris1); }
+table.cajas input[type="text"] { padding:7px 10px; border:1.5px solid var(--borde); border-radius:7px; font-size:14px; font-family:inherit; outline:none; width:100%; transition:border-color 120ms ease-out; background:white; }
+table.cajas input[type="text"]:focus { border-color:var(--azul); }
+.check-label { display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer; }
+.check-label input { width:16px; height:16px; accent-color:var(--azul); cursor:pointer; }
+.btn-mini { padding:6px 13px; background:white; color:var(--texto); border:1.5px solid var(--borde); border-radius:7px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; cursor:pointer; transition:border-color 120ms ease-out, transform 120ms ease-out, background 120ms ease-out; white-space:nowrap; }
+.btn-mini:active { transform:scale(0.97); }
+.btn-mini:hover { border-color:var(--gris3); background:var(--gris1); }
+.btn-mini.danger { color:var(--rojo); border-color:#E8B4B4; }
+.btn-mini.danger:hover { border-color:var(--rojo); background:#FEF2F2; }
+.fila-nueva { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+.fila-nueva input { flex:1; min-width:160px; }
+
+@media (max-width: 640px) {
+  .page-header h1 { font-size:19px; }
+  .card { padding:18px; }
+  .fila-nueva { flex-direction:column; }
+  .fila-nueva select, .fila-nueva button { flex:1 1 auto; }
+}
+
+</style>
+</head>
+<body>
+
+<?php $nav_activo = 'configuracion'; include __DIR__ . '/nav.php'; ?>
+
+<div class="page-header">
+  <h1>Configuración</h1>
+  <p>Datos fiscales, impresión y cajas del negocio</p>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn activo" data-tab="negocio">Datos del negocio</button>
+  <button class="tab-btn" data-tab="cajas">Datos contables / Cajas</button>
+  <button class="tab-btn" data-tab="usuarios">Usuarios</button>
+  <button class="tab-btn" data-tab="avanzado">Avanzado</button>
+</div>
+
+<div class="contenido">
+<div class="contenido-inner">
+
+  <div class="panel activo" id="panel-negocio">
+
+    <div class="card">
+      <div class="card-titulo">Datos fiscales</div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Razón social</label>
+          <input class="form-input" id="cfg-razon_social">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CUIT</label>
+          <input class="form-input" id="cfg-cuit" placeholder="20396273455">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Condición IVA</label>
+          <input class="form-input" id="cfg-condicion_iva">
+        </div>
+        <div class="form-group">
+          <label class="form-label">IIBB</label>
+          <input class="form-input" id="cfg-iibb">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Teléfono</label>
+          <input class="form-input" id="cfg-telefono">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Punto de venta</label>
+          <input class="form-input" type="number" min="1" id="cfg-punto_venta">
+        </div>
+        <div class="form-group">
+          <label class="form-label">% IVA</label>
+          <input class="form-input" type="number" min="0" max="100" step="0.01" id="cfg-iva_porcentaje">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Domicilio</label>
+          <input class="form-input" id="cfg-domicilio">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Website</label>
+          <input class="form-input" id="cfg-website">
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-titulo">Logo</div>
+        <div class="logo-row">
+          <div class="logo-preview" id="logo-preview"><img src="/BRON/logo_background.png?t=0" id="logo-preview-img" alt=""></div>
+          <div>
+            <input type="file" id="logo-file" accept="image/png,image/jpeg,image/gif,image/webp">
+            <div class="form-hint">Se usa en el menú de todas las páginas y en los comprobantes PDF.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Impresión</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Impresora por defecto</label>
+            <select class="form-select" id="cfg-impresora_nombre"><option value="">Cargando impresoras…</option></select>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Carpeta donde guardar copia de cada comprobante</label>
+            <input class="form-input" id="cfg-carpeta_comprobantes" placeholder="C:\BRON\comprobantes">
+            <div class="form-hint">Ruta en este servidor. Se guarda una copia automática de cada comprobante generado.</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-sec" id="btn-probar-impresion">Probar impresión</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ok" id="btn-guardar">Guardar cambios</button>
+    </div>
+
+  </div>
+
+  <div class="panel" id="panel-cajas">
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-titulo">Backup de la base de datos</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Carpeta de backups</label>
+            <input class="form-input" id="cfg-carpeta_backups" placeholder="C:\BRON\backups">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ok" id="btn-guardar-carpeta-backups">Guardar carpeta</button>
+          <button class="btn btn-sec" id="btn-backup-ahora">Backup ahora</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Seguridad</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Clave de autorización para eliminar ventas</label>
+            <input class="form-input" type="password" id="cfg-clave_autorizacion" placeholder="(sin cambios)" autocomplete="new-password">
+            <div class="form-hint" id="cfg-clave-hint">Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.</div>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ok" id="btn-guardar-clave">Guardar clave</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Cajas</div>
+      <div class="form-hint" style="margin-bottom:14px">El tipo define quién puede usar cada caja: los usuarios "Admin" pueden usar cualquiera, los usuarios "User" solo las de tipo Venta.</div>
+      <div class="table-wrap">
+        <table class="cajas">
+          <thead><tr><th>Nombre</th><th style="width:130px">Tipo</th><th style="width:90px">Activa</th><th style="width:90px"></th></tr></thead>
+          <tbody id="cajas-tbody"></tbody>
+        </table>
+      </div>
+      <div class="fila-nueva">
+        <input type="text" id="caja-nueva-nombre" placeholder="Nombre de la nueva caja">
+        <select class="form-select" id="caja-nueva-tipo" style="flex:0 0 130px">
+          <option value="venta">Venta</option>
+          <option value="compra">Compra</option>
+        </select>
+        <button class="btn btn-sec" id="btn-caja-agregar">Agregar caja</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="panel" id="panel-usuarios">
+
+    <div class="card">
+      <div class="card-titulo">Usuarios</div>
+      <div class="form-hint" style="margin-bottom:14px">El rol "Admin" entra directo a la caja de tipo Compra. El rol "User" elige entre las cajas de tipo Venta al iniciar sesión.</div>
+      <div class="table-wrap">
+        <table class="cajas">
+          <thead><tr><th>Nombre</th><th style="width:120px">Rol</th><th style="width:140px">Nuevo PIN</th><th style="width:90px">Activo</th><th style="width:90px"></th></tr></thead>
+          <tbody id="usuarios-tbody"></tbody>
+        </table>
+      </div>
+      <div class="fila-nueva">
+        <input type="text" id="usuario-nuevo-nombre" placeholder="Nombre">
+        <select class="form-select" id="usuario-nuevo-rol" style="flex:0 0 120px">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+        <input type="text" id="usuario-nuevo-pin" placeholder="PIN (4-6 dígitos)" style="flex:0 0 140px" inputmode="numeric">
+        <button class="btn btn-sec" id="btn-usuario-agregar">Agregar usuario</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="panel" id="panel-avanzado">
+
+    <div class="card" style="border-color:#E8B4B4">
+      <div class="card-titulo" style="color:var(--rojo); border-bottom-color:#F3D2D2">Zona de peligro</div>
+      <div class="form-hint" style="margin-bottom:14px">
+        Restablecer de fábrica borra <b>todos</b> los datos operativos (productos, clientes, ventas,
+        compras, movimientos, cajas y usuarios) y deja el sistema como recién instalado. Se genera un
+        backup completo antes de borrar nada. Esta acción no se puede deshacer.
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Escribí BORRAR TODO para habilitar el botón</label>
+          <input class="form-input" id="rf-confirmacion" placeholder="BORRAR TODO" autocomplete="off">
+        </div>
+        <div class="form-group full" id="rf-clave-grupo" style="display:none">
+          <label class="form-label">Clave de autorización</label>
+          <input class="form-input" type="password" id="rf-clave" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-mini danger" style="padding:10px 20px; font-size:var(--fs-sm)" id="btn-reset-fabrica" disabled>Restablecer de fábrica</button>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+const API = '/BRON/api';
+const $   = id => document.getElementById(id);
+
+let toastTimer = null;
+function toast(msg, tipo = '') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (tipo ? ' ' + tipo : '');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+
+function actualizarFecha() {
+  const f = $('fecha-hora');
+  if (f) f.textContent = new Date().toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' });
+}
+actualizarFecha();
+setInterval(actualizarFecha, 30000);
+
+// ── Tabs ─────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('activo', b === btn));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
+    $('panel-' + btn.dataset.tab).classList.add('activo');
+  });
+});
+
+// ── Cargar configuración ────────────────────────────────────
+let configActual = null;
+
+async function cargarConfig() {
+  const res = await fetch(`${API}/configuracion`);
+  configActual = await res.json();
+  $('cfg-razon_social').value         = configActual.razon_social || '';
+  $('cfg-cuit').value                 = configActual.cuit || '';
+  $('cfg-condicion_iva').value        = configActual.condicion_iva || '';
+  $('cfg-domicilio').value            = configActual.domicilio || '';
+  $('cfg-iibb').value                 = configActual.iibb || '';
+  $('cfg-telefono').value             = configActual.telefono || '';
+  $('cfg-website').value              = configActual.website || '';
+  $('cfg-punto_venta').value          = configActual.punto_venta || 1;
+  $('cfg-iva_porcentaje').value       = configActual.iva_porcentaje || 21;
+  $('cfg-carpeta_comprobantes').value = configActual.carpeta_comprobantes || '';
+  $('cfg-carpeta_backups').value      = configActual.carpeta_backups || '';
+  $('cfg-clave_autorizacion').value   = '';
+  $('rf-clave-grupo').style.display   = configActual.clave_autorizacion_configurada ? '' : 'none';
+  $('cfg-clave-hint').textContent = (configActual.clave_autorizacion_configurada
+    ? 'Clave configurada. '
+    : 'Todavía no hay clave configurada — los usuarios no Admin podrán eliminar libremente. ')
+    + 'Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.';
+}
+
+async function cargarImpresoras() {
+  const sel = $('cfg-impresora_nombre');
+  try {
+    const res = await fetch(`${API}/configuracion/impresoras`);
+    const nombres = await res.json();
+    const actual = configActual?.impresora_nombre || '';
+    sel.innerHTML = '<option value="">— Sin impresora —</option>' +
+      nombres.map(n => `<option value="${esc(n)}" ${n === actual ? 'selected' : ''}>${esc(n)}</option>`).join('');
+    if (actual && !nombres.includes(actual)) {
+      sel.innerHTML += `<option value="${esc(actual)}" selected>${esc(actual)} (no detectada)</option>`;
+    }
+  } catch {
+    sel.innerHTML = '<option value="">No se pudieron listar las impresoras</option>';
+  }
+}
+
+function recolectarConfig() {
+  return {
+    razon_social:         $('cfg-razon_social').value.trim(),
+    cuit:                 $('cfg-cuit').value.trim(),
+    condicion_iva:        $('cfg-condicion_iva').value.trim(),
+    domicilio:            $('cfg-domicilio').value.trim(),
+    iibb:                 $('cfg-iibb').value.trim(),
+    telefono:             $('cfg-telefono').value.trim(),
+    website:              $('cfg-website').value.trim(),
+    punto_venta:          parseInt($('cfg-punto_venta').value) || 1,
+    iva_porcentaje:       parseFloat($('cfg-iva_porcentaje').value) || 21,
+    impresora_nombre:     $('cfg-impresora_nombre').value,
+    carpeta_comprobantes: $('cfg-carpeta_comprobantes').value.trim(),
+    carpeta_backups:      $('cfg-carpeta_backups').value.trim(),
+    clave_autorizacion:   $('cfg-clave_autorizacion').value,
+  };
+}
+
+async function guardarConfig() {
+  try {
+    const res = await fetch(`${API}/configuracion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(recolectarConfig()),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al guardar', 'err'); return; }
+    configActual = data;
+    $('cfg-clave_autorizacion').value = '';
+    $('cfg-clave-hint').textContent = (configActual.clave_autorizacion_configurada
+      ? 'Clave configurada. '
+      : 'Todavía no hay clave configurada — los usuarios no Admin podrán eliminar libremente. ')
+      + 'Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.';
+    toast('Configuración guardada', 'ok');
+  } catch {
+    toast('Error de conexión', 'err');
+  }
+}
+
+$('btn-guardar').addEventListener('click', guardarConfig);
+$('btn-guardar-carpeta-backups').addEventListener('click', guardarConfig);
+$('btn-guardar-clave').addEventListener('click', guardarConfig);
+
+// ── Logo ─────────────────────────────────────────────────────
+$('logo-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const fd = new FormData();
+  fd.append('logo', file);
+  try {
+    const res = await fetch(`${API}/configuracion/logo`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al subir el logo', 'err'); return; }
+    $('logo-preview-img').src = data.path;
+    toast('Logo actualizado', 'ok');
+  } catch {
+    toast('Error de conexión', 'err');
+  }
+});
+
+// ── Probar impresión ─────────────────────────────────────────
+$('btn-probar-impresion').addEventListener('click', async () => {
+  const impresora = $('cfg-impresora_nombre').value;
+  if (!impresora) { toast('Elegí una impresora primero', 'err'); return; }
+  try {
+    const res = await fetch(`${API}/configuracion/probar-impresion`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ impresora_nombre: impresora }),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al imprimir', 'err'); return; }
+    toast('Enviado a imprimir', 'ok');
+  } catch {
+    toast('Error de conexión', 'err');
+  }
+});
+
+// ── Backup ───────────────────────────────────────────────────
+$('btn-backup-ahora').addEventListener('click', async () => {
+  try {
+    const res = await fetch(`${API}/configuracion/backup`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al hacer el backup', 'err'); return; }
+    toast('Backup creado: ' + data.archivo, 'ok');
+  } catch {
+    toast('Error de conexión', 'err');
+  }
+});
+
+// ── Cajas ────────────────────────────────────────────────────
+function opcionesTipo(actual) {
+  return ['venta', 'compra'].map(t =>
+    `<option value="${t}" ${t === actual ? 'selected' : ''}>${t === 'venta' ? 'Venta' : 'Compra'}</option>`
+  ).join('');
+}
+
+async function cargarCajas() {
+  const res = await fetch(`${API}/cajas`);
+  const cajas = await res.json();
+  $('cajas-tbody').innerHTML = cajas.map(c => `
+    <tr data-id="${c.id}">
+      <td><input type="text" value="${esc(c.nombre)}" class="caja-nombre"></td>
+      <td><select class="form-select caja-tipo">${opcionesTipo(c.tipo)}</select></td>
+      <td><label class="check-label"><input type="checkbox" class="caja-activa" ${c.activo ? 'checked' : ''}></label></td>
+      <td><button class="btn-mini caja-guardar">Guardar</button> <button class="btn-mini danger caja-borrar">Borrar</button></td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="color:var(--gris3)">Sin cajas todavía.</td></tr>';
+}
+
+$('cajas-tbody').addEventListener('click', async (e) => {
+  const tr = e.target.closest('tr');
+  if (!tr) return;
+  const id = tr.dataset.id;
+
+  if (e.target.classList.contains('caja-guardar')) {
+    const nombre = tr.querySelector('.caja-nombre').value.trim();
+    const tipo   = tr.querySelector('.caja-tipo').value;
+    const activo = tr.querySelector('.caja-activa').checked;
+    if (!nombre) { toast('El nombre es requerido', 'err'); return; }
+    const res = await fetch(`${API}/cajas/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, tipo, activo }),
+    });
+    if (!res.ok) { toast('Error al guardar la caja', 'err'); return; }
+    toast('Caja guardada', 'ok');
+  }
+
+  if (e.target.classList.contains('caja-borrar')) {
+    const res = await fetch(`${API}/cajas/${id}`, { method: 'DELETE' });
+    if (!res.ok) { toast('Error al borrar la caja', 'err'); return; }
+    toast('Caja borrada', 'ok');
+    cargarCajas();
+  }
+});
+
+$('btn-caja-agregar').addEventListener('click', async () => {
+  const nombre = $('caja-nueva-nombre').value.trim();
+  const tipo   = $('caja-nueva-tipo').value;
+  if (!nombre) { toast('Ingresá un nombre', 'err'); return; }
+  const res = await fetch(`${API}/cajas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, tipo }),
+  });
+  if (!res.ok) { toast('Error al crear la caja', 'err'); return; }
+  $('caja-nueva-nombre').value = '';
+  toast('Caja creada', 'ok');
+  cargarCajas();
+});
+
+// ── Usuarios ─────────────────────────────────────────────────
+function opcionesRol(actual) {
+  return ['user', 'admin'].map(r =>
+    `<option value="${r}" ${r === actual ? 'selected' : ''}>${r === 'user' ? 'User' : 'Admin'}</option>`
+  ).join('');
+}
+
+async function cargarUsuarios() {
+  const res = await fetch(`${API}/usuarios/todos`);
+  const usuarios = await res.json();
+  $('usuarios-tbody').innerHTML = usuarios.map(u => `
+    <tr data-id="${u.id}">
+      <td><input type="text" value="${esc(u.nombre)}" class="usuario-nombre"></td>
+      <td><select class="form-select usuario-rol">${opcionesRol(u.rol)}</select></td>
+      <td><input type="text" class="usuario-pin" placeholder="(sin cambios)" inputmode="numeric"></td>
+      <td><label class="check-label"><input type="checkbox" class="usuario-activo" ${u.activo ? 'checked' : ''}></label></td>
+      <td><button class="btn-mini usuario-guardar">Guardar</button> <button class="btn-mini danger usuario-borrar">Borrar</button></td>
+    </tr>
+  `).join('') || '<tr><td colspan="5" style="color:var(--gris3)">Sin usuarios todavía.</td></tr>';
+}
+
+$('usuarios-tbody').addEventListener('click', async (e) => {
+  const tr = e.target.closest('tr');
+  if (!tr) return;
+  const id = tr.dataset.id;
+
+  if (e.target.classList.contains('usuario-guardar')) {
+    const nombre = tr.querySelector('.usuario-nombre').value.trim();
+    const rol    = tr.querySelector('.usuario-rol').value;
+    const activo = tr.querySelector('.usuario-activo').checked;
+    const pin    = tr.querySelector('.usuario-pin').value.trim();
+    if (!nombre) { toast('El nombre es requerido', 'err'); return; }
+    if (pin && !/^\d{4,6}$/.test(pin)) { toast('El PIN debe ser numérico de 4 a 6 dígitos', 'err'); return; }
+    const body = { nombre, rol, activo };
+    if (pin) body.pin = pin;
+    const res = await fetch(`${API}/usuarios/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al guardar el usuario', 'err'); return; }
+    toast('Usuario guardado', 'ok');
+    cargarUsuarios();
+  }
+
+  if (e.target.classList.contains('usuario-borrar')) {
+    const res = await fetch(`${API}/usuarios/${id}`, { method: 'DELETE' });
+    if (!res.ok) { toast('Error al borrar el usuario', 'err'); return; }
+    toast('Usuario borrado', 'ok');
+    cargarUsuarios();
+  }
+});
+
+$('btn-usuario-agregar').addEventListener('click', async () => {
+  const nombre = $('usuario-nuevo-nombre').value.trim();
+  const rol    = $('usuario-nuevo-rol').value;
+  const pin    = $('usuario-nuevo-pin').value.trim();
+  if (!nombre) { toast('Ingresá un nombre', 'err'); return; }
+  if (!/^\d{4,6}$/.test(pin)) { toast('El PIN debe ser numérico de 4 a 6 dígitos', 'err'); return; }
+  const res = await fetch(`${API}/usuarios`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre, rol, pin }),
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al crear el usuario', 'err'); return; }
+  $('usuario-nuevo-nombre').value = '';
+  $('usuario-nuevo-pin').value    = '';
+  toast('Usuario creado', 'ok');
+  cargarUsuarios();
+});
+
+// ── Zona de peligro: reset de fábrica ───────────────────────
+$('rf-confirmacion').addEventListener('input', () => {
+  $('btn-reset-fabrica').disabled = $('rf-confirmacion').value.trim() !== 'BORRAR TODO';
+});
+
+$('btn-reset-fabrica').addEventListener('click', async () => {
+  if (!confirm('Esto borra TODOS los datos (productos, clientes, ventas, usuarios, cajas) y no se puede deshacer. ¿Confirmás?')) return;
+  const btn = $('btn-reset-fabrica');
+  btn.disabled = true; btn.textContent = 'Restableciendo…';
+  try {
+    const res = await fetch(`${API}/configuracion/reset-fabrica`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        confirmacion: $('rf-confirmacion').value.trim(),
+        clave_autorizacion: $('rf-clave').value,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      toast(data.error || 'Error al restablecer', 'err');
+      btn.disabled = false; btn.textContent = 'Restablecer de fábrica';
+      return;
+    }
+    localStorage.removeItem('bron_sesion');
+    sessionStorage.clear();
+    location.href = '/BRON/pos/instalar.html';
+  } catch (e) {
+    toast('Error de conexión', 'err');
+    btn.disabled = false; btn.textContent = 'Restablecer de fábrica';
+  }
+});
+
+// ── Init ─────────────────────────────────────────────────────
+(async () => {
+  await cargarConfig();
+  await cargarImpresoras();
+  await cargarCajas();
+  await cargarUsuarios();
+})();
+</script>
+
+</body>
+</html>

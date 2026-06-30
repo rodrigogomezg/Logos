@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — Listado de operaciones</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+
+.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
+.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+
+.filtros { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.fil-select, .fil-input { padding:8px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-family:inherit; outline:none; background:var(--gris1); transition:border-color 140ms ease-out, background 140ms ease-out; }
+.fil-select:focus, .fil-input:focus { border-color:var(--azul); background:white; }
+
+.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
+.contenido-inner { max-width:1400px; margin:0 auto; }
+
+.card { background:white; border:1px solid var(--borde); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.03); padding:0; overflow:hidden; }
+
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:1180px; }
+thead th { text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); padding:12px 14px; border-bottom:2px solid var(--gris2); white-space:nowrap; }
+thead th.r { text-align:right; }
+tbody td { padding:10px 14px; font-size:var(--fs-md); border-bottom:1px solid var(--gris2); white-space:nowrap; }
+tbody td.r { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+tbody td.r.vacia { color:var(--gris3); font-weight:400; }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr:hover { background:var(--gris1); }
+
+tfoot td { padding:12px 14px; font-size:var(--fs-md); font-weight:700; border-top:2px solid var(--gris2); }
+tfoot td.r { text-align:right; font-variant-numeric:tabular-nums; }
+
+.tipo-badge { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; padding:3px 7px; border-radius:5px; margin-right:6px; background:var(--gris2); color:var(--gris3); }
+
+.acc-btn { background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:600; color:var(--azul); transition:background 120ms ease-out; }
+.acc-btn:hover { background:var(--gris2); }
+.acc-btn.editar { color:var(--bajo); }
+
+.vacio { text-align:center; padding:48px 20px; color:var(--gris3); font-size:var(--fs-md); }
+
+@media (max-width: 640px) {
+  .page-header h1 { font-size:19px; }
+}
+
+</style>
+</head>
+<body>
+
+<?php $nav_activo = 'operaciones'; include __DIR__ . '/nav.php'; ?>
+
+<div class="page-header">
+  <div>
+    <h1>Listado de operaciones</h1>
+    <p>Comprobantes del día, encolumnados por forma de pago</p>
+  </div>
+  <div class="filtros">
+    <select class="fil-select" id="fil-caja" style="display:none;"></select>
+    <input class="fil-input" id="fil-desde" type="date">
+    <input class="fil-input" id="fil-hasta" type="date">
+  </div>
+</div>
+
+<div class="contenido">
+<div class="contenido-inner">
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Comprobante</th>
+            <th>Cliente</th>
+            <th class="r">Efectivo</th>
+            <th class="r">Transferencia</th>
+            <th class="r">Tarjeta</th>
+            <th class="r">Cheque</th>
+            <th class="r">Cta. Cte.</th>
+            <th class="r">Total</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot id="tfoot" style="display:none;"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+const API = '/BRON/api';
+const $   = id => document.getElementById(id);
+
+let toastTimer = null;
+function toast(msg, tipo = '') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (tipo ? ' ' + tipo : '');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
+}
+function fmt(n) {
+  return '$' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+
+const COLUMNAS_PAGO = [
+  { tipo: 'efectivo',      },
+  { tipo: 'transferencia', },
+  { tipo: 'tarjeta',       },
+  { tipo: 'cheque',        },
+  { tipo: 'cc',            },
+];
+
+function montoColumna(v, tipo) {
+  if (v.tipo_pago === 'mixto') {
+    const p = (v.pagos || []).find(p => p.tipo === tipo);
+    return p ? Number(p.monto) : 0;
+  }
+  return v.tipo_pago === tipo ? Number(v.total) : 0;
+}
+
+const esAdmin = window.BRON_SESION?.rol === 'admin';
+let ventasCache = [];
+
+async function init() {
+  if (esAdmin) {
+    const res = await fetch(`${API}/cajas`);
+    const cajas = await res.json();
+    const sel = $('fil-caja');
+    sel.style.display = '';
+    sel.innerHTML = '<option value="">Todas las cajas</option>' +
+      cajas.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    sel.addEventListener('change', cargar);
+  }
+  const hoy = new Date().toISOString().split('T')[0];
+  $('fil-desde').value = hoy;
+  $('fil-hasta').value = hoy;
+  $('fil-desde').addEventListener('change', cargar);
+  $('fil-hasta').addEventListener('change', cargar);
+  cargar();
+}
+
+async function cargar() {
+  const params = new URLSearchParams();
+  params.set('limit', '500');
+  const cajaId = esAdmin ? $('fil-caja').value : window.BRON_SESION?.caja_id;
+  if (cajaId) params.set('caja_id', cajaId);
+  if ($('fil-desde').value) params.set('fecha_desde', $('fil-desde').value);
+  if ($('fil-hasta').value) params.set('fecha_hasta', $('fil-hasta').value);
+
+  const res = await fetch(`${API}/ventas?${params.toString()}`);
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al cargar las operaciones', 'err'); return; }
+
+  ventasCache = data;
+  render(data);
+}
+
+function render(data) {
+  if (!data.length) {
+    $('tbody').innerHTML = '<tr><td colspan="10"><div class="vacio">No hay operaciones para los filtros aplicados.</div></td></tr>';
+    $('tfoot').style.display = 'none';
+    return;
+  }
+
+  $('tbody').innerHTML = data.map(v => {
+    const cols = COLUMNAS_PAGO.map(c => {
+      const m = montoColumna(v, c.tipo);
+      return m > 0 ? `<td class="r">${fmt(m)}</td>` : `<td class="r vacia">—</td>`;
+    }).join('');
+    return `
+    <tr data-id="${v.id}">
+      <td>${new Date(v.fecha).toLocaleDateString('es-AR', { day:'2-digit', month:'2-digit', year:'numeric' })}</td>
+      <td><span class="tipo-badge">${esc(v.tipo_comprobante ?? '—')}</span>N° ${esc(v.numero)}</td>
+      <td>${esc(v.cliente_nombre ?? '— Consumidor final —')}</td>
+      ${cols}
+      <td class="r">${fmt(v.total)}</td>
+      <td>
+        <button class="acc-btn ver" data-id="${v.id}">Ver</button>
+        <button class="acc-btn editar" data-id="${v.id}">Editar</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const totales = COLUMNAS_PAGO.map(c => data.reduce((s, v) => s + montoColumna(v, c.tipo), 0));
+  const totalGral = data.reduce((s, v) => s + Number(v.total), 0);
+  $('tfoot').innerHTML = `
+    <tr>
+      <td colspan="3">Totales (${data.length})</td>
+      ${totales.map(t => `<td class="r">${fmt(t)}</td>`).join('')}
+      <td class="r">${fmt(totalGral)}</td>
+      <td></td>
+    </tr>`;
+  $('tfoot').style.display = '';
+
+  $('tbody').querySelectorAll('.acc-btn.ver').forEach(btn =>
+    btn.addEventListener('click', () => accionVer(+btn.dataset.id)));
+  $('tbody').querySelectorAll('.acc-btn.editar').forEach(btn =>
+    btn.addEventListener('click', () => accionEditar(+btn.dataset.id)));
+}
+
+function accionVer(id) {
+  window.open(`${API}/ventas/${id}/comprobante`, '_blank');
+}
+
+async function accionEditar(id) {
+  try {
+    const r = await fetch(`${API}/ventas/${id}`);
+    const v = await r.json();
+    if (!r.ok) { toast(v.error || 'Error al cargar la venta', 'err'); return; }
+    try {
+      localStorage.setItem('bron_editar_venta', JSON.stringify(v));
+    } catch {
+      toast('Sin espacio en el navegador para cargar la venta en el editor.', 'err');
+      return;
+    }
+    sessionStorage.setItem('bron_volver_tras_editar', location.href);
+    location.href = 'index.html';
+  } catch {
+    toast('Error de conexión', 'err');
+  }
+}
+
+function actualizarFecha() {
+  const f = $('fecha-hora');
+  if (f) f.textContent = new Date().toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' });
+}
+actualizarFecha();
+setInterval(actualizarFecha, 30000);
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,279 @@
+================================================================================
+BRON — CONTEXTO COMPLETO DEL PROYECTO
+Última actualización: 2026-06-15
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. QUÉ ES BRON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Sistema POS/ERP propio para reemplazar Professional Plus en una ferretería /
+materiales de construcción B2B en Argentina. El dueño es Rolo (único desarrollador).
+
+Estrategia: correr en paralelo con Professional Plus un largo período de prueba
+antes de pasar a producción. AFIP aún NO integrado (se agrega antes de producción).
+
+Hardware: PCs viejas, Chromium en modo kiosk, servidor local XAMPP.
+
+No se copian los PDFs de Professional Plus — el sistema nuevo genera sus propios
+comprobantes.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. STACK TÉCNICO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Backend:   PHP 8+ REST API (XAMPP Apache)
+Base de datos:
+  - XAMPP MySQL en 127.0.0.1:3307
+  - DB bron         → sistema nuevo (root, sin password)
+  - DB professionalplus → copia del ProfPlus ya importada en el mismo servidor
+Frontend:  Vanilla JS, HTML/CSS puro. SIN frameworks (compatibilidad PCs viejas)
+URL base:  http://localhost/BRON/
+
+Professional Plus (legado):
+  - Software Delphi, MySQL 5.5 propio en puerto 3306 (password desconocida)
+  - La copia en XAMPP port 3307 tiene datos hasta 2026-06-12
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. ESTRUCTURA DE ARCHIVOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+C:\xampp\htdocs\BRON\
+│
+├── CONTEXTO_CHAT.txt          ← este archivo
+│
+├── api\
+│   ├── .htaccess              ← RewriteRule todo a index.php
+│   ├── index.php              ← Router principal (match PHP 8)
+│   ├── config\
+│   │   └── db.php             ← PDO singleton (127.0.0.1:3307, db=bron)
+│   └── controllers\
+│       ├── ProductosController.php
+│       ├── ClientesController.php
+│       ├── VentasController.php
+│       ├── StockController.php
+│       ├── ComprasController.php
+│       ├── CuentaCorrienteController.php
+│       └── FiltrosController.php
+│
+├── pos\
+│   ├── index.html             ← POS principal
+│   ├── ventas.html            ← Historial de ventas
+│   ├── cuentacorriente.html   ← Cuenta corriente clientes
+│   ├── stock.html             ← Ajustes de stock
+│   └── compras.html           ← Ingreso de compras
+│
+└── migrate\
+    ├── 00_schema_bron.sql
+    ├── 01_migrate_productos.sql
+    ├── 02_migrate_clientes.sql
+    ├── 03_migrate_ventas.sql
+    ├── 04_migrate_venta_items.sql
+    ├── 05_migrate_cc_clientes.sql
+    └── README.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. SCHEMA DE BASE DE DATOS (bron)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+productos
+  id, codigo, nombre, categoria, subcategoria, precio_venta, costo_actual,
+  stock_actual, stock_minimo, activo
+  + marca (VARCHAR, agregado vía ALTER en migración)
+  + proveedor (VARCHAR, agregado vía ALTER en migración)
+
+clientes
+  id, nombre, cuit, condicion_iva, limite_credito, saldo_cuenta_corriente
+
+proveedores
+  id, nombre, cuit, condicion_iva, saldo_cuenta_corriente
+
+vendedores
+  id, nombre
+
+ventas
+  id, fecha, cliente_id, vendedor_id, total, tipo_comprobante, numero_afip,
+  cae, estado
+  + tipo_pago (VARCHAR, agregado vía ALTER)
+  + observaciones (VARCHAR, agregado vía ALTER)
+
+venta_items
+  id, venta_id, producto_id, cantidad, precio_unitario, costo_unitario
+
+compras
+  id, fecha, proveedor_id, total, estado
+
+compra_items
+  id, compra_id, producto_id, cantidad, costo_unitario
+
+movimientos_stock
+  id, producto_id, tipo, cantidad, referencia_id, fecha
+
+cuenta_corriente_movimientos
+  id, entidad_tipo (cliente|proveedor), entidad_id, tipo (cargo|pago),
+  monto, referencia_id, fecha
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. API — ENDPOINTS COMPLETOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GET  /api/productos?q=&exacto=1&marca=&proveedor=&categoria=&con_stock=1&limit=
+GET  /api/productos/{id}
+
+GET  /api/clientes?q=&limit=
+GET  /api/clientes/{id}         ← incluye últimos 10 movimientos CC
+
+GET  /api/ventas?fecha_desde=&fecha_hasta=&tipo=&cliente_id=&q=&monto_min=&monto_max=&limit=&offset=
+GET  /api/ventas/{id}           ← incluye items completos
+POST /api/ventas                ← { cliente_id, tipo_comprobante, tipo_pago, items:[{producto_id, cantidad, precio_unitario}] }
+
+GET  /api/stock?q=&limit=                            ← busca productos
+GET  /api/stock?historial=1&producto_id=X&limit=     ← movimientos del producto
+POST /api/stock                                      ← { producto_id, tipo: entrada|salida|ajuste, cantidad }
+
+GET  /api/compras?fecha_desde=&fecha_hasta=&proveedor_id=&limit=&offset=
+GET  /api/compras/{id}          ← incluye items
+POST /api/compras               ← { proveedor_id?, items:[{producto_id, cantidad, costo_unitario}] }
+     → actualiza stock_actual y costo_actual de cada producto automáticamente
+
+GET  /api/cc?cliente_id=X&limit=   ← { cliente, movimientos[] }
+POST /api/cc                        ← { cliente_id, monto, tipo: pago|cargo }
+
+GET  /api/filtros               ← { marcas[], proveedores[], categorias[] }
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. MIGRACIÓN DESDE PROFESSIONAL PLUS — ESTADO Y DECISIONES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Qué se migró:
+  - Productos: 51,156+ (activos + borrados que aparecen en ventas 2026)
+  - Clientes: solo los que tienen ventas en 2026
+  - Ventas 2026: 12,472 (REMITOX: 5.942 / FC B-ELECT: 5.624 / FC A-ELECT: 867 / NC: 36 / FC B-FISCAL: 3)
+  - Items de ventas: de stock_movimiento WHERE tipo=0, enlacepadreid=venta
+  - Movimientos CC: de clientescc WHERE Fecha >= 46023 (= 2026-01-01)
+
+Decisiones importantes:
+  - Stock negativo → se pasa a 0 (GREATEST(s.Cantidad, 0))
+  - Productos BORRADO=1 que aparecen en ventas 2026 → activo=0 (referencia histórica)
+  - precio_unitario de venta_items: lookup en precios_movimientos (mejor aproximación, no exacto)
+  - categoria: NULL en todos (familia_subfamilia_producto vacía en copia XAMPP)
+  - proveedor: solo 3,041 de 51k productos tienen proveedor (normal, no todos están linkeados)
+  - tipo_comprobante: viene de professionalplus.comprobantes.Nombre (JOIN por tipofactura)
+  - Fecha Delphi: entero = días desde 1899-12-30 → DATE_ADD('1899-12-30', INTERVAL Fecha DAY)
+
+Backup de Professional Plus:
+  - Formato: .bak.g = gzip de mysqldump (magic bytes 1F 8B)
+  - No fue necesario importarlo: la copia en XAMPP port 3307 ya tenía los datos
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. POS (pos/index.html) — FUNCIONALIDADES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Atajos de teclado:
+  F2  → Búsqueda rápida de producto (dropdown inline, debounce 250ms)
+  F3  → Modal avanzado de búsqueda de productos
+  F4  → Búsqueda de cliente
+  F10 → Confirmar venta
+
+Modal F3 (búsqueda avanzada):
+  - Filtros: Proveedor, Marca, Rubro (cargados de /api/filtros una vez)
+  - Toggle "Con stock"
+  - Switch Exacto / Similar
+  - Tabla: Código | Nombre/Marca | Proveedor | Rubro | Stock | Precio
+  - Navegación: ↑↓ Enter para seleccionar, Escape para cerrar
+  - Stock coloreado: verde (>0), amarillo (bajo mínimo), rojo (<0)
+
+Comprobantes disponibles: REMITO, FC B-ELECT, FC A-ELECT, PRESUPUESTO
+Formas de pago: efectivo, transferencia, cc, tarjeta, cheque
+  → Si pago=cc: registra en cuenta_corriente_movimientos y actualiza saldo cliente
+
+Lógica al confirmar:
+  1. INSERT ventas
+  2. INSERT venta_items (por cada ítem)
+  3. UPDATE productos stock_actual -= cantidad (por cada ítem)
+  4. INSERT movimientos_stock tipo='venta' (por cada ítem)
+  5. Si cc: INSERT cuenta_corriente_movimientos + UPDATE clientes.saldo_cc
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. MÓDULOS SECUNDARIOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ventas.html — Historial de ventas
+  Filtros: fecha desde/hasta, tipo comprobante, cliente (live search dropdown
+           que filtra por cliente_id server-side), monto mín/máx, búsqueda libre
+           (busca en número, nombre cliente Y monto vía CAST(FLOOR(total) AS CHAR))
+  Agrupación client-side (sin re-fetch): sin agrupar / por cliente / por tipo
+  Click en fila → modal con detalle completo del comprobante + items
+
+cuentacorriente.html — Cuenta corriente
+  Búsqueda live de cliente → card con nombre, CUIT, condición IVA, saldo, límite
+  Tabla de movimientos con saldo acumulado por fila
+  Botón "Registrar pago" → form inline → POST /api/cc
+
+stock.html — Ajuste de stock
+  Búsqueda live de producto → card con stock actual (coloreado), mínimo, precio, costo
+  Tipos de ajuste: entrada (+cantidad), salida (-cantidad), ajuste (fijar valor absoluto)
+  Historial de movimientos del producto seleccionado
+
+compras.html — Ingreso de compras
+  Layout similar al POS: busca productos → lista de ítems editables (cantidad + costo)
+  Al confirmar: actualiza stock_actual Y costo_actual de cada producto
+  Historial de últimas 10 compras visible a la derecha
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. NAVEGACIÓN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Barra de navegación oscura (#1e3a5f) en todas las páginas:
+  BRON | POS | Ventas | Cta. Cte. | Stock | Compras
+  (la página activa resaltada en blanco)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. DETALLES TÉCNICOS IMPORTANTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Router (api/index.php):
+  - Parsea /BRON/api/{recurso}/{id}
+  - Usa match() de PHP 8
+  - Helper global json(int $status, mixed $data): never
+  - CORS habilitado para todos los orígenes
+  - Try/catch PDOException y Throwable
+
+DB (api/config/db.php):
+  - PDO singleton
+  - host=127.0.0.1, port=3307, dbname=bron
+  - root sin password
+  - ATTR_ERRMODE_EXCEPTION, FETCH_ASSOC, EMULATE_PREPARES=false
+
+Diseño CSS:
+  Variables: --azul #2563eb, --verde #16a34a, --rojo #dc2626
+  --gris1 #f3f4f6, --gris2 #e5e7eb, --gris3 #9ca3af
+  --texto #111827, --borde #d1d5db
+  Sin frameworks. system-ui font. Diseño responsivo con flex/grid.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. LO QUE FALTA / PRÓXIMOS PASOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Pendiente (en orden de prioridad sugerida):
+  [ ] Dashboard — resumen del día: ventas totales, stock bajo mínimo, CC por cobrar
+  [ ] ABM Productos — crear, editar, actualizar precios individuales
+  [ ] ABM Clientes — crear, editar, ajustar límite de crédito
+  [ ] Lista de precios masiva — actualización por % o valor fijo, por marca/categoría
+  [ ] Reportes — ventas por período, ranking productos, clientes con mayor deuda CC
+  [ ] AFIP — integración factura electrónica (antes de ir a producción)
+  [ ] ABM Proveedores — la tabla existe pero no hay CRUD
+  [ ] Vendedores — tabla existe pero no se usa aún en ventas
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. INSTRUCCIONES PARA CONTINUAR EN UN CHAT NUEVO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Al iniciar nuevo chat, decirle a Claude:
+
+  "Estoy desarrollando BRON, un sistema POS/ERP para reemplazar Professional Plus
+   en una ferretería en Argentina. El contexto completo está en
+   C:\xampp\htdocs\BRON\CONTEXTO_CHAT.txt — leelo antes de continuar.
+   [describir qué querés hacer a continuación]"
+
+================================================================================

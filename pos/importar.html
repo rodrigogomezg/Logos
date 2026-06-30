@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — Importar productos</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+
+.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; }
+.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
+.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+
+.tab-bar { background:white; border-bottom:2px solid var(--gris2); display:flex; padding:0 clamp(20px, 4vw, 48px); flex-shrink:0; }
+.tab-btn { padding:9px 20px; font-size:var(--fs-sm); font-weight:600; border:none; background:none; cursor:pointer; color:var(--gris3); border-bottom:2px solid transparent; margin-bottom:-2px; transition:color .12s,border-color .12s; }
+.tab-btn:hover { color:var(--texto); }
+.tab-btn.activo { color:var(--azul); border-bottom-color:var(--azul); }
+
+.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
+.contenido-inner { max-width:1200px; margin:0 auto; }
+
+.pasos { display:flex; gap:6px; margin-bottom:18px; }
+.paso-pill { flex:1; padding:9px 14px; background:white; border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-weight:700; color:var(--gris3); text-align:center; }
+.paso-pill.activo { border-color:var(--azul); color:var(--azul); background:#FEF2F2; }
+.paso-pill.hecho  { border-color:var(--verde); color:#15803D; background:#F0FDF4; }
+
+.card { background:white; border:1px solid var(--borde); border-radius:12px; padding:22px; margin-bottom:16px; }
+.card h2 { font-size:16px; font-weight:800; margin-bottom:4px; }
+.card .sub { font-size:var(--fs-sm); color:var(--gris3); margin-bottom:16px; }
+
+.form-row { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px; }
+.form-group { display:flex; flex-direction:column; gap:5px; }
+.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.form-input { padding:9px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); min-width:220px; }
+.form-input:focus { border-color:var(--azul); background:white; }
+.form-hint { font-size:12px; color:var(--gris3); margin-top:4px; }
+
+.btn-pri { padding:10px 20px; background:var(--azul); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+.btn-pri:hover:not(:disabled) { background:var(--azul-h); }
+.btn-pri:disabled { opacity:.5; cursor:not-allowed; }
+.btn-sec { padding:10px 20px; background:var(--gris2); color:var(--texto); border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+.btn-sec:hover { background:var(--borde); }
+.btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+
+.aviso-plantilla { background:#EFF6FF; border:1px solid #BFDBFE; color:#1D4ED8; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
+
+.map-grid { display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; margin-bottom:18px; }
+.map-col { flex:0 0 170px; border:1.5px solid var(--borde); border-radius:8px; padding:10px; background:var(--gris1); }
+.map-col-letra { font-size:11px; font-weight:700; color:var(--gris3); margin-bottom:6px; }
+.map-col-sel { width:100%; padding:6px 8px; border:1.5px solid var(--borde); border-radius:6px; font-size:13px; font-family:inherit; background:white; margin-bottom:8px; }
+.map-col-sel.mapeada { border-color:var(--azul); background:#FEF2F2; }
+.map-col-muestra { font-size:12px; color:var(--gris3); line-height:1.6; }
+.map-col-muestra div { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.map-col-muestra .header { font-weight:700; color:var(--texto); }
+
+.opciones-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:18px; margin-bottom:14px; }
+.radio-row { display:flex; flex-direction:column; gap:6px; }
+.radio-item { display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer; }
+.radio-item input { accent-color:var(--azul); cursor:pointer; }
+.chk-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; }
+.chk-item { display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer; }
+.chk-item input { accent-color:var(--azul); cursor:pointer; width:15px; height:15px; }
+
+.totales-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:14px; margin-bottom:18px; }
+.total-box { background:var(--gris1); border-radius:10px; padding:14px 16px; }
+.total-box .lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); margin-bottom:4px; }
+.total-box .val { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
+.total-box.crear .val      { color:#15803D; }
+.total-box.actualizar .val { color:var(--azul); }
+.total-box.error .val      { color:var(--rojo); }
+.total-box.discontinuado .val { color:var(--bajo); }
+
+details.seccion { border:1px solid var(--borde); border-radius:8px; margin-bottom:10px; overflow:hidden; }
+details.seccion summary { padding:11px 14px; font-weight:700; font-size:13px; cursor:pointer; background:var(--gris1); list-style:none; display:flex; align-items:center; gap:8px; }
+details.seccion summary::-webkit-details-marker { display:none; }
+details.seccion summary .car { margin-left:auto; font-weight:800; }
+.table-wrap { overflow-x:auto; }
+table.tbl-prev { width:100%; border-collapse:collapse; }
+table.tbl-prev th { text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); padding:8px 14px; border-bottom:2px solid var(--gris2); white-space:nowrap; }
+table.tbl-prev td { padding:8px 14px; font-size:13px; border-bottom:1px solid var(--gris2); vertical-align:top; }
+table.tbl-prev tr:last-child td { border-bottom:none; }
+.diff-line { white-space:nowrap; }
+.diff-campo { color:var(--gris3); font-weight:600; }
+.diff-antes { color:var(--rojo); text-decoration:line-through; }
+.diff-despues { color:#15803D; font-weight:700; }
+.badge-reactiva { display:inline-block; background:#EFF6FF; color:#1D4ED8; font-size:10px; font-weight:700; text-transform:uppercase; padding:2px 7px; border-radius:5px; margin-left:6px; }
+.vacio-mini { padding:14px; text-align:center; color:var(--gris3); font-size:13px; }
+
+.pag-bar { padding:10px 0; display:flex; align-items:center; justify-content:center; gap:12px; }
+.btn-pag { padding:5px 14px; background:white; border:1.5px solid var(--borde); border-radius:7px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; color:var(--texto); }
+.btn-pag:hover:not(:disabled) { background:var(--gris2); }
+.btn-pag:disabled { color:var(--gris3); cursor:not-allowed; }
+.pag-info { font-size:var(--fs-sm); color:var(--gris3); }
+
+.m-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; display:none; align-items:center; justify-content:center; }
+.m-overlay.abierto { display:flex; }
+.modal { background:white; border-radius:12px; box-shadow:0 24px 60px rgba(0,0,0,.25); max-height:85vh; width:min(720px,95vw); display:flex; flex-direction:column; overflow:hidden; }
+.m-head { padding:16px 20px; border-bottom:1.5px solid var(--gris2); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-shrink:0; }
+.m-head h3 { font-size:var(--fs-lg); font-weight:800; }
+.m-head .sub { font-size:12px; color:var(--gris3); margin-top:2px; }
+.m-cerrar { width:28px; height:28px; background:var(--gris2); border:none; border-radius:50%; font-size:16px; cursor:pointer; flex-shrink:0; }
+.m-cerrar:hover { background:var(--gris3); color:white; }
+.m-body { padding:0; overflow-y:auto; flex:1; }
+
+.estado-vacio { padding:50px 20px; text-align:center; color:var(--gris3); font-size:14px; }
+
+</style>
+</head>
+<body>
+
+<?php $nav_activo = 'importar'; include __DIR__ . '/nav.php'; ?>
+
+<div class="page-header">
+  <h1>Importar productos</h1>
+  <p>Cargá y actualizá productos a partir de una lista de precios de un proveedor</p>
+</div>
+
+<div class="tab-bar">
+  <button class="tab-btn activo" data-tab="nueva">Nueva importación</button>
+  <button class="tab-btn" data-tab="historial">Historial</button>
+</div>
+
+<div class="contenido">
+<div class="contenido-inner">
+
+  <!-- TAB: Nueva importación -->
+  <div id="tab-nueva">
+    <div class="pasos">
+      <div class="paso-pill activo" id="pill-1">1. Archivo</div>
+      <div class="paso-pill" id="pill-2">2. Mapeo</div>
+      <div class="paso-pill" id="pill-3">3. Vista previa</div>
+      <div class="paso-pill" id="pill-4">4. Resultado</div>
+    </div>
+
+    <!-- Paso 1 -->
+    <div class="card" id="paso-1">
+      <h2>Proveedor y archivo</h2>
+      <p class="sub">Elegí el proveedor al que corresponde la lista y subí el archivo (.xlsx, .xls o .csv).</p>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Proveedor</label>
+          <input type="text" id="p1-proveedor" class="form-input" list="dl-proveedores" autocomplete="off" placeholder="Nombre del proveedor">
+          <datalist id="dl-proveedores"></datalist>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Archivo</label>
+          <input type="file" id="p1-archivo" class="form-input" accept=".xlsx,.xls,.csv">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-pri" id="p1-btn-leer">Leer archivo</button>
+      </div>
+    </div>
+
+    <!-- Paso 2 -->
+    <div class="card" id="paso-2" style="display:none">
+      <h2>Mapeo de columnas</h2>
+      <p class="sub" id="p2-sub"></p>
+      <div id="p2-aviso-plantilla" class="aviso-plantilla" style="display:none"></div>
+
+      <div class="map-grid" id="p2-map-grid"></div>
+
+      <div class="opciones-grid">
+        <div class="form-group">
+          <label class="form-label">Fila donde empiezan los datos</label>
+          <input type="number" id="p2-fila-inicio" class="form-input" min="1" value="2" style="min-width:100px">
+          <span class="form-hint">Si la fila 1 es un encabezado, dejá 2.</span>
+        </div>
+        <div class="radio-row">
+          <label class="form-label">Los precios de esta lista…</label>
+          <label class="radio-item"><input type="radio" name="p2-iva" value="sin_iva"> son netos, sin IVA</label>
+          <label class="radio-item"><input type="radio" name="p2-iva" value="con_iva"> ya incluyen IVA</label>
+          <label class="radio-item"><input type="radio" name="p2-iva" value="no_aplica" checked> no aplica / cargar tal cual</label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Margen sobre el costo (%)</label>
+          <input type="number" id="p2-margen" class="form-input" step="0.1" placeholder="ej: 35" style="min-width:100px">
+          <span class="form-hint" id="p2-margen-hint">Se usa para calcular el precio de venta solo si no mapeaste una columna de Precio venta.</span>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label">Campos a actualizar en productos ya existentes</label>
+        <div class="chk-grid" id="p2-campos-grid"></div>
+        <span class="form-hint">Los productos nuevos siempre se crean con todos los campos mapeados.</span>
+      </div>
+
+      <label class="radio-item" style="margin-bottom:4px">
+        <input type="checkbox" id="p2-guardar-plantilla" checked>
+        Guardar este mapeo para próximas importaciones de este proveedor
+      </label>
+
+      <div class="btn-row">
+        <button class="btn-sec" id="p2-btn-volver">Volver</button>
+        <button class="btn-pri" id="p2-btn-preview">Generar vista previa</button>
+      </div>
+    </div>
+
+    <!-- Paso 3 -->
+    <div class="card" id="paso-3" style="display:none">
+      <h2>Vista previa</h2>
+      <p class="sub">Revisá los cambios antes de aplicarlos. Todavía no se modificó nada en la base.</p>
+
+      <div class="totales-grid">
+        <div class="total-box crear"><div class="lbl">Crear</div><div class="val" id="p3-n-crear">0</div></div>
+        <div class="total-box actualizar"><div class="lbl">Actualizar</div><div class="val" id="p3-n-actualizar">0</div></div>
+        <div class="total-box error"><div class="lbl">Errores</div><div class="val" id="p3-n-errores">0</div></div>
+        <div class="total-box discontinuado"><div class="lbl">Discontinuados</div><div class="val" id="p3-n-discontinuados">0</div></div>
+      </div>
+
+      <details class="seccion" id="sec-crear">
+        <summary>Productos a crear <span class="car" id="cnt-crear"></span></summary>
+        <div class="table-wrap"><table class="tbl-prev"><thead><tr><th>Código</th><th>Nombre</th><th>Costo</th><th>Precio venta</th></tr></thead><tbody id="tb-crear"></tbody></table></div>
+      </details>
+
+      <details class="seccion" id="sec-actualizar">
+        <summary>Productos a actualizar <span class="car" id="cnt-actualizar"></span></summary>
+        <div class="table-wrap"><table class="tbl-prev"><thead><tr><th>Código</th><th>Nombre</th><th>Cambios</th></tr></thead><tbody id="tb-actualizar"></tbody></table></div>
+      </details>
+
+      <details class="seccion" id="sec-errores">
+        <summary>Errores <span class="car" id="cnt-errores"></span></summary>
+        <div class="table-wrap"><table class="tbl-prev"><thead><tr><th>Fila</th><th>Código</th><th>Motivo</th></tr></thead><tbody id="tb-errores"></tbody></table></div>
+      </details>
+
+      <details class="seccion" id="sec-discontinuados">
+        <summary>Productos discontinuados (de este proveedor, no aparecen en la lista nueva) <span class="car" id="cnt-discontinuados"></span></summary>
+        <div style="padding:10px 14px"><label class="chk-item"><input type="checkbox" id="p3-chk-todos-disc"> Marcar todos para desactivar</label></div>
+        <div class="table-wrap"><table class="tbl-prev"><thead><tr><th style="width:40px">Desact.</th><th>Código</th><th>Nombre</th></tr></thead><tbody id="tb-discontinuados"></tbody></table></div>
+      </details>
+
+      <div class="btn-row">
+        <button class="btn-sec" id="p3-btn-volver">Volver</button>
+        <button class="btn-pri" id="p3-btn-confirmar">Confirmar importación</button>
+      </div>
+    </div>
+
+    <!-- Paso 4 -->
+    <div class="card" id="paso-4" style="display:none">
+      <h2>Importación aplicada</h2>
+      <p class="sub" id="p4-sub"></p>
+      <div class="totales-grid">
+        <div class="total-box crear"><div class="lbl">Creados</div><div class="val" id="p4-n-creados">0</div></div>
+        <div class="total-box actualizar"><div class="lbl">Actualizados</div><div class="val" id="p4-n-actualizados">0</div></div>
+        <div class="total-box error"><div class="lbl">Errores</div><div class="val" id="p4-n-errores">0</div></div>
+        <div class="total-box discontinuado"><div class="lbl">Desactivados</div><div class="val" id="p4-n-desactivados">0</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-sec" id="p4-btn-historial">Ver en historial</button>
+        <button class="btn-pri" id="p4-btn-nueva">Nueva importación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Historial -->
+  <div id="tab-historial" style="display:none">
+    <div class="card" style="padding:0">
+      <div class="table-wrap">
+        <table class="tbl-prev">
+          <thead><tr><th>Fecha</th><th>Proveedor</th><th>Archivo</th><th>Usuario</th><th>Filas</th><th>Creados</th><th>Actualizados</th><th>Errores</th><th>Desactivados</th></tr></thead>
+          <tbody id="tb-historial"><tr><td colspan="9" class="estado-vacio">Cargando…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="pag-bar">
+        <button class="btn-pag" id="h-prev" disabled>← Anterior</button>
+        <span class="pag-info" id="h-info"></span>
+        <button class="btn-pag" id="h-next" disabled>Siguiente →</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<!-- Modal detalle de lote -->
+<div class="m-overlay" id="overlay-detalle">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="m-head">
+      <div>
+        <h3 id="det-titulo">Detalle de importación</h3>
+        <div class="sub" id="det-sub"></div>
+      </div>
+      <button class="m-cerrar" id="det-cerrar" aria-label="Cerrar">×</button>
+    </div>
+    <div class="m-body">
+      <table class="tbl-prev">
+        <thead><tr><th>Código</th><th>Acción</th><th>Detalle</th></tr></thead>
+        <tbody id="tb-detalle"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+const API = '/BRON/api';
+const $   = id => document.getElementById(id);
+
+let toastTimer = null;
+function toast(msg, tipo = '') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (tipo ? ' ' + tipo : '');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
+}
+function fmt(n) {
+  if (n == null || isNaN(n)) return '—';
+  return '$ ' + parseFloat(n).toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+
+const CAMPO_LABEL = {
+  codigo:'Código', nombre:'Nombre', marca:'Marca', categoria:'Categoría', subcategoria:'Subcategoría',
+  proveedor:'Proveedor', costo_actual:'Costo', precio_venta:'Precio venta', stock_minimo:'Stock mínimo', activo:'Activo',
+};
+const CAMPOS_MAPEABLES = ['codigo','nombre','marca','categoria','subcategoria','costo_actual','precio_venta','stock_minimo'];
+const CAMPOS_ACTUALIZABLES = ['nombre','marca','categoria','subcategoria','proveedor','costo_actual','precio_venta','stock_minimo'];
+
+// ── Estado del wizard ──────────────────────────────────────────
+let estado = {
+  token: null, proveedor: null, columnas: [], primeraFila: [], muestra: [], totalFilas: 0,
+  preview: null, discSeleccionados: new Set(),
+};
+
+function irPaso(n) {
+  for (let i = 1; i <= 4; i++) {
+    $('paso-' + i).style.display = i === n ? '' : 'none';
+    const pill = $('pill-' + i);
+    pill.classList.toggle('activo', i === n);
+    pill.classList.toggle('hecho', i < n);
+  }
+}
+
+function cambiarTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('activo', b.dataset.tab === tab));
+  $('tab-nueva').style.display     = tab === 'nueva'     ? '' : 'none';
+  $('tab-historial').style.display = tab === 'historial' ? '' : 'none';
+  if (tab === 'historial') cargarHistorial(1);
+}
+
+async function cargarProveedores() {
+  try {
+    const d = await fetch(`${API}/filtros`).then(r => r.json());
+    $('dl-proveedores').innerHTML = (d.proveedores || []).map(p => `<option value="${esc(p)}">`).join('');
+  } catch (e) { /* no bloquea el flujo */ }
+}
+
+// ── Paso 1: leer archivo ────────────────────────────────────────
+async function leerArchivo() {
+  const proveedor = $('p1-proveedor').value.trim();
+  const archivo   = $('p1-archivo').files[0];
+  if (!proveedor) { toast('Ingresá el proveedor', 'err'); return; }
+  if (!archivo)   { toast('Elegí un archivo', 'err'); return; }
+
+  const btn = $('p1-btn-leer');
+  btn.disabled = true; btn.textContent = 'Leyendo…';
+  try {
+    const fd = new FormData();
+    fd.append('archivo', archivo);
+    fd.append('proveedor', proveedor);
+    const res = await fetch(`${API}/productos-import/leer`, { method:'POST', body:fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al leer el archivo');
+
+    estado.token       = data.token;
+    estado.proveedor   = proveedor;
+    estado.columnas    = data.columnas;
+    estado.primeraFila = data.primera_fila;
+    estado.muestra     = data.muestra;
+    estado.totalFilas  = data.total_filas;
+
+    renderMapeo(data.mapeo_sugerido, data.opciones_sugeridas);
+    irPaso(2);
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Leer archivo';
+  }
+}
+
+// ── Paso 2: mapeo de columnas ────────────────────────────────────
+function renderMapeo(mapeoSugerido, opcionesSugeridas) {
+  $('p2-sub').textContent = `${estado.totalFilas} filas detectadas en el archivo de ${estado.proveedor}.`;
+
+  const avisoEl = $('p2-aviso-plantilla');
+  if (mapeoSugerido) {
+    avisoEl.style.display = '';
+    avisoEl.textContent = `Se precargó el mapeo guardado para "${estado.proveedor}". Revisalo y ajustalo si hace falta.`;
+  } else {
+    avisoEl.style.display = 'none';
+  }
+
+  const colsSugeridas = (mapeoSugerido && mapeoSugerido.columnas) || {};
+  const idxAField = {};
+  for (const campo of CAMPOS_MAPEABLES) {
+    const idx = colsSugeridas[campo];
+    if (idx !== undefined && idx !== null && idx !== '') idxAField[idx] = campo;
+  }
+
+  $('p2-map-grid').innerHTML = estado.columnas.map((letra, i) => {
+    const opciones = ['<option value="">Ignorar</option>']
+      .concat(CAMPOS_MAPEABLES.map(c => `<option value="${c}"${idxAField[i] === c ? ' selected' : ''}>${CAMPO_LABEL[c]}</option>`));
+    const header  = estado.primeraFila[i] ?? '';
+    const muestra = estado.muestra.map(fila => fila[i] ?? '').slice(0, 3);
+    return `<div class="map-col">
+      <div class="map-col-letra">Columna ${letra}</div>
+      <select class="map-col-sel" data-idx="${i}">${opciones.join('')}</select>
+      <div class="map-col-muestra">
+        <div class="header">${esc(header)}</div>
+        ${muestra.map(v => `<div>${esc(v)}</div>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.map-col-sel').forEach(sel => {
+    sel.classList.toggle('mapeada', !!sel.value);
+    sel.addEventListener('change', () => {
+      sel.classList.toggle('mapeada', !!sel.value);
+      actualizarHintMargen();
+    });
+  });
+
+  $('p2-fila-inicio').value = (mapeoSugerido && mapeoSugerido.fila_inicio) || 2;
+
+  const ivaSugerido = (opcionesSugeridas && opcionesSugeridas.iva) || 'no_aplica';
+  document.querySelectorAll('input[name="p2-iva"]').forEach(r => r.checked = r.value === ivaSugerido);
+  $('p2-margen').value = (opcionesSugeridas && opcionesSugeridas.margen_pct) ?? '';
+
+  const camposSugeridos = (opcionesSugeridas && opcionesSugeridas.campos_actualizar) || CAMPOS_ACTUALIZABLES;
+  $('p2-campos-grid').innerHTML = CAMPOS_ACTUALIZABLES.map(c =>
+    `<label class="chk-item"><input type="checkbox" value="${c}"${camposSugeridos.includes(c) ? ' checked' : ''}> ${CAMPO_LABEL[c]}</label>`
+  ).join('');
+
+  actualizarHintMargen();
+}
+
+function colMapeadaA(campo) {
+  const sel = [...document.querySelectorAll('.map-col-sel')].find(s => s.value === campo);
+  return sel ? parseInt(sel.dataset.idx) : null;
+}
+
+function actualizarHintMargen() {
+  const tienePrecio = colMapeadaA('precio_venta') !== null;
+  $('p2-margen').disabled = tienePrecio;
+  $('p2-margen-hint').textContent = tienePrecio
+    ? 'No se usa: ya mapeaste una columna de Precio venta, se va a tomar tal cual.'
+    : 'Se usa para calcular el precio de venta solo si no mapeaste una columna de Precio venta.';
+}
+
+function recolectarMapeoYOpciones() {
+  const columnas = {};
+  for (const campo of CAMPOS_MAPEABLES) columnas[campo] = colMapeadaA(campo);
+  const mapeo = { fila_inicio: parseInt($('p2-fila-inicio').value) || 1, columnas };
+
+  const iva = document.querySelector('input[name="p2-iva"]:checked')?.value || 'no_aplica';
+  const margenVal = $('p2-margen').value.trim();
+  const campos_actualizar = [...document.querySelectorAll('#p2-campos-grid input:checked')].map(c => c.value);
+  const opciones = { iva, margen_pct: margenVal !== '' ? parseFloat(margenVal) : null, campos_actualizar };
+
+  return { mapeo, opciones };
+}
+
+async function generarPreview() {
+  const { mapeo, opciones } = recolectarMapeoYOpciones();
+  if (mapeo.columnas.codigo === null) { toast('Mapeá la columna de Código', 'err'); return; }
+
+  const btn = $('p2-btn-preview');
+  btn.disabled = true; btn.textContent = 'Generando…';
+  try {
+    const res = await fetch(`${API}/productos-import/preview`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ token: estado.token, proveedor: estado.proveedor, mapeo, opciones }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al generar la vista previa');
+    estado.preview = data;
+    estado.mapeo = mapeo;
+    estado.opciones = opciones;
+    estado.discSeleccionados = new Set();
+    renderPreview(data);
+    irPaso(3);
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Generar vista previa';
+  }
+}
+
+// ── Paso 3: vista previa ──────────────────────────────────────────
+function renderPreview(data) {
+  $('p3-n-crear').textContent          = data.resumen.crear;
+  $('p3-n-actualizar').textContent     = data.resumen.actualizar;
+  $('p3-n-errores').textContent        = data.resumen.errores;
+  $('p3-n-discontinuados').textContent = data.resumen.discontinuados;
+  $('cnt-crear').textContent          = data.resumen.crear;
+  $('cnt-actualizar').textContent     = data.resumen.actualizar;
+  $('cnt-errores').textContent        = data.resumen.errores;
+  $('cnt-discontinuados').textContent = data.resumen.discontinuados;
+
+  $('tb-crear').innerHTML = data.crear.length ? data.crear.map(r => `
+    <tr><td>${esc(r.codigo)}</td><td>${esc(r.nombre)}</td><td>${fmt(r.costo_actual)}</td><td>${fmt(r.precio_venta)}</td></tr>
+  `).join('') : '<tr><td colspan="4" class="vacio-mini">Nada para crear</td></tr>';
+
+  $('tb-actualizar').innerHTML = data.actualizar.length ? data.actualizar.map(r => {
+    const lineas = Object.keys(r.despues).filter(c => c !== 'activo').map(campo => {
+      const esNum = ['costo_actual','precio_venta','stock_minimo'].includes(campo);
+      const a = esNum ? fmt(r.antes[campo]) : esc(r.antes[campo] ?? '—');
+      const d = esNum ? fmt(r.despues[campo]) : esc(r.despues[campo] ?? '—');
+      return `<div class="diff-line"><span class="diff-campo">${CAMPO_LABEL[campo] || campo}:</span> <span class="diff-antes">${a}</span> → <span class="diff-despues">${d}</span></div>`;
+    }).join('');
+    const badge = r.reactiva ? '<span class="badge-reactiva">Reactivado</span>' : '';
+    return `<tr><td>${esc(r.codigo)}</td><td>${esc(r.nombre)}${badge}</td><td>${lineas || '—'}</td></tr>`;
+  }).join('') : '<tr><td colspan="3" class="vacio-mini">Nada para actualizar</td></tr>';
+
+  $('tb-errores').innerHTML = data.errores.length ? data.errores.map(r => `
+    <tr><td>${r.fila}</td><td>${esc(r.codigo || '—')}</td><td>${esc(r.mensaje)}</td></tr>
+  `).join('') : '<tr><td colspan="3" class="vacio-mini">Sin errores</td></tr>';
+
+  $('tb-discontinuados').innerHTML = data.discontinuados.length ? data.discontinuados.map(r => `
+    <tr><td><input type="checkbox" class="chk-disc" data-id="${r.id}"></td><td>${esc(r.codigo)}</td><td>${esc(r.nombre)}</td></tr>
+  `).join('') : '<tr><td colspan="3" class="vacio-mini">No hay productos discontinuados</td></tr>';
+
+  document.querySelectorAll('.chk-disc').forEach(c => c.addEventListener('change', () => {
+    const id = parseInt(c.dataset.id);
+    if (c.checked) estado.discSeleccionados.add(id); else estado.discSeleccionados.delete(id);
+  }));
+  $('p3-chk-todos-disc').checked = false;
+}
+
+function toggleTodosDiscontinuados() {
+  const marcar = $('p3-chk-todos-disc').checked;
+  document.querySelectorAll('.chk-disc').forEach(c => {
+    c.checked = marcar;
+    const id = parseInt(c.dataset.id);
+    if (marcar) estado.discSeleccionados.add(id); else estado.discSeleccionados.delete(id);
+  });
+}
+
+async function confirmarImportacion() {
+  const btn = $('p3-btn-confirmar');
+  btn.disabled = true; btn.textContent = 'Aplicando…';
+  try {
+    const res = await fetch(`${API}/productos-import/confirmar`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        token: estado.token, proveedor: estado.proveedor, mapeo: estado.mapeo, opciones: estado.opciones,
+        desactivar_ids: [...estado.discSeleccionados],
+        guardar_plantilla: $('p2-guardar-plantilla').checked,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al confirmar la importación');
+
+    estado.ultimoLoteId = data.lote_id;
+    $('p4-sub').textContent = `Importación #${data.lote_id} de ${estado.proveedor} aplicada correctamente.`;
+    $('p4-n-creados').textContent      = data.resumen.creados;
+    $('p4-n-actualizados').textContent = data.resumen.actualizados;
+    $('p4-n-errores').textContent      = data.resumen.errores;
+    $('p4-n-desactivados').textContent = data.resumen.desactivados;
+    irPaso(4);
+    toast('Importación aplicada', 'ok');
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirmar importación';
+  }
+}
+
+function nuevaImportacion() {
+  estado = { token:null, proveedor:null, columnas:[], primeraFila:[], muestra:[], totalFilas:0, preview:null, discSeleccionados:new Set() };
+  $('p1-proveedor').value = '';
+  $('p1-archivo').value = '';
+  irPaso(1);
+}
+
+// ── Historial ──────────────────────────────────────────────────────
+let histPagina = 1, histTotalPags = 1;
+
+async function cargarHistorial(pagina) {
+  histPagina = pagina;
+  $('tb-historial').innerHTML = '<tr><td colspan="9" class="estado-vacio">Cargando…</td></tr>';
+  try {
+    const res = await fetch(`${API}/productos-import?page=${pagina}&per_page=20`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al cargar el historial');
+    histTotalPags = data.pages || 1;
+    $('h-prev').disabled = pagina <= 1;
+    $('h-next').disabled = pagina >= histTotalPags;
+    $('h-info').textContent = `Página ${data.page} de ${data.pages} · ${data.total} importaciones`;
+
+    if (!data.items.length) {
+      $('tb-historial').innerHTML = '<tr><td colspan="9" class="estado-vacio">Todavía no se hizo ninguna importación</td></tr>';
+      return;
+    }
+    $('tb-historial').innerHTML = data.items.map(l => `
+      <tr style="cursor:pointer" data-id="${l.id}">
+        <td>${new Date(l.creado_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' })}</td>
+        <td>${esc(l.proveedor)}</td>
+        <td>${esc(l.archivo)}</td>
+        <td>${esc(l.usuario_nombre)}</td>
+        <td>${l.total_filas}</td>
+        <td>${l.creados}</td>
+        <td>${l.actualizados}</td>
+        <td>${l.errores}</td>
+        <td>${l.desactivados}</td>
+      </tr>`).join('');
+    document.querySelectorAll('#tb-historial tr[data-id]').forEach(tr =>
+      tr.addEventListener('click', () => abrirDetalleLote(parseInt(tr.dataset.id))));
+  } catch (e) {
+    $('tb-historial').innerHTML = `<tr><td colspan="9" class="estado-vacio">${esc(e.message)}</td></tr>`;
+  }
+}
+
+async function abrirDetalleLote(id) {
+  $('det-titulo').textContent = `Importación #${id}`;
+  $('det-sub').textContent = 'Cargando…';
+  $('tb-detalle').innerHTML = '';
+  $('overlay-detalle').classList.add('abierto');
+  try {
+    const res = await fetch(`${API}/productos-import/${id}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al cargar el detalle');
+    const l = data.lote;
+    $('det-sub').textContent = `${esc(l.proveedor)} · ${esc(l.archivo)} · ${esc(l.usuario_nombre)} · ${new Date(l.creado_en).toLocaleString('es-AR')}`;
+    $('tb-detalle').innerHTML = data.detalle.length ? data.detalle.map(d => {
+      let info = d.mensaje || '';
+      if (d.despues) {
+        info = Object.entries(d.despues).map(([campo, valor]) => {
+          const antes = d.antes ? d.antes[campo] : undefined;
+          return `${CAMPO_LABEL[campo] || campo}: ${esc(antes ?? '—')} → ${esc(valor)}`;
+        }).join('<br>');
+      }
+      const accLabel = { crear:'Creado', actualizar:'Actualizado', error:'Error', desactivado:'Desactivado' }[d.accion] || d.accion;
+      return `<tr><td>${esc(d.codigo || '—')}</td><td>${accLabel}</td><td>${info}</td></tr>`;
+    }).join('') : '<tr><td colspan="3" class="vacio-mini">Sin detalle</td></tr>';
+  } catch (e) {
+    $('tb-detalle').innerHTML = `<tr><td colspan="3" class="vacio-mini">${esc(e.message)}</td></tr>`;
+  }
+}
+function cerrarDetalle() { $('overlay-detalle').classList.remove('abierto'); }
+
+// ── Init ─────────────────────────────────────────────────────────
+(function init() {
+  cargarProveedores();
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => cambiarTab(b.dataset.tab)));
+
+  $('p1-btn-leer').addEventListener('click', leerArchivo);
+  $('p2-btn-volver').addEventListener('click', () => irPaso(1));
+  $('p2-btn-preview').addEventListener('click', generarPreview);
+  $('p3-btn-volver').addEventListener('click', () => irPaso(2));
+  $('p3-btn-confirmar').addEventListener('click', confirmarImportacion);
+  $('p3-chk-todos-disc').addEventListener('change', toggleTodosDiscontinuados);
+  $('p4-btn-nueva').addEventListener('click', nuevaImportacion);
+  $('p4-btn-historial').addEventListener('click', () => { cambiarTab('historial'); if (estado.ultimoLoteId) abrirDetalleLote(estado.ultimoLoteId); });
+
+  $('h-prev').addEventListener('click', () => { if (histPagina > 1) cargarHistorial(histPagina - 1); });
+  $('h-next').addEventListener('click', () => { if (histPagina < histTotalPags) cargarHistorial(histPagina + 1); });
+
+  $('det-cerrar').addEventListener('click', cerrarDetalle);
+  $('overlay-detalle').addEventListener('click', e => { if (e.target.id === 'overlay-detalle') cerrarDetalle(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('overlay-detalle').classList.contains('abierto')) cerrarDetalle(); });
+})();
+</script>
+</body>
+</html>

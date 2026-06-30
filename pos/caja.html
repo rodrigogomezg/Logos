@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — Caja</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+
+.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; }
+.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
+.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+
+.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
+.contenido-inner { max-width:1100px; margin:0 auto; }
+
+.card { background:white; border:1px solid var(--borde); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.03); padding:24px clamp(20px, 3vw, 30px); margin-bottom:20px; }
+.card-titulo { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--texto); padding-bottom:12px; margin-bottom:20px; border-bottom:1px solid var(--gris2); display:flex; align-items:center; justify-content:space-between; }
+
+.estado-pill { display:inline-flex; align-items:center; gap:6px; padding:4px 11px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.estado-pill.abierto { background:#DCFCE7; color:#15803D; }
+.estado-pill.cerrado { background:var(--gris2); color:var(--gris3); }
+.estado-pill .dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+
+.form-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px 20px; }
+@media (max-width: 700px) { .form-grid { grid-template-columns:repeat(2, 1fr); } }
+@media (max-width: 480px) { .form-grid { grid-template-columns:1fr; } }
+.form-group { display:flex; flex-direction:column; gap:6px; min-width:0; }
+.form-group.full { grid-column:1 / -1; }
+.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.form-input { padding:9px 12px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); transition:border-color 140ms ease-out, background 140ms ease-out; width:100%; }
+.form-input:focus { border-color:var(--azul); background:white; }
+.form-hint { font-size:11px; color:var(--gris3); margin-top:2px; line-height:1.4; }
+
+.btn { padding:10px 20px; border:1.5px solid transparent; border-radius:8px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; font-family:inherit; transition:background 140ms ease-out, border-color 140ms ease-out, transform 120ms ease-out; }
+.btn:active { transform:scale(0.97); }
+.btn:disabled { opacity:.5; cursor:default; }
+.btn-ok { background:var(--azul); color:white; border-color:var(--azul); }
+.btn-ok:hover { background:var(--azul-h); border-color:var(--azul-h); }
+.btn-sec { background:white; color:var(--texto); border-color:var(--borde); }
+.btn-sec:hover { border-color:var(--gris3); background:var(--gris1); }
+.btn-row { display:flex; gap:12px; align-items:center; margin-top:16px; flex-wrap:wrap; }
+
+.totales-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:14px; }
+.total-box { background:var(--gris1); border-radius:10px; padding:14px 16px; }
+.total-box .lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); margin-bottom:4px; }
+.total-box .val { font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; }
+.total-box.destacado { background:#FEF2F2; }
+.total-box.destacado .val { color:var(--azul); }
+
+.diferencia-box { margin-top:16px; padding:14px 16px; border-radius:10px; background:var(--gris1); }
+.diferencia-box .val { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
+.diferencia-box.ok .val { color:#15803D; }
+.diferencia-box.falta .val { color:var(--rojo); }
+.diferencia-box.sobra .val { color:var(--bajo); }
+
+.no-aplica { text-align:center; padding:40px 20px; color:var(--gris3); }
+
+@media (max-width: 640px) {
+  .page-header h1 { font-size:19px; }
+  .card { padding:18px; }
+}
+
+</style>
+</head>
+<body>
+
+<?php $nav_activo = 'caja'; include __DIR__ . '/nav.php'; ?>
+
+<div class="page-header">
+  <h1>Caja</h1>
+  <p>Apertura, movimientos y cierre del turno actual</p>
+</div>
+
+<div class="contenido">
+<div class="contenido-inner" id="contenido-inner">
+  <div class="card"><p class="form-hint">Cargando...</p></div>
+</div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+const API = '/BRON/api';
+const $   = id => document.getElementById(id);
+
+let toastTimer = null;
+function toast(msg, tipo = '') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (tipo ? ' ' + tipo : '');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
+}
+function fmt(n) {
+  return '$' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+const cajaId = window.BRON_SESION?.caja_id ?? null;
+let estadoActual  = null; // datos del turno actual / sugerencia
+
+async function cargar() {
+  if (!cajaId) {
+    $('contenido-inner').innerHTML = '<div class="card"><p class="form-hint">No hay una caja activa en la sesión.</p></div>';
+    return;
+  }
+  const res = await fetch(`${API}/caja-turnos/actual?caja_id=${cajaId}`);
+  const data = await res.json();
+  estadoActual = data;
+
+  if (data.no_aplica) {
+    renderNoAplica();
+  } else if (!data.turno) {
+    renderApertura(data.fondo_sugerido || 0);
+  } else {
+    renderTurnoAbierto(data);
+  }
+}
+
+function renderNoAplica() {
+  $('contenido-inner').innerHTML = `
+    <div class="card">
+      <div class="no-aplica">Esta caja (<strong>${esc(window.BRON_SESION?.caja_nombre || '')}</strong>) no maneja apertura ni cierre de turno.</div>
+    </div>`;
+}
+
+function renderApertura(fondoSugerido) {
+  $('contenido-inner').innerHTML = `
+    <div class="card">
+      <div class="card-titulo">
+        Abrir caja — ${esc(window.BRON_SESION?.caja_nombre || '')}
+        <span class="estado-pill cerrado"><span class="dot"></span>Sin turno abierto</span>
+      </div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Fondo inicial</label>
+          <input class="form-input" id="ap-fondo" type="number" min="0" step="0.01" value="${Number(fondoSugerido).toFixed(2)}">
+          <span class="form-hint">Sugerido a partir del efectivo contado en el último cierre de esta caja.</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ok" id="ap-btn">Abrir caja</button>
+      </div>
+    </div>`;
+  $('ap-btn').addEventListener('click', abrirCaja);
+}
+
+async function abrirCaja() {
+  const fondo_inicial = parseFloat($('ap-fondo').value);
+  if (isNaN(fondo_inicial) || fondo_inicial < 0) { toast('Fondo inicial inválido', 'err'); return; }
+
+  $('ap-btn').disabled = true;
+  const res = await fetch(`${API}/caja-turnos`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ caja_id: cajaId, fondo_inicial }),
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al abrir la caja', 'err'); $('ap-btn').disabled = false; return; }
+
+  toast('Caja abierta');
+  cargar();
+}
+
+function renderTurnoAbierto(data) {
+  const t = data.turno;
+  const esperado = Number(t.fondo_inicial) + data.total_efectivo;
+
+  $('contenido-inner').innerHTML = `
+    <div class="card">
+      <div class="card-titulo">
+        Turno actual — ${esc(window.BRON_SESION?.caja_nombre || '')}
+        <span class="estado-pill abierto"><span class="dot"></span>Abierto</span>
+      </div>
+      <p class="form-hint" style="margin-bottom:16px;">Abierto por ${esc(t.usuario_nombre)} el ${new Date(t.abierto_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' })} · Fondo inicial ${fmt(t.fondo_inicial)}</p>
+      <div class="totales-grid">
+        <div class="total-box"><div class="lbl">Efectivo</div><div class="val">${fmt(data.total_efectivo)}</div></div>
+        <div class="total-box"><div class="lbl">Tarjeta</div><div class="val">${fmt(data.total_tarjeta)}</div></div>
+        <div class="total-box"><div class="lbl">Transferencia</div><div class="val">${fmt(data.total_transferencia)}</div></div>
+        <div class="total-box"><div class="lbl">Cheque</div><div class="val">${fmt(data.total_cheque)}</div></div>
+        <div class="total-box"><div class="lbl">Cuenta corriente</div><div class="val">${fmt(data.total_cc)}</div></div>
+        <div class="total-box destacado"><div class="lbl">Efectivo esperado</div><div class="val">${fmt(esperado)}</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Cerrar caja</div>
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Efectivo contado</label>
+          <input class="form-input" id="cierre-contado" type="number" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="diferencia-box" id="diferencia-box" style="display:none;">
+        <div class="lbl form-label">Diferencia</div>
+        <div class="val" id="diferencia-val"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ok" id="cierre-btn">Cerrar caja</button>
+      </div>
+    </div>
+  `;
+
+  $('cierre-contado').addEventListener('input', () => actualizarDiferencia(esperado));
+  $('cierre-btn').addEventListener('click', () => cerrarCaja(t.id));
+}
+
+function actualizarDiferencia(esperado) {
+  const contado = parseFloat($('cierre-contado').value);
+  const box = $('diferencia-box');
+  if (isNaN(contado)) { box.style.display = 'none'; return; }
+  const dif = contado - esperado;
+  box.style.display = 'block';
+  box.className = 'diferencia-box ' + (Math.abs(dif) < 0.01 ? 'ok' : (dif < 0 ? 'falta' : 'sobra'));
+  $('diferencia-val').textContent = (dif >= 0 ? '+' : '') + fmt(dif) + (Math.abs(dif) < 0.01 ? ' (sin diferencia)' : (dif < 0 ? ' (falta)' : ' (sobra)'));
+}
+
+async function cerrarCaja(turnoId) {
+  const efectivo_contado = parseFloat($('cierre-contado').value);
+  if (isNaN(efectivo_contado) || efectivo_contado < 0) { toast('Efectivo contado inválido', 'err'); return; }
+
+  $('cierre-btn').disabled = true;
+  const res = await fetch(`${API}/caja-turnos/${turnoId}/cerrar`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ efectivo_contado }),
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al cerrar la caja', 'err'); $('cierre-btn').disabled = false; return; }
+
+  toast('Caja cerrada');
+  cargar();
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+
+function actualizarFecha() {
+  const f = $('fecha-hora');
+  if (f) f.textContent = new Date().toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' });
+}
+actualizarFecha();
+setInterval(actualizarFecha, 30000);
+
+cargar();
+</script>
+</body>
+</html>

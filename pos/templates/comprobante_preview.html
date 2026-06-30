@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>BRON — Preview plantilla comprobante</title>
+<style>
+  /* CSS escrito a propósito sin flexbox/grid: el resultado final se va a
+     generar con dompdf en PHP, que renderiza tablas y bloques mucho mejor
+     que layouts modernos. Lo que ves acá en el navegador es muy cercano
+     a lo que va a salir impreso.
+
+     Nota sobre el footer fijo: el truco de abajo (transform:translateZ(0)
+     en .hoja + position:fixed en .hoja-footer) hace que el footer se vea
+     pegado abajo de CADA hoja en este preview de navegador. dompdf logra
+     el mismo resultado de otra forma (su propio manejo de position:fixed
+     repite el elemento en cada página generada del PDF). Cuando pasemos
+     esto a la plantilla PHP real, el footer se reescribe para el modelo
+     de páginas de dompdf, pero el resto del CSS sí es 1:1 reutilizable. */
+
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background:#E2DDD8;
+    color:#111111;
+    padding:24px 0 80px;
+  }
+
+  .etiqueta-preview {
+    width:210mm;
+    margin:0 auto 6px;
+    font-size:12px;
+    font-weight:700;
+    color:#660b0b;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+
+  .hoja {
+    position:relative;
+    transform:translateZ(0); /* convierte a .hoja en containing block de los hijos fixed, solo para este preview */
+    width:210mm;
+    min-height:297mm;
+    margin:0 auto 36px;
+    background:#fff;
+    overflow:hidden;
+    box-shadow:0 2px 10px rgba(0,0,0,.18);
+    font-size:11.5px;
+    line-height:1.4;
+  }
+  .hoja--simple { padding:14mm 14mm 42mm; }
+  .hoja--afip   { padding:14mm 14mm 72mm; }
+  .hoja--cont   { padding-top:14mm; } /* página de continuación: sin cabecera/cliente */
+
+  /* ── Marca de agua ── */
+  .marca-agua {
+    position:absolute; top:50%; left:50%;
+    width:130mm; height:auto;
+    transform:translate(-50%,-50%);
+    opacity:.06;
+    z-index:0;
+  }
+  .hoja-body { position:relative; z-index:1; }
+
+  /* ── Cabecera ── */
+  table.cab { width:100%; border-collapse:collapse; }
+  table.cab td { vertical-align:top; padding:0; }
+  /* ── Escala tipográfica del comprobante ──
+     7 pasos, ratio ~1.13–1.18 (excepto .letra-box, que reproduce a propósito
+     el tamaño de la letra de comprobante en una factura AFIP real):
+     8.5 → 10 → 11.5(base) → 13 → 15 → 16 → 22 */
+
+  .cab-logo img { height:20mm; }
+  .cab-empresa { font-size:10px; color:#333; margin-top:6px; line-height:1.5; }
+  .cab-empresa strong { font-size:13px; color:#111; display:block; margin-bottom:2px; }
+
+  td.cab-letra { width:16mm; text-align:center; vertical-align:top; padding-top:2px; }
+  .letra-box {
+    border:1.4px solid #111;
+    width:13mm; height:13mm;
+    margin:0 auto;
+    font-size:22px;
+    font-weight:700;
+    text-align:center;
+    line-height:13mm;
+  }
+  .letra-cod { font-size:8.5px; margin-top:1px; }
+
+  td.cab-doc { width:62mm; text-align:right; }
+  .doc-tipo { font-size:15px; font-weight:700; color:#660b0b; text-transform:uppercase; }
+  .doc-box { border:1px solid #D5D0CA; border-radius:4px; padding:7px 10px; margin-top:6px; font-size:10px; text-align:left; }
+  .doc-box div { display:block; padding:1px 0; }
+  .doc-box .lbl { color:#666; }
+  .doc-box .num { font-weight:700; font-size:13px; }
+
+  .regla { border-top:2px solid #660b0b; margin:8px 0 10px; }
+
+  .cont-tag { font-size:10px; color:#666; margin-bottom:10px; }
+  .cont-tag strong { color:#111; }
+
+  /* ── Bloque cliente ── */
+  table.cli { width:100%; border-collapse:collapse; margin-bottom:10px; }
+  table.cli td { border:1px solid #D5D0CA; padding:6px 8px; font-size:10px; vertical-align:top; }
+  table.cli .lbl { display:block; font-size:8.5px; color:#666; text-transform:uppercase; letter-spacing:.03em; margin-bottom:1px; }
+
+  /* ── Tabla de items ── */
+  table.items { width:100%; border-collapse:collapse; margin-bottom:10px; }
+  table.items th {
+    background:#F0EEEB; border:1px solid #D5D0CA;
+    text-align:left; padding:5px 7px; font-size:10px;
+    text-transform:uppercase; letter-spacing:.02em; color:#444;
+  }
+  table.items td { border:1px solid #D5D0CA; padding:5px 7px; background:#fff; }
+  table.items td.r, table.items th.r { text-align:right; }
+  table.items tbody tr:nth-child(even) td { background:#FAFAF8; }
+
+  /* ── Envío / observaciones ── */
+  .nota { font-size:10px; color:#444; margin-bottom:8px; }
+  .nota .lbl { font-weight:700; color:#111; }
+
+  /* ── Footer fijo (totales + CAE/QR) ── */
+  .hoja-footer {
+    position:fixed; left:0; right:0; bottom:0;
+    padding:6mm 14mm 10mm;
+    border-top:2px solid #660b0b;
+    background:#fff;
+    z-index:1;
+  }
+  table.tot { width:72mm; margin-left:auto; border-collapse:collapse; }
+  table.tot td { padding:3px 6px; font-size:10px; white-space:nowrap; }
+  table.tot td.r { text-align:right; }
+  table.tot tr.final td { border-top:2px solid #111; font-size:16px; font-weight:700; padding-top:6px; }
+
+  table.pie-afip { width:100%; border-collapse:collapse; margin-top:8mm; }
+  table.pie-afip td { vertical-align:bottom; padding:0; }
+  .qr-box {
+    width:22mm; height:22mm; border:1px solid #999;
+    text-align:center; line-height:1.3; font-size:8.5px; color:#888;
+    padding-top:8mm;
+  }
+  .cae-info { font-size:10px; color:#333; text-align:right; }
+  .cae-info .cae-num { font-weight:700; font-size:13px; color:#111; }
+
+  @media print {
+    body { background:none; padding:0; }
+    .etiqueta-preview { display:none; }
+    .hoja { box-shadow:none; margin:0; page-break-after:always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ 1. REMITO ============ -->
+<div class="etiqueta-preview">Ejemplo 1 — Remito</div>
+<div class="hoja hoja--simple">
+  <img class="marca-agua" src="../../logo_background.png" alt="">
+  <div class="hoja-body">
+    <table class="cab">
+      <tr>
+        <td class="cab-logo">
+          <img src="../../logo_background.png" alt="BRON">
+          <div class="cab-empresa">
+            <strong>BULFON GUILLERMO JESUS</strong>
+            CUIT: 20-39627345-5 — Responsable Inscripto<br>
+            Av. Luis María Campos 411, CP1426, CABA<br>
+            IIBB: 1590479-02 — Tel: 11-3521-1985<br>
+            www.bronargentina.com.ar
+          </div>
+        </td>
+        <td class="cab-letra"></td>
+        <td class="cab-doc">
+          <div class="doc-tipo">Remito</div>
+          <div class="doc-box">
+            <div class="num">N° 0007-00000123</div>
+            <div><span class="lbl">Fecha:</span> 19/06/2026</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <div class="regla"></div>
+
+    <table class="cli">
+      <tr>
+        <td style="width:55%">
+          <span class="lbl">Cliente</span>
+          Ferretería del Sur S.R.L.
+        </td>
+        <td style="width:25%">
+          <span class="lbl">CUIT</span>
+          30-12345678-9
+        </td>
+        <td style="width:20%">
+          <span class="lbl">Cond. IVA</span>
+          Resp. Inscripto
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <span class="lbl">Domicilio</span>
+          Av. Rivadavia 1234, Morón, Buenos Aires
+        </td>
+        <td>
+          <span class="lbl">Teléfono</span>
+          11-4444-5555
+        </td>
+      </tr>
+    </table>
+
+    <table class="cli">
+      <tr>
+        <td style="width:55%">
+          <span class="lbl">Entrega</span>
+          Av. Rivadavia 1234, Morón
+        </td>
+        <td style="width:45%">
+          <span class="lbl">Observaciones</span>
+          Mercadería sujeta a verificación al momento de la entrega.
+        </td>
+      </tr>
+    </table>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Código</th><th>Producto</th>
+          <th class="r">Cant.</th><th class="r">Precio Unit.</th>
+          <th class="r">% Desc.</th><th class="r">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>10234</td><td>Cemento Loma Negra x50kg</td>
+          <td class="r">10</td><td class="r">$ 8.500,00</td>
+          <td class="r">—</td><td class="r">$ 85.000,00</td>
+        </tr>
+        <tr>
+          <td>20567</td><td>Hierro del 8 x 12m</td>
+          <td class="r">24</td><td class="r">$ 3.200,00</td>
+          <td class="r">10%</td><td class="r">$ 69.120,00</td>
+        </tr>
+        <tr>
+          <td>30891</td><td>Bolsa de cal hidratada x25kg</td>
+          <td class="r">15</td><td class="r">$ 1.450,00</td>
+          <td class="r">—</td><td class="r">$ 21.750,00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="hoja-footer">
+    <table class="tot">
+      <tr><td>Subtotal productos</td><td class="r">$ 175.870,00</td></tr>
+      <tr><td>Envío</td><td class="r">$ 5.000,00</td></tr>
+      <tr class="final"><td>TOTAL</td><td class="r">$ 180.870,00</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 2. PRESUPUESTO ============ -->
+<div class="etiqueta-preview">Ejemplo 2 — Presupuesto</div>
+<div class="hoja hoja--simple">
+  <img class="marca-agua" src="../../logo_background.png" alt="">
+  <div class="hoja-body">
+    <table class="cab">
+      <tr>
+        <td class="cab-logo">
+          <img src="../../logo_background.png" alt="BRON">
+          <div class="cab-empresa">
+            <strong>BULFON GUILLERMO JESUS</strong>
+            CUIT: 20-39627345-5 — Responsable Inscripto<br>
+            Av. Luis María Campos 411, CP1426, CABA<br>
+            IIBB: 1590479-02 — Tel: 11-3521-1985<br>
+            www.bronargentina.com.ar
+          </div>
+        </td>
+        <td class="cab-letra"></td>
+        <td class="cab-doc">
+          <div class="doc-tipo">Presupuesto</div>
+          <div class="doc-box">
+            <div class="num">N° 0007-00000045</div>
+            <div><span class="lbl">Fecha:</span> 19/06/2026</div>
+            <div><span class="lbl">Válido hasta:</span> 30/06/2026</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <div class="regla"></div>
+
+    <table class="cli">
+      <tr>
+        <td style="width:55%">
+          <span class="lbl">Cliente</span>
+          Ferretería del Sur S.R.L.
+        </td>
+        <td style="width:25%">
+          <span class="lbl">CUIT</span>
+          30-12345678-9
+        </td>
+        <td style="width:20%">
+          <span class="lbl">Cond. IVA</span>
+          Resp. Inscripto
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <span class="lbl">Domicilio</span>
+          Av. Rivadavia 1234, Morón, Buenos Aires
+        </td>
+        <td>
+          <span class="lbl">Teléfono</span>
+          11-4444-5555
+        </td>
+      </tr>
+    </table>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Código</th><th>Producto</th>
+          <th class="r">Cant.</th><th class="r">Precio Unit.</th><th class="r">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>10234</td><td>Cemento Loma Negra x50kg</td>
+          <td class="r">10</td><td class="r">$ 8.500,00</td><td class="r">$ 85.000,00</td>
+        </tr>
+        <tr>
+          <td>20567</td><td>Hierro del 8 x 12m</td>
+          <td class="r">24</td><td class="r">$ 3.200,00</td><td class="r">$ 76.800,00</td>
+        </tr>
+        <tr>
+          <td>30891</td><td>Bolsa de cal hidratada x25kg</td>
+          <td class="r">15</td><td class="r">$ 1.450,00</td><td class="r">$ 21.750,00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="hoja-footer">
+    <table class="tot">
+      <tr><td>Subtotal productos</td><td class="r">$ 183.550,00</td></tr>
+      <tr class="final"><td>TOTAL</td><td class="r">$ 183.550,00</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 3. FACTURA B ============ -->
+<div class="etiqueta-preview">Ejemplo 3 — Factura B (electrónica)</div>
+<div class="hoja hoja--afip">
+  <img class="marca-agua" src="../../logo_background.png" alt="">
+  <div class="hoja-body">
+    <table class="cab">
+      <tr>
+        <td class="cab-logo">
+          <img src="../../logo_background.png" alt="BRON">
+          <div class="cab-empresa">
+            <strong>BULFON GUILLERMO JESUS</strong>
+            CUIT: 20-39627345-5 — Responsable Inscripto<br>
+            Av. Luis María Campos 411, CP1426, CABA<br>
+            IIBB: 1590479-02 — Tel: 11-3521-1985<br>
+            www.bronargentina.com.ar
+          </div>
+        </td>
+        <td class="cab-letra">
+          <div class="letra-box">B</div>
+          <div class="letra-cod">COD. 006</div>
+        </td>
+        <td class="cab-doc">
+          <div class="doc-tipo">Factura</div>
+          <div class="doc-box">
+            <div class="num">N° 0007-00000789</div>
+            <div><span class="lbl">Fecha:</span> 19/06/2026</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <div class="regla"></div>
+
+    <table class="cli">
+      <tr>
+        <td style="width:55%">
+          <span class="lbl">Cliente</span>
+          Ferretería del Sur S.R.L.
+        </td>
+        <td style="width:25%">
+          <span class="lbl">CUIT</span>
+          30-12345678-9
+        </td>
+        <td style="width:20%">
+          <span class="lbl">Cond. IVA</span>
+          Resp. Inscripto
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <span class="lbl">Domicilio</span>
+          Av. Rivadavia 1234, Morón, Buenos Aires
+        </td>
+        <td>
+          <span class="lbl">Teléfono</span>
+          11-4444-5555
+        </td>
+      </tr>
+    </table>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Código</th><th>Producto</th>
+          <th class="r">Cant.</th><th class="r">Precio Unit.</th><th class="r">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>10234</td><td>Cemento Loma Negra x50kg</td>
+          <td class="r">10</td><td class="r">$ 8.500,00</td><td class="r">$ 85.000,00</td>
+        </tr>
+        <tr>
+          <td>20567</td><td>Hierro del 8 x 12m</td>
+          <td class="r">24</td><td class="r">$ 3.200,00</td><td class="r">$ 76.800,00</td>
+        </tr>
+        <tr>
+          <td>30891</td><td>Bolsa de cal hidratada x25kg</td>
+          <td class="r">15</td><td class="r">$ 1.450,00</td><td class="r">$ 21.750,00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="hoja-footer">
+    <table class="tot">
+      <tr><td>Subtotal productos</td><td class="r">$ 183.550,00</td></tr>
+      <tr class="final"><td>TOTAL</td><td class="r">$ 183.550,00</td></tr>
+    </table>
+    <table class="pie-afip">
+      <tr>
+        <td style="width:22mm"><div class="qr-box">QR AFIP<br>(pendiente)</div></td>
+        <td></td>
+        <td class="cae-info">
+          <div class="cae-num">CAE: 75312456987023</div>
+          <div>Vto. CAE: 25/06/2026</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 4. FACTURA A ============ -->
+<div class="etiqueta-preview">Ejemplo 4 — Factura A (electrónica)</div>
+<div class="hoja hoja--afip">
+  <img class="marca-agua" src="../../logo_background.png" alt="">
+  <div class="hoja-body">
+    <table class="cab">
+      <tr>
+        <td class="cab-logo">
+          <img src="../../logo_background.png" alt="BRON">
+          <div class="cab-empresa">
+            <strong>BULFON GUILLERMO JESUS</strong>
+            CUIT: 20-39627345-5 — Responsable Inscripto<br>
+            Av. Luis María Campos 411, CP1426, CABA<br>
+            IIBB: 1590479-02 — Tel: 11-3521-1985<br>
+            www.bronargentina.com.ar
+          </div>
+        </td>
+        <td class="cab-letra">
+          <div class="letra-box">A</div>
+          <div class="letra-cod">COD. 001</div>
+        </td>
+        <td class="cab-doc">
+          <div class="doc-tipo">Factura</div>
+          <div class="doc-box">
+            <div class="num">N° 0007-00000312</div>
+            <div><span class="lbl">Fecha:</span> 19/06/2026</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <div class="regla"></div>
+
+    <table class="cli">
+      <tr>
+        <td style="width:55%">
+          <span class="lbl">Cliente</span>
+          Ferretería del Sur S.R.L.
+        </td>
+        <td style="width:25%">
+          <span class="lbl">CUIT</span>
+          30-12345678-9
+        </td>
+        <td style="width:20%">
+          <span class="lbl">Cond. IVA</span>
+          Resp. Inscripto
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <span class="lbl">Domicilio</span>
+          Av. Rivadavia 1234, Morón, Buenos Aires
+        </td>
+        <td>
+          <span class="lbl">Teléfono</span>
+          11-4444-5555
+        </td>
+      </tr>
+    </table>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Código</th><th>Producto</th>
+          <th class="r">Cant.</th><th class="r">Precio Unit.</th><th class="r">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>10234</td><td>Cemento Loma Negra x50kg</td>
+          <td class="r">10</td><td class="r">$ 7.024,79</td><td class="r">$ 70.247,90</td>
+        </tr>
+        <tr>
+          <td>20567</td><td>Hierro del 8 x 12m</td>
+          <td class="r">24</td><td class="r">$ 2.644,63</td><td class="r">$ 63.471,12</td>
+        </tr>
+        <tr>
+          <td>30891</td><td>Bolsa de cal hidratada x25kg</td>
+          <td class="r">15</td><td class="r">$ 1.198,35</td><td class="r">$ 17.975,21</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="hoja-footer">
+    <table class="tot">
+      <tr><td>Subtotal productos</td><td class="r">$ 151.694,23</td></tr>
+      <tr><td>Envío</td><td class="r">$ 5.000,00</td></tr>
+      <tr><td>IVA 21%</td><td class="r">$ 32.905,79</td></tr>
+      <tr class="final"><td>TOTAL</td><td class="r">$ 189.600,02</td></tr>
+    </table>
+    <table class="pie-afip">
+      <tr>
+        <td style="width:22mm"><div class="qr-box">QR AFIP<br>(pendiente)</div></td>
+        <td></td>
+        <td class="cae-info">
+          <div class="cae-num">CAE: 75312456987045</div>
+          <div>Vto. CAE: 25/06/2026</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 5. FACTURA B con columna de descuento ============ -->
+<div class="etiqueta-preview">Ejemplo 5 — Factura B con columna de % Desc.</div>
+<div class="hoja hoja--afip">
+  <img class="marca-agua" src="../../logo_background.png" alt="">
+  <div class="hoja-body">
+    <table class="cab">
+      <tr>
+        <td class="cab-logo">
+          <img src="../../logo_background.png" alt="BRON">
+          <div class="cab-empresa">
+            <strong>BULFON GUILLERMO JESUS</strong>
+            CUIT: 20-39627345-5 — Responsable Inscripto<br>
+            Av. Luis María Campos 411, CP1426, CABA<br>
+            IIBB: 1590479-02 — Tel: 11-3521-1985<br>
+            www.bronargentina.com.ar
+          </div>
+        </td>
+        <td class="cab-letra">
+          <div class="letra-box">B</div>
+          <div class="letra-cod">COD. 006</div>
+        </td>
+        <td class="cab-doc">
+          <div class="doc-tipo">Factura</div>
+          <div class="doc-box">
+            <div class="num">N° 0007-00000801</div>
+            <div><span class="lbl">Fecha:</span> 19/06/2026</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <div class="regla"></div>
+
+    <table class="cli">
+      <tr>
+        <td style="width:55%">
+          <span class="lbl">Cliente</span>
+          Ferretería del Sur S.R.L.
+        </td>
+        <td style="width:25%">
+          <span class="lbl">CUIT</span>
+          30-12345678-9
+        </td>
+        <td style="width:20%">
+          <span class="lbl">Cond. IVA</span>
+          Resp. Inscripto
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <span class="lbl">Domicilio</span>
+          Av. Rivadavia 1234, Morón, Buenos Aires
+        </td>
+        <td>
+          <span class="lbl">Teléfono</span>
+          11-4444-5555
+        </td>
+      </tr>
+    </table>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Código</th><th>Producto</th>
+          <th class="r">Cant.</th><th class="r">Precio Unit.</th>
+          <th class="r">% Desc.</th><th class="r">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>10234</td><td>Cemento Loma Negra x50kg</td>
+          <td class="r">10</td><td class="r">$ 8.500,00</td>
+          <td class="r">—</td><td class="r">$ 85.000,00</td>
+        </tr>
+        <tr>
+          <td>20567</td><td>Hierro del 8 x 12m</td>
+          <td class="r">24</td><td class="r">$ 3.200,00</td>
+          <td class="r">10%</td><td class="r">$ 69.120,00</td>
+        </tr>
+        <tr>
+          <td>40112</td><td>Pintura látex interior 20L</td>
+          <td class="r">6</td><td class="r">$ 9.800,00</td>
+          <td class="r">5%</td><td class="r">$ 55.860,00</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="hoja-footer">
+    <table class="tot">
+      <tr><td>Subtotal productos</td><td class="r">$ 209.980,00</td></tr>
+      <tr class="final"><td>TOTAL</td><td class="r">$ 209.980,00</td></tr>
+    </table>
+    <table class="pie-afip">
+      <tr>
+        <td style="width:22mm"><div class="qr-box">QR AFIP<br>(pendiente)</div></td>
+        <td></td>
+        <td class="cae-info">
+          <div class="cae-num">CAE: 75312457001122</div>
+          <div>Vto. CAE: 25/06/2026</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============ 6. FACTURA B multi-página — footer repetido ============ -->
+<div class="etiqueta-preview">Ejemplo 6 — Factura B multi-página (Página 1 de 2)</div>
+<div class="hoja hoja--afip">
+  <img class="marca-agua" src="../../logo_background.png" alt="">
+  <div class="hoja-body">
+    <table class="cab">
+      <tr>
+        <td class="cab-logo">
+          <img src="../../logo_background.png" alt="BRON">
+          <div class="cab-empresa">
+            <strong>BULFON GUILLERMO JESUS</strong>
+            CUIT: 20-39627345-5 — Responsable Inscripto<br>
+            Av. Luis María Campos 411, CP1426, CABA<br>
+            IIBB: 1590479-02 — Tel: 11-3521-1985<br>
+            www.bronargentina.com.ar
+          </div>
+        </td>
+        <td class="cab-letra">
+          <div class="letra-box">B</div>
+          <div class="letra-cod">COD. 006</div>
+        </td>
+        <td class="cab-doc">
+          <div class="doc-tipo">Factura</div>
+          <div class="doc-box">
+            <div class="num">N° 0007-00000900</div>
+            <div><span class="lbl">Fecha:</span> 19/06/2026</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+    <div class="regla"></div>
+
+    <table class="cli">
+      <tr>
+        <td style="width:55%">
+          <span class="lbl">Cliente</span>
+          Ferretería del Sur S.R.L.
+        </td>
+        <td style="width:25%">
+          <span class="lbl">CUIT</span>
+          30-12345678-9
+        </td>
+        <td style="width:20%">
+          <span class="lbl">Cond. IVA</span>
+          Resp. Inscripto
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <span class="lbl">Domicilio</span>
+          Av. Rivadavia 1234, Morón, Buenos Aires
+        </td>
+        <td>
+          <span class="lbl">Teléfono</span>
+          11-4444-5555
+        </td>
+      </tr>
+    </table>
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Código</th><th>Producto</th>
+          <th class="r">Cant.</th><th class="r">Precio Unit.</th><th class="r">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>10234</td><td>Cemento Loma Negra x50kg</td><td class="r">10</td><td class="r">$ 8.500,00</td><td class="r">$ 85.000,00</td></tr>
+        <tr><td>20567</td><td>Hierro del 8 x 12m</td><td class="r">24</td><td class="r">$ 3.200,00</td><td class="r">$ 76.800,00</td></tr>
+        <tr><td>30891</td><td>Bolsa de cal hidratada x25kg</td><td class="r">15</td><td class="r">$ 1.450,00</td><td class="r">$ 21.750,00</td></tr>
+        <tr><td>40112</td><td>Pintura látex interior 20L</td><td class="r">6</td><td class="r">$ 9.800,00</td><td class="r">$ 58.800,00</td></tr>
+        <tr><td>50223</td><td>Caño PVC 110mm x4m</td><td class="r">12</td><td class="r">$ 4.300,00</td><td class="r">$ 51.600,00</td></tr>
+        <tr><td>60334</td><td>Tornillo autoperforante 8x1" (caja x100)</td><td class="r">20</td><td class="r">$ 2.100,00</td><td class="r">$ 42.000,00</td></tr>
+        <tr><td>70445</td><td>Plancha de yeso 12.5mm 1.20x2.40</td><td class="r">8</td><td class="r">$ 6.700,00</td><td class="r">$ 53.600,00</td></tr>
+        <tr><td>80556</td><td>Perfil montante 70mm x3m</td><td class="r">30</td><td class="r">$ 1.850,00</td><td class="r">$ 55.500,00</td></tr>
+        <tr><td>90667</td><td>Adhesivo para cerámicos x30kg</td><td class="r">18</td><td class="r">$ 3.450,00</td><td class="r">$ 62.100,00</td></tr>
+        <tr><td>10778</td><td>Llave de paso 1/2" bronce</td><td class="r">10</td><td class="r">$ 2.900,00</td><td class="r">$ 29.000,00</td></tr>
+        <tr><td>11889</td><td>Cable unipolar 2.5mm x100m</td><td class="r">4</td><td class="r">$ 22.500,00</td><td class="r">$ 90.000,00</td></tr>
+        <tr><td>12990</td><td>Disyuntor bipolar 25A</td><td class="r">5</td><td class="r">$ 8.200,00</td><td class="r">$ 41.000,00</td></tr>
+        <tr><td>14001</td><td>Cinta aisladora 3M x10</td><td class="r">25</td><td class="r">$ 850,00</td><td class="r">$ 21.250,00</td></tr>
+        <tr><td>15112</td><td>Membrana asfáltica 4mm x10m</td><td class="r">9</td><td class="r">$ 12.300,00</td><td class="r">$ 110.700,00</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="hoja-footer">
+    <table class="tot">
+      <tr><td>Subtotal productos</td><td class="r">$ 984.700,00</td></tr>
+      <tr class="final"><td>TOTAL</td><td class="r">$ 984.700,00</td></tr>
+    </table>
+    <table class="pie-afip">
+      <tr>
+        <td style="width:22mm"><div class="qr-box">QR AFIP<br>(pendiente)</div></td>
+        <td></td>
+        <td class="cae-info">
+          <div class="cae-num">CAE: 75312457009988</div>
+          <div>Vto. CAE: 25/06/2026</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<div class="etiqueta-preview">Ejemplo 6 — Factura B multi-página (Página 2 de 2 — misma factura, footer repetido)</div>
+<div class="hoja hoja--afip hoja--cont">
+  <img class="marca-agua" src="../../logo_background.png" alt="">
+  <div class="hoja-body">
+    <div class="cont-tag">Factura B N° <strong>0007-00000900</strong> — continuación</div>
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Código</th><th>Producto</th>
+          <th class="r">Cant.</th><th class="r">Precio Unit.</th><th class="r">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>16223</td><td>Grifería monocomando cocina</td><td class="r">3</td><td class="r">$ 18.900,00</td><td class="r">$ 56.700,00</td></tr>
+        <tr><td>17334</td><td>Pegamento PVC x250cm3</td><td class="r">14</td><td class="r">$ 1.200,00</td><td class="r">$ 16.800,00</td></tr>
+        <tr><td>18445</td><td>Lija al agua grano 220 (x10)</td><td class="r">20</td><td class="r">$ 950,00</td><td class="r">$ 19.000,00</td></tr>
+        <tr><td>19556</td><td>Guantes de látex (caja x100)</td><td class="r">8</td><td class="r">$ 4.100,00</td><td class="r">$ 32.800,00</td></tr>
+        <tr><td>21667</td><td>Candado de seguridad 50mm</td><td class="r">12</td><td class="r">$ 2.650,00</td><td class="r">$ 31.800,00</td></tr>
+        <tr><td>23778</td><td>Cinta métrica 5m</td><td class="r">15</td><td class="r">$ 1.900,00</td><td class="r">$ 28.500,00</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="hoja-footer">
+    <table class="tot">
+      <tr><td>Subtotal productos</td><td class="r">$ 984.700,00</td></tr>
+      <tr class="final"><td>TOTAL</td><td class="r">$ 984.700,00</td></tr>
+    </table>
+    <table class="pie-afip">
+      <tr>
+        <td style="width:22mm"><div class="qr-box">QR AFIP<br>(pendiente)</div></td>
+        <td></td>
+        <td class="cae-info">
+          <div class="cae-num">CAE: 75312457009988</div>
+          <div>Vto. CAE: 25/06/2026</div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+</body>
+</html>

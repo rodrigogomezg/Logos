@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>BRON — Ingresar</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+  body { background:#1A1A1A; align-items:center; justify-content:center; }
+  .login-box { width:380px; display:flex; flex-direction:column; align-items:center; gap:28px; }
+  .login-box img { height:48px; }
+
+  .paso { width:100%; display:none; flex-direction:column; align-items:center; gap:18px; }
+  .paso.activo { display:flex; }
+
+  .titulo { color:rgba(255,255,255,.9); font-size:20px; font-weight:700; letter-spacing:-.2px; text-align:center; }
+
+  .usuarios-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; width:100%; }
+  .usuario-btn {
+    background:rgba(255,255,255,.06); color:white; border:1px solid rgba(255,255,255,.15);
+    border-radius:10px; padding:16px 20px; font-size:14px; font-weight:600; cursor:pointer;
+    min-width:110px; transition:transform 140ms ease-out, background 140ms ease-out;
+  }
+  .usuario-btn:hover { background:rgba(255,255,255,.12); }
+  .usuario-btn:active { transform:scale(0.96); }
+
+  .pin-dots { display:flex; gap:12px; height:16px; }
+  .pin-dot { width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,.4); transition:background 100ms ease-out, transform 100ms ease-out; }
+  .pin-dot.lleno { background:var(--azul); border-color:var(--azul); transform:scale(1.05); }
+
+  .pin-pad { display:grid; grid-template-columns:repeat(3, 64px); gap:10px; }
+  .pin-tecla {
+    background:rgba(255,255,255,.06); color:white; border:1px solid rgba(255,255,255,.15);
+    border-radius:10px; height:56px; font-size:18px; font-weight:600; cursor:pointer;
+    transition:transform 120ms ease-out, background 120ms ease-out;
+  }
+  .pin-tecla:hover { background:rgba(255,255,255,.12); }
+  .pin-tecla:active { transform:scale(0.94); }
+  .pin-tecla.secundaria { font-size:12px; color:rgba(255,255,255,.6); }
+
+  .volver { color:rgba(255,255,255,.45); font-size:12px; cursor:pointer; text-decoration:none; }
+  .volver:hover { color:rgba(255,255,255,.75); }
+
+  .error-msg { color:#F87171; font-size:12px; font-weight:600; min-height:16px; }
+
+  .caja-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; width:100%; }
+  .caja-btn {
+    background:rgba(255,255,255,.06); color:white; border:1px solid rgba(255,255,255,.15);
+    border-radius:10px; padding:18px 24px; font-size:14px; font-weight:600; cursor:pointer;
+    min-width:140px; transition:transform 140ms ease-out, background 140ms ease-out;
+  }
+  .caja-btn:hover { background:rgba(255,255,255,.12); }
+  .caja-btn:active { transform:scale(0.96); }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+  <img src="/BRON/logo_background.png" alt="BRON">
+
+  <div class="paso activo" id="paso-usuarios">
+    <div class="titulo">¿Quién está usando la caja?</div>
+    <div class="usuarios-grid" id="usuarios-grid"></div>
+  </div>
+
+  <div class="paso" id="paso-pin">
+    <div class="titulo" id="pin-titulo">PIN</div>
+    <div class="pin-dots" id="pin-dots"></div>
+    <div class="error-msg" id="pin-error"></div>
+    <div class="pin-pad" id="pin-pad"></div>
+    <a class="volver" id="pin-volver">‹ Volver</a>
+  </div>
+
+  <div class="paso" id="paso-caja">
+    <div class="titulo">¿Con qué caja vas a trabajar?</div>
+    <div class="caja-grid" id="caja-grid"></div>
+  </div>
+</div>
+
+<script>
+const API = '/BRON/api';
+let usuarioActual = null;
+let pin = '';
+
+function mostrarPaso(id) {
+  document.querySelectorAll('.paso').forEach(p => p.classList.remove('activo'));
+  document.getElementById(id).classList.add('activo');
+}
+
+async function cargarUsuarios() {
+  const res = await fetch(`${API}/usuarios`);
+  const usuarios = await res.json();
+  const grid = document.getElementById('usuarios-grid');
+  grid.innerHTML = '';
+  usuarios.forEach(u => {
+    const btn = document.createElement('button');
+    btn.className = 'usuario-btn';
+    btn.textContent = u.nombre;
+    btn.onclick = () => seleccionarUsuario(u);
+    grid.appendChild(btn);
+  });
+}
+
+function seleccionarUsuario(u) {
+  usuarioActual = u;
+  pin = '';
+  document.getElementById('pin-titulo').textContent = u.nombre;
+  document.getElementById('pin-error').textContent = '';
+  renderDots();
+  mostrarPaso('paso-pin');
+}
+
+function renderDots() {
+  const cont = document.getElementById('pin-dots');
+  cont.innerHTML = '';
+  const cantidad = Math.max(pin.length, 4);
+  for (let i = 0; i < cantidad; i++) {
+    const d = document.createElement('div');
+    d.className = 'pin-dot' + (i < pin.length ? ' lleno' : '');
+    cont.appendChild(d);
+  }
+}
+
+function renderPad() {
+  const pad = document.getElementById('pin-pad');
+  pad.innerHTML = '';
+  const teclas = ['1','2','3','4','5','6','7','8','9','borrar','0','ingresar'];
+  teclas.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'pin-tecla' + (t === 'borrar' || t === 'ingresar' ? ' secundaria' : '');
+    btn.textContent = t === 'borrar' ? '⌫' : (t === 'ingresar' ? 'OK' : t);
+    btn.onclick = () => onTecla(t);
+    pad.appendChild(btn);
+  });
+}
+
+function onTecla(t) {
+  if (t === 'borrar') {
+    pin = pin.slice(0, -1);
+  } else if (t === 'ingresar') {
+    intentarLogin();
+    return;
+  } else if (pin.length < 6) {
+    pin += t;
+  }
+  renderDots();
+}
+
+async function intentarLogin() {
+  if (pin.length < 4) {
+    document.getElementById('pin-error').textContent = 'PIN incompleto';
+    return;
+  }
+  const res = await fetch(`${API}/usuarios/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ usuario_id: usuarioActual.id, pin })
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    document.getElementById('pin-error').textContent = data.error || 'PIN incorrecto';
+    pin = '';
+    renderDots();
+    return;
+  }
+
+  if (data.usuario.rol === 'admin' && data.caja_default) {
+    iniciarSesion(data.usuario, data.caja_default);
+    return;
+  }
+  if (data.cajas.length === 1) {
+    iniciarSesion(data.usuario, data.cajas[0]);
+    return;
+  }
+  mostrarSelectorCaja(data.usuario, data.cajas);
+}
+
+function mostrarSelectorCaja(usuario, cajas) {
+  const grid = document.getElementById('caja-grid');
+  grid.innerHTML = '';
+  cajas.forEach(c => {
+    const btn = document.createElement('button');
+    btn.className = 'caja-btn';
+    btn.textContent = c.nombre;
+    btn.onclick = () => iniciarSesion(usuario, c);
+    grid.appendChild(btn);
+  });
+  mostrarPaso('paso-caja');
+}
+
+function iniciarSesion(usuario, caja) {
+  localStorage.setItem('bron_sesion', JSON.stringify({
+    usuario_id: usuario.id,
+    nombre: usuario.nombre,
+    rol: usuario.rol,
+    caja_id: caja.id,
+    caja_nombre: caja.nombre
+  }));
+  location.href = '/BRON/pos/';
+}
+
+document.getElementById('pin-volver').onclick = () => {
+  usuarioActual = null;
+  pin = '';
+  mostrarPaso('paso-usuarios');
+};
+
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('paso-pin').classList.contains('activo')) return;
+  if (e.key >= '0' && e.key <= '9') {
+    onTecla(e.key);
+  } else if (e.key === 'Backspace') {
+    onTecla('borrar');
+  } else if (e.key === 'Enter') {
+    onTecla('ingresar');
+  } else if (e.key === 'Escape') {
+    document.getElementById('pin-volver').click();
+  }
+});
+
+async function chequearInstalacion() {
+  try {
+    const estado = await fetch(`${API}/instalacion/estado`).then(r => r.json());
+    if (estado.requiere_conexion || estado.requiere_schema || estado.requiere_admin ||
+        estado.requiere_negocio || estado.requiere_caja) {
+      location.href = '/BRON/pos/instalar.html';
+      return true;
+    }
+  } catch (e) {
+    // Si falla el chequeo (ej. red), seguimos al login normal en vez de bloquear.
+  }
+  return false;
+}
+
+renderPad();
+chequearInstalacion().then(redirigido => { if (!redirigido) cargarUsuarios(); });
+</script>
+</body>
+</html>

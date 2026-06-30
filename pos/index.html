@@ -1,0 +1,2353 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — POS</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+/* ── LAYOUT ── */
+.main {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 12px;
+  padding: 12px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── COLUMNA IZQ ── */
+.col-izq { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+
+/* Búsqueda rápida */
+.busqueda-rapida {
+  position: relative;
+}
+.busqueda-rapida .busq-icon {
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--gris3); pointer-events: none; z-index: 1;
+}
+.busqueda-rapida input {
+  width: 100%;
+  padding: 11px 14px 11px 40px;
+  font-size:var(--fs-lg);
+  border: 2px solid var(--borde);
+  border-radius: 8px;
+  outline: none;
+  background: white;
+  transition: border-color .15s;
+}
+.busqueda-rapida input:focus { border-color: var(--azul); }
+.busqueda-rapida input::placeholder { color: var(--gris3); }
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px); left: 0; right: 0;
+  background: white;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.12);
+  z-index: 100;
+  max-height: 260px;
+  overflow-y: auto;
+  display: none;
+}
+.dropdown.visible { display: block; }
+.dd-item {
+  padding: 9px 14px;
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 110px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  border-bottom: 1px solid var(--gris2);
+  font-size:var(--fs-sm);
+}
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover, .dd-item.activo { background: #FEF2F2; }
+.dd-item .cod  { color: var(--gris3); font-family: monospace; font-size: 12px; white-space: nowrap; }
+.dd-item .nom  { font-weight: 500; }
+.dd-item .pre  { font-weight: 700; color: var(--azul); }
+
+/* ── ITEMS TABLE ── */
+.items-card {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--borde);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.items-header {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--gris2);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--gris3);
+  display: grid;
+  grid-template-columns: 24px 1fr 116px 100px 84px 32px;
+  gap: 8px;
+  align-items: center;
+}
+.items-header .r { text-align: right; }
+.items-lista { overflow-y: auto; flex: 1; }
+.item-row {
+  display: grid;
+  grid-template-columns: 24px 1fr 116px 100px 84px 32px;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--gris2);
+}
+.item-row:hover { background: var(--gris1); }
+.item-row .nom { font-weight: 500; line-height: 1.3; min-width: 0; overflow-wrap: break-word; }
+.item-row .nom small { display: block; color: var(--gris3); font-size: 11px; font-weight: 400; }
+.item-row .sub { text-align: right; font-weight: 600; }
+
+.cant-wrap { display: flex; align-items: center; gap: 2px; }
+.cant-btn {
+  flex-shrink: 0; width: 24px; height: 28px; padding: 0;
+  border: 1px solid var(--borde); border-radius: 4px;
+  background: var(--gris1); cursor: pointer; line-height: 1;
+  font-size: 16px; font-weight: 400; color: var(--gris3);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .1s, color .1s, border-color .1s, transform .08s;
+  user-select: none;
+}
+.cant-btn:hover  { background: var(--azul); color: white; border-color: var(--azul); }
+.cant-btn:active { transform: scale(.9); }
+.cant-wrap .item-input { text-align: center; min-width: 0; }
+
+/* Checkbox de fila */
+.item-chk, .hdr-chk {
+  accent-color: var(--azul); width: 14px; height: 14px;
+  cursor: pointer; margin: 0; display: block;
+}
+
+/* Badge de ajuste en nombre */
+.ajuste-badge {
+  display: inline-block; padding: 1px 5px; border-radius: 3px;
+  font-size:var(--fs-xs); font-weight: 700; margin-left: 5px; vertical-align: middle;
+}
+.ajuste-badge.desc { background: #fee2e2; color: #991b1b; }
+.ajuste-badge.inc  { background: #dcfce7; color: #166534; }
+
+/* ── BARRA DE SELECCIÓN ── */
+.sel-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 7px 12px; background: #FEF2F2;
+  border: 1px solid rgba(102,11,11,.2); border-radius: 8px;
+  font-size: 12px;
+}
+.sel-count { font-weight: 600; color: var(--gris3); white-space: nowrap; }
+.sel-bar.activo .sel-count { color: var(--azul); }
+.sel-acciones {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  opacity: .25; pointer-events: none; transition: opacity .15s;
+}
+.sel-bar.activo .sel-acciones { opacity: 1; pointer-events: auto; }
+.sel-sep { width: 1px; height: 18px; background: rgba(102,11,11,.25); flex-shrink: 0; }
+.sel-btn {
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 5px; border: 1px solid;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background .1s, color .1s; white-space: nowrap;
+}
+.sel-btn-del        { background: white; border-color: var(--rojo); color: var(--rojo); }
+.sel-btn-del:hover  { background: var(--rojo); color: white; }
+.sel-btn-ghost      { background: white; border-color: var(--borde); color: var(--texto); }
+.sel-btn-ghost:hover { border-color: var(--azul); color: var(--azul); }
+.sel-btn:disabled   { opacity: .4; cursor: not-allowed; pointer-events: none; }
+.sel-aj-grupo       { display: flex; align-items: center; gap: 6px; }
+.sel-aj-input-wrap  { display: flex; align-items: stretch; }
+.sel-input {
+  width: 68px; padding: 4px 6px; border: 1px solid var(--borde);
+  border-right: none; border-radius: 5px 0 0 5px;
+  font-size: 12px; font-family: inherit; background: white; outline: none; text-align: right;
+}
+.sel-input:focus { border-color: var(--azul); z-index: 1; position: relative; }
+.sel-aj-unit-toggle {
+  display: flex; border: 1px solid var(--borde); border-radius: 0 5px 5px 0; overflow: hidden;
+}
+.sel-aj-unit-btn {
+  padding: 0 8px; border: none; background: white;
+  font-size: 11px; font-weight: 700; cursor: pointer; color: var(--gris3);
+  font-family: inherit; transition: background .1s, color .1s;
+}
+.sel-aj-unit-btn.activo { background: var(--azul); color: white; }
+.sel-aj-tipo-toggle {
+  display: flex; border: 1px solid var(--borde); border-radius: 5px; overflow: hidden;
+}
+.sel-aj-tipo-btn {
+  padding: 4px 10px; border: none; background: white;
+  font-size: 11px; font-weight: 700; cursor: pointer; color: var(--gris3);
+  font-family: inherit; transition: background .1s, color .1s; white-space: nowrap;
+}
+.sel-aj-tipo-btn[data-tipo="desc"].activo { background: #991b1b; color: white; }
+.sel-aj-tipo-btn[data-tipo="inc"].activo  { background: #166534; color: white; }
+.sel-visible-wrap {
+  display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none;
+  font-size: 11px; color: var(--gris3); white-space: nowrap;
+}
+.sel-visible-wrap input[type=checkbox] { accent-color: var(--azul); cursor: pointer; }
+
+.item-input {
+  width: 100%;
+  padding: 4px 6px;
+  border: 1px solid var(--borde);
+  border-radius: 4px;
+  font-size:var(--fs-md);
+  text-align: right;
+  font-family: inherit;
+}
+.item-input:focus { outline: none; border-color: var(--azul); background: #FEF2F2; }
+
+.btn-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--rojo); font-size: 17px; padding: 4px;
+  border-radius: 4px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.btn-del:hover { background: #fee2e2; }
+
+.items-vacio {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--gris3);
+  line-height: 2;
+}
+
+/* ── COL DER ── */
+.col-der { display: flex; flex-direction: column; gap: 10px; }
+
+.card { background: white; border-radius: 8px; border: 1px solid var(--borde); padding: 14px; }
+.card label {
+  display: block;
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .5px;
+  color: var(--gris3); margin-bottom: 5px;
+}
+.card select, .card input[type=text], .card input[type=number] {
+  width: 100%; padding: 8px 10px;
+  border: 1px solid var(--borde); border-radius: 6px;
+  font-size: 14px; font-family: inherit;
+  background: white; outline: none;
+}
+.card select:focus, .card input[type=text]:focus, .card input[type=number]:focus { border-color: var(--azul); }
+
+/* ── Envío ── */
+label.envio-toggle {
+  display: flex; align-items: center; gap: 9px; cursor: pointer;
+  user-select: none; margin: 0;
+  font-size:var(--fs-sm); font-weight: 600; color: var(--texto);
+  text-transform: none; letter-spacing: 0;
+}
+.envio-toggle input[type=checkbox] { display: none; }
+.envio-switch {
+  width: 36px; height: 20px; border-radius: 10px;
+  background: var(--gris2); border: 1.5px solid var(--borde);
+  position: relative; flex-shrink: 0;
+  transition: background 150ms ease-out, border-color 150ms ease-out, transform 80ms ease-out;
+}
+.envio-switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%; background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: transform 150ms cubic-bezier(0.23,1,0.32,1);
+}
+.envio-toggle input:checked ~ .envio-switch { background: var(--azul); border-color: var(--azul-h); }
+.envio-toggle input:checked ~ .envio-switch::after { transform: translateX(16px); }
+.envio-toggle:active .envio-switch { transform: scale(0.94); }
+.envio-reveal {
+  display: grid; grid-template-rows: 0fr; margin-top: 0;
+  transition: grid-template-rows 180ms cubic-bezier(0.23,1,0.32,1),
+              margin-top 180ms cubic-bezier(0.23,1,0.32,1);
+}
+.envio-reveal.visible { grid-template-rows: 1fr; margin-top: 10px; }
+.envio-fields {
+  overflow: hidden; min-height: 0;
+  display: grid; grid-template-columns: 110px 1fr; gap: 8px;
+}
+.envio-fields label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--gris3); margin-bottom: 4px; display: block; }
+
+.cliente-sel {
+  display: none;
+  flex: 1; min-width: 0;
+  background: #FEF2F2; border: 1px solid #FECACA;
+  border-radius: 6px; padding: 8px 10px;
+  font-size:var(--fs-sm);
+}
+.cliente-sel .cnombre { font-weight: 600; }
+.cliente-sel .csaldo  { color: var(--gris3); font-size: 12px; margin-top: 2px; }
+.cliente-sel .cquitar {
+  float: right; background: none; border: none;
+  cursor: pointer; color: var(--gris3); font-size: 17px; line-height: 1; padding: 0;
+}
+.cliente-sel .cquitar:hover { color: var(--rojo); }
+
+.totales { display: flex; flex-direction: column; gap: 6px; }
+.t-row { display: flex; justify-content: space-between; font-size:var(--fs-sm); color: var(--gris3); }
+.t-total {
+  display: flex; justify-content: space-between;
+  font-size: 28px; font-weight: 800; color: var(--texto);
+  margin-top: 6px; padding-top: 10px;
+  border-top: 2px solid var(--gris2);
+}
+
+.btn {
+  width: 100%; padding: 13px; border: none; border-radius: 8px;
+  font-size:var(--fs-lg); font-weight: 700; cursor: pointer;
+  transition: background .12s, transform .1s; letter-spacing: .3px;
+}
+.btn:active { transform: scale(.97); }
+.btn-ok  {
+  background: var(--azul); color: white;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 15px 13px; font-size: 16px; letter-spacing: .6px;
+  box-shadow: 0 2px 8px rgba(102,11,11,.3);
+}
+.btn-ok:hover { background: var(--azul-h); }
+.btn-ok:disabled { background: var(--gris2); color: var(--gris3); cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-sec { background: var(--gris2); color: var(--texto); margin-top: 6px; font-size:var(--fs-sm); padding: 10px; }
+.btn-sec:hover { background: var(--gris3); color: white; }
+
+/* ── PAGO ── */
+.pago-simple { display:flex; align-items:center; gap:10px; }
+.pago-simple-sel {
+  flex:1; padding:7px 8px; border:1px solid var(--borde); border-radius:6px;
+  font-size:var(--fs-sm); font-family:inherit; background:white; outline:none;
+  cursor:pointer; transition:border-color .12s;
+}
+.pago-simple-sel:focus { border-color:var(--azul); }
+.pago-mixto-link {
+  background:none; border:none; cursor:pointer; padding:0;
+  font-size:12px; font-weight:600; color:var(--azul); white-space:nowrap;
+  text-decoration:underline; text-underline-offset:2px; transition:color .1s;
+}
+.pago-mixto-link:hover { color:var(--azul-h); }
+.pago-mixto-resumen { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+.pago-mixto-detalle { font-size:12px; line-height:1.7; flex:1; }
+.pago-mixto-acciones { display:flex; align-items:center; gap:6px; flex-shrink:0; padding-top:2px; }
+.pago-mixto-reset {
+  background:none; border:none; cursor:pointer; color:var(--gris3);
+  font-size:18px; line-height:1; padding:0; transition:color .1s;
+}
+.pago-mixto-reset:hover { color:var(--rojo); }
+
+/* Modal Pago Mixto */
+.pm-modal { width:min(440px,95vw) !important; }
+.pm-head { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 14px; border-bottom:1px solid var(--gris2); flex-shrink:0; }
+.pm-head h2 { font-size:16px; font-weight:700; }
+.pm-close { background:none; border:none; cursor:pointer; color:var(--gris3); font-size:22px; line-height:1; padding:4px 8px; border-radius:6px; }
+.pm-close:hover { background:var(--gris1); color:var(--texto); }
+.pm-body { padding:16px 20px; flex:1; overflow-y:auto; }
+.pm-total { font-size:var(--fs-sm); color:var(--gris3); margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--gris2); }
+.pm-total strong { color:var(--texto); font-size:22px; font-weight:800; margin-left:4px; }
+.pm-lineas { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+.pm-linea { display:flex; gap:6px; align-items:center; }
+.pm-tipo-sel {
+  width:130px; flex-shrink:0; padding:7px 6px; border:1px solid var(--borde);
+  border-radius:6px; font-size:var(--fs-sm); font-family:inherit; background:white;
+  outline:none; cursor:pointer; transition:border-color .12s;
+}
+.pm-tipo-sel:focus { border-color:var(--azul); }
+.pm-monto-inp {
+  flex:1; min-width:0; padding:7px 10px; border:1px solid var(--borde); border-radius:6px;
+  font-size:14px; font-family:inherit; background:white; outline:none;
+  text-align:right; transition:border-color .12s;
+}
+.pm-monto-inp:focus { border-color:var(--azul); }
+.pm-auto-btn {
+  flex-shrink:0; padding:5px 9px; background:var(--gris1); border:1px solid var(--borde);
+  border-radius:6px; font-size:11px; font-weight:600; cursor:pointer; color:var(--gris3);
+  white-space:nowrap; transition:background .1s, color .1s, border-color .1s;
+}
+.pm-auto-btn:hover { background:var(--azul); color:white; border-color:var(--azul); }
+.pm-auto-btn:active { transform:scale(.97); }
+.pm-del-btn {
+  flex-shrink:0; width:28px; height:28px; border:none; background:none; cursor:pointer;
+  color:var(--gris3); font-size:18px; border-radius:5px; padding:0;
+  display:flex; align-items:center; justify-content:center; transition:background .1s, color .1s;
+}
+.pm-del-btn:hover { background:#fee2e2; color:var(--rojo); }
+.pm-add-btn {
+  display:flex; align-items:center; gap:5px; width:100%; padding:7px;
+  background:none; border:1px dashed var(--borde); border-radius:6px;
+  font-size:12px; font-weight:600; color:var(--gris3); cursor:pointer;
+  transition:border-color .1s, color .1s; margin-bottom:10px;
+}
+.pm-add-btn:hover { border-color:var(--azul); color:var(--azul); }
+.pm-estado {
+  display:flex; justify-content:space-between; align-items:center;
+  font-size:var(--fs-sm); padding:8px 12px; border-radius:6px; background:var(--gris1);
+}
+.pm-estado-lbl { color:var(--gris3); }
+.pm-estado-val { font-weight:700; }
+.pm-estado-val.neg { color:var(--rojo); }
+.pm-estado-val.ok  { color:var(--verde); }
+.pm-footer {
+  display:flex; justify-content:flex-end; gap:8px;
+  padding:14px 20px; border-top:1px solid var(--gris2); flex-shrink:0;
+}
+.pm-btn {
+  padding:8px 18px; border-radius:7px; font-size:var(--fs-sm); font-weight:600;
+  cursor:pointer; border:none; font-family:inherit;
+  transition:background .1s, transform .08s;
+}
+.pm-btn:active { transform:scale(.97); }
+.pm-btn-ghost { background:var(--gris2); color:var(--texto); }
+.pm-btn-ghost:hover { background:var(--gris3); color:white; }
+.pm-btn-primary { background:var(--azul); color:white; }
+.pm-btn-primary:hover { background:var(--azul-h); }
+.pm-btn-primary:disabled { background:var(--gris2); color:var(--gris3); cursor:not-allowed; transform:none; }
+
+/* ── BOTONES DE ACCIÓN ── */
+.accion-bar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.accion-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 11px 8px 9px;
+  background: white;
+  border: 1.5px solid var(--borde);
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texto);
+  transition: border-color .12s, color .12s, background .12s, transform .08s;
+}
+.accion-btn:hover {
+  border-color: var(--azul);
+  color: var(--azul);
+  background: #FEF2F2;
+}
+.accion-btn:active { transform: scale(.97); }
+.accion-btn svg { flex-shrink: 0; }
+.ab-kbd {
+  font-family: monospace; font-size:var(--fs-xs); color: var(--gris3);
+  background: var(--gris1); padding: 1px 5px; border-radius: 3px;
+  border: 1px solid var(--borde); margin-top: 1px;
+}
+
+/* ── TOP BAR ── */
+.top-bar {
+  background: #1A1A1A;
+  border-bottom: 2px solid #111;
+  padding: 10px 16px; display: flex; align-items: flex-end;
+  gap: 14px; flex-shrink: 0;
+}
+.tb-cliente { flex: 1; min-width: 0; }
+.tb-comp    { width: 148px; flex-shrink: 0; }
+.tb-fecha   { width: 132px; flex-shrink: 0; }
+.tb-obs     { width: 230px; flex-shrink: 0; }
+.top-bar label {
+  display: block; font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .5px;
+  color: rgba(255,255,255,.5); margin-bottom: 5px;
+}
+.top-bar input[type=text], .top-bar input[type=date], .top-bar select {
+  width: 100%; padding: 8px 10px; border: none; border-radius: 6px;
+  font-size:var(--fs-sm); font-family: inherit; background: white; outline: none;
+  color: var(--texto); transition: box-shadow .12s;
+  box-shadow: 0 0 0 2px transparent;
+}
+.top-bar input[type=text]:focus, .top-bar input[type=date]:focus, .top-bar select:focus {
+  box-shadow: 0 0 0 2px rgba(102,11,11,.55);
+}
+#fecha-venta.fecha-modificada {
+  box-shadow: 0 0 0 2px rgba(234,88,12,.7);
+  background: #fff7ed;
+}
+
+/* ── PROD BAR (búsqueda + catálogo) ── */
+.prod-bar { display: flex; gap: 8px; }
+.prod-bar .busqueda-rapida { flex: 1; }
+.cod-rapido {
+  position: relative; width: 150px; flex-shrink: 0;
+}
+.cod-rapido input {
+  width: 100%; padding: 9px 10px 9px 30px; box-sizing: border-box;
+  border: 1.5px solid var(--borde); border-radius: 8px;
+  font-size:var(--fs-sm); font-family: inherit; background: white; outline: none;
+  transition: border-color .12s, box-shadow .12s;
+}
+.cod-rapido input:focus { border-color: var(--azul); }
+.cod-rapido input.cod-ok  { border-color: var(--verde); box-shadow: 0 0 0 3px rgba(22,163,74,.15); }
+.cod-rapido input.cod-err { border-color: var(--rojo);  box-shadow: 0 0 0 3px rgba(220,38,38,.15); }
+.cod-icon {
+  position: absolute; left: 8px; top: 50%; transform: translateY(-50%);
+  color: var(--gris3); pointer-events: none;
+}
+.cat-btn {
+  display: flex; align-items: center; gap: 8px; padding: 0 16px;
+  background: white; border: 1.5px solid var(--borde); border-radius: 8px;
+  cursor: pointer; font-family: inherit; font-size:var(--fs-sm); font-weight: 600;
+  color: var(--texto); white-space: nowrap; flex-shrink: 0;
+  transition: border-color .12s, color .12s, background .12s, transform .08s;
+}
+.cat-btn:hover  { border-color: var(--azul); color: var(--azul); background: #FEF2F2; }
+.cat-btn:active { transform: scale(.97); }
+.cat-kbd {
+  font-family: monospace; font-size:var(--fs-xs); color: var(--gris3);
+  background: var(--gris1); padding: 1px 5px; border-radius: 3px;
+  border: 1px solid var(--borde);
+}
+
+.kbd {
+  display: inline-block; background: rgba(255,255,255,.15);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 3px; padding: 1px 6px;
+  font-size: 11px; font-family: monospace;
+}
+
+
+/* ════════════════════════════════════════════
+   MODAL BÚSQUEDA AVANZADA
+   ════════════════════════════════════════════ */
+.overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 500;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 40px;
+}
+.overlay.abierto { display: flex; }
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  width: min(1280px, 96vw);
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Cabecera modal */
+.modal-head {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--gris2);
+  flex-shrink: 0;
+}
+.modal-head-top {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+}
+.modal-head-top h2 { font-size: 17px; font-weight: 700; flex: 1; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--gris3); font-size: 22px; line-height: 1;
+  padding: 4px 8px; border-radius: 6px;
+}
+.modal-close:hover { background: var(--gris1); color: var(--texto); }
+
+/* Búsqueda dentro del modal */
+.modal-search input {
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 16px;
+  border: 2px solid var(--azul);
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+}
+
+/* Filtros */
+.modal-filtros {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.modal-filtros select {
+  padding: 6px 10px;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  font-size:var(--fs-sm);
+  font-family: inherit;
+  background: white;
+  outline: none;
+  min-width: 130px;
+  cursor: pointer;
+}
+.modal-filtros select:focus { border-color: var(--azul); }
+
+/* Toggle con stock */
+.toggle-wrap {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; font-size:var(--fs-sm); color: var(--texto);
+  padding: 6px 10px;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  background: white;
+  user-select: none;
+}
+.toggle-wrap:hover { border-color: var(--azul); }
+.toggle-wrap input { display: none; }
+.toggle-wrap.activo { background: #FEF2F2; border-color: var(--azul); color: var(--azul); font-weight: 600; }
+
+/* Switch exacto/similar */
+.switch-wrap {
+  display: flex;
+  border: 1px solid var(--borde);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-left: auto;
+}
+.switch-wrap button {
+  padding: 6px 14px;
+  border: none;
+  background: white;
+  font-size:var(--fs-sm);
+  font-family: inherit;
+  cursor: pointer;
+  color: var(--gris3);
+  font-weight: 500;
+  transition: background .15s;
+}
+.switch-wrap button:first-child { border-right: 1px solid var(--borde); }
+.switch-wrap button.activo { background: var(--azul); color: white; font-weight: 700; }
+
+/* Contador de resultados */
+.modal-count {
+  padding: 6px 20px;
+  font-size: 12px;
+  color: var(--gris3);
+  background: var(--gris1);
+  border-bottom: 1px solid var(--gris2);
+  flex-shrink: 0;
+}
+
+/* Tabla de resultados */
+.modal-tabla {
+  overflow-y: auto;
+  flex: 1;
+}
+.modal-tabla table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size:var(--fs-md);
+}
+.modal-tabla thead th {
+  position: sticky; top: 0;
+  background: var(--gris1);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--gris3);
+  border-bottom: 1px solid var(--gris2);
+}
+.modal-tabla thead th.r { text-align: right; }
+.modal-tabla tbody tr {
+  cursor: pointer;
+  border-bottom: 1px solid var(--gris2);
+  transition: background .1s;
+}
+.modal-tabla tbody tr:hover,
+.modal-tabla tbody tr.activo { background: #FEF2F2; }
+.modal-tabla tbody td { padding: 9px 12px; vertical-align: middle; }
+.modal-tabla tbody td.r { text-align: right; white-space: nowrap; }
+.modal-tabla tbody td .codigo { font-family: monospace; color: var(--gris3); font-size: 12px; }
+.modal-tabla tbody td .nombre { font-weight: 500; }
+.modal-tabla tbody td .marca  { color: var(--gris3); font-size: 12px; }
+.stock-ok  { color: var(--verde); font-weight: 600; }
+.stock-no  { color: var(--rojo); }
+.stock-cero { color: var(--gris3); }
+.precio-td { font-weight: 700; color: var(--azul); }
+
+/* Estado vacío / cargando en modal */
+.modal-estado {
+  padding: 50px 20px;
+  text-align: center;
+  color: var(--gris3);
+  font-size: 14px;
+}
+
+/* ── Nuevo cliente ── */
+.cli-search-wrap { display:flex; gap:6px; align-items:center; }
+.cli-search-wrap .busqueda-rapida { flex:1; min-width:0; }
+.btn-nuevo-cli { flex-shrink:0; width:40px; height:40px; background:var(--azul); color:white; border:none; border-radius:8px; font-size:22px; font-weight:300; cursor:pointer; display:flex; align-items:center; justify-content:center; line-height:1; transition:background .12s; }
+.btn-nuevo-cli:hover { background:var(--azul-h); }
+
+.nc-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1100; display:none; align-items:center; justify-content:center; }
+.nc-overlay.abierto { display:flex; }
+.nc-modal { background:white; border-radius:12px; box-shadow:0 24px 60px rgba(0,0,0,.25); width:560px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
+.nc-head { padding:16px 20px; border-bottom:1.5px solid var(--gris2); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+.nc-head h3 { font-size:15px; font-weight:800; }
+.nc-cerrar { width:28px; height:28px; background:var(--gris2); border:none; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--gris3); }
+.nc-cerrar:hover { background:var(--gris3); color:white; }
+.nc-body { padding:20px; overflow-y:auto; flex:1; }
+.nc-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; }
+.nc-full { grid-column:1 / -1; }
+.nc-group { display:flex; flex-direction:column; gap:4px; }
+.nc-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.nc-input, .nc-select { padding:8px 10px; border:1.5px solid var(--borde); border-radius:7px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); }
+.nc-input:focus, .nc-select:focus { border-color:var(--azul); background:white; }
+.nc-select { cursor:pointer; }
+.nc-foot { padding:14px 20px; border-top:1.5px solid var(--gris2); display:flex; justify-content:flex-end; gap:8px; flex-shrink:0; }
+.nc-btn-sec { padding:9px 18px; background:var(--gris2); color:var(--texto); border:none; border-radius:7px; font-size:14px; font-weight:500; cursor:pointer; }
+.nc-btn-sec:hover { background:var(--borde); }
+.nc-btn-pri { padding:9px 18px; background:var(--azul); color:white; border:none; border-radius:7px; font-size:14px; font-weight:600; cursor:pointer; }
+.nc-btn-pri:hover:not(:disabled) { background:var(--azul-h); }
+.nc-btn-pri:disabled { opacity:.5; cursor:not-allowed; }
+
+/* ── AFIP GUARD ── */
+.afip-warn {
+  display: none;
+  background: #FFFBEB; border: 1.5px solid #D97706;
+  border-radius: 8px; padding: 10px 13px;
+  font-size: 12px; line-height: 1.55; color: #78350F;
+}
+.afip-warn.visible { display: block; }
+.afip-warn-titulo {
+  font-weight: 700; display: flex; align-items: center; gap: 6px;
+  margin-bottom: 4px; font-size: 12px; color: #92400E;
+}
+.afip-warn-msg { color: #78350F; }
+.afip-fix-btn {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 8px; padding: 4px 10px;
+  background: #FEF3C7; border: 1px solid #D97706; border-radius: 5px;
+  font-size: 11px; font-weight: 700; cursor: pointer; color: #92400E;
+  font-family: inherit; transition: background .1s;
+}
+.afip-fix-btn:hover { background: #FDE68A; }
+
+/* ── ÚLTIMA VENTA ── */
+.ultima-venta {
+  display: none;
+  background: #F0FDF4; border: 1.5px solid #4ADE80;
+  border-radius: 8px; padding: 11px 13px;
+}
+.ultima-venta.visible { display: block; }
+.uv-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px;
+}
+.uv-etiqueta { font-size:var(--fs-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #15803D; }
+.uv-cerrar {
+  background: none; border: none; cursor: pointer; color: #15803D;
+  font-size: 18px; line-height: 1; padding: 0; opacity: .45; transition: opacity .1s;
+}
+.uv-cerrar:hover { opacity: 1; }
+.uv-data {
+  display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 9px;
+}
+.uv-comp  { font-size: 12px; color: #166534; font-weight: 500; }
+.uv-total { font-size: 18px; font-weight: 800; color: #166534; }
+.uv-btns  { display: flex; gap: 6px; }
+.uv-btn {
+  flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid #BBF7D0;
+  background: white; font-size: 11px; font-weight: 600; color: #15803D;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-family: inherit; transition: background .1s, border-color .1s;
+}
+.uv-btn:hover { background: #DCFCE7; border-color: #86EFAC; }
+
+@media (prefers-reduced-motion: reduce) {
+  .afip-warn, .ultima-venta, .envio-reveal { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<?php $nav_activo = 'pos'; include __DIR__ . '/nav.php'; ?>
+
+<div class="top-bar">
+  <!-- Cliente -->
+  <div class="tb-cliente">
+    <label>Cliente <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:var(--fs-xs)">(F4)</span></label>
+    <div class="cli-search-wrap">
+      <div class="busqueda-rapida" id="cli-busq-wrap">
+        <input type="text" id="input-cliente"
+               placeholder="Consumidor final — buscar por nombre o CUIT..."
+               autocomplete="off" spellcheck="false">
+        <div class="dropdown" id="dd-cliente"></div>
+      </div>
+      <div class="cliente-sel" id="cliente-sel">
+        <button class="cquitar" id="btn-quitar-cli" aria-label="Quitar cliente">×</button>
+        <div class="cnombre" id="cli-nombre"></div>
+        <div class="csaldo"  id="cli-saldo"></div>
+      </div>
+      <button class="btn-nuevo-cli" id="btn-nuevo-cli" title="Nuevo cliente">+</button>
+    </div>
+  </div>
+  <!-- Comprobante -->
+  <div class="tb-comp">
+    <label>Comprobante</label>
+    <select id="tipo-comp">
+      <option value="REMITO">Remito</option>
+      <option value="FC B-ELECT">Factura B</option>
+      <option value="FC A-ELECT">Factura A</option>
+      <option value="PRESUPUESTO">Presupuesto</option>
+    </select>
+  </div>
+  <!-- Fecha -->
+  <div class="tb-fecha">
+    <label>Fecha</label>
+    <input type="date" id="fecha-venta">
+  </div>
+  <!-- Observaciones -->
+  <div class="tb-obs">
+    <label>Observaciones</label>
+    <input type="text" id="observaciones" placeholder="Opcional..."
+           autocomplete="off" spellcheck="false">
+  </div>
+</div>
+
+<!-- Banner modo edición -->
+<div id="edit-banner" style="display:none; background:#1d4ed8; color:white; padding:7px 16px; font-size:var(--fs-sm); font-weight:600; display:none; align-items:center; gap:10px; flex-shrink:0;">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  <span id="edit-banner-txt">Editando venta</span>
+  <button id="edit-banner-cancel" style="margin-left:auto; background:rgba(255,255,255,.2); border:none; color:white; border-radius:4px; padding:3px 10px; cursor:pointer; font-size:12px; font-weight:600;">Cancelar edición</button>
+</div>
+
+<div class="main">
+  <!-- ── IZQ ── -->
+  <div class="col-izq">
+
+    <!-- Búsqueda + Catálogo -->
+    <div class="prod-bar">
+      <div class="cod-rapido">
+        <svg class="cod-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M3 5v14M7 5v14M11 5v14M15 5v14M19 5v14"/>
+        </svg>
+        <input type="text" id="input-codigo"
+               placeholder="Código / scan"
+               autocomplete="off" spellcheck="false">
+      </div>
+      <div class="busqueda-rapida">
+        <svg class="busq-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" id="input-rapido"
+               placeholder="F2 — Buscar por nombre o marca..."
+               autocomplete="off" spellcheck="false">
+        <div class="dropdown" id="dd-rapido"></div>
+      </div>
+      <button class="cat-btn" onclick="abrirModal()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+          <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        </svg>
+        Catálogo
+        <span class="cat-kbd">F3</span>
+      </button>
+    </div>
+
+    <!-- Barra de selección -->
+    <div class="sel-bar" id="sel-bar">
+      <span class="sel-count" id="sel-count">Ninguno seleccionado</span>
+      <div class="sel-acciones">
+        <button class="sel-btn sel-btn-del" id="sel-del">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+          Eliminar
+        </button>
+        <div class="sel-sep"></div>
+        <div class="sel-aj-grupo">
+          <div class="sel-aj-tipo-toggle">
+            <button class="sel-aj-tipo-btn activo" data-tipo="desc" type="button">− Descuento</button>
+            <button class="sel-aj-tipo-btn" data-tipo="inc" type="button">+ Incremento</button>
+          </div>
+          <div class="sel-aj-input-wrap">
+            <input type="number" class="sel-input" id="sel-aj-val" placeholder="0" step="any" min="0">
+            <div class="sel-aj-unit-toggle">
+              <button class="sel-aj-unit-btn activo" data-unit="pct" type="button">%</button>
+              <button class="sel-aj-unit-btn" data-unit="fijo" type="button">$</button>
+            </div>
+          </div>
+          <label class="sel-visible-wrap" title="Muestra el ajuste detallado en el comprobante">
+            <input type="checkbox" id="sel-visible" checked>
+            <span>en remito</span>
+          </label>
+        </div>
+        <button class="sel-btn sel-btn-ghost" id="sel-aj-btn">Ajustar</button>
+        <button class="sel-btn sel-btn-ghost" id="sel-aj-limpiar">Limpiar</button>
+      </div>
+    </div>
+
+    <!-- Lista ítems -->
+    <div class="items-card">
+      <div class="items-header">
+        <input type="checkbox" class="hdr-chk" id="sel-all" title="Seleccionar todo">
+        <span>Producto</span>
+        <span class="r">Cant.</span>
+        <span class="r">Precio unit.</span>
+        <span class="r">Subtotal</span>
+        <span></span>
+      </div>
+      <div class="items-lista" id="items-lista">
+        <div class="items-vacio" id="items-vacio">
+          Usá <strong>F3</strong> para buscar productos<br>
+          o <strong>F2</strong> para búsqueda rápida por código
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DER ── -->
+  <div class="col-der">
+
+    <!-- Pago -->
+    <div class="card">
+      <label>Forma de pago</label>
+      <div class="pago-simple" id="pago-simple">
+        <select id="tipo-pago-sel" class="pago-simple-sel">
+          <option value="efectivo">Efectivo</option>
+          <option value="transferencia">Transferencia</option>
+          <option value="cc">Cta. Corriente</option>
+          <option value="tarjeta">Tarjeta</option>
+          <option value="cheque">Cheque</option>
+        </select>
+        <button class="pago-mixto-link" id="btn-pago-mixto">Pago mixto</button>
+      </div>
+      <div class="pago-mixto-resumen" id="pago-mixto-resumen" style="display:none">
+        <div id="pago-mixto-detalle" class="pago-mixto-detalle"></div>
+        <div class="pago-mixto-acciones">
+          <button class="pago-mixto-link" id="btn-pago-mixto-edit">Editar</button>
+          <button class="pago-mixto-reset" id="btn-pago-mixto-reset" title="Volver a pago simple">×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Envío -->
+    <div class="card" style="padding:12px 14px">
+      <label class="envio-toggle" id="envio-toggle">
+        <input type="checkbox" id="chk-envio">
+        <span class="envio-switch"></span>
+        Envío a domicilio
+      </label>
+      <div class="envio-reveal" id="envio-reveal">
+        <div class="envio-fields">
+          <div>
+            <label>Costo</label>
+            <input type="number" id="envio-precio" placeholder="0,00" min="0" step="any">
+          </div>
+          <div>
+            <label>Dirección</label>
+            <input type="text" id="envio-dir" placeholder="Calle, número, piso...">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Totales -->
+    <div class="card totales">
+      <div class="t-row"><span>Ítems</span><span id="t-items">0</span></div>
+      <div class="t-row"><span>Unidades</span><span id="t-unid">0</span></div>
+      <div class="t-row" id="t-envio-row" style="display:none;color:var(--gris3)"><span>Envío</span><span id="t-envio-monto">$ 0,00</span></div>
+      <div class="t-total"><span>TOTAL</span><span id="t-monto">$ 0,00</span></div>
+    </div>
+
+    <!-- AFIP Guard -->
+    <div class="afip-warn" id="afip-warn" role="alert" aria-live="polite">
+      <div class="afip-warn-titulo">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        AFIP: falta datos fiscales
+      </div>
+      <div class="afip-warn-msg" id="afip-warn-msg">
+        Este tipo de comprobante requiere cliente con CUIT registrado.
+      </div>
+      <button class="afip-fix-btn" id="afip-fix-btn" type="button">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Buscar cliente
+      </button>
+    </div>
+
+    <button class="btn btn-ok" id="btn-confirmar" disabled>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      <span>CONFIRMAR VENTA</span>
+      <span style="font-size:11px;font-weight:500;opacity:.75;font-family:monospace;background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px;margin-left:2px">F10</span>
+    </button>
+    <button class="btn btn-sec" id="btn-nueva">
+      <span>↺  Nueva venta</span>
+    </button>
+
+    <!-- Última venta -->
+    <div class="ultima-venta" id="ultima-venta" aria-label="Última venta confirmada">
+      <div class="uv-head">
+        <span class="uv-etiqueta">Última venta</span>
+        <button class="uv-cerrar" id="uv-cerrar" type="button" title="Cerrar" aria-label="Cerrar panel de última venta">×</button>
+      </div>
+      <div class="uv-data">
+        <span class="uv-comp" id="uv-comp"></span>
+        <span class="uv-total" id="uv-total"></span>
+      </div>
+      <div class="uv-btns">
+        <button class="uv-btn" id="uv-imprimir" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Reimprimir
+        </button>
+        <button class="uv-btn" id="uv-nc" type="button">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+          Nota de crédito
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════ MODAL BÚSQUEDA AVANZADA ════════ -->
+<div class="overlay" id="overlay">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-busq-h">
+
+    <div class="modal-head">
+      <div class="modal-head-top">
+        <h2 id="modal-busq-h">Búsqueda de productos</h2>
+        <button class="modal-close" id="modal-close" aria-label="Cerrar">×</button>
+      </div>
+
+      <div class="modal-search">
+        <input type="text" id="modal-input"
+               placeholder="Nombre, código o descripción..."
+               autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="modal-filtros">
+        <select id="f-proveedor"><option value="">Todos los proveedores</option></select>
+        <select id="f-marca"><option value="">Todas las marcas</option></select>
+        <select id="f-categoria"><option value="">Todos los rubros</option></select>
+
+        <label class="toggle-wrap" id="toggle-stock">
+          <input type="checkbox" id="f-con-stock">
+          Con stock
+        </label>
+
+        <div class="switch-wrap">
+          <button id="btn-similar" class="activo" title="Cada palabra puede estar en cualquier orden (ej: 'fratacho lijador')">Similar</button>
+          <button id="btn-exacto" title="Busca la frase completa, tal cual la escribís">Exacto</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-count" id="modal-count">—</div>
+
+    <div class="modal-tabla" id="modal-tabla">
+      <div class="modal-estado" id="modal-estado">
+        Escribí un nombre o aplicá un filtro para buscar
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal Nuevo Cliente -->
+<div class="nc-overlay" id="overlay-nc">
+  <div class="nc-modal" role="dialog" aria-modal="true" aria-labelledby="nc-modal-h">
+    <div class="nc-head">
+      <h3 id="nc-modal-h">Nuevo cliente</h3>
+      <button class="nc-cerrar" id="nc-cerrar" aria-label="Cerrar">×</button>
+    </div>
+    <div class="nc-body">
+      <div class="nc-grid">
+        <div class="nc-group nc-full">
+          <label class="nc-label">Nombre / Razón Social *</label>
+          <input type="text" id="nc-nombre" class="nc-input" autocomplete="off">
+        </div>
+        <div class="nc-group">
+          <label class="nc-label">CUIT</label>
+          <input type="text" id="nc-cuit" class="nc-input" placeholder="20-12345678-9" autocomplete="off">
+        </div>
+        <div class="nc-group">
+          <label class="nc-label">Condición fiscal</label>
+          <select id="nc-condicion" class="nc-select">
+            <option value="">— Sin especificar —</option>
+            <option value="Consumidor Final">Consumidor Final</option>
+            <option value="Responsable Inscripto">Responsable Inscripto</option>
+            <option value="Monotributista">Monotributista</option>
+            <option value="Exento">Exento</option>
+            <option value="No Responsable">No Responsable</option>
+          </select>
+        </div>
+        <div class="nc-group nc-full">
+          <label class="nc-label">Domicilio</label>
+          <input type="text" id="nc-domicilio" class="nc-input" placeholder="Av. Corrientes 1234" autocomplete="off">
+        </div>
+        <div class="nc-group">
+          <label class="nc-label">Provincia</label>
+          <input type="text" id="nc-provincia" class="nc-input" placeholder="Buenos Aires" autocomplete="off">
+        </div>
+        <div class="nc-group">
+          <label class="nc-label">Teléfono</label>
+          <input type="text" id="nc-telefono" class="nc-input" placeholder="011 4567-8901" autocomplete="off">
+        </div>
+        <div class="nc-group nc-full">
+          <label class="nc-label">Email</label>
+          <input type="email" id="nc-email" class="nc-input" placeholder="ejemplo@mail.com" autocomplete="off">
+        </div>
+      </div>
+    </div>
+    <div class="nc-foot">
+      <button class="nc-btn-sec" id="nc-cancelar">Cancelar</button>
+      <button class="nc-btn-pri" id="nc-guardar">Guardar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Pago Mixto -->
+<div class="overlay" id="overlay-pm">
+  <div class="modal pm-modal" role="dialog" aria-modal="true" aria-labelledby="pm-modal-h">
+    <div class="pm-head">
+      <h2 id="pm-modal-h">Pago Mixto</h2>
+      <button class="pm-close" id="pm-close" aria-label="Cerrar">×</button>
+    </div>
+    <div class="pm-body">
+      <div class="pm-total">Total a cobrar: <strong id="pm-total-monto"></strong></div>
+      <div id="pm-lineas" class="pm-lineas"></div>
+      <button class="pm-add-btn" id="pm-add-btn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+        Agregar método
+      </button>
+      <div id="pm-estado" class="pm-estado"></div>
+    </div>
+    <div class="pm-footer">
+      <button class="pm-btn pm-btn-ghost" id="pm-cancelar">Cancelar</button>
+      <button class="pm-btn pm-btn-primary" id="pm-confirmar">Confirmar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+'use strict';
+
+const API = '/BRON/api';
+
+// ── Turno de caja: bloquear venta si no hay uno abierto ──
+(async function verificarTurnoAbierto() {
+  const cajaId = window.BRON_SESION?.caja_id;
+  if (!cajaId) return;
+  try {
+    const res  = await fetch(`${API}/caja-turnos/actual?caja_id=${cajaId}`);
+    const data = await res.json();
+    if (!data.no_aplica && !data.turno) {
+      location.href = '/BRON/pos/caja.html';
+    }
+  } catch (e) { /* si falla la verificación, no se bloquea la venta */ }
+})();
+
+// ── Estado ───────────────────────────────────────────
+let items           = [];
+let clienteActual   = null;
+let seleccionados   = new Set(); // producto_ids seleccionados
+let editandoVentaId = null;      // ID de la venta en edición (null = venta nueva)
+let ultimaVentaData    = null;
+let afipGuardActivo    = false;
+let ultimoCodigoFallado = null;
+let contadorFalloCodigo = 0;
+
+// ── Pago ─────────────────────────────────────────────
+const TIPOS_PAGO = [
+  { val:'efectivo',      lbl:'Efectivo' },
+  { val:'transferencia', lbl:'Transferencia' },
+  { val:'cc',            lbl:'Cta. Corriente' },
+  { val:'tarjeta',       lbl:'Tarjeta' },
+  { val:'cheque',        lbl:'Cheque' },
+];
+let esMixto       = false;
+let pagosMixto    = [];
+let pagosMixtoTemp = [];
+
+function totalConEnvio() {
+  const sub  = items.reduce((s,i) => s + i.cantidad * i.precio_unitario, 0);
+  const envio = $('chk-envio').checked ? (parseFloat($('envio-precio').value) || 0) : 0;
+  return sub + envio;
+}
+function sumTemp(excluir = -1) {
+  return pagosMixtoTemp.reduce((s,p,i) => i === excluir ? s : s + (parseFloat(p.monto)||0), 0);
+}
+
+function renderPMEstado() {
+  const total     = totalConEnvio();
+  const sumaTotal = pagosMixtoTemp.reduce((s,p) => s + (parseFloat(p.monto)||0), 0);
+  const restante  = total - sumaTotal;
+  let est;
+  if (Math.abs(restante) < 0.005) {
+    est = `<span class="pm-estado-lbl">Total cubierto</span><span class="pm-estado-val ok">✓ ${fmt(total)}</span>`;
+  } else if (restante > 0) {
+    est = `<span class="pm-estado-lbl">Restante</span><span class="pm-estado-val">${fmt(restante)}</span>`;
+  } else {
+    est = `<span class="pm-estado-lbl">Excede por</span><span class="pm-estado-val neg">${fmt(-restante)}</span>`;
+  }
+  $('pm-estado').innerHTML = est;
+  $('pm-confirmar').disabled = Math.abs(restante) > 0.005;
+}
+function renderPMLineas() {
+  const canDel = pagosMixtoTemp.length > 1;
+  $('pm-lineas').innerHTML = pagosMixtoTemp.map((p, i) => {
+    const opts = TIPOS_PAGO.map(t =>
+      `<option value="${t.val}"${p.tipo===t.val?' selected':''}>${t.lbl}</option>`).join('');
+    return `
+      <div class="pm-linea" data-idx="${i}">
+        <select class="pm-tipo-sel" data-idx="${i}">${opts}</select>
+        <input type="number" class="pm-monto-inp" data-idx="${i}"
+               value="${p.monto}" placeholder="0,00" min="0" step="any">
+        <button class="pm-auto-btn" data-idx="${i}">Autocompletar</button>
+        ${canDel ? `<button class="pm-del-btn" data-idx="${i}">×</button>` : ''}
+      </div>`;
+  }).join('');
+  $('pm-add-btn').style.display = pagosMixtoTemp.length >= 5 ? 'none' : '';
+  $('pm-lineas').querySelectorAll('.pm-tipo-sel').forEach(el =>
+    el.addEventListener('change', () => {
+      pagosMixtoTemp[+el.dataset.idx].tipo = el.value;
+      renderPMLineas(); renderPMEstado();
+    }));
+  $('pm-lineas').querySelectorAll('.pm-monto-inp').forEach(el =>
+    el.addEventListener('input', () => {
+      pagosMixtoTemp[+el.dataset.idx].monto = el.value;
+      renderPMEstado();
+    }));
+  $('pm-lineas').querySelectorAll('.pm-auto-btn').forEach(el =>
+    el.addEventListener('click', () => {
+      const idx = +el.dataset.idx;
+      const v = Math.max(0, totalConEnvio() - sumTemp(idx)).toFixed(2);
+      pagosMixtoTemp[idx].monto = v;
+      const inp = $('pm-lineas').querySelector(`.pm-monto-inp[data-idx="${idx}"]`);
+      if (inp) inp.value = v;
+      renderPMEstado();
+    }));
+  $('pm-lineas').querySelectorAll('.pm-del-btn').forEach(el =>
+    el.addEventListener('click', () => {
+      pagosMixtoTemp.splice(+el.dataset.idx, 1);
+      renderPMLineas(); renderPMEstado();
+    }));
+}
+function renderPM() {
+  $('pm-total-monto').textContent = fmt(totalConEnvio());
+  renderPMLineas();
+  renderPMEstado();
+}
+function abrirPM() {
+  pagosMixtoTemp = esMixto
+    ? JSON.parse(JSON.stringify(pagosMixto))
+    : [
+        { tipo: $('tipo-pago-sel').value, monto: '' },
+        { tipo: TIPOS_PAGO.find(t => t.val !== $('tipo-pago-sel').value)?.val ?? 'transferencia', monto: '' },
+      ];
+  renderPM();
+  $('overlay-pm').classList.add('abierto');
+}
+function cerrarPM() { $('overlay-pm').classList.remove('abierto'); }
+function resetMixto() {
+  esMixto = false; pagosMixto = [];
+  $('pago-simple').style.display = '';
+  $('pago-mixto-resumen').style.display = 'none';
+}
+function confirmarPM() {
+  pagosMixto = JSON.parse(JSON.stringify(pagosMixtoTemp));
+  esMixto = true;
+  cerrarPM();
+  $('pago-mixto-detalle').innerHTML = pagosMixto.map(p => {
+    const lbl = TIPOS_PAGO.find(t => t.val === p.tipo)?.lbl ?? p.tipo;
+    return `${lbl}: <strong>${fmt(parseFloat(p.monto))}</strong>`;
+  }).join('<br>');
+  $('pago-simple').style.display = 'none';
+  $('pago-mixto-resumen').style.display = '';
+}
+
+let modoExacto    = false;
+let filtros       = { marcas: [], proveedores: [], categorias: [] };
+let filtrosLoaded = false;
+let modalIdx      = -1;
+let modalResultados = [];
+let busqCodigoTimeout = null;
+let busqRapidaTimeout = null;
+let busqCliTimeout    = null;
+let modalTimeout      = null;
+let ddRapidoIdx       = -1;
+let ddCliIdx          = -1;
+
+// ── DOM ──────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+const inputCodigo   = $('input-codigo');
+const inputRapido   = $('input-rapido');
+const ddRapido      = $('dd-rapido');
+const inputCliente  = $('input-cliente');
+const cliBusqWrap   = $('cli-busq-wrap');
+const ddCliente     = $('dd-cliente');
+const clienteSel    = $('cliente-sel');
+const cliNombre     = $('cli-nombre');
+const cliSaldo      = $('cli-saldo');
+const itemsLista    = $('items-lista');
+const itemsVacio    = $('items-vacio');
+const tItems        = $('t-items');
+const tUnid         = $('t-unid');
+const tMonto        = $('t-monto');
+const btnConfirmar  = $('btn-confirmar');
+const btnNueva      = $('btn-nueva');
+const toast         = $('toast');
+
+const overlay       = $('overlay');
+const modalInput    = $('modal-input');
+const modalClose    = $('modal-close');
+const modalCount    = $('modal-count');
+const modalTabla    = $('modal-tabla');
+const modalEstado   = $('modal-estado');
+const fProveedor    = $('f-proveedor');
+const fMarca        = $('f-marca');
+const fCategoria    = $('f-categoria');
+const fConStock     = $('f-con-stock');
+const toggleStock   = $('toggle-stock');
+const btnSimilar    = $('btn-similar');
+const btnExacto     = $('btn-exacto');
+
+// ── Utilidades ───────────────────────────────────────
+const fmt = n => '$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+let toastTimer = null;
+function toast_(msg, tipo = 'ok') {
+  toast.textContent = msg;
+  toast.className   = `toast ${tipo} visible`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
+}
+
+// ── Fecha ─────────────────────────────────────────────
+function actualizarFecha() {
+  const d = new Date();
+  $('fecha-hora').textContent =
+    d.toLocaleDateString('es-AR', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' })
+    + '  ' + d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+}
+actualizarFecha();
+setInterval(actualizarFecha, 30000);
+
+// ── Envío ─────────────────────────────────────────────
+function actualizarTotalConEnvio(subtotalProductos) {
+  const chk      = $('chk-envio');
+  const envioPrecio = chk.checked ? (parseFloat($('envio-precio').value) || 0) : 0;
+  const total    = subtotalProductos + envioPrecio;
+  tMonto.textContent = fmt(total);
+  const row = $('t-envio-row');
+  if (chk.checked && envioPrecio > 0) {
+    $('t-envio-monto').textContent = fmt(envioPrecio);
+    row.style.display = '';
+  } else {
+    row.style.display = 'none';
+  }
+}
+
+function subtotalProductos() {
+  return items.reduce((s, i) => s + i.cantidad * i.precio_unitario, 0);
+}
+
+$('chk-envio').addEventListener('change', () => {
+  $('envio-reveal').classList.toggle('visible', $('chk-envio').checked);
+  if ($('chk-envio').checked) setTimeout(() => $('envio-precio').focus(), 50);
+  actualizarTotalConEnvio(subtotalProductos());
+});
+
+$('envio-precio').addEventListener('input', () => actualizarTotalConEnvio(subtotalProductos()));
+
+// ── Render ítems ─────────────────────────────────────
+function renderItems() {
+  [...itemsLista.querySelectorAll('.item-row')].forEach(r => r.remove());
+  let cant = 0, total = 0;
+
+  if (!items.length) {
+    itemsVacio.style.display = 'block';
+  } else {
+    itemsVacio.style.display = 'none';
+    items.forEach((item, idx) => {
+      const sub = item.cantidad * item.precio_unitario;
+      cant  += item.cantidad;
+      total += sub;
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      const badge = item.ajuste_desc
+        ? `<span class="ajuste-badge ${item.ajuste_desc.startsWith('+') ? 'inc' : 'desc'}">${item.ajuste_desc}</span>`
+        : '';
+      row.innerHTML = `
+        <input type="checkbox" class="item-chk" data-pid="${item.producto_id}" ${seleccionados.has(item.producto_id) ? 'checked' : ''}>
+        <div class="nom">${esc(item.nombre)}<small>${esc(item.codigo)}${badge}</small></div>
+        <div class="cant-wrap">
+          <button class="cant-btn" data-idx="${idx}" data-op="menos">−</button>
+          <input class="item-input" type="number" min="0.001" step="any"
+                 value="${item.cantidad}" data-idx="${idx}" data-campo="cantidad">
+          <button class="cant-btn" data-idx="${idx}" data-op="mas">+</button>
+        </div>
+        <input class="item-input" type="number" min="0" step="any"
+               value="${item.precio_unitario.toFixed(2)}" data-idx="${idx}" data-campo="precio">
+        <div class="sub">${fmt(sub)}</div>
+        <button class="btn-del" data-idx="${idx}">×</button>`;
+      itemsLista.appendChild(row);
+    });
+  }
+
+  tItems.textContent = items.length;
+  tUnid.textContent  = cant % 1 === 0 ? cant : cant.toFixed(2);
+  actualizarTotalConEnvio(total);
+  actualizarBtnConfirmar();
+  actualizarSelBar();
+}
+
+itemsLista.addEventListener('change', e => {
+  if (e.target.classList.contains('item-chk')) {
+    const pid = parseInt(e.target.dataset.pid);
+    if (e.target.checked) seleccionados.add(pid);
+    else seleccionados.delete(pid);
+    actualizarSelBar();
+    return;
+  }
+  const el   = e.target;
+  const idx  = parseInt(el.dataset.idx);
+  const camp = el.dataset.campo;
+  if (isNaN(idx)) return;
+
+  const val = parseFloat(el.value);
+  if (isNaN(val) || val < 0) { el.value = camp === 'cantidad' ? items[idx].cantidad : items[idx].precio_unitario; return; }
+  if (camp === 'cantidad' && val === 0) items.splice(idx, 1);
+  else if (camp === 'cantidad') items[idx].cantidad        = val;
+  else                          items[idx].precio_unitario = val;
+  renderItems();
+});
+
+itemsLista.addEventListener('click', e => {
+  const del = e.target.closest('.btn-del');
+  if (del) {
+    const idx = parseInt(del.dataset.idx);
+    seleccionados.delete(items[idx].producto_id);
+    items.splice(idx, 1);
+    renderItems();
+    return;
+  }
+
+  const cb = e.target.closest('.cant-btn');
+  if (cb) {
+    const idx   = parseInt(cb.dataset.idx);
+    const nueva = Math.round((items[idx].cantidad + (cb.dataset.op === 'mas' ? 1 : -1)) * 1000) / 1000;
+    if (nueva <= 0) { seleccionados.delete(items[idx].producto_id); items.splice(idx, 1); }
+    else items[idx].cantidad = nueva;
+    renderItems();
+  }
+});
+
+// ── Agregar producto ─────────────────────────────────
+function agregarProducto(p) {
+  const precio = parseFloat(p.precio_venta);
+  const idx    = items.findIndex(i => i.producto_id === p.id);
+  if (idx !== -1) items[idx].cantidad += 1;
+  else items.push({ producto_id: p.id, nombre: p.nombre, codigo: p.codigo,
+                    cantidad: 1, precio_unitario: precio });
+  ocultarUltimaVenta();
+  renderItems();
+  toast_(`+1  ${p.nombre}`);
+}
+
+// ════════ SELECCIÓN DE ÍTEMS ══════════════════════════
+
+function actualizarSelBar() {
+  const n = seleccionados.size;
+  $('sel-bar').classList.toggle('activo', n > 0);
+  $('sel-count').textContent = n > 0
+    ? `${n} ítem${n > 1 ? 's' : ''} seleccionado${n > 1 ? 's' : ''}`
+    : 'Ninguno seleccionado';
+  const sa = $('sel-all');
+  if (sa) {
+    if      (n === 0)            { sa.checked = false; sa.indeterminate = false; }
+    else if (n === items.length) { sa.checked = true;  sa.indeterminate = false; }
+    else                         { sa.checked = false; sa.indeterminate = true;  }
+  }
+
+  // Prefill: si toda la selección comparte el mismo ajuste, mostrarlo para poder editarlo
+  const seleccionadosItems = items.filter(i => seleccionados.has(i.producto_id));
+  const primero = seleccionadosItems[0];
+  const mismoAjuste = n > 0 && primero?.ajuste_val && seleccionadosItems.every(i =>
+    i.ajuste_val === primero.ajuste_val &&
+    i.ajuste_tipo === primero.ajuste_tipo &&
+    i.ajuste_unit === primero.ajuste_unit);
+
+  if (mismoAjuste) {
+    $('sel-aj-val').value = primero.ajuste_val;
+    selAjTipo = primero.ajuste_tipo;
+    selAjUnit = primero.ajuste_unit;
+  } else if (n === 0) {
+    $('sel-aj-val').value = '';
+  }
+  document.querySelectorAll('.sel-aj-tipo-btn').forEach(b => b.classList.toggle('activo', b.dataset.tipo === selAjTipo));
+  document.querySelectorAll('.sel-aj-unit-btn').forEach(b => b.classList.toggle('activo', b.dataset.unit === selAjUnit));
+}
+
+// ════════ BÚSQUEDA POR CÓDIGO EXACTO ══════════════════
+
+function limpiarEstadoCodigo() {
+  inputCodigo.classList.remove('cod-ok', 'cod-err');
+}
+
+async function fetchCodigo(cod) {
+  try {
+    const r = await fetch(`${API}/productos?q=${encodeURIComponent(cod)}&limit=10`);
+    const d = await r.json();
+    if (!Array.isArray(d)) return;
+    const exacto = d.find(p => p.codigo.toLowerCase() === cod.toLowerCase());
+    if (exacto) {
+      contadorFalloCodigo = 0;
+      agregarProducto(exacto);
+      inputCodigo.value = '';
+      inputCodigo.focus();
+      inputCodigo.classList.add('cod-ok');
+      setTimeout(limpiarEstadoCodigo, 400);
+    } else {
+      inputCodigo.classList.add('cod-err');
+      setTimeout(limpiarEstadoCodigo, 700);
+      contadorFalloCodigo++;
+      ultimoCodigoFallado = cod;
+      const hint = contadorFalloCodigo >= 2 ? ' — F3 para buscar por nombre' : '';
+      toast_(`Código "${cod}" no encontrado${hint}`, 'err');
+      if (contadorFalloCodigo >= 2) contadorFalloCodigo = 0;
+    }
+  } catch { toast_('Error al buscar', 'err'); }
+}
+
+inputCodigo.addEventListener('input', () => {
+  clearTimeout(busqCodigoTimeout);
+  limpiarEstadoCodigo();
+  const q = inputCodigo.value.trim();
+  if (!q) return;
+  busqCodigoTimeout = setTimeout(() => fetchCodigo(q), 350);
+});
+
+inputCodigo.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    clearTimeout(busqCodigoTimeout);
+    const q = inputCodigo.value.trim();
+    if (q) fetchCodigo(q);
+  }
+  if (e.key === 'Escape') { inputCodigo.value = ''; limpiarEstadoCodigo(); }
+});
+
+// ════════ BÚSQUEDA RÁPIDA (F2) ════════════════════════
+
+inputRapido.addEventListener('input', () => {
+  clearTimeout(busqRapidaTimeout);
+  const q = inputRapido.value.trim();
+  if (q.length < 2) { cerrarDD(ddRapido); ddRapidoIdx = -1; return; }
+  busqRapidaTimeout = setTimeout(() => fetchRapido(q), 250);
+});
+
+inputRapido.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); moverDD(ddRapido, 1,  'rapido'); }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); moverDD(ddRapido, -1, 'rapido'); }
+  if (e.key === 'Enter')     { e.preventDefault(); selDD(ddRapido, agregarYCerrarRapido); }
+  if (e.key === 'Escape')    { cerrarDD(ddRapido); inputRapido.value = ''; }
+});
+
+async function fetchRapido(q) {
+  try {
+    const r = await fetch(`${API}/productos?q=${encodeURIComponent(q)}&limit=8`);
+    const d = await r.json();
+    if (!Array.isArray(d)) { cerrarDD(ddRapido); return; }
+    ddRapidoIdx = -1;
+    if (!d.length) { cerrarDD(ddRapido); return; }
+    ddRapido.innerHTML = d.map((p, i) => `
+      <div class="dd-item" data-idx="${i}" data-json='${JSON.stringify(p).replace(/'/g,"&#39;")}'>
+        <span class="cod">${esc(p.codigo)}</span>
+        <span class="nom">${esc(p.nombre)}</span>
+        <span class="pre">${fmt(p.precio_venta)}</span>
+      </div>`).join('');
+    ddRapido.classList.add('visible');
+    ddRapido.querySelectorAll('.dd-item').forEach(el =>
+      el.addEventListener('click', () => agregarYCerrarRapido(JSON.parse(el.dataset.json))));
+  } catch { toast_('Error al buscar', 'err'); }
+}
+
+function agregarYCerrarRapido(p) {
+  agregarProducto(p);
+  cerrarDD(ddRapido);
+  inputRapido.value = '';
+}
+
+// ════════ BÚSQUEDA DE CLIENTE (F4) ════════════════════
+
+inputCliente.addEventListener('input', () => {
+  clearTimeout(busqCliTimeout);
+  const q = inputCliente.value.trim();
+  if (q.length < 2) { cerrarDD(ddCliente); ddCliIdx = -1; return; }
+  busqCliTimeout = setTimeout(() => fetchClientes(q), 250);
+});
+
+inputCliente.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); moverDD(ddCliente, 1,  'cli'); }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); moverDD(ddCliente, -1, 'cli'); }
+  if (e.key === 'Enter')     { e.preventDefault(); selDD(ddCliente, seleccionarCliente); }
+  if (e.key === 'Escape')    { cerrarDD(ddCliente); inputCliente.value = ''; }
+});
+
+async function fetchClientes(q) {
+  try {
+    const r = await fetch(`${API}/clientes?q=${encodeURIComponent(q)}&limit=8`);
+    const d = await r.json();
+    if (!Array.isArray(d) || !d.length) { cerrarDD(ddCliente); return; }
+    ddCliIdx = -1;
+    ddCliente.innerHTML = d.map((c, i) => `
+      <div class="dd-item" data-idx="${i}" data-json='${JSON.stringify(c).replace(/'/g,"&#39;")}'>
+        <span class="cod">${esc(c.cuit ?? '')}</span>
+        <span class="nom">${esc(c.nombre)}</span>
+        <span class="pre" style="color:${parseFloat(c.saldo_cuenta_corriente)>0?'var(--rojo)':'var(--gris3)'}">
+          ${fmt(c.saldo_cuenta_corriente)}
+        </span>
+      </div>`).join('');
+    ddCliente.classList.add('visible');
+    ddCliente.querySelectorAll('.dd-item').forEach(el =>
+      el.addEventListener('click', () => seleccionarCliente(JSON.parse(el.dataset.json))));
+  } catch { toast_('Error al buscar clientes', 'err'); }
+}
+
+function mostrarBuscadorCliente(mostrar) {
+  cliBusqWrap.style.display = mostrar ? '' : 'none';
+  clienteSel.style.display  = mostrar ? 'none' : 'block';
+}
+
+function seleccionarCliente(c) {
+  clienteActual         = c;
+  mostrarBuscadorCliente(false);
+  cliNombre.textContent = c.nombre;
+  cliSaldo.textContent  = `CC: ${fmt(c.saldo_cuenta_corriente)}  ·  Límite: ${fmt(c.limite_credito)}`;
+  cerrarDD(ddCliente);
+  checkAfipGuard();
+  setTimeout(() => inputCodigo.focus(), 50);
+}
+
+$('btn-quitar-cli').addEventListener('click', () => {
+  clienteActual      = null;
+  inputCliente.value = '';
+  mostrarBuscadorCliente(true);
+  checkAfipGuard();
+});
+
+// ── Modal Nuevo Cliente ──────────────────────────────
+function abrirModalNuevoCli() {
+  ['nc-nombre','nc-cuit','nc-domicilio','nc-provincia','nc-telefono','nc-email']
+    .forEach(id => $(id).value = '');
+  $('nc-condicion').value      = '';
+  $('nc-guardar').disabled     = false;
+  $('nc-guardar').textContent  = 'Guardar cliente';
+  $('overlay-nc').classList.add('abierto');
+  setTimeout(() => $('nc-nombre').focus(), 50);
+}
+function cerrarModalNuevoCli() {
+  $('overlay-nc').classList.remove('abierto');
+}
+async function guardarNuevoCli() {
+  const nombre = $('nc-nombre').value.trim();
+  if (!nombre) { toast_('El nombre es requerido', 'err'); return; }
+
+  const btn = $('nc-guardar');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    const r = await fetch(`${API}/clientes`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre,
+        cuit:          $('nc-cuit').value.trim()      || null,
+        condicion_iva: $('nc-condicion').value        || null,
+        domicilio:     $('nc-domicilio').value.trim() || null,
+        provincia:     $('nc-provincia').value.trim() || null,
+        telefono:      $('nc-telefono').value.trim()  || null,
+        email:         $('nc-email').value.trim()     || null,
+      }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error ?? 'Error al guardar');
+    cerrarModalNuevoCli();
+    seleccionarCliente(d);
+    toast_(`Cliente "${nombre}" creado`, 'ok');
+  } catch (e) {
+    toast_(e.message, 'err');
+    btn.disabled = false; btn.textContent = 'Guardar cliente';
+  }
+}
+$('btn-nuevo-cli').addEventListener('click', abrirModalNuevoCli);
+$('nc-cerrar').addEventListener('click',    cerrarModalNuevoCli);
+$('nc-cancelar').addEventListener('click',  cerrarModalNuevoCli);
+$('nc-guardar').addEventListener('click',   guardarNuevoCli);
+$('nc-nombre').addEventListener('keydown',  e => { if (e.key === 'Enter') guardarNuevoCli(); });
+$('overlay-nc').addEventListener('click',   e => { if (e.target === $('overlay-nc')) cerrarModalNuevoCli(); });
+
+// ── Helpers dropdown ─────────────────────────────────
+function cerrarDD(dd) { dd.classList.remove('visible'); dd.innerHTML = ''; }
+
+function moverDD(dd, dir, cual) {
+  const filas = dd.querySelectorAll('.dd-item');
+  if (!filas.length) return;
+  if (cual === 'rapido') ddRapidoIdx = Math.max(-1, Math.min(filas.length - 1, ddRapidoIdx + dir));
+  else                   ddCliIdx    = Math.max(-1, Math.min(filas.length - 1, ddCliIdx    + dir));
+  const idx = cual === 'rapido' ? ddRapidoIdx : ddCliIdx;
+  filas.forEach((el, i) => el.classList.toggle('activo', i === idx));
+}
+
+function selDD(dd, cb) {
+  const el = dd.querySelector('.dd-item.activo') || dd.querySelector('.dd-item');
+  if (el) cb(JSON.parse(el.dataset.json));
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.busqueda-rapida')) { cerrarDD(ddRapido); cerrarDD(ddCliente); }
+});
+
+// ════════ MODAL BÚSQUEDA AVANZADA (F3) ════════════════
+
+async function cargarFiltros() {
+  if (filtrosLoaded) return;
+  try {
+    const r = await fetch(`${API}/filtros`);
+    filtros = await r.json();
+    filtrosLoaded = true;
+    poblarSelect(fProveedor, filtros.proveedores, 'Todos los proveedores');
+    poblarSelect(fMarca,     filtros.marcas,      'Todas las marcas');
+    poblarSelect(fCategoria, filtros.categorias,  'Todos los rubros');
+  } catch { toast_('Error al cargar filtros', 'err'); }
+}
+
+function poblarSelect(sel, lista, placeholder) {
+  sel.innerHTML = `<option value="">${placeholder}</option>` +
+    lista.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+}
+
+function abrirModal() {
+  cargarFiltros();
+  overlay.classList.add('abierto');
+  setTimeout(() => { modalInput.focus(); modalInput.select(); }, 50);
+}
+
+function cerrarModal() {
+  overlay.classList.remove('abierto');
+  inputRapido.focus();
+}
+
+modalClose.addEventListener('click', cerrarModal);
+overlay.addEventListener('click', e => { if (e.target === overlay) cerrarModal(); });
+
+// Switch exacto / similar
+btnSimilar.addEventListener('click', () => { modoExacto = false; btnSimilar.classList.add('activo'); btnExacto.classList.remove('activo'); buscarModal(); });
+btnExacto.addEventListener('click',  () => { modoExacto = true;  btnExacto.classList.add('activo');  btnSimilar.classList.remove('activo'); buscarModal(); });
+
+// Toggle con stock
+toggleStock.addEventListener('click', () => {
+  fConStock.checked = !fConStock.checked;
+  toggleStock.classList.toggle('activo', fConStock.checked);
+  buscarModal();
+});
+
+// Filtros
+[fProveedor, fMarca, fCategoria].forEach(sel =>
+  sel.addEventListener('change', buscarModal));
+
+// Input modal
+modalInput.addEventListener('input', () => {
+  clearTimeout(modalTimeout);
+  modalTimeout = setTimeout(buscarModal, 250);
+});
+
+modalInput.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); moverModalIdx(1); }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); moverModalIdx(-1); }
+  if (e.key === 'Enter')     { e.preventDefault(); seleccionarModalActivo(); }
+  if (e.key === 'Escape')    { cerrarModal(); }
+});
+
+function moverModalIdx(dir) {
+  if (!modalResultados.length) return;
+  modalIdx = Math.max(0, Math.min(modalResultados.length - 1, modalIdx + dir));
+  modalTabla.querySelectorAll('tbody tr').forEach((tr, i) =>
+    tr.classList.toggle('activo', i === modalIdx));
+  const activo = modalTabla.querySelector('tbody tr.activo');
+  if (activo) activo.scrollIntoView({ block: 'nearest' });
+}
+
+function seleccionarModalActivo() {
+  const idx = modalIdx >= 0 ? modalIdx : 0;
+  if (modalResultados[idx]) {
+    agregarProducto(modalResultados[idx]);
+    cerrarModal();
+  }
+}
+
+async function buscarModal() {
+  const q         = modalInput.value.trim();
+  const proveedor = fProveedor.value;
+  const marca     = fMarca.value;
+  const categoria = fCategoria.value;
+  const conStock  = fConStock.checked;
+
+  const tieneFiltro = proveedor || marca || categoria || conStock;
+
+  if (q.length < 2 && !tieneFiltro) {
+    modalResultados = [];
+    modalIdx = -1;
+    mostrarEstado('Escribí al menos 2 caracteres o aplicá un filtro');
+    return;
+  }
+
+  mostrarEstado('Buscando...');
+
+  const params = new URLSearchParams({ limit: 100 });
+  if (q)         params.set('q', q);
+  if (modoExacto) params.set('exacto', '1');
+  if (proveedor) params.set('proveedor', proveedor);
+  if (marca)     params.set('marca', marca);
+  if (categoria) params.set('categoria', categoria);
+  if (conStock)  params.set('con_stock', '1');
+
+  try {
+    const r = await fetch(`${API}/productos?${params}`);
+    const d = await r.json();
+    if (!r.ok || !Array.isArray(d)) { mostrarEstado(d.error ?? 'Sin resultados'); return; }
+    modalResultados = d;
+    modalIdx = -1;
+    renderModalResultados(d);
+  } catch { mostrarEstado('Error de conexión'); }
+}
+
+function mostrarEstado(msg) {
+  modalTabla.innerHTML = `<div class="modal-estado">${esc(msg)}</div>`;
+  modalCount.textContent = '—';
+}
+
+function renderModalResultados(lista) {
+  modalCount.textContent = lista.length === 0   ? 'Sin resultados' :
+                           lista.length === 100  ? 'Más de 100 resultados — refiná la búsqueda' :
+                           `${lista.length} resultado${lista.length === 1 ? '' : 's'}`;
+
+  if (!lista.length) { mostrarEstado('Sin resultados para esa búsqueda'); return; }
+
+  const tbody = lista.map((p, i) => {
+    const stockClass = p.stock_actual > 0 ? 'stock-ok' :
+                       p.stock_actual < 0 ? 'stock-no' : 'stock-cero';
+    const stockVal   = Number(p.stock_actual) % 1 === 0
+                       ? Number(p.stock_actual)
+                       : Number(p.stock_actual).toFixed(2);
+    return `
+      <tr data-idx="${i}" data-json='${JSON.stringify(p).replace(/'/g,"&#39;")}'>
+        <td><span class="codigo">${esc(p.codigo)}</span></td>
+        <td><span class="nombre">${esc(p.nombre)}</span><br><span class="marca">${esc(p.marca ?? '')}</span></td>
+        <td>${esc(p.proveedor ?? '—')}</td>
+        <td>${esc(p.categoria ?? '—')}</td>
+        <td class="r ${stockClass}">${stockVal}</td>
+        <td class="r precio-td">${fmt(p.precio_venta)}</td>
+      </tr>`;
+  }).join('');
+
+  modalTabla.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nombre / Marca</th>
+          <th>Proveedor</th>
+          <th>Rubro</th>
+          <th class="r">Stock</th>
+          <th class="r">Precio</th>
+        </tr>
+      </thead>
+      <tbody>${tbody}</tbody>
+    </table>`;
+
+  modalTabla.querySelectorAll('tbody tr').forEach(tr => {
+    tr.addEventListener('click', () => {
+      agregarProducto(JSON.parse(tr.dataset.json));
+      cerrarModal();
+    });
+    tr.addEventListener('mouseenter', () => {
+      modalIdx = parseInt(tr.dataset.idx);
+      modalTabla.querySelectorAll('tbody tr').forEach((r, i) =>
+        r.classList.toggle('activo', i === modalIdx));
+    });
+  });
+}
+
+// ════════ AFIP GUARD ══════════════════════════════════
+
+const TIPOS_REQUIEREN_CUIT = ['FC A-ELECT', 'FC B-ELECT'];
+
+function checkAfipGuard() {
+  const tipo      = $('tipo-comp').value;
+  const tieneCuit = clienteActual?.cuit;
+  const esRI      = clienteActual?.condicion_iva === 'Responsable Inscripto';
+
+  if (!TIPOS_REQUIEREN_CUIT.includes(tipo)) {
+    afipGuardActivo = false;
+    $('afip-warn').classList.remove('visible');
+    actualizarBtnConfirmar();
+    return;
+  }
+
+  if (tipo === 'FC A-ELECT') {
+    if (tieneCuit && esRI) {
+      afipGuardActivo = false;
+      $('afip-warn').classList.remove('visible');
+    } else {
+      afipGuardActivo = true;
+      $('afip-warn-msg').textContent = !tieneCuit
+        ? 'FC A-ELECT requiere cliente con CUIT y condición Responsable Inscripto.'
+        : 'El cliente no tiene condición Responsable Inscripto (requerida para FC A-ELECT).';
+      $('afip-warn').classList.add('visible');
+    }
+  } else {
+    if (tieneCuit) {
+      afipGuardActivo = false;
+      $('afip-warn').classList.remove('visible');
+    } else {
+      afipGuardActivo = true;
+      $('afip-warn-msg').textContent = 'FC B-ELECT requiere cliente con CUIT registrado.';
+      $('afip-warn').classList.add('visible');
+    }
+  }
+
+  actualizarBtnConfirmar();
+}
+
+function actualizarBtnConfirmar() {
+  const vacio = items.length === 0;
+  btnConfirmar.disabled = vacio || afipGuardActivo;
+  btnConfirmar.title = vacio ? 'Agregá productos al carrito para confirmar' : '';
+}
+
+// ════════ ÚLTIMA VENTA ════════════════════════════════
+
+function mostrarUltimaVenta(data) {
+  ultimaVentaData = data;
+  $('uv-comp').textContent  = `${data.tipo_comprobante} N° ${data.numero}`;
+  $('uv-total').textContent = fmt(data.total);
+  $('ultima-venta').classList.add('visible');
+}
+
+function ocultarUltimaVenta() {
+  ultimaVentaData = null;
+  $('ultima-venta').classList.remove('visible');
+}
+
+// ════════ CONFIRMAR VENTA ═════════════════════════════
+
+btnConfirmar.addEventListener('click', confirmarVenta);
+
+async function confirmarVenta() {
+  if (!items.length || afipGuardActivo) return;
+  btnConfirmar.disabled   = true;
+  btnConfirmar.innerHTML  = '<span>Guardando...</span>';
+
+  const body = {
+    cliente_id:       clienteActual?.id ?? null,
+    caja_id:          window.cajaOperativaId?.() ?? window.BRON_SESION?.caja_id ?? null,
+    usuario_id:       window.BRON_SESION?.usuario_id ?? null,
+    tipo_comprobante: $('tipo-comp').value,
+    tipo_pago: esMixto ? 'mixto' : $('tipo-pago-sel').value,
+    pagos: esMixto
+      ? pagosMixto.map(p => ({ tipo: p.tipo, monto: parseFloat(p.monto) }))
+      : undefined,
+    fecha:            $('fecha-venta').value || null,
+    observaciones:    $('observaciones').value.trim() || null,
+    envio_precio:     $('chk-envio').checked ? (parseFloat($('envio-precio').value) || null) : null,
+    envio_direccion:  $('chk-envio').checked ? ($('envio-dir').value.trim() || null) : null,
+    items: items.map(i => ({
+      producto_id:     i.producto_id,
+      cantidad:        i.cantidad,
+      precio_unitario: i.precio_unitario,
+      precio_original: i.precio_original  ?? null,
+      ajuste_desc:     i.ajuste_desc      ?? null,
+      ajuste_visible:  i.ajuste_visible   ?? null,
+    })),
+  };
+
+  try {
+    const url    = editandoVentaId ? `${API}/ventas/${editandoVentaId}` : `${API}/ventas`;
+    const method = editandoVentaId ? 'PUT' : 'POST';
+    const r = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!r.ok) { toast_(d.error ?? 'Error al guardar', 'err'); return; }
+    const accion = editandoVentaId ? 'Actualizado' : '✓';
+    toast_(`${accion}  ${body.tipo_comprobante} N° ${d.numero}  —  ${fmt(d.total)}`, 'ok');
+    const uvData = { id: d.id, tipo_comprobante: body.tipo_comprobante, numero: d.numero, total: d.total };
+    const volverA = sessionStorage.getItem('bron_volver_tras_editar');
+    if (volverA) {
+      sessionStorage.removeItem('bron_volver_tras_editar');
+      location.href = volverA;
+      return;
+    }
+    salirModoEdicion();
+    nuevaVenta();
+    mostrarUltimaVenta(uvData);
+  } catch { toast_('Error de conexión', 'err'); }
+  finally {
+    btnConfirmar.innerHTML = `
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="20 6 9 17 4 12"/></svg>
+      <span>CONFIRMAR VENTA</span>
+      <span style="font-size:11px;font-weight:500;opacity:.75;font-family:monospace;background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px;margin-left:2px">F10</span>`;
+    actualizarBtnConfirmar();
+  }
+}
+
+// ════════ NUEVA VENTA ═════════════════════════════════
+
+function nuevaVenta() {
+  ocultarUltimaVenta();
+  items         = [];
+  clienteActual = null;
+  inputRapido.value  = '';
+  inputCliente.value = '';
+  mostrarBuscadorCliente(true);
+  seleccionados.clear();
+  esMixto = false; pagosMixto = [];
+  $('tipo-pago-sel').value = 'efectivo';
+  $('pago-simple').style.display = '';
+  $('pago-mixto-resumen').style.display = 'none';
+  $('observaciones').value = '';
+  $('fecha-venta').value   = new Date().toISOString().split('T')[0];
+  $('fecha-venta').classList.remove('fecha-modificada');
+  $('chk-envio').checked   = false;
+  $('envio-precio').value  = '';
+  $('envio-dir').value     = '';
+  $('envio-reveal').classList.remove('visible');
+  $('t-envio-row').style.display = 'none';
+  inputCodigo.value = ''; limpiarEstadoCodigo();
+  renderItems();
+  inputCodigo.focus();
+}
+
+btnNueva.addEventListener('click', nuevaVenta);
+
+// ── Fecha ──────────────────────────────────────────────
+$('fecha-venta').value = new Date().toISOString().split('T')[0];
+$('fecha-venta').addEventListener('input', () => {
+  const hoy = new Date().toISOString().split('T')[0];
+  $('fecha-venta').classList.toggle('fecha-modificada', $('fecha-venta').value !== hoy);
+});
+
+// ════════ ATAJOS GLOBALES ══════════════════════════════
+
+document.addEventListener('keydown', e => {
+  const enInput = ['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName);
+  const enItemInput = e.target.classList.contains('item-input');
+
+  if (e.key === 'F2') {
+    e.preventDefault();
+    if (overlay.classList.contains('abierto')) cerrarModal();
+    inputRapido.focus(); inputRapido.select();
+  }
+  if (e.key === 'F3') { e.preventDefault(); abrirModal(); }
+  if (e.key === 'F4') {
+    e.preventDefault();
+    if (overlay.classList.contains('abierto')) cerrarModal();
+    inputCliente.focus(); inputCliente.select();
+  }
+  if (e.key === 'F5') { e.preventDefault(); ocultarUltimaVenta(); inputCodigo.focus(); }
+  if (e.key === 'F10') { e.preventDefault(); if (!btnConfirmar.disabled) confirmarVenta(); }
+  if (e.key === 'Escape' && overlay.classList.contains('abierto')) cerrarModal();
+  if (e.key === 'Escape' && $('overlay-pm').classList.contains('abierto')) cerrarPM();
+});
+
+// Helper para botón de acción (scope global para onclick attribute)
+function focusCliente() { inputCliente.focus(); inputCliente.select(); }
+
+// ── Init ──────────────────────────────────────────────
+
+// Selección
+$('sel-all').addEventListener('change', () => {
+  if ($('sel-all').checked) items.forEach(i => seleccionados.add(i.producto_id));
+  else seleccionados.clear();
+  itemsLista.querySelectorAll('.item-chk').forEach(chk =>
+    chk.checked = seleccionados.has(parseInt(chk.dataset.pid)));
+  actualizarSelBar();
+});
+
+$('sel-del').addEventListener('click', () => {
+  items = items.filter(i => !seleccionados.has(i.producto_id));
+  seleccionados.clear();
+  renderItems();
+});
+
+let selAjUnit = 'pct';
+let selAjTipo = 'desc';
+
+function aplicarAjusteSeleccion() {
+  if (!seleccionados.size) return;
+  const val     = parseFloat($('sel-aj-val').value);
+  const visible = $('sel-visible').checked;
+  if (isNaN(val) || val <= 0) { toast_('Ingresá un valor mayor a 0', 'err'); return; }
+  const isDesc = selAjTipo === 'desc';
+  const n = seleccionados.size;
+  items.forEach(item => {
+    if (!seleccionados.has(item.producto_id)) return;
+    const base = item.precio_original ?? item.precio_unitario;
+    let nuevo = selAjUnit === 'pct'
+      ? base * (isDesc ? 1 - val / 100 : 1 + val / 100)
+      : (isDesc ? base - val : base + val);
+    nuevo = Math.max(0, Math.round(nuevo * 100) / 100);
+    item.precio_original = base;
+    item.precio_unitario = nuevo;
+    item.ajuste_desc     = `${isDesc ? '−' : '+'}${val}${selAjUnit === 'pct' ? '%' : '$'}`;
+    item.ajuste_tipo     = selAjTipo;
+    item.ajuste_unit     = selAjUnit;
+    item.ajuste_val      = val;
+    item.ajuste_visible  = visible;
+  });
+  renderItems();
+  toast_(`Ajuste aplicado a ${n} ítem${n > 1 ? 's' : ''}`);
+}
+
+function limpiarAjusteSeleccion() {
+  if (!seleccionados.size) return;
+  const n = seleccionados.size;
+  items.forEach(item => {
+    if (!seleccionados.has(item.producto_id)) return;
+    if (item.precio_original !== undefined) item.precio_unitario = item.precio_original;
+    delete item.precio_original;
+    item.ajuste_desc = null;
+    item.ajuste_tipo = undefined;
+    item.ajuste_unit = undefined;
+    item.ajuste_val  = undefined;
+  });
+  $('sel-aj-val').value = '';
+  renderItems();
+  toast_(`Ajuste eliminado de ${n} ítem${n > 1 ? 's' : ''}`);
+}
+
+$('sel-aj-btn').addEventListener('click', aplicarAjusteSeleccion);
+$('sel-aj-limpiar').addEventListener('click', limpiarAjusteSeleccion);
+$('sel-aj-val').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); aplicarAjusteSeleccion(); }
+});
+document.querySelectorAll('.sel-aj-tipo-btn').forEach(btn =>
+  btn.addEventListener('click', () => {
+    selAjTipo = btn.dataset.tipo;
+    document.querySelectorAll('.sel-aj-tipo-btn').forEach(b => b.classList.toggle('activo', b === btn));
+  }));
+
+$('btn-pago-mixto').addEventListener('click', abrirPM);
+$('btn-pago-mixto-edit').addEventListener('click', abrirPM);
+$('btn-pago-mixto-reset').addEventListener('click', resetMixto);
+$('pm-close').addEventListener('click', cerrarPM);
+$('pm-cancelar').addEventListener('click', cerrarPM);
+$('pm-add-btn').addEventListener('click', () => {
+  if (pagosMixtoTemp.length >= 5) return;
+  const usados = new Set(pagosMixtoTemp.map(p => p.tipo));
+  const sig = TIPOS_PAGO.find(t => !usados.has(t.val))?.val ?? TIPOS_PAGO[0].val;
+  pagosMixtoTemp.push({ tipo: sig, monto: '' });
+  renderPM();
+});
+$('pm-confirmar').addEventListener('click', confirmarPM);
+
+document.querySelectorAll('.sel-aj-unit-btn').forEach(btn =>
+  btn.addEventListener('click', () => {
+    selAjUnit = btn.dataset.unit;
+    document.querySelectorAll('.sel-aj-unit-btn').forEach(b => b.classList.toggle('activo', b === btn));
+  })
+);
+
+$('tipo-comp').addEventListener('change', checkAfipGuard);
+
+$('afip-fix-btn').addEventListener('click', () => {
+  mostrarBuscadorCliente(true);
+  inputCliente.focus();
+  inputCliente.select();
+});
+
+$('uv-cerrar').addEventListener('click', ocultarUltimaVenta);
+
+$('uv-imprimir').addEventListener('click', async () => {
+  if (!ultimaVentaData) return;
+  try {
+    const res = await fetch(`${API}/ventas/${ultimaVentaData.id}/imprimir`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { toast_(data.error || 'Error al imprimir', 'err'); return; }
+    toast_('Enviado a imprimir', 'ok');
+  } catch {
+    toast_('Error de conexión', 'err');
+  }
+});
+
+$('uv-nc').addEventListener('click', () => {
+  toast_('Para emitir NC: buscá la venta en Historial y usá "Nota de crédito"', 'ok');
+});
+
+renderItems();
+checkAfipGuard();
+inputCodigo.focus();
+
+// ════════ MODO EDICIÓN ════════════════════════════════
+
+function salirModoEdicion() {
+  editandoVentaId = null;
+  $('edit-banner').style.display = 'none';
+}
+
+$('edit-banner-cancel').addEventListener('click', () => {
+  salirModoEdicion();
+  nuevaVenta();
+  const volverA = sessionStorage.getItem('bron_volver_tras_editar');
+  if (volverA) {
+    sessionStorage.removeItem('bron_volver_tras_editar');
+    location.href = volverA;
+  }
+});
+
+(async function initEditarVenta() {
+  const raw = localStorage.getItem('bron_editar_venta');
+  if (!raw) return;
+  localStorage.removeItem('bron_editar_venta');
+  let v;
+  try { v = JSON.parse(raw); } catch { return; }
+
+  editandoVentaId = v.id;
+
+  // Ítems con precios históricos del comprobante (vi.precio_unitario de venta_items, no precio actual del producto)
+  if (Array.isArray(v.items) && v.items.length) {
+    items = v.items.map(i => ({
+      producto_id:     i.producto_id,
+      nombre:          i.nombre,
+      codigo:          i.codigo ?? '',
+      cantidad:        Number(i.cantidad),
+      precio_unitario: Number(i.precio_unitario),
+      precio_original: i.precio_original ? Number(i.precio_original) : null,
+      ajuste_desc:     i.ajuste_desc  ?? null,
+      ajuste_visible:  i.ajuste_visible ?? true,
+    }));
+  }
+
+  // Fecha original del remito
+  if (v.fecha) {
+    $('fecha-venta').value = v.fecha;
+    $('fecha-venta').dispatchEvent(new Event('input'));
+  }
+
+  // Tipo de comprobante
+  if (v.tipo_comprobante) $('tipo-comp').value = v.tipo_comprobante;
+
+  // Forma de pago
+  const tiposSimples = TIPOS_PAGO.map(t => t.val);
+  if (v.tipo_pago === 'mixto' && Array.isArray(v.pagos) && v.pagos.length) {
+    pagosMixto = v.pagos.map(p => ({ tipo: p.tipo, monto: String(p.monto) }));
+    esMixto    = true;
+    $('pago-mixto-detalle').innerHTML = pagosMixto.map(p => {
+      const lbl = TIPOS_PAGO.find(t => t.val === p.tipo)?.lbl ?? p.tipo;
+      return `${lbl}: <strong>${fmt(parseFloat(p.monto))}</strong>`;
+    }).join('<br>');
+    $('pago-simple').style.display = 'none';
+    $('pago-mixto-resumen').style.display = '';
+  } else if (v.tipo_pago && tiposSimples.includes(v.tipo_pago)) {
+    $('tipo-pago-sel').value = v.tipo_pago;
+  }
+
+  // Observaciones
+  if (v.observaciones) $('observaciones').value = v.observaciones;
+
+  // Envío
+  if (v.envio_precio) {
+    $('chk-envio').checked = true;
+    $('envio-precio').value = v.envio_precio;
+    $('envio-reveal').classList.add('visible');
+    $('t-envio-row').style.display = '';
+  }
+  if (v.envio_direccion) $('envio-dir').value = v.envio_direccion;
+
+  // Renderizar ítems YA con precios históricos, antes de cualquier await
+  renderItems();
+  inputCodigo.blur(); // evitar que el focus en inputCodigo dispare fetchCodigo
+
+  // Mostrar banner
+  const banner = $('edit-banner');
+  banner.style.display = 'flex';
+  $('edit-banner-txt').textContent = `Editando ${v.tipo_comprobante ?? 'venta'} N° ${v.numero}`;
+
+  // Cliente (async — va después del render para no interferir con precios)
+  if (v.cliente_id) {
+    try {
+      const r = await fetch(`${API}/clientes/${v.cliente_id}`);
+      const c = await r.json();
+      seleccionarCliente(r.ok ? c : { id: v.cliente_id, nombre: v.cliente_nombre, saldo_cuenta_corriente: 0, limite_credito: 0 });
+    } catch {
+      seleccionarCliente({ id: v.cliente_id, nombre: v.cliente_nombre, saldo_cuenta_corriente: 0, limite_credito: 0 });
+    }
+  }
+})();
+
+// Carga venta copiada desde ventas.html (localStorage)
+(async function initCopiaVenta() {
+  const raw = localStorage.getItem('bron_copia_venta');
+  if (!raw) return;
+  localStorage.removeItem('bron_copia_venta');
+  let datos;
+  try { datos = JSON.parse(raw); } catch { return; }
+
+  if (Array.isArray(datos.items) && datos.items.length) {
+    items = datos.items.map(i => ({
+      producto_id:     i.producto_id,
+      nombre:          i.nombre,
+      codigo:          i.codigo ?? '',
+      cantidad:        Number(i.cantidad),
+      precio_unitario: Number(i.precio_unitario),
+    }));
+    renderItems();
+  }
+
+  if (datos.cliente?.id) {
+    try {
+      const r = await fetch(`${API}/clientes/${datos.cliente.id}`);
+      const c = await r.json();
+      seleccionarCliente(r.ok ? c : { id: datos.cliente.id, nombre: datos.cliente.nombre, saldo_cuenta_corriente: 0, limite_credito: 0 });
+    } catch {
+      seleccionarCliente({ id: datos.cliente.id, nombre: datos.cliente.nombre, saldo_cuenta_corriente: 0, limite_credito: 0 });
+    }
+  }
+
+  toast_(`Venta copiada — ${items.length} producto${items.length !== 1 ? 's' : ''}`, 'ok');
+})();
+
+// ════════ GUARDIA DE NAVEGACIÓN ══════════════════════
+
+function hayVentaActiva() {
+  return items.length > 0 || editandoVentaId !== null;
+}
+
+window.addEventListener('beforeunload', e => {
+  if (!hayVentaActiva()) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
+
+document.querySelectorAll('.nav-link, .nav-brand').forEach(link => {
+  link.addEventListener('click', e => {
+    if (!hayVentaActiva()) return;
+    e.preventDefault();
+    const destino = link.getAttribute('href');
+    if (window.confirm('¿Abandonar la venta actual? Los ítems se perderán.')) {
+      window.location.href = destino;
+    }
+  });
+});
+</script>
+</body>
+</html>

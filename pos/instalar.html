@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — Configuración inicial</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+  body { background:#1A1A1A; align-items:center; justify-content:center; padding:24px; }
+  .install-box { width:540px; max-width:100%; display:flex; flex-direction:column; align-items:center; gap:24px; }
+  .install-box img { height:44px; }
+
+  .pasos-ind { display:flex; gap:6px; width:100%; }
+  .paso-pill { flex:1; height:4px; border-radius:3px; background:rgba(255,255,255,.12); }
+  .paso-pill.activo { background:var(--azul); }
+  .paso-pill.hecho  { background:rgba(255,255,255,.4); }
+
+  .panel { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:14px; padding:28px; display:none; flex-direction:column; gap:16px; }
+  .panel.activo { display:flex; }
+
+  .titulo { color:rgba(255,255,255,.92); font-size:20px; font-weight:700; letter-spacing:-.2px; }
+  .sub { color:rgba(255,255,255,.5); font-size:14px; line-height:1.5; margin-top:-8px; }
+
+  .modo-row { display:flex; gap:10px; }
+  .modo-btn { flex:1; padding:14px; background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.15); border-radius:10px; color:rgba(255,255,255,.8); font-size:14px; font-weight:600; cursor:pointer; text-align:left; line-height:1.4; }
+  .modo-btn.activo { border-color:var(--azul); background:rgba(102,11,11,.25); color:white; }
+
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .fg-full { grid-column:1/-1; }
+  .form-group { display:flex; flex-direction:column; gap:5px; }
+  .form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:rgba(255,255,255,.45); }
+  .form-input { padding:10px 12px; border:1.5px solid rgba(255,255,255,.15); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:rgba(255,255,255,.06); color:white; }
+  .form-input:focus { border-color:var(--azul); }
+  .form-input::placeholder { color:rgba(255,255,255,.3); }
+  .form-hint { font-size:11px; color:rgba(255,255,255,.4); }
+
+  .btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:4px; }
+  .btn-pri { padding:11px 22px; background:var(--azul); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+  .btn-pri:hover:not(:disabled) { background:var(--azul-h); }
+  .btn-pri:disabled { opacity:.45; cursor:not-allowed; }
+  .btn-sec { padding:11px 22px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.8); border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+  .btn-sec:hover { background:rgba(255,255,255,.15); }
+
+  .aviso { font-size:14px; border-radius:8px; padding:11px 13px; line-height:1.5; }
+  .aviso.ok   { background:rgba(22,163,74,.15); color:#86EFAC; border:1px solid rgba(22,163,74,.3); }
+  .aviso.err  { background:rgba(185,28,28,.15); color:#FCA5A5; border:1px solid rgba(185,28,28,.3); }
+  .aviso.info { background:rgba(59,130,246,.12); color:#93C5FD; border:1px solid rgba(59,130,246,.25); }
+
+  .credenciales { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:8px; padding:14px; font-size:14px; color:white; line-height:1.7; }
+  .credenciales b { color:#FCD34D; }
+
+  .cajas-lista { display:flex; flex-direction:column; gap:8px; }
+  .caja-row { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); border-radius:8px; padding:9px 12px; font-size:14px; color:white; }
+  .caja-row .tipo { color:rgba(255,255,255,.4); font-size:11px; text-transform:uppercase; margin-left:auto; }
+
+  .logo-actual { display:flex; align-items:center; gap:12px; }
+  .logo-actual img { height:36px; }
+</style>
+</head>
+<body>
+
+<div class="install-box">
+  <img src="/BRON/logo_background.png" alt="BRON">
+  <div class="pasos-ind" id="pasos-ind"></div>
+
+  <!-- Conexión -->
+  <div class="panel" id="panel-conexion">
+    <div class="titulo">Conexión a la base de datos</div>
+    <div class="sub">Elegí cómo va a funcionar esta instalación.</div>
+    <div class="modo-row">
+      <button class="modo-btn activo" id="modo-servidor" data-modo="servidor">Esta PC es el servidor<br><span style="opacity:.6;font-weight:400">Crea la base de datos acá</span></button>
+      <button class="modo-btn" id="modo-cliente" data-modo="cliente">Conectarme a un servidor<br><span style="opacity:.6;font-weight:400">Otra PC de la red ya lo tiene instalado</span></button>
+    </div>
+
+    <div class="form-grid" id="conexion-form">
+      <div class="form-group"><label class="form-label">Host</label><input class="form-input" id="cx-host" value="127.0.0.1"></div>
+      <div class="form-group"><label class="form-label">Puerto</label><input class="form-input" id="cx-port" type="number" value="3307"></div>
+      <div class="form-group fg-full"><label class="form-label">Nombre de la base</label><input class="form-input" id="cx-dbname" value="bron"></div>
+      <div class="form-group"><label class="form-label" id="cx-user-label">Usuario MySQL (con permiso de crear bases)</label><input class="form-input" id="cx-user" value="root"></div>
+      <div class="form-group"><label class="form-label">Contraseña</label><input class="form-input" id="cx-pass" type="password"></div>
+    </div>
+
+    <div id="cx-resultado"></div>
+    <div id="cx-credenciales" style="display:none"></div>
+
+    <div class="btn-row">
+      <button class="btn-sec" id="cx-btn-probar">Probar conexión</button>
+      <button class="btn-pri" id="cx-btn-instalar">Instalar y continuar</button>
+    </div>
+  </div>
+
+  <!-- Admin -->
+  <div class="panel" id="panel-admin">
+    <div class="titulo">Crear el administrador</div>
+    <div class="sub">Va a ser el primer usuario del sistema, con acceso total.</div>
+    <div class="form-grid">
+      <div class="form-group fg-full"><label class="form-label">Nombre</label><input class="form-input" id="ad-nombre" placeholder="Ej: Admin"></div>
+      <div class="form-group"><label class="form-label">PIN (4 a 6 dígitos)</label><input class="form-input" id="ad-pin" type="password" inputmode="numeric" maxlength="6"></div>
+      <div class="form-group"><label class="form-label">Confirmar PIN</label><input class="form-input" id="ad-pin2" type="password" inputmode="numeric" maxlength="6"></div>
+    </div>
+    <div id="ad-resultado"></div>
+    <div class="btn-row"><button class="btn-pri" id="ad-btn-crear">Crear y continuar</button></div>
+  </div>
+
+  <!-- Negocio -->
+  <div class="panel" id="panel-negocio">
+    <div class="titulo">Datos del negocio</div>
+    <div class="sub">Se usan en los comprobantes impresos.</div>
+    <div class="form-grid">
+      <div class="form-group fg-full"><label class="form-label">Razón social</label><input class="form-input" id="ng-razon"></div>
+      <div class="form-group"><label class="form-label">CUIT</label><input class="form-input" id="ng-cuit"></div>
+      <div class="form-group"><label class="form-label">Condición IVA</label><input class="form-input" id="ng-condicion" value="Responsable Inscripto"></div>
+      <div class="form-group fg-full"><label class="form-label">Domicilio</label><input class="form-input" id="ng-domicilio"></div>
+      <div class="form-group"><label class="form-label">Ingresos brutos</label><input class="form-input" id="ng-iibb"></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="ng-telefono"></div>
+      <div class="form-group"><label class="form-label">Website</label><input class="form-input" id="ng-website"></div>
+      <div class="form-group"><label class="form-label">Punto de venta</label><input class="form-input" id="ng-pv" type="number" min="1" value="1"></div>
+      <div class="form-group fg-full"><label class="form-label">% IVA</label><input class="form-input" id="ng-iva" type="number" step="0.01" value="21"></div>
+    </div>
+    <div id="ng-resultado"></div>
+    <div class="btn-row"><button class="btn-pri" id="ng-btn-guardar">Guardar y continuar</button></div>
+  </div>
+
+  <!-- Logo -->
+  <div class="panel" id="panel-logo">
+    <div class="titulo">Logo</div>
+    <div class="sub">Aparece en el login y en los comprobantes. Podés omitirlo y subirlo después desde Configuración.</div>
+    <input type="file" id="lg-archivo" class="form-input" accept="image/*">
+    <div id="lg-resultado"></div>
+    <div class="btn-row">
+      <button class="btn-sec" id="lg-btn-omitir">Omitir</button>
+      <button class="btn-pri" id="lg-btn-subir">Subir y continuar</button>
+    </div>
+  </div>
+
+  <!-- Cajas -->
+  <div class="panel" id="panel-cajas">
+    <div class="titulo">Cajas</div>
+    <div class="sub">Creá al menos una caja para poder vender. Podés agregar más después desde Configuración.</div>
+    <div class="cajas-lista" id="cj-lista"></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Nombre</label><input class="form-input" id="cj-nombre" placeholder="Ej: Caja 1"></div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-input" id="cj-tipo"><option value="venta">Venta</option><option value="compra">Compra</option></select>
+      </div>
+    </div>
+    <div id="cj-resultado"></div>
+    <div class="btn-row">
+      <button class="btn-sec" id="cj-btn-agregar">Agregar caja</button>
+      <button class="btn-pri" id="cj-btn-continuar" disabled>Continuar</button>
+    </div>
+  </div>
+
+  <!-- Listo -->
+  <div class="panel" id="panel-listo">
+    <div class="titulo">Todo listo</div>
+    <div class="sub">BRON está configurado. Ya podés empezar a trabajar.</div>
+    <div class="btn-row"><button class="btn-pri" id="ls-btn-entrar">Ingresar al sistema</button></div>
+  </div>
+
+</div>
+
+<script>
+const API = '/BRON/api';
+const $ = id => document.getElementById(id);
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+function aviso(el, msg, tipo) { el.innerHTML = msg ? `<div class="aviso ${tipo}">${msg}</div>` : ''; }
+
+let sesionPrevia = null;
+try { sesionPrevia = JSON.parse(localStorage.getItem('bron_sesion') || 'null'); } catch (e) {}
+let adminId = sesionPrevia?.usuario_id || null;
+
+function headersAdmin() {
+  return adminId ? { 'X-Usuario-Id': String(adminId) } : {};
+}
+
+let pasos = [];
+let pasoIdx = 0;
+let modoConexion = 'servidor';
+let cajasCreadas = [];
+
+function renderIndicador() {
+  $('pasos-ind').innerHTML = pasos.map((p, i) =>
+    `<div class="paso-pill${i === pasoIdx ? ' activo' : (i < pasoIdx ? ' hecho' : '')}"></div>`
+  ).join('');
+}
+
+function mostrarPaso() {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('activo'));
+  $('panel-' + pasos[pasoIdx]).classList.add('activo');
+  renderIndicador();
+}
+
+function siguiente() {
+  if (pasoIdx < pasos.length - 1) { pasoIdx++; mostrarPaso(); }
+}
+
+// ── Conexión ─────────────────────────────────────────────────────
+document.querySelectorAll('.modo-btn').forEach(b => b.addEventListener('click', () => {
+  modoConexion = b.dataset.modo;
+  document.querySelectorAll('.modo-btn').forEach(x => x.classList.toggle('activo', x === b));
+  if (modoConexion === 'servidor') {
+    $('cx-host').value = '127.0.0.1';
+    $('cx-user').value = 'root';
+    $('cx-user-label').textContent = 'Usuario MySQL (con permiso de crear bases)';
+  } else {
+    $('cx-host').value = '';
+    $('cx-host').placeholder = 'IP del servidor, ej: 192.168.1.50';
+    $('cx-user').value = 'bron_app';
+    $('cx-user-label').textContent = 'Usuario de la aplicación (lo generó el servidor)';
+  }
+  $('cx-credenciales').style.display = 'none';
+  aviso($('cx-resultado'), '', '');
+}));
+
+function datosConexion() {
+  return {
+    modo: modoConexion,
+    host: $('cx-host').value.trim(),
+    port: parseInt($('cx-port').value) || 3307,
+    dbname: $('cx-dbname').value.trim(),
+    user: $('cx-user').value.trim(),
+    pass: $('cx-pass').value,
+  };
+}
+
+$('cx-btn-probar').addEventListener('click', async () => {
+  const d = datosConexion();
+  aviso($('cx-resultado'), 'Probando…', 'info');
+  try {
+    const res = await fetch(`${API}/instalacion/probar-conexion`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) });
+    const data = await res.json();
+    if (!data.ok) { aviso($('cx-resultado'), esc(data.error), 'err'); return; }
+    if (modoConexion === 'cliente' && !data.tiene_esquema) {
+      aviso($('cx-resultado'), data.base_existe ? 'La base existe pero no tiene instalado el esquema de BRON. Revisá los datos.' : 'No se encontró esa base en ese servidor.', 'err');
+      return;
+    }
+    aviso($('cx-resultado'), modoConexion === 'servidor' ? 'Conexión OK. Lista para instalar.' : 'Conexión OK. Encontró la base de BRON.', 'ok');
+  } catch (e) {
+    aviso($('cx-resultado'), 'Error de conexión con el servidor web', 'err');
+  }
+});
+
+$('cx-btn-instalar').addEventListener('click', async () => {
+  const d = datosConexion();
+  if (!d.dbname) { aviso($('cx-resultado'), 'Ingresá el nombre de la base', 'err'); return; }
+  if (modoConexion === 'cliente' && !d.host) { aviso($('cx-resultado'), 'Ingresá el host del servidor', 'err'); return; }
+  const btn = $('cx-btn-instalar');
+  btn.disabled = true; btn.textContent = 'Instalando…';
+  try {
+    const res = await fetch(`${API}/instalacion/instalar`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) });
+    const data = await res.json();
+    if (!res.ok) { aviso($('cx-resultado'), esc(data.error), 'err'); return; }
+    aviso($('cx-resultado'), 'Instalación de conexión completa.', 'ok');
+    if (data.credenciales_servidor) {
+      const c = data.credenciales_servidor;
+      $('cx-credenciales').style.display = 'block';
+      $('cx-credenciales').innerHTML = `<div class="credenciales">
+        Usá estos datos para instalar las demás cajas en modo "Conectarme a un servidor":<br>
+        Host: <b>(la IP de esta PC en la red)</b><br>
+        Puerto: <b>${c.port}</b><br>
+        Base: <b>${esc(c.dbname)}</b><br>
+        Usuario: <b>${esc(c.user)}</b><br>
+        Contraseña: <b>${esc(c.pass)}</b><br><br>
+        Anotá esto ahora — no se vuelve a mostrar. También asegurate de habilitar el puerto ${c.port} en el Firewall de Windows para que otras PCs puedan conectarse.
+      </div>`;
+    }
+    btn.textContent = 'Continuar';
+    btn.disabled = false;
+    btn.onclick = siguiente;
+  } catch (e) {
+    aviso($('cx-resultado'), 'Error de conexión con el servidor web', 'err');
+    btn.disabled = false; btn.textContent = 'Instalar y continuar';
+  }
+});
+
+// ── Admin ────────────────────────────────────────────────────────
+$('ad-btn-crear').addEventListener('click', async () => {
+  const nombre = $('ad-nombre').value.trim();
+  const pin = $('ad-pin').value;
+  const pin2 = $('ad-pin2').value;
+  if (!nombre) { aviso($('ad-resultado'), 'Ingresá un nombre', 'err'); return; }
+  if (!/^\d{4,6}$/.test(pin)) { aviso($('ad-resultado'), 'El PIN debe ser numérico, de 4 a 6 dígitos', 'err'); return; }
+  if (pin !== pin2) { aviso($('ad-resultado'), 'Los PIN no coinciden', 'err'); return; }
+  const btn = $('ad-btn-crear');
+  btn.disabled = true; btn.textContent = 'Creando…';
+  try {
+    const res = await fetch(`${API}/instalacion/admin`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ nombre, pin }) });
+    const data = await res.json();
+    if (!res.ok) { aviso($('ad-resultado'), esc(data.error), 'err'); return; }
+    adminId = data.id;
+    siguiente();
+  } catch (e) {
+    aviso($('ad-resultado'), 'Error de conexión', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Crear y continuar';
+  }
+});
+
+// ── Negocio ──────────────────────────────────────────────────────
+$('ng-btn-guardar').addEventListener('click', async () => {
+  const razon_social = $('ng-razon').value.trim();
+  const cuit = $('ng-cuit').value.trim();
+  if (!razon_social) { aviso($('ng-resultado'), 'La razón social es requerida', 'err'); return; }
+  if (!cuit) { aviso($('ng-resultado'), 'El CUIT es requerido', 'err'); return; }
+  const btn = $('ng-btn-guardar');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    const res = await fetch(`${API}/configuracion`, {
+      method:'PUT', headers:{'Content-Type':'application/json', ...headersAdmin()},
+      body: JSON.stringify({
+        razon_social, cuit,
+        condicion_iva: $('ng-condicion').value.trim(),
+        domicilio: $('ng-domicilio').value.trim(),
+        iibb: $('ng-iibb').value.trim(),
+        telefono: $('ng-telefono').value.trim(),
+        website: $('ng-website').value.trim(),
+        punto_venta: parseInt($('ng-pv').value) || 1,
+        iva_porcentaje: parseFloat($('ng-iva').value) || 21,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) { aviso($('ng-resultado'), esc(data.error), 'err'); return; }
+    siguiente();
+  } catch (e) {
+    aviso($('ng-resultado'), 'Error de conexión', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Guardar y continuar';
+  }
+});
+
+// ── Logo ─────────────────────────────────────────────────────────
+$('lg-btn-omitir').addEventListener('click', siguiente);
+$('lg-btn-subir').addEventListener('click', async () => {
+  const archivo = $('lg-archivo').files[0];
+  if (!archivo) { siguiente(); return; }
+  const btn = $('lg-btn-subir');
+  btn.disabled = true; btn.textContent = 'Subiendo…';
+  try {
+    const fd = new FormData();
+    fd.append('logo', archivo);
+    const res = await fetch(`${API}/configuracion/logo`, { method:'POST', headers: headersAdmin(), body: fd });
+    const data = await res.json();
+    if (!res.ok) { aviso($('lg-resultado'), esc(data.error), 'err'); return; }
+    siguiente();
+  } catch (e) {
+    aviso($('lg-resultado'), 'Error de conexión', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Subir y continuar';
+  }
+});
+
+// ── Cajas ────────────────────────────────────────────────────────
+function renderCajas() {
+  $('cj-lista').innerHTML = cajasCreadas.map(c =>
+    `<div class="caja-row">${esc(c.nombre)}<span class="tipo">${c.tipo}</span></div>`
+  ).join('');
+  $('cj-btn-continuar').disabled = cajasCreadas.length === 0;
+}
+
+$('cj-btn-agregar').addEventListener('click', async () => {
+  const nombre = $('cj-nombre').value.trim();
+  const tipo = $('cj-tipo').value;
+  if (!nombre) { aviso($('cj-resultado'), 'Ingresá un nombre', 'err'); return; }
+  const btn = $('cj-btn-agregar');
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/cajas`, { method:'POST', headers:{'Content-Type':'application/json', ...headersAdmin()}, body:JSON.stringify({ nombre, tipo }) });
+    const data = await res.json();
+    if (!res.ok) { aviso($('cj-resultado'), esc(data.error), 'err'); return; }
+    cajasCreadas.push({ nombre, tipo, id: data.id });
+    $('cj-nombre').value = '';
+    aviso($('cj-resultado'), '', '');
+    renderCajas();
+  } catch (e) {
+    aviso($('cj-resultado'), 'Error de conexión', 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+$('cj-btn-continuar').addEventListener('click', siguiente);
+
+// ── Listo ────────────────────────────────────────────────────────
+$('ls-btn-entrar').addEventListener('click', () => {
+  const primeraCaja = cajasCreadas[0];
+  if (adminId && primeraCaja) {
+    localStorage.setItem('bron_sesion', JSON.stringify({
+      usuario_id: adminId, nombre: $('ad-nombre').value.trim() || sesionPrevia?.nombre || 'Admin',
+      rol: 'admin', caja_id: primeraCaja.id, caja_nombre: primeraCaja.nombre,
+    }));
+  }
+  location.href = '/BRON/pos/';
+});
+
+// ── Init ─────────────────────────────────────────────────────────
+(async function init() {
+  let estado;
+  try {
+    estado = await fetch(`${API}/instalacion/estado`).then(r => r.json());
+  } catch (e) {
+    estado = { requiere_conexion: true, requiere_schema: false, requiere_admin: false, requiere_negocio: false, requiere_caja: false };
+  }
+
+  if (estado.requiere_conexion || estado.requiere_schema) pasos.push('conexion');
+  if (estado.requiere_admin)   pasos.push('admin');
+  if (estado.requiere_negocio) { pasos.push('negocio'); pasos.push('logo'); }
+  if (estado.requiere_caja)    pasos.push('cajas');
+  pasos.push('listo');
+
+  if (!estado.requiere_conexion && !estado.requiere_schema && !estado.requiere_admin &&
+      !estado.requiere_negocio && !estado.requiere_caja) {
+    location.href = '/BRON/pos/login.html';
+    return;
+  }
+
+  renderCajas();
+  mostrarPaso();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — Nueva compra</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+
+.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; }
+.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
+.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+
+.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
+.contenido-inner { max-width:1100px; margin:0 auto; }
+
+.pasos { display:flex; gap:6px; margin-bottom:18px; }
+.paso-pill { flex:1; padding:9px 14px; background:white; border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-weight:700; color:var(--gris3); text-align:center; }
+.paso-pill.activo { border-color:var(--azul); color:var(--azul); background:#FEF2F2; }
+.paso-pill.hecho  { border-color:var(--verde); color:#15803D; background:#F0FDF4; }
+
+.card { background:white; border:1px solid var(--borde); border-radius:12px; padding:22px; margin-bottom:16px; }
+.card h2 { font-size:16px; font-weight:800; margin-bottom:4px; }
+.card .sub { font-size:var(--fs-sm); color:var(--gris3); margin-bottom:16px; }
+
+.form-row { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px; }
+.form-group { display:flex; flex-direction:column; gap:5px; }
+.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.form-input { padding:9px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); min-width:200px; }
+.form-input:focus { border-color:var(--azul); background:white; }
+.form-hint { font-size:12px; color:var(--gris3); margin-top:4px; }
+
+.btn-pri { padding:10px 20px; background:var(--azul); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
+.btn-pri:hover:not(:disabled) { background:var(--azul-h); }
+.btn-pri:disabled { opacity:.5; cursor:not-allowed; }
+.btn-sec { padding:10px 20px; background:var(--gris2); color:var(--texto); border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
+.btn-sec:hover { background:var(--borde); }
+.btn-mini { padding:7px 14px; background:white; border:1.5px solid var(--borde); border-radius:7px; font-size:12px; font-weight:700; cursor:pointer; }
+.btn-mini:hover { background:var(--gris1); }
+.btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+
+/* Proveedor */
+.prov-wrap { position:relative; max-width:360px; }
+.prov-tag { display:none; align-items:center; gap:8px; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:9px 12px; }
+.prov-tag.visible { display:flex; }
+.prov-tag .nom { font-weight:700; flex:1; }
+.prov-tag .x { background:none; border:none; cursor:pointer; color:var(--rojo); font-size:18px; line-height:1; }
+.prov-dd { position:absolute; top:calc(100% + 4px); left:0; right:0; background:white; border:1px solid var(--borde); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:100; max-height:240px; overflow-y:auto; display:none; }
+.prov-dd.visible { display:block; }
+.prov-dd-item { padding:9px 14px; cursor:pointer; border-bottom:1px solid var(--gris2); font-size:13px; }
+.prov-dd-item:last-child { border-bottom:none; }
+.prov-dd-item:hover { background:#FEF2F2; }
+.prov-dd-item .cuit { font-size:11px; color:var(--gris3); margin-top:1px; }
+.prov-nuevo-form { display:none; margin-top:10px; padding:14px; background:var(--gris1); border-radius:8px; border:1px solid var(--borde); }
+.prov-nuevo-form.visible { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+
+/* Items */
+.busq-wrap { position:relative; max-width:420px; margin-bottom:10px; }
+.dropdown { position:absolute; top:calc(100% + 4px); left:0; right:0; background:white; border:1px solid var(--borde); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:100; max-height:240px; overflow-y:auto; display:none; }
+.dropdown.visible { display:block; }
+.dd-item { padding:9px 14px; cursor:pointer; border-bottom:1px solid var(--gris2); font-size:13px; display:flex; gap:10px; }
+.dd-item:last-child { border-bottom:none; }
+.dd-item:hover { background:#FEF2F2; }
+.dd-item .cod { font-family:monospace; color:var(--gris3); font-size:12px; }
+
+.excel-row { display:flex; gap:10px; align-items:center; margin-bottom:6px; }
+.excel-errores { background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px; color:var(--rojo); }
+.excel-errores div { padding:2px 0; }
+
+.table-wrap { overflow-x:auto; border:1px solid var(--borde); border-radius:8px; margin-bottom:16px; }
+table.items { width:100%; border-collapse:collapse; min-width:760px; }
+table.items th { text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); padding:9px 12px; border-bottom:2px solid var(--gris2); white-space:nowrap; }
+table.items td { padding:7px 12px; font-size:13px; border-bottom:1px solid var(--gris2); vertical-align:middle; }
+table.items input { width:100%; padding:5px 7px; border:1px solid var(--borde); border-radius:6px; font-size:13px; font-family:inherit; text-align:right; }
+table.items input:focus { outline:none; border-color:var(--azul); }
+.col-prod { min-width:200px; }
+.btn-del { background:none; border:none; cursor:pointer; color:var(--rojo); font-size:16px; padding:4px; }
+.vacio-mini { padding:18px; text-align:center; color:var(--gris3); font-size:13px; }
+
+.totales-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:14px; margin-bottom:6px; }
+.total-box { background:var(--gris1); border-radius:10px; padding:14px 16px; }
+.total-box .lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); margin-bottom:4px; }
+.total-box .val { font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; }
+.total-box.total .val { color:var(--azul); }
+
+/* Pago */
+.pago-modo-row { display:flex; gap:10px; margin-bottom:14px; }
+.pago-modo-btn { padding:10px 16px; border:1.5px solid var(--borde); border-radius:8px; background:white; font-size:13px; font-weight:600; cursor:pointer; }
+.pago-modo-btn.activo { border-color:var(--azul); background:#FEF2F2; color:var(--azul); }
+.pago-linea { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+.pago-linea select { padding:8px 10px; border:1.5px solid var(--borde); border-radius:8px; font-size:13px; font-family:inherit; }
+.pago-resumen { font-size:13px; margin-top:8px; padding:10px 14px; border-radius:8px; }
+.pago-resumen.ok  { background:#F0FDF4; color:#15803D; }
+.pago-resumen.err { background:#FEF2F2; color:var(--rojo); }
+
+.exito-box { text-align:center; padding:30px 0; }
+.exito-box .check { font-size:48px; color:#15803D; margin-bottom:10px; }
+.exito-box h2 { font-size:20px; margin-bottom:6px; }
+.exito-box .monto { font-size:30px; font-weight:800; color:var(--azul); margin:14px 0; }
+.exito-acciones { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+
+</style>
+</head>
+<body>
+
+<?php $nav_activo = 'compras'; include __DIR__ . '/nav.php'; ?>
+
+<div class="page-header">
+  <h1>Nueva compra</h1>
+  <p>Cargá una factura o remito de compra en 3 pasos</p>
+</div>
+
+<div class="contenido">
+<div class="contenido-inner">
+
+  <div class="pasos">
+    <div class="paso-pill activo" id="pill-1">1. Comprobante</div>
+    <div class="paso-pill" id="pill-2">2. Productos</div>
+    <div class="paso-pill" id="pill-3">3. Pago</div>
+    <div class="paso-pill" id="pill-4">4. Listo</div>
+  </div>
+
+  <!-- Paso 1: Comprobante -->
+  <div class="card" id="paso-1">
+    <h2>Proveedor y comprobante</h2>
+    <p class="sub">Buscá el proveedor o creá uno nuevo, y completá los datos del comprobante.</p>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Proveedor</label>
+      <div class="prov-wrap">
+        <input type="text" id="prov-input" class="form-input" style="width:100%" placeholder="Buscar proveedor por nombre o CUIT..." autocomplete="off">
+        <div class="prov-dd" id="prov-dd"></div>
+        <div class="prov-tag" id="prov-tag">
+          <span class="nom" id="prov-tag-nombre"></span>
+          <button class="x" id="prov-tag-quitar" aria-label="Quitar">×</button>
+        </div>
+      </div>
+      <button class="btn-mini" id="btn-prov-nuevo" style="margin-top:8px;width:fit-content">+ Crear proveedor nuevo</button>
+      <div class="prov-nuevo-form" id="prov-nuevo-form">
+        <div class="form-group">
+          <label class="form-label">Nombre</label>
+          <input type="text" id="pn-nombre" class="form-input">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CUIT</label>
+          <input type="text" id="pn-cuit" class="form-input" style="min-width:140px">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Condición IVA</label>
+          <input type="text" id="pn-condicion" class="form-input" style="min-width:160px" value="Responsable Inscripto">
+        </div>
+        <button class="btn-pri" id="btn-prov-crear">Crear y usar</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Tipo de comprobante</label>
+        <select id="c1-tipo" class="form-input">
+          <option value="factura_a">Factura A</option>
+          <option value="factura_b">Factura B</option>
+          <option value="remito">Remito</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Número de comprobante</label>
+        <input type="text" id="c1-numero" class="form-input" placeholder="Ej: 0001-00001234">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input type="date" id="c1-fecha" class="form-input" style="min-width:150px">
+      </div>
+    </div>
+
+    <div class="btn-row"><button class="btn-pri" id="btn-paso1-continuar">Continuar</button></div>
+  </div>
+
+  <!-- Paso 2: Productos -->
+  <div class="card" id="paso-2" style="display:none">
+    <h2>Productos</h2>
+    <p class="sub">Cargá los productos a mano o importá un Excel/CSV con 3 columnas: código, cantidad y costo.</p>
+
+    <div class="busq-wrap">
+      <input type="text" id="p2-busq" class="form-input" style="width:100%" placeholder="Buscar producto por nombre o código..." autocomplete="off">
+      <div class="dropdown" id="p2-dd"></div>
+    </div>
+
+    <div class="excel-row">
+      <input type="file" id="p2-archivo" class="form-input" accept=".xlsx,.xls,.csv" style="min-width:auto">
+      <button class="btn-mini" id="btn-leer-excel">Leer archivo</button>
+    </div>
+    <div class="excel-errores" id="p2-excel-errores" style="display:none"></div>
+
+    <div class="table-wrap">
+      <table class="items">
+        <thead><tr>
+          <th class="col-prod">Producto</th><th>Cant.</th><th>Costo unit.</th><th>% IVA</th><th>Subtotal</th><th>IVA</th><th>Total</th><th></th>
+        </tr></thead>
+        <tbody id="p2-tbody"></tbody>
+      </table>
+      <div class="vacio-mini" id="p2-vacio">Todavía no agregaste productos</div>
+    </div>
+
+    <div class="form-group" style="max-width:220px; margin-bottom:16px">
+      <label class="form-label">Percepción IIBB (%)</label>
+      <input type="number" id="p2-percepcion" class="form-input" min="0" step="0.01" placeholder="Opcional">
+    </div>
+
+    <div class="totales-grid">
+      <div class="total-box"><div class="lbl">Subtotal</div><div class="val" id="p2-subtotal">$ 0,00</div></div>
+      <div class="total-box"><div class="lbl">IVA</div><div class="val" id="p2-iva">$ 0,00</div></div>
+      <div class="total-box"><div class="lbl">Percepción</div><div class="val" id="p2-percep-monto">$ 0,00</div></div>
+      <div class="total-box total"><div class="lbl">Total</div><div class="val" id="p2-total">$ 0,00</div></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-sec" id="btn-paso2-volver">Volver</button>
+      <button class="btn-pri" id="btn-paso2-continuar">Continuar</button>
+    </div>
+  </div>
+
+  <!-- Paso 3: Pago -->
+  <div class="card" id="paso-3" style="display:none">
+    <h2>Pago</h2>
+    <p class="sub">Total a pagar: <strong id="p3-total-lbl">$ 0,00</strong></p>
+
+    <div class="pago-modo-row">
+      <button class="pago-modo-btn activo" id="pago-modo-simple" data-modo="simple">Un solo medio</button>
+      <button class="pago-modo-btn" id="pago-modo-mixto" data-modo="mixto">Combinar varios medios</button>
+    </div>
+
+    <div id="pago-simple-box">
+      <div class="form-group" style="max-width:220px">
+        <label class="form-label">Medio de pago</label>
+        <select id="p3-medio-simple" class="form-input">
+          <option value="efectivo">Efectivo</option>
+          <option value="transferencia">Transferencia</option>
+          <option value="tarjeta">Tarjeta</option>
+          <option value="cc">Cuenta corriente</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="pago-mixto-box" style="display:none">
+      <div id="pago-mixto-lineas"></div>
+      <button class="btn-mini" id="btn-pago-agregar-linea">+ Agregar medio</button>
+      <div class="pago-resumen" id="pago-mixto-resumen"></div>
+    </div>
+
+    <div class="form-group" id="p3-caja-group" style="max-width:260px; margin-top:16px; display:none">
+      <label class="form-label">Caja de donde sale el dinero</label>
+      <select id="p3-caja" class="form-input"></select>
+      <span class="form-hint">Necesita tener un turno abierto.</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-sec" id="btn-paso3-volver">Volver</button>
+      <button class="btn-pri" id="btn-paso3-confirmar">Confirmar compra</button>
+    </div>
+  </div>
+
+  <!-- Paso 4: Listo -->
+  <div class="card" id="paso-4" style="display:none">
+    <div class="exito-box">
+      <div class="check">✓</div>
+      <h2>Compra registrada</h2>
+      <div class="sub" id="p4-numero"></div>
+      <div class="monto" id="p4-monto"></div>
+      <div class="exito-acciones">
+        <button class="btn-sec" id="btn-ver-compras">Ver todas las compras</button>
+        <button class="btn-sec" id="btn-cargar-otra">Cargar otra</button>
+        <button class="btn-pri" id="btn-ver-cc">Ver cuenta corriente del proveedor</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+const API = '/BRON/api';
+const $   = id => document.getElementById(id);
+const fmt = n => '$ ' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+
+let toastTimer = null;
+function toast(msg, tipo = '') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (tipo ? ' ' + tipo : '');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
+}
+
+function irPaso(n) {
+  for (let i = 1; i <= 4; i++) {
+    $('paso-' + i).style.display = i === n ? '' : 'none';
+    const pill = $('pill-' + i);
+    pill.classList.toggle('activo', i === n);
+    pill.classList.toggle('hecho', i < n);
+  }
+}
+
+let proveedorSel = null;
+let items = [];
+let pagoModo = 'simple';
+let pagosMixto = []; // [{tipo, monto}]
+
+// ── Paso 1: Proveedor ────────────────────────────────────────────
+let provTimeout = null;
+$('prov-input').addEventListener('input', () => {
+  clearTimeout(provTimeout);
+  const q = $('prov-input').value.trim();
+  if (q.length < 2) { cerrarProvDD(); return; }
+  provTimeout = setTimeout(() => buscarProveedores(q), 250);
+});
+document.addEventListener('click', e => { if (!e.target.closest('.prov-wrap')) cerrarProvDD(); });
+
+async function buscarProveedores(q) {
+  try {
+    const res = await fetch(`${API}/proveedores?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!Array.isArray(data) || !data.length) { cerrarProvDD(); return; }
+    $('prov-dd').innerHTML = data.map(p => `
+      <div class="prov-dd-item" data-json='${JSON.stringify(p).replace(/'/g,"&#39;")}'>
+        <div>${esc(p.nombre)}</div>
+        <div class="cuit">${esc(p.cuit || 'Sin CUIT')}</div>
+      </div>`).join('');
+    $('prov-dd').classList.add('visible');
+    $('prov-dd').querySelectorAll('.prov-dd-item').forEach(el =>
+      el.addEventListener('click', () => seleccionarProveedor(JSON.parse(el.dataset.json))));
+  } catch { /* no bloquea */ }
+}
+function cerrarProvDD() { $('prov-dd').classList.remove('visible'); $('prov-dd').innerHTML = ''; }
+
+function seleccionarProveedor(p) {
+  proveedorSel = p;
+  cerrarProvDD();
+  $('prov-input').style.display = 'none';
+  $('prov-tag-nombre').textContent = p.nombre;
+  $('prov-tag').classList.add('visible');
+  $('prov-nuevo-form').classList.remove('visible');
+}
+$('prov-tag-quitar').addEventListener('click', () => {
+  proveedorSel = null;
+  $('prov-input').value = '';
+  $('prov-input').style.display = '';
+  $('prov-tag').classList.remove('visible');
+});
+
+$('btn-prov-nuevo').addEventListener('click', () => {
+  $('prov-nuevo-form').classList.toggle('visible');
+});
+$('btn-prov-crear').addEventListener('click', async () => {
+  const nombre = $('pn-nombre').value.trim();
+  if (!nombre) { toast('Ingresá el nombre del proveedor', 'err'); return; }
+  try {
+    const res = await fetch(`${API}/proveedores`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, cuit: $('pn-cuit').value.trim(), condicion_iva: $('pn-condicion').value.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al crear el proveedor');
+    seleccionarProveedor(data);
+    toast('Proveedor creado', 'ok');
+  } catch (e) { toast(e.message, 'err'); }
+});
+
+$('btn-paso1-continuar').addEventListener('click', () => {
+  if (!proveedorSel) { toast('Elegí o creá un proveedor', 'err'); return; }
+  irPaso(2);
+});
+
+// ── Paso 2: Productos ────────────────────────────────────────────
+let busqTimeout = null;
+$('p2-busq').addEventListener('input', () => {
+  clearTimeout(busqTimeout);
+  const q = $('p2-busq').value.trim();
+  if (q.length < 2) { cerrarDD(); return; }
+  busqTimeout = setTimeout(() => buscarProductos(q), 250);
+});
+document.addEventListener('click', e => { if (!e.target.closest('.busq-wrap')) cerrarDD(); });
+
+async function buscarProductos(q) {
+  try {
+    const res = await fetch(`${API}/stock?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    const lista = (data.items || []).slice(0, 8);
+    if (!lista.length) { cerrarDD(); return; }
+    $('p2-dd').innerHTML = lista.map(p => `
+      <div class="dd-item" data-json='${JSON.stringify(p).replace(/'/g,"&#39;")}'>
+        <span class="cod">${esc(p.codigo)}</span><span>${esc(p.nombre)}</span>
+      </div>`).join('');
+    $('p2-dd').classList.add('visible');
+    $('p2-dd').querySelectorAll('.dd-item').forEach(el =>
+      el.addEventListener('click', () => { agregarItem(JSON.parse(el.dataset.json)); cerrarDD(); $('p2-busq').value = ''; }));
+  } catch { /* no bloquea */ }
+}
+function cerrarDD() { $('p2-dd').classList.remove('visible'); $('p2-dd').innerHTML = ''; }
+
+function agregarItem(p, cantidad, costo) {
+  const idx = items.findIndex(i => i.producto_id === p.id);
+  if (idx !== -1 && cantidad === undefined) {
+    items[idx].cantidad += 1;
+  } else if (idx !== -1) {
+    items[idx].cantidad += cantidad;
+  } else {
+    items.push({
+      producto_id: p.id, nombre: p.nombre, codigo: p.codigo,
+      cantidad: cantidad ?? 1,
+      costo_unitario: costo ?? parseFloat(p.costo_actual) ?? 0,
+      iva_porcentaje: parseFloat(p.iva_porcentaje ?? 21),
+    });
+  }
+  renderItems();
+}
+
+$('btn-leer-excel').addEventListener('click', async () => {
+  const archivo = $('p2-archivo').files[0];
+  if (!archivo) { toast('Elegí un archivo', 'err'); return; }
+  const btn = $('btn-leer-excel');
+  btn.disabled = true; btn.textContent = 'Leyendo…';
+  try {
+    const fd = new FormData();
+    fd.append('archivo', archivo);
+    const res = await fetch(`${API}/compras/leer-excel`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al leer el archivo');
+
+    (data.filas || []).forEach(f => agregarItem({
+      id: f.producto_id, nombre: f.producto_nombre, codigo: f.codigo,
+      costo_actual: f.costo_unitario, iva_porcentaje: f.iva_porcentaje,
+    }, f.cantidad, f.costo_unitario));
+
+    if (data.errores && data.errores.length) {
+      $('p2-excel-errores').style.display = '';
+      $('p2-excel-errores').innerHTML = data.errores.map(e =>
+        `<div>Fila ${e.fila} (${esc(e.codigo)}): ${esc(e.mensaje)}</div>`).join('');
+    } else {
+      $('p2-excel-errores').style.display = 'none';
+    }
+    $('p2-archivo').value = '';
+    toast(`${data.filas.length} producto(s) cargado(s)`, 'ok');
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Leer archivo';
+  }
+});
+
+function calcularTotales() {
+  let subtotal = 0, ivaTotal = 0;
+  items.forEach(i => {
+    const sub = i.cantidad * i.costo_unitario;
+    subtotal += sub;
+    ivaTotal += sub * i.iva_porcentaje / 100;
+  });
+  const percepPct = parseFloat($('p2-percepcion').value) || 0;
+  const percepMonto = percepPct > 0 ? subtotal * percepPct / 100 : 0;
+  const total = subtotal + ivaTotal + percepMonto;
+  return { subtotal, ivaTotal, percepMonto, total };
+}
+
+function renderItems() {
+  $('p2-vacio').style.display = items.length ? 'none' : '';
+  $('p2-tbody').innerHTML = items.map((i, idx) => {
+    const sub = i.cantidad * i.costo_unitario;
+    const iva = sub * i.iva_porcentaje / 100;
+    return `<tr>
+      <td class="col-prod">${esc(i.nombre)}<br><small style="color:var(--gris3)">${esc(i.codigo)}</small></td>
+      <td><input type="number" min="0.001" step="any" value="${i.cantidad}" data-idx="${idx}" data-campo="cantidad"></td>
+      <td><input type="number" min="0" step="any" value="${i.costo_unitario}" data-idx="${idx}" data-campo="costo"></td>
+      <td><input type="number" min="0" max="100" step="0.01" value="${i.iva_porcentaje}" data-idx="${idx}" data-campo="iva"></td>
+      <td style="text-align:right">${fmt(sub)}</td>
+      <td style="text-align:right">${fmt(iva)}</td>
+      <td style="text-align:right;font-weight:700">${fmt(sub + iva)}</td>
+      <td><button class="btn-del" data-idx="${idx}">×</button></td>
+    </tr>`;
+  }).join('');
+
+  const t = calcularTotales();
+  $('p2-subtotal').textContent     = fmt(t.subtotal);
+  $('p2-iva').textContent          = fmt(t.ivaTotal);
+  $('p2-percep-monto').textContent = fmt(t.percepMonto);
+  $('p2-total').textContent        = fmt(t.total);
+}
+
+$('p2-tbody').addEventListener('input', e => {
+  const el = e.target; if (!el.dataset.idx) return;
+  const idx = parseInt(el.dataset.idx);
+  const val = parseFloat(el.value);
+  if (isNaN(val) || val < 0) return;
+  if (el.dataset.campo === 'cantidad') items[idx].cantidad = val;
+  if (el.dataset.campo === 'costo')    items[idx].costo_unitario = val;
+  if (el.dataset.campo === 'iva')      items[idx].iva_porcentaje = val;
+  renderItems();
+});
+$('p2-tbody').addEventListener('click', e => {
+  const btn = e.target.closest('.btn-del');
+  if (btn) { items.splice(parseInt(btn.dataset.idx), 1); renderItems(); }
+});
+$('p2-percepcion').addEventListener('input', renderItems);
+
+$('btn-paso2-volver').addEventListener('click', () => irPaso(1));
+$('btn-paso2-continuar').addEventListener('click', () => {
+  if (!items.length) { toast('Agregá al menos un producto', 'err'); return; }
+  prepararPaso3();
+  irPaso(3);
+});
+
+// ── Paso 3: Pago ──────────────────────────────────────────────────
+document.querySelectorAll('.pago-modo-btn').forEach(b => b.addEventListener('click', () => {
+  pagoModo = b.dataset.modo;
+  document.querySelectorAll('.pago-modo-btn').forEach(x => x.classList.toggle('activo', x === b));
+  $('pago-simple-box').style.display = pagoModo === 'simple' ? '' : 'none';
+  $('pago-mixto-box').style.display  = pagoModo === 'mixto'  ? '' : 'none';
+  if (pagoModo === 'mixto' && pagosMixto.length < 2) {
+    pagosMixto = [{ tipo: 'efectivo', monto: 0 }, { tipo: 'cc', monto: 0 }];
+    renderPagosMixto();
+  }
+  actualizarCajaVisible();
+}));
+
+function renderPagosMixto() {
+  $('pago-mixto-lineas').innerHTML = pagosMixto.map((p, idx) => `
+    <div class="pago-linea">
+      <select data-idx="${idx}" data-campo="tipo">
+        <option value="efectivo"${p.tipo==='efectivo'?' selected':''}>Efectivo</option>
+        <option value="transferencia"${p.tipo==='transferencia'?' selected':''}>Transferencia</option>
+        <option value="tarjeta"${p.tipo==='tarjeta'?' selected':''}>Tarjeta</option>
+        <option value="cc"${p.tipo==='cc'?' selected':''}>Cuenta corriente</option>
+      </select>
+      <input type="number" min="0" step="any" value="${p.monto}" data-idx="${idx}" data-campo="monto" style="width:140px;padding:8px 10px;border:1.5px solid var(--borde);border-radius:8px">
+      <button class="btn-del" data-idx="${idx}">×</button>
+    </div>`).join('');
+  actualizarResumenMixto();
+}
+$('pago-mixto-lineas').addEventListener('change', e => {
+  const idx = parseInt(e.target.dataset.idx); if (isNaN(idx)) return;
+  if (e.target.dataset.campo === 'tipo') pagosMixto[idx].tipo = e.target.value;
+  if (e.target.dataset.campo === 'monto') pagosMixto[idx].monto = parseFloat(e.target.value) || 0;
+  actualizarResumenMixto();
+  actualizarCajaVisible();
+});
+$('pago-mixto-lineas').addEventListener('click', e => {
+  const btn = e.target.closest('.btn-del'); if (!btn) return;
+  pagosMixto.splice(parseInt(btn.dataset.idx), 1);
+  renderPagosMixto();
+  actualizarCajaVisible();
+});
+$('btn-pago-agregar-linea').addEventListener('click', () => {
+  pagosMixto.push({ tipo: 'efectivo', monto: 0 });
+  renderPagosMixto();
+});
+
+function actualizarResumenMixto() {
+  const t = calcularTotales();
+  const suma = pagosMixto.reduce((a, p) => a + p.monto, 0);
+  const dif = t.total - suma;
+  const el = $('pago-mixto-resumen');
+  if (Math.abs(dif) < 0.01) {
+    el.className = 'pago-resumen ok';
+    el.textContent = `Suma: ${fmt(suma)} — coincide con el total`;
+  } else {
+    el.className = 'pago-resumen err';
+    el.textContent = `Suma: ${fmt(suma)} — faltan ${fmt(dif)} para llegar al total`;
+  }
+}
+
+function actualizarCajaVisible() {
+  const t = calcularTotales();
+  let noCC = 0;
+  if (pagoModo === 'simple') {
+    const medio = $('p3-medio-simple').value;
+    if (medio !== 'cc') noCC = t.total;
+  } else {
+    noCC = pagosMixto.filter(p => p.tipo !== 'cc').reduce((a, p) => a + p.monto, 0);
+  }
+  $('p3-caja-group').style.display = noCC > 0.001 ? '' : 'none';
+}
+$('p3-medio-simple').addEventListener('change', actualizarCajaVisible);
+
+async function prepararPaso3() {
+  const t = calcularTotales();
+  $('p3-total-lbl').textContent = fmt(t.total);
+  actualizarCajaVisible();
+  try {
+    const res = await fetch(`${API}/cajas`);
+    const cajas = await res.json();
+    $('p3-caja').innerHTML = cajas.map(c => `<option value="${c.id}">${esc(c.nombre)} (${c.tipo})</option>`).join('');
+  } catch { /* no bloquea */ }
+}
+
+$('btn-paso3-volver').addEventListener('click', () => irPaso(2));
+$('btn-paso3-confirmar').addEventListener('click', confirmarCompra);
+
+async function confirmarCompra() {
+  const t = calcularTotales();
+  let tipo_pago, pagos = null;
+
+  if (pagoModo === 'simple') {
+    tipo_pago = $('p3-medio-simple').value;
+  } else {
+    tipo_pago = 'mixto';
+    const suma = pagosMixto.reduce((a, p) => a + p.monto, 0);
+    if (Math.abs(suma - t.total) > 0.01) { toast('La suma de los pagos no coincide con el total', 'err'); return; }
+    pagos = pagosMixto.filter(p => p.monto > 0);
+  }
+
+  const noCCVisible = $('p3-caja-group').style.display !== 'none';
+  const caja_id = noCCVisible ? parseInt($('p3-caja').value) : null;
+  if (noCCVisible && !caja_id) { toast('Elegí una caja', 'err'); return; }
+
+  const body = {
+    proveedor_id: proveedorSel.id,
+    tipo_comprobante: $('c1-tipo').value,
+    numero_comprobante: $('c1-numero').value.trim() || null,
+    fecha: $('c1-fecha').value,
+    items: items.map(i => ({
+      producto_id: i.producto_id, cantidad: i.cantidad,
+      costo_unitario: i.costo_unitario, iva_porcentaje: i.iva_porcentaje,
+    })),
+    percepcion_iibb_porcentaje: parseFloat($('p2-percepcion').value) || null,
+    tipo_pago,
+    pagos,
+    caja_id,
+  };
+
+  const btn = $('btn-paso3-confirmar');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    const res = await fetch(`${API}/compras`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al guardar la compra');
+
+    $('p4-numero').textContent = `Compra N° ${data.numero}`;
+    $('p4-monto').textContent  = fmt(data.total);
+    $('btn-ver-cc').dataset.proveedorId = data.proveedor_id;
+    irPaso(4);
+  } catch (e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirmar compra';
+  }
+}
+
+// ── Paso 4: Listo ─────────────────────────────────────────────────
+$('btn-ver-compras').addEventListener('click', () => location.href = 'compras.html');
+$('btn-cargar-otra').addEventListener('click', () => location.reload());
+$('btn-ver-cc').addEventListener('click', () => {
+  location.href = `cuentacorriente.html?tipo=proveedor&id=${$('btn-ver-cc').dataset.proveedorId}`;
+});
+
+// ── Init ──────────────────────────────────────────────────────────
+$('c1-fecha').value = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>

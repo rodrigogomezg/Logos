@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — Cierres históricos</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+
+.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
+.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+
+.filtros { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.fil-select, .fil-input { padding:8px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-family:inherit; outline:none; background:var(--gris1); transition:border-color 140ms ease-out, background 140ms ease-out; }
+.fil-select:focus, .fil-input:focus { border-color:var(--azul); background:white; }
+
+.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
+.contenido-inner { max-width:1300px; margin:0 auto; }
+
+.card { background:white; border:1px solid var(--borde); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.03); padding:0; overflow:hidden; }
+
+.table-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; min-width:920px; }
+thead th { text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); padding:12px 14px; border-bottom:2px solid var(--gris2); white-space:nowrap; }
+thead th.r { text-align:right; }
+tbody td { padding:10px 14px; font-size:var(--fs-md); border-bottom:1px solid var(--gris2); white-space:nowrap; }
+tbody td.r { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
+tbody tr:last-child td { border-bottom:none; }
+tbody tr:hover { background:var(--gris1); }
+
+.estado-pill { display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:20px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.estado-pill.abierto { background:#DCFCE7; color:#15803D; }
+.estado-pill.cerrado { background:var(--gris2); color:var(--gris3); }
+.estado-pill .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+.dif-ok { color:#15803D; }
+.dif-falta { color:var(--rojo); }
+.dif-sobra { color:var(--bajo); }
+
+.vacio { text-align:center; padding:48px 20px; color:var(--gris3); font-size:var(--fs-md); }
+
+.col-acciones { width:34px; text-align:right; }
+.btn-del-mov { width:26px; height:26px; background:none; border:none; border-radius:5px; color:var(--gris3); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; opacity:0; transition:opacity .12s,background .12s,color .12s; padding:0; }
+tbody tr:hover .btn-del-mov { opacity:1; }
+.btn-del-mov:hover { background:#FEE2E2; color:var(--rojo); }
+
+/* ── Modal ── */
+.overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0); z-index:500; align-items:flex-start; justify-content:center; padding-top:40px; transition:background 200ms ease-out; }
+.overlay.abierto { display:flex; background:rgba(0,0,0,.45); }
+.modal { background:white; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.25); width:min(420px,95vw); display:flex; flex-direction:column; overflow:hidden; opacity:0; transform:scale(.97) translateY(-8px); transition:opacity 200ms cubic-bezier(0.23,1,0.32,1), transform 200ms cubic-bezier(0.23,1,0.32,1); }
+.overlay.abierto .modal { opacity:1; transform:scale(1) translateY(0); }
+.modal-head { padding:16px 20px; border-bottom:1px solid var(--gris2); display:flex; align-items:center; gap:12px; flex-shrink:0; }
+.modal-head h2 { flex:1; font-size:16px; font-weight:700; }
+.modal-close { background:none; border:none; cursor:pointer; color:var(--gris3); font-size:22px; line-height:1; padding:4px 8px; border-radius:6px; }
+.modal-close:hover { background:var(--gris1); }
+.modal-body { padding:20px; font-size:14px; line-height:1.6; }
+.modal-footer { padding:14px 20px; border-top:1px solid var(--gris2); display:flex; justify-content:flex-end; gap:10px; flex-shrink:0; }
+.btn-sec { padding:10px 20px; background:white; color:var(--texto); border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; font-family:inherit; }
+.btn-sec:hover { background:var(--gris1); }
+.btn-danger { padding:10px 20px; background:var(--rojo); color:white; border:1.5px solid var(--rojo); border-radius:8px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; font-family:inherit; }
+.btn-danger:hover { background:#991B1B; border-color:#991B1B; }
+.btn-danger:disabled { opacity:.5; cursor:default; }
+
+@media (max-width: 640px) {
+  .page-header h1 { font-size:19px; }
+}
+
+</style>
+</head>
+<body>
+
+<?php $nav_activo = 'cierres'; include __DIR__ . '/nav.php'; ?>
+
+<div class="page-header">
+  <div>
+    <h1>Cierres históricos</h1>
+    <p>Turnos de caja abiertos y cerrados</p>
+  </div>
+  <div class="filtros">
+    <select class="fil-select" id="fil-caja" style="display:none;"></select>
+    <input class="fil-input" id="fil-desde" type="date">
+    <input class="fil-input" id="fil-hasta" type="date">
+  </div>
+</div>
+
+<div class="contenido">
+<div class="contenido-inner">
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Apertura</th>
+            <th>Cierre</th>
+            <th>Caja</th>
+            <th>Usuario</th>
+            <th>Estado</th>
+            <th class="r">Fondo inicial</th>
+            <th class="r">Efectivo esperado</th>
+            <th class="r">Efectivo contado</th>
+            <th class="r">Diferencia</th>
+            <th class="col-acciones"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="overlay" id="overlay-elim-turno">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="elim-turno-h">
+    <div class="modal-head">
+      <h2 id="elim-turno-h" style="color:var(--rojo)">Eliminar cierre</h2>
+      <button class="modal-close" id="elim-turno-close" type="button" aria-label="Cerrar">&times;</button>
+    </div>
+    <div class="modal-body" id="elim-turno-body"></div>
+    <div class="modal-footer">
+      <button class="btn-sec" id="elim-turno-cancelar" type="button">Cancelar</button>
+      <button class="btn-danger" id="elim-turno-confirmar" type="button">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+const API = '/BRON/api';
+const $   = id => document.getElementById(id);
+
+let toastTimer = null;
+function toast(msg, tipo = '') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (tipo ? ' ' + tipo : '');
+  void el.offsetWidth;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
+}
+function fmt(n) {
+  return n === null || n === undefined ? '—' : '$' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+}
+
+const esAdmin = window.BRON_SESION?.rol === 'admin';
+let turnosCache  = [];
+let turnoElimActual = null;
+
+async function init() {
+  if (esAdmin) {
+    const res = await fetch(`${API}/cajas`);
+    const cajas = await res.json();
+    const sel = $('fil-caja');
+    sel.style.display = '';
+    sel.innerHTML = '<option value="">Todas las cajas</option>' +
+      cajas.map(c => `<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+    sel.addEventListener('change', cargar);
+  }
+  $('fil-desde').addEventListener('change', cargar);
+  $('fil-hasta').addEventListener('change', cargar);
+  $('elim-turno-close').addEventListener('click', cerrarModalEliminarTurno);
+  $('elim-turno-cancelar').addEventListener('click', cerrarModalEliminarTurno);
+  $('elim-turno-confirmar').addEventListener('click', confirmarEliminarTurno);
+  $('overlay-elim-turno').addEventListener('click', e => { if (e.target.id === 'overlay-elim-turno') cerrarModalEliminarTurno(); });
+  cargar();
+}
+
+async function cargar() {
+  const params = new URLSearchParams();
+  const cajaId = esAdmin ? $('fil-caja').value : window.BRON_SESION?.caja_id;
+  if (cajaId) params.set('caja_id', cajaId);
+  if ($('fil-desde').value) params.set('desde', $('fil-desde').value);
+  if ($('fil-hasta').value) params.set('hasta', $('fil-hasta').value);
+
+  const res = await fetch(`${API}/caja-turnos?${params.toString()}`);
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al cargar los cierres', 'err'); return; }
+
+  turnosCache = data;
+
+  if (!data.length) {
+    $('tbody').innerHTML = '<tr><td colspan="10"><div class="vacio">No hay turnos para los filtros aplicados.</div></td></tr>';
+    return;
+  }
+
+  const svgDel = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+
+  $('tbody').innerHTML = data.map(t => {
+    let difClase = '', difTxt = fmt(t.diferencia);
+    if (t.diferencia !== null) {
+      const d = Number(t.diferencia);
+      difClase = Math.abs(d) < 0.01 ? 'dif-ok' : (d < 0 ? 'dif-falta' : 'dif-sobra');
+    }
+    const btnDel = (esAdmin && t.estado === 'cerrado')
+      ? `<button class="btn-del-mov" data-id="${t.id}" title="Eliminar cierre">${svgDel}</button>` : '';
+    return `
+    <tr>
+      <td>${new Date(t.abierto_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' })}</td>
+      <td>${t.cerrado_en ? new Date(t.cerrado_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' }) : '—'}</td>
+      <td>${esc(t.caja_nombre)}</td>
+      <td>${esc(t.usuario_nombre)}</td>
+      <td><span class="estado-pill ${t.estado}"><span class="dot"></span>${t.estado === 'abierto' ? 'Abierto' : 'Cerrado'}</span></td>
+      <td class="r">${fmt(t.fondo_inicial)}</td>
+      <td class="r">${fmt(t.efectivo_esperado)}</td>
+      <td class="r">${fmt(t.efectivo_contado)}</td>
+      <td class="r ${difClase}">${difTxt}</td>
+      <td class="col-acciones">${btnDel}</td>
+    </tr>`;
+  }).join('');
+
+  $('tbody').querySelectorAll('.btn-del-mov').forEach(btn => {
+    btn.addEventListener('click', () => abrirModalEliminarTurno(parseInt(btn.dataset.id)));
+  });
+}
+
+function abrirModalEliminarTurno(id) {
+  const t = turnosCache.find(x => x.id === id);
+  if (!t) return;
+  turnoElimActual = t;
+
+  $('elim-turno-body').innerHTML = `
+    <p>¿Eliminar este cierre?</p>
+    <p style="margin-top:10px;color:var(--gris3);font-size:13px;line-height:1.6">
+      <strong>${esc(t.caja_nombre)}</strong> · ${esc(t.usuario_nombre)}<br>
+      ${new Date(t.abierto_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' })}
+      → ${t.cerrado_en ? new Date(t.cerrado_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' }) : '—'}
+    </p>
+    <p style="margin-top:10px;color:var(--gris3);font-size:12px">
+      Solo se puede eliminar si el turno no tiene ventas ni movimientos asociados.
+    </p>`;
+  $('elim-turno-confirmar').disabled    = false;
+  $('elim-turno-confirmar').textContent = 'Eliminar';
+  $('overlay-elim-turno').classList.add('abierto');
+}
+
+function cerrarModalEliminarTurno() {
+  $('overlay-elim-turno').classList.remove('abierto');
+  turnoElimActual = null;
+}
+
+async function confirmarEliminarTurno() {
+  if (!turnoElimActual) return;
+  const btn = $('elim-turno-confirmar');
+  btn.disabled    = true;
+  btn.textContent = 'Eliminando…';
+
+  try {
+    const res  = await fetch(`${API}/caja-turnos/${turnoElimActual.id}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al eliminar el cierre');
+
+    cerrarModalEliminarTurno();
+    toast('Cierre eliminado', 'ok');
+    cargar();
+  } catch (e) {
+    toast(e.message, 'err');
+    btn.disabled    = false;
+    btn.textContent = 'Eliminar';
+  }
+}
+
+function actualizarFecha() {
+  const f = $('fecha-hora');
+  if (f) f.textContent = new Date().toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' });
+}
+actualizarFecha();
+setInterval(actualizarFecha, 30000);
+
+init();
+</script>
+</body>
+</html>

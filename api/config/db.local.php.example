@@ -1,0 +1,16 @@
+<?php
+// Copiá este archivo como db.local.php (en la misma carpeta) y completá
+// los datos de conexión de ESTA instalación. db.local.php es específico
+// de cada PC — no se copia de una instalación a otra.
+//
+// "host" puede ser 127.0.0.1 (la base vive en esta misma PC) o la IP de
+// otra PC de la red (esta PC es una caja que se conecta a un servidor
+// ya instalado en otro lugar).
+
+return [
+    'host'   => '127.0.0.1',
+    'port'   => 3307,
+    'dbname' => 'bron',
+    'user'   => 'root',
+    'pass'   => '',
+];

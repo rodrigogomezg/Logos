@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BRON — Cuenta Corriente</title>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+
+/* ── Layout ── */
+.cc-main { flex:1; min-height:0; display:grid; grid-template-columns:370px 1fr; gap:12px; padding:12px; overflow:hidden; }
+
+/* ── Panel izquierdo ── */
+.cc-left { display:flex; flex-direction:column; gap:10px; overflow-y:auto; padding-right:2px; }
+
+/* Buscador */
+.busq-wrap { position:relative; flex-shrink:0; }
+.busq-wrap input {
+  width:100%; padding:10px 14px; font-size:var(--fs-lg);
+  border:2px solid var(--borde); border-radius:8px; outline:none; background:white;
+  font-family:inherit;
+}
+.busq-wrap input:focus { border-color:var(--azul); }
+.busq-dd { position:absolute; top:calc(100% + 4px); left:0; right:0; background:white; border:1px solid var(--borde); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:200; max-height:260px; overflow-y:auto; display:none; }
+.busq-dd.visible { display:block; }
+.dd-item { padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--gris2); }
+.dd-item:last-child { border-bottom:none; }
+.dd-item:hover,.dd-item.activo { background:#FEF2F2; }
+.dd-nom { font-weight:600; font-size:14px; }
+.dd-det { font-size:11px; color:var(--gris3); margin-top:2px; }
+
+/* Card cliente */
+.cli-card { background:white; border-radius:10px; border:1px solid var(--borde); overflow:hidden; flex-shrink:0; }
+.cli-card-top { padding:16px 16px 14px; border-bottom:1px solid var(--gris2); }
+.cli-nombre { font-size:18px; font-weight:800; line-height:1.2; margin-bottom:10px; }
+.cli-saldo-block { background:var(--gris1); border-radius:8px; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; }
+.cli-saldo-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.cli-saldo-val { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
+.cli-saldo-val.deuda { color:var(--rojo); }
+.cli-saldo-val.saldo-ok { color:var(--verde); }
+.cli-saldo-val.saldo-cero { color:var(--gris3); }
+
+.cli-datos { padding:0 16px; }
+.cli-dato { display:flex; align-items:flex-start; gap:8px; padding:6px 0; border-bottom:1px solid var(--gris2); font-size:var(--fs-sm); }
+.cli-dato:last-child { border-bottom:none; }
+.cli-dato-k { flex-shrink:0; width:88px; color:var(--gris3); font-size:12px; padding-top:1px; }
+.cli-dato-v { flex:1; font-weight:500; word-break:break-word; }
+
+.cli-obs-block { padding:10px 16px 14px; border-top:1px solid var(--gris2); }
+.cli-obs-titulo { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:6px; }
+.cli-obs-texto { font-size:var(--fs-sm); color:var(--texto); white-space:pre-wrap; line-height:1.5; }
+
+.cli-card-footer { padding:10px 16px; background:var(--gris1); border-top:1px solid var(--gris2); display:flex; justify-content:flex-end; }
+.btn-edit-ficha { padding:6px 14px; background:white; border:1px solid var(--borde); border-radius:6px; font-size:var(--fs-sm); font-weight:600; color:var(--texto); cursor:pointer; display:flex; align-items:center; gap:6px; transition:background .12s,border-color .12s; }
+.btn-edit-ficha:hover { background:var(--gris2); border-color:var(--gris3); }
+
+/* Deuda pendiente */
+.pend-card { background:white; border-radius:10px; border:1px solid var(--borde); overflow:hidden; flex-shrink:0; }
+.pend-header { padding:10px 16px; border-bottom:1px solid var(--gris2); display:flex; align-items:center; justify-content:space-between; }
+.pend-titulo { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.pend-sin-deuda { padding:12px 16px; font-size:var(--fs-sm); color:var(--verde); font-weight:600; display:flex; align-items:center; gap:6px; }
+.pend-tabla { width:100%; border-collapse:collapse; font-size:12px; }
+.pend-tabla th { padding:6px 10px; text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); background:var(--gris1); border-bottom:1px solid var(--gris2); }
+.pend-tabla th.r { text-align:right; }
+.pend-tabla td { padding:6px 10px; border-bottom:1px solid var(--gris2); vertical-align:middle; }
+.pend-tabla td.r { text-align:right; font-variant-numeric:tabular-nums; }
+.pend-tabla tr:last-child td { border-bottom:none; }
+.pend-tabla .saldo-pend { font-weight:700; color:var(--rojo); }
+.tipo-badge { display:inline-block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; background:var(--gris2); color:var(--gris3); padding:2px 5px; border-radius:3px; margin-right:4px; vertical-align:middle; }
+.pend-num { font-size:11px; font-variant-numeric:tabular-nums; color:var(--gris3); }
+.pend-total-row { padding:8px 16px; background:var(--gris1); border-top:1px solid var(--gris2); display:flex; justify-content:space-between; align-items:center; }
+.pend-total-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.pend-total-val { font-size:var(--fs-lg); font-weight:800; color:var(--rojo); font-variant-numeric:tabular-nums; }
+
+/* Placeholder */
+.cc-empty { background:white; border-radius:10px; border:1px solid var(--borde); padding:40px 20px; text-align:center; color:var(--gris3); font-size:14px; flex-shrink:0; }
+
+/* ── Panel derecho ── */
+.cc-right { display:flex; flex-direction:column; min-height:0; }
+.libro-header { background:white; border:1px solid var(--borde); border-radius:10px 10px 0 0; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; border-bottom:2px solid var(--gris2); }
+.libro-titulo { font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.btn-reg-pago { padding:7px 16px; background:var(--azul); color:white; border:none; border-radius:7px; font-size:var(--fs-sm); font-weight:700; cursor:pointer; display:none; transition:background .12s; }
+.btn-reg-pago:hover { background:var(--azul-h); }
+
+.libro-tabla-wrap { flex:1; min-height:0; overflow-y:auto; background:white; border:1px solid var(--borde); border-top:none; border-radius:0 0 10px 10px; }
+.libro-empty { padding:60px 20px; text-align:center; color:var(--gris3); font-size:14px; }
+
+.libro-tabla { width:100%; border-collapse:collapse; }
+.libro-tabla thead th {
+  position:sticky; top:0; background:white; z-index:10;
+  padding:9px 12px; text-align:left; font-size:var(--fs-xs); font-weight:700;
+  text-transform:uppercase; letter-spacing:.4px; color:var(--gris3);
+  border-bottom:2px solid var(--gris2);
+}
+.libro-tabla thead th.r { text-align:right; }
+.libro-tabla tbody td { border-bottom:1px solid var(--gris2); }
+.libro-tabla tbody tr:last-child td { border-bottom:none; }
+.libro-tabla td { padding:9px 12px; font-size:var(--fs-md); vertical-align:top; }
+.libro-tabla td.r { text-align:right; font-variant-numeric:tabular-nums; }
+.libro-tabla .col-fecha { width:88px; color:var(--gris3); font-size:12px; white-space:nowrap; }
+.libro-tabla .col-concepto { }
+.libro-tabla .col-debito  { width:110px; text-align:right; font-variant-numeric:tabular-nums; color:var(--rojo); font-weight:600; }
+.libro-tabla .col-asig    { width:110px; text-align:right; font-variant-numeric:tabular-nums; color:var(--verde); font-size:12px; }
+.libro-tabla .col-credito { width:110px; text-align:right; font-variant-numeric:tabular-nums; color:var(--verde); font-weight:600; }
+.libro-tabla .col-saldo   { width:120px; text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
+.concepto-obs { font-size:11px; color:var(--gris3); margin-top:2px; font-style:italic; }
+
+/* Fila cargo cliqueable */
+.libro-tabla tr.row-cargo { cursor:pointer; }
+.libro-tabla tr.row-cargo:hover td { background:#FEF9F9; }
+
+/* Modal remito */
+.remito-seccion { margin-bottom:20px; }
+.remito-seccion:last-child { margin-bottom:0; }
+.remito-sec-titulo { font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:8px; }
+.remito-tabla { width:100%; border-collapse:collapse; font-size:var(--fs-md); }
+.remito-tabla thead th { padding:7px 10px; text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); background:var(--gris1); border-bottom:1px solid var(--gris2); white-space:nowrap; }
+.remito-tabla thead th.r { text-align:right; }
+.remito-tabla tbody td { padding:7px 10px; border-bottom:1px solid var(--gris2); vertical-align:middle; }
+.remito-tabla tbody td.r { text-align:right; font-variant-numeric:tabular-nums; }
+.remito-tabla tbody tr:last-child td { border-bottom:none; }
+.remito-cod { font-family:monospace; font-size:11px; color:var(--gris3); }
+.remito-totales { display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding:10px 10px 0; font-size:var(--fs-sm); }
+.remito-totales .tot-row { display:flex; gap:16px; }
+.remito-totales .tot-label { color:var(--gris3); }
+.remito-totales .tot-val { font-variant-numeric:tabular-nums; font-weight:600; min-width:100px; text-align:right; }
+.remito-totales .tot-total { font-size:var(--fs-lg); font-weight:800; }
+.remito-totales .tot-pend-rojo { color:var(--rojo); }
+.remito-totales .tot-pend-ok   { color:var(--verde); }
+.remito-sin-pagos { font-size:var(--fs-sm); color:var(--gris3); padding:8px 0; }
+.btn-print { padding:6px 14px; background:white; border:1.5px solid var(--borde); border-radius:7px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; color:var(--texto); display:flex; align-items:center; gap:6px; transition:background .12s; }
+.btn-print:hover { background:var(--gris2); }
+
+/* ── Modales ── */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px; }
+.overlay.abierto { display:flex; }
+.modal { background:white; border-radius:12px; box-shadow:0 24px 60px rgba(0,0,0,.2); display:flex; flex-direction:column; max-height:90vh; }
+.modal-sm { width:480px; }
+.modal-lg { width:660px; }
+
+.modal-header { padding:16px 20px 14px; border-bottom:1px solid var(--gris2); display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.modal-titulo { font-size:16px; font-weight:800; flex:1; }
+.modal-subtitulo { font-size:var(--fs-sm); color:var(--gris3); font-weight:500; }
+.modal-cerrar { width:28px; height:28px; background:var(--gris2); border:none; border-radius:50%; font-size:16px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--gris3); transition:background .1s; flex-shrink:0; }
+.modal-cerrar:hover { background:var(--gris3); color:white; }
+.modal-body { padding:20px; overflow-y:auto; flex:1; }
+.modal-footer { padding:14px 20px; border-top:1px solid var(--gris2); display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-shrink:0; }
+
+/* Form fields */
+.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-campo { display:flex; flex-direction:column; gap:5px; }
+.form-campo.span2 { grid-column:span 2; }
+.form-campo label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.form-campo input, .form-campo select, .form-campo textarea {
+  padding:9px 11px; border:1px solid var(--borde); border-radius:7px;
+  font-size:14px; font-family:inherit; outline:none; background:white;
+  transition:border-color .12s;
+}
+.form-campo input:focus, .form-campo select:focus, .form-campo textarea:focus { border-color:var(--azul); }
+.form-campo textarea { resize:vertical; min-height:72px; }
+
+/* Botones */
+.btn-prim { padding:9px 18px; background:var(--azul); color:white; border:none; border-radius:7px; font-size:14px; font-weight:700; cursor:pointer; transition:background .12s; }
+.btn-prim:hover { background:var(--azul-h); }
+.btn-prim:disabled { background:var(--gris3); cursor:not-allowed; }
+.btn-sec { padding:9px 18px; background:var(--gris2); color:var(--texto); border:none; border-radius:7px; font-size:14px; font-weight:600; cursor:pointer; transition:background .12s; }
+.btn-sec:hover { background:var(--borde); }
+
+/* Badges de medio de pago */
+.medio-badge { display:inline-block; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.3px; padding:2px 6px; border-radius:3px; vertical-align:middle; margin-left:4px; }
+.medio-efectivo      { background:#D1FAE5; color:#065F46; }
+.medio-transferencia { background:#DBEAFE; color:#1E40AF; }
+.medio-cheque        { background:#FEF3C7; color:#92400E; }
+
+/* Modal pago — sección asignaciones */
+.pago-form-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+/* Sección extra medio de pago */
+.medio-extra { background:var(--gris1); border:1px solid var(--gris2); border-radius:8px; padding:14px; margin-bottom:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.medio-extra.tres-col { grid-template-columns:1fr 1fr 1fr; }
+.medio-extra .span2 { grid-column:span 2; }
+.medio-extra .span3 { grid-column:span 3; }
+.file-drop { position:relative; border:1.5px dashed var(--borde); border-radius:7px; padding:10px 14px; text-align:center; cursor:pointer; background:white; transition:border-color .12s; }
+.file-drop:hover { border-color:var(--azul); }
+.file-drop input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.file-drop-txt { font-size:12px; color:var(--gris3); pointer-events:none; }
+.file-drop-nom { font-size:12px; font-weight:600; color:var(--azul); pointer-events:none; }
+.pago-obs-row { margin-bottom:14px; }
+.comprobante-link { font-size:12px; color:#1E40AF; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
+.comprobante-link:hover { text-decoration:underline; }
+
+.asig-section { border-top:1px solid var(--gris2); padding-top:16px; margin-top:4px; }
+.asig-section-titulo { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:10px; }
+.asig-lista { display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto; margin-bottom:10px; }
+.asig-fila { background:var(--gris1); border:1px solid var(--gris2); border-radius:7px; padding:8px 12px; display:flex; align-items:center; gap:12px; }
+.asig-info { flex:1; min-width:0; }
+.asig-tipo-num { font-size:var(--fs-sm); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.asig-meta { font-size:11px; color:var(--gris3); margin-top:2px; }
+.asig-input-wrap { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+.asig-peso { font-size:var(--fs-sm); color:var(--gris3); font-weight:600; }
+.asig-input { width:100px; padding:6px 8px; border:1px solid var(--borde); border-radius:6px; font-size:14px; font-family:inherit; outline:none; text-align:right; font-variant-numeric:tabular-nums; }
+.asig-input:focus { border-color:var(--azul); }
+.asig-footer { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
+.btn-auto-dist { padding:5px 12px; background:white; border:1px solid var(--borde); border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; color:var(--texto); transition:background .1s; }
+.btn-auto-dist:hover { background:var(--gris2); }
+.asig-total { font-size:12px; font-weight:600; }
+.asig-total.asig-ok { color:var(--verde); }
+.asig-total.asig-excede { color:var(--rojo); }
+.sin-pendientes-info { font-size:var(--fs-sm); color:var(--gris3); text-align:center; padding:12px 0; }
+
+/* Delete button on libro rows */
+.col-acciones { width:34px; }
+.btn-del-mov { width:26px; height:26px; background:none; border:none; border-radius:5px; color:var(--gris3); cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .12s,background .12s,color .12s; padding:0; }
+.row-cargo:hover .btn-del-mov,
+.row-pago:hover .btn-del-mov { opacity:1; }
+.btn-del-mov:hover { background:#FEE2E2; color:var(--rojo); }
+
+/* Danger button */
+.btn-danger { padding:9px 18px; background:var(--rojo); color:white; border:none; border-radius:7px; font-size:14px; font-weight:700; cursor:pointer; transition:background .12s; }
+.btn-danger:hover { background:#991B1B; }
+.btn-danger:disabled { background:var(--gris3); cursor:not-allowed; }
+
+/* Modal eliminar body */
+.elim-info { font-size:14px; line-height:1.6; margin-bottom:10px; }
+.elim-warning { font-size:var(--fs-sm); color:#92400E; background:#FEF3C7; border:1px solid #FCD34D; border-radius:6px; padding:8px 10px; margin-bottom:8px; }
+.elim-aviso { font-size:12px; color:var(--gris3); }
+
+
+/* ── Credit limit warnings ── */
+.cc-limite-warn {
+  background:#FEF2F2; border:1px solid #FECACA; border-radius:6px;
+  padding:7px 12px; margin-top:8px;
+  display:flex; align-items:center; gap:6px;
+  font-size:12px; font-weight:600; color:var(--rojo);
+}
+.pago-limit-banner {
+  background:#FEF2F2; border:1px solid #FECACA; border-radius:7px;
+  padding:10px 14px; margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+  font-size:var(--fs-sm); font-weight:600; color:var(--rojo);
+}
+</style>
+</head>
+<body>
+
+<?php $nav_activo = 'cuentacorriente'; include __DIR__ . '/nav.php'; ?>
+
+<div class="cc-main">
+
+  <!-- ── Panel izquierdo ── -->
+  <div class="cc-left" id="cc-left">
+
+    <div class="busq-wrap">
+      <input type="text" id="input-busq" placeholder="Buscar cliente por nombre o CUIT…" autocomplete="off" spellcheck="false">
+      <div class="busq-dd" id="busq-dd"></div>
+    </div>
+
+    <!-- Card cliente (oculta hasta selección) -->
+    <div class="cli-card" id="cli-card" style="display:none">
+      <div class="cli-card-top">
+        <div class="cli-nombre" id="cli-nombre"></div>
+        <div class="cli-saldo-block">
+          <span class="cli-saldo-label">Saldo actual</span>
+          <span class="cli-saldo-val" id="cli-saldo"></span>
+        </div>
+        <div class="cc-limite-warn" id="cc-limite-warn" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Límite excedido: deuda <span id="cc-limite-deuda"></span> / límite <span id="cc-limite-val"></span>
+        </div>
+      </div>
+
+      <div class="cli-datos" id="cli-datos">
+        <div class="cli-dato" id="dato-cuit">
+          <span class="cli-dato-k">CUIT</span>
+          <span class="cli-dato-v" id="cli-cuit">—</span>
+        </div>
+        <div class="cli-dato" id="dato-iva">
+          <span class="cli-dato-k">Cond. IVA</span>
+          <span class="cli-dato-v" id="cli-iva">—</span>
+        </div>
+        <div class="cli-dato" id="dato-limite">
+          <span class="cli-dato-k">Límite CC</span>
+          <span class="cli-dato-v" id="cli-limite">—</span>
+        </div>
+        <div class="cli-dato" id="dato-email" style="display:none">
+          <span class="cli-dato-k">Email</span>
+          <span class="cli-dato-v" id="cli-email"></span>
+        </div>
+        <div class="cli-dato" id="dato-tel" style="display:none">
+          <span class="cli-dato-k">Teléfono</span>
+          <span class="cli-dato-v" id="cli-tel"></span>
+        </div>
+        <div class="cli-dato" id="dato-dom" style="display:none">
+          <span class="cli-dato-k">Domicilio</span>
+          <span class="cli-dato-v" id="cli-dom"></span>
+        </div>
+        <div class="cli-dato" id="dato-loc" style="display:none">
+          <span class="cli-dato-k">Localidad</span>
+          <span class="cli-dato-v" id="cli-loc"></span>
+        </div>
+        <div class="cli-dato" id="dato-prov" style="display:none">
+          <span class="cli-dato-k">Provincia</span>
+          <span class="cli-dato-v" id="cli-prov"></span>
+        </div>
+      </div>
+
+      <div class="cli-obs-block" id="cli-obs-block" style="display:none">
+        <div class="cli-obs-titulo">Observaciones</div>
+        <div class="cli-obs-texto" id="cli-obs"></div>
+      </div>
+
+      <div class="cli-card-footer">
+        <button class="btn-edit-ficha" id="btn-edit-ficha">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Editar ficha
+        </button>
+      </div>
+    </div>
+
+    <!-- Deuda pendiente por comprobante -->
+    <div class="pend-card" id="pend-card" style="display:none">
+      <div class="pend-header">
+        <span class="pend-titulo">Deuda pendiente por comprobante</span>
+      </div>
+      <div id="pend-contenido"></div>
+    </div>
+
+    <!-- Placeholder sin cliente -->
+    <div class="cc-empty" id="cc-empty">
+      Buscá un cliente para ver su cuenta corriente
+    </div>
+
+  </div><!-- /cc-left -->
+
+  <!-- ── Panel derecho ── -->
+  <div class="cc-right">
+    <div class="libro-header">
+      <span class="libro-titulo">Libro de movimientos</span>
+      <button class="btn-reg-pago" id="btn-reg-pago">+ Registrar pago</button>
+    </div>
+    <div class="libro-tabla-wrap" id="libro-tabla-wrap">
+      <div class="libro-empty" id="libro-empty">Seleccioná un cliente para ver sus movimientos</div>
+      <table class="libro-tabla" id="libro-tabla" style="display:none">
+        <thead>
+          <tr>
+            <th class="col-fecha">Fecha</th>
+            <th class="col-concepto">Concepto</th>
+            <th class="col-debito r">Débito</th>
+            <th class="col-asig r">Asignado</th>
+            <th class="col-credito r">Crédito</th>
+            <th class="col-saldo r">Saldo</th>
+            <th class="col-acciones"></th>
+          </tr>
+        </thead>
+        <tbody id="libro-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /cc-main -->
+
+<!-- ── Modal: Editar ficha ── -->
+<div class="overlay" id="overlay-editar">
+  <div class="modal modal-sm" id="modal-editar" role="dialog" aria-modal="true" aria-labelledby="editar-cli-h">
+    <div class="modal-header">
+      <span class="modal-titulo" id="editar-cli-h">Editar ficha del cliente</span>
+      <button class="modal-cerrar" id="editar-cerrar" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-campo span2">
+          <label>Nombre *</label>
+          <input type="text" id="edit-nombre">
+        </div>
+        <div class="form-campo">
+          <label>CUIT</label>
+          <input type="text" id="edit-cuit" placeholder="20-12345678-9">
+        </div>
+        <div class="form-campo">
+          <label>Condición IVA</label>
+          <select id="edit-iva">
+            <option value="">— Sin especificar —</option>
+            <option value="Responsable Inscripto">Responsable Inscripto</option>
+            <option value="Monotributista">Monotributista</option>
+            <option value="Exento">Exento</option>
+            <option value="Consumidor Final">Consumidor Final</option>
+            <option value="No Categorizado">No Categorizado</option>
+          </select>
+        </div>
+        <div class="form-campo">
+          <label>Email</label>
+          <input type="email" id="edit-email" placeholder="contacto@empresa.com">
+        </div>
+        <div class="form-campo">
+          <label>Teléfono</label>
+          <input type="text" id="edit-tel" placeholder="011 4567-8901">
+        </div>
+        <div class="form-campo span2">
+          <label>Domicilio</label>
+          <input type="text" id="edit-dom" placeholder="Av. Corrientes 1234">
+        </div>
+        <div class="form-campo">
+          <label>Localidad</label>
+          <input type="text" id="edit-loc">
+        </div>
+        <div class="form-campo">
+          <label>Provincia</label>
+          <input type="text" id="edit-prov">
+        </div>
+        <div class="form-campo">
+          <label>Límite de crédito ($)</label>
+          <input type="number" id="edit-limite" min="0" step="any">
+        </div>
+        <div class="form-campo span2">
+          <label>Observaciones</label>
+          <textarea id="edit-obs" placeholder="Notas sobre el cliente…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" id="editar-cancelar">Cancelar</button>
+      <button class="btn-prim" id="editar-guardar">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Registrar pago ── -->
+<div class="overlay" id="overlay-pago">
+  <div class="modal modal-lg" id="modal-pago" role="dialog" aria-modal="true" aria-labelledby="pago-modal-h">
+    <div class="modal-header">
+      <span class="modal-titulo" id="pago-modal-h">Registrar pago</span>
+      <span class="modal-subtitulo" id="pago-cli-nombre"></span>
+      <button class="modal-cerrar" id="pago-cerrar" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="pago-limit-banner" id="pago-limit-banner" style="display:none">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Este cliente supera su límite de crédito. Este pago lo reducirá.
+      </div>
+      <div class="pago-form-row">
+        <div class="form-campo">
+          <label>Monto *</label>
+          <input type="number" id="pago-monto" min="0.01" step="any" placeholder="0,00">
+        </div>
+        <div class="form-campo">
+          <label>Fecha</label>
+          <input type="date" id="pago-fecha">
+        </div>
+        <div class="form-campo">
+          <label>Medio de pago</label>
+          <select id="pago-medio">
+            <option value="efectivo">Efectivo</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="cheque">Cheque</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Transferencia -->
+      <div class="medio-extra" id="wrap-transferencia" style="display:none">
+        <div class="form-campo">
+          <label>Banco</label>
+          <input type="text" id="transf-banco" placeholder="Santander, Galicia…" autocomplete="off">
+        </div>
+        <div class="form-campo">
+          <label>N° de referencia / operación</label>
+          <input type="text" id="transf-ref" placeholder="Número de transferencia" autocomplete="off">
+        </div>
+        <div class="form-campo span2">
+          <label>Comprobante (imagen o PDF, máx 5 MB)</label>
+          <div class="file-drop" id="transf-file-drop">
+            <input type="file" id="transf-file" accept="image/*,.pdf">
+            <div id="transf-file-txt" class="file-drop-txt">📎 Seleccionar archivo…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cheque -->
+      <div class="medio-extra tres-col" id="wrap-cheque" style="display:none">
+        <div class="form-campo">
+          <label>Banco emisor</label>
+          <input type="text" id="cheque-banco" placeholder="Banco Nación…" autocomplete="off">
+        </div>
+        <div class="form-campo">
+          <label>N° de cheque</label>
+          <input type="text" id="cheque-num" placeholder="00012345" autocomplete="off">
+        </div>
+        <div class="form-campo">
+          <label>Fecha del cheque</label>
+          <input type="date" id="cheque-fecha">
+        </div>
+        <div class="form-campo">
+          <label>Titular (librador)</label>
+          <input type="text" id="cheque-titular" placeholder="Nombre del firmante" autocomplete="off">
+        </div>
+        <div class="form-campo span2">
+          <label>Imagen del cheque (opcional, máx 5 MB)</label>
+          <div class="file-drop" id="cheque-file-drop">
+            <input type="file" id="cheque-file" accept="image/*,.pdf">
+            <div id="cheque-file-txt" class="file-drop-txt">📎 Seleccionar archivo…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-campo pago-obs-row">
+        <label>Observaciones</label>
+        <input type="text" id="pago-obs" placeholder="Notas adicionales…">
+      </div>
+
+      <div class="asig-section" id="asig-section">
+        <div class="asig-section-titulo"><span id="asig-section-titulo-txt">Asignar a ventas pendientes </span><span style="font-weight:500;text-transform:none;letter-spacing:0">(opcional)</span></div>
+        <div class="asig-lista" id="asig-lista"></div>
+        <div class="asig-footer">
+          <button class="btn-auto-dist" id="btn-auto-dist">Distribuir automáticamente</button>
+          <div class="asig-total" id="asig-total"></div>
+        </div>
+      </div>
+
+      <div class="sin-pendientes-info" id="sin-pendientes" style="display:none">
+        Esta entidad no tiene deuda pendiente — el pago quedará sin asignar a comprobantes.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" id="pago-cancelar">Cancelar</button>
+      <button class="btn-prim" id="pago-confirmar">Registrar pago</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Detalle de remito ── -->
+<div class="overlay" id="overlay-remito">
+  <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="remito-titulo">
+    <div class="modal-header" style="align-items:flex-start">
+      <div style="flex:1;min-width:0">
+        <div class="modal-titulo" id="remito-titulo"></div>
+        <div style="font-size:12px;color:var(--gris3);margin-top:3px" id="remito-meta"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:12px">
+        <button class="btn-print" id="btn-print-remito">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          Imprimir
+        </button>
+        <button class="modal-cerrar" id="remito-cerrar" aria-label="Cerrar">×</button>
+      </div>
+    </div>
+    <div class="modal-body">
+
+      <div class="remito-seccion">
+        <div class="remito-sec-titulo">Detalle de productos</div>
+        <table class="remito-tabla">
+          <thead>
+            <tr>
+              <th style="width:80px">Código</th>
+              <th>Producto</th>
+              <th class="r" style="width:70px">Cant.</th>
+              <th class="r" style="width:100px">Precio unit.</th>
+              <th class="r" style="width:100px">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody id="remito-items-body"></tbody>
+        </table>
+        <div class="remito-totales" id="remito-totales"></div>
+      </div>
+
+      <div class="remito-seccion">
+        <div class="remito-sec-titulo">Pagos asignados</div>
+        <div id="remito-pagos-wrap"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: Confirmar eliminación ── -->
+<div class="overlay" id="overlay-eliminar">
+  <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="eliminar-h">
+    <div class="modal-header">
+      <span class="modal-titulo" id="eliminar-h" style="color:var(--rojo)">Eliminar movimiento</span>
+      <button class="modal-cerrar" id="eliminar-cerrar" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body" id="eliminar-body"></div>
+    <div class="modal-footer">
+      <button class="btn-sec" id="eliminar-cancelar">Cancelar</button>
+      <button class="btn-danger" id="eliminar-confirmar">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+'use strict';
+const API = '/BRON/api';
+const $ = id => document.getElementById(id);
+
+// ── State ──────────────────────────────────────────────────
+const params = new URLSearchParams(location.search);
+let modoEntidad      = params.get('tipo') === 'proveedor' ? 'proveedor' : 'cliente';
+let clienteActual    = null;
+let ventasPendientes = [];
+let movsActuales     = [];
+let busqTimer        = null;
+let ddIdx            = -1;
+
+// ── Utilidades ─────────────────────────────────────────────
+const fmt = n => '$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const pad = n => String(n ?? '').padStart(8, '0');
+function fmtFecha(s) {
+  if (!s) return '—';
+  const [y, m, d] = s.split('-');
+  return `${d}/${m}/${y}`;
+}
+function fmtFechaCorta(s) {
+  if (!s) return '—';
+  const [, m, d] = s.split('-');
+  return `${d}/${m}`;
+}
+
+let toastTimer = null;
+function toast_(msg, tipo = 'ok') {
+  const el = $('toast');
+  el.textContent = msg;
+  el.className = `toast ${tipo} visible`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
+}
+
+function actualizarFecha() {
+  const d = new Date();
+  $('fecha-hora').textContent =
+    d.toLocaleDateString('es-AR', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' })
+    + '  ' + d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+}
+actualizarFecha();
+setInterval(actualizarFecha, 30000);
+
+// ── Búsqueda de clientes ────────────────────────────────────
+$('input-busq').addEventListener('input', () => {
+  clearTimeout(busqTimer);
+  const q = $('input-busq').value.trim();
+  if (q.length < 2) { cerrarDD(); return; }
+  busqTimer = setTimeout(() => buscarClientes(q), 250);
+});
+
+$('input-busq').addEventListener('keydown', e => {
+  const items = $('busq-dd').querySelectorAll('.dd-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); ddIdx = Math.min(ddIdx + 1, items.length - 1); marcarDD(items); }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); ddIdx = Math.max(ddIdx - 1, 0); marcarDD(items); }
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const activo = $('busq-dd').querySelector('.dd-item.activo') || items[0];
+    if (activo) seleccionarCliente(JSON.parse(activo.dataset.json));
+  }
+  if (e.key === 'Escape') cerrarDD();
+});
+
+function marcarDD(items) {
+  items.forEach((el, i) => el.classList.toggle('activo', i === ddIdx));
+}
+
+async function buscarClientes(q) {
+  try {
+    const recurso = modoEntidad === 'proveedor' ? 'proveedores' : 'clientes';
+    const r = await fetch(`${API}/${recurso}?q=${encodeURIComponent(q)}&limit=8`);
+    if (!r.ok) {
+      const d = await r.json().catch(() => ({}));
+      throw new Error(d.error ?? `Error ${r.status} al buscar`);
+    }
+    const d = await r.json();
+    if (!Array.isArray(d) || !d.length) { cerrarDD(); return; }
+    ddIdx = -1;
+    $('busq-dd').innerHTML = d.map(c => `
+      <div class="dd-item" data-json='${JSON.stringify(c).replace(/'/g, '&#39;')}'>
+        <div class="dd-nom">${esc(c.nombre)}</div>
+        <div class="dd-det">${esc(c.cuit ?? '')} · Saldo: ${fmt(c.saldo_cuenta_corriente)}</div>
+      </div>`).join('');
+    $('busq-dd').classList.add('visible');
+    $('busq-dd').querySelectorAll('.dd-item').forEach(el =>
+      el.addEventListener('click', () => seleccionarCliente(JSON.parse(el.dataset.json))));
+  } catch (e) { toast_(e.message || 'Error al buscar clientes', 'err'); }
+}
+
+function cerrarDD() {
+  $('busq-dd').classList.remove('visible');
+  $('busq-dd').innerHTML = '';
+  ddIdx = -1;
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.busq-wrap')) cerrarDD();
+});
+
+async function seleccionarCliente(c) {
+  cerrarDD();
+  $('input-busq').value = c.nombre;
+  await cargarCC(c.id);
+}
+
+// ── Cargar datos CC ─────────────────────────────────────────
+async function cargarCC(entidad_id) {
+  $('cc-empty').style.display     = 'none';
+  $('cli-card').style.display     = 'none';
+  $('pend-card').style.display    = 'none';
+  $('btn-reg-pago').style.display = 'none';
+  $('libro-empty').textContent    = 'Cargando…';
+  $('libro-empty').style.display  = '';
+  $('libro-tabla').style.display  = 'none';
+
+  try {
+    const r = await fetch(`${API}/cc?entidad_tipo=${modoEntidad}&entidad_id=${entidad_id}`);
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error ?? 'Error al cargar');
+
+    clienteActual    = modoEntidad === 'proveedor' ? d.proveedor : d.cliente;
+    ventasPendientes = modoEntidad === 'proveedor' ? d.compras_cc : d.ventas_cc;
+    movsActuales     = d.movimientos;
+
+    renderClienteCard(clienteActual);
+    renderVentasPendientes(ventasPendientes);
+    renderLibro(d.movimientos);
+
+    $('btn-reg-pago').style.display = 'block';
+  } catch (e) {
+    $('libro-empty').textContent = e.message;
+    $('libro-empty').style.display = '';
+    toast_(e.message, 'err');
+  }
+}
+
+// ── Render: card cliente ────────────────────────────────────
+function renderClienteCard(c) {
+  $('cli-card').style.display = '';
+  $('cc-empty').style.display = 'none';
+
+  $('cli-nombre').textContent = c.nombre;
+
+  const saldo = c.saldo_cuenta_corriente;
+  $('cli-saldo').textContent = fmt(saldo);
+  $('cli-saldo').className = 'cli-saldo-val ' + (saldo > 0.001 ? 'deuda' : saldo < -0.001 ? 'saldo-ok' : 'saldo-cero');
+
+  $('cli-cuit').textContent   = c.cuit           || '—';
+  $('cli-iva').textContent    = c.condicion_iva   || '—';
+
+  $('dato-limite').style.display = modoEntidad === 'proveedor' ? 'none' : '';
+  $('cli-limite').textContent = c.limite_credito ? fmt(c.limite_credito) : '—';
+
+  const limite = c.limite_credito;
+  if (modoEntidad !== 'proveedor' && limite && limite > 0 && saldo > limite + 0.001) {
+    $('cc-limite-deuda').textContent = fmt(saldo);
+    $('cc-limite-val').textContent   = fmt(limite);
+    $('cc-limite-warn').style.display = '';
+  } else {
+    $('cc-limite-warn').style.display = 'none';
+  }
+
+  function mostrarDato(id, val) {
+    const fila = $(id);
+    if (modoEntidad === 'proveedor') { fila.style.display = 'none'; return; }
+    if (val) { fila.style.display = ''; fila.querySelector('.cli-dato-v').textContent = val; }
+    else     { fila.style.display = 'none'; }
+  }
+  mostrarDato('dato-email', c.email);
+  mostrarDato('dato-tel',   c.telefono);
+  mostrarDato('dato-dom',   c.domicilio);
+  mostrarDato('dato-loc',   c.localidad);
+  mostrarDato('dato-prov',  c.provincia);
+
+  if (modoEntidad !== 'proveedor' && c.observaciones) {
+    $('cli-obs-block').style.display = '';
+    $('cli-obs').textContent = c.observaciones;
+  } else {
+    $('cli-obs-block').style.display = 'none';
+  }
+}
+
+// ── Render: deuda pendiente ─────────────────────────────────
+function renderVentasPendientes(ventas) {
+  $('pend-card').style.display = '';
+  const cont = $('pend-contenido');
+
+  if (!ventas.length) {
+    cont.innerHTML = `<div class="pend-sin-deuda">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Sin deuda pendiente
+    </div>`;
+    return;
+  }
+
+  const totalDeuda = ventas.reduce((s, v) => s + v.saldo_pendiente, 0);
+
+  const filas = ventas.map(v => {
+    const badge = (v.tipo_comprobante ?? 'VTA').substring(0, 6).toUpperCase();
+    return `<tr>
+      <td><span class="tipo-badge">${esc(badge)}</span><span class="pend-num">N°${pad(v.id)}</span></td>
+      <td>${fmtFechaCorta(v.fecha)}</td>
+      <td class="r">${fmt(v.total)}</td>
+      <td class="r saldo-pend">${fmt(v.saldo_pendiente)}</td>
+    </tr>`;
+  }).join('');
+
+  cont.innerHTML = `
+    <table class="pend-tabla">
+      <thead><tr>
+        <th>Comprobante</th>
+        <th>Fecha</th>
+        <th class="r">Total</th>
+        <th class="r">Saldo</th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+    </table>
+    <div class="pend-total-row">
+      <span class="pend-total-label">Total deuda</span>
+      <span class="pend-total-val">${fmt(totalDeuda)}</span>
+    </div>`;
+}
+
+// ── Render: libro de movimientos ────────────────────────────
+function renderLibro(movs) {
+  if (!movs.length) {
+    $('libro-tabla').style.display = 'none';
+    $('libro-empty').textContent   = 'Sin movimientos registrados';
+    $('libro-empty').style.display = '';
+    return;
+  }
+
+  $('libro-empty').style.display = 'none';
+  $('libro-tabla').style.display = '';
+
+  // Mapa venta_id → total asignado (calculado desde las asignaciones de los pagos)
+  const asigPorVenta = {};
+  for (const m of movs) {
+    if (m.tipo === 'pago' && m.asignaciones) {
+      for (const a of m.asignaciones) {
+        asigPorVenta[a.venta_id] = (asigPorVenta[a.venta_id] || 0) + a.monto;
+      }
+    }
+  }
+
+  let saldo = 0;
+  let html  = '';
+
+  for (const m of movs) {
+    if (m.tipo === 'cargo') {
+      saldo += m.monto;
+    } else {
+      saldo -= m.monto;
+    }
+
+    const saldoColor = saldo > 0.001 ? 'color:var(--rojo)' : saldo < -0.001 ? 'color:var(--verde)' : 'color:var(--gris3)';
+    let concepto = '';
+    let obsLine  = '';
+
+    if (m.tipo === 'cargo') {
+      if (m.referencia_id) {
+        const tipo = m.ref_tipo || 'Venta';
+        concepto = `${esc(tipo)} N°${pad(m.referencia_id)}`;
+      } else {
+        concepto = 'Cargo manual';
+      }
+    } else {
+      const mBadge = m.medio_pago
+        ? `<span class="medio-badge medio-${esc(m.medio_pago)}">${esc(m.medio_pago)}</span>`
+        : '';
+      concepto = `<strong>Pago</strong>${mBadge}`;
+      if (m.observaciones) obsLine = `<div class="concepto-obs">${esc(m.observaciones)}</div>`;
+    }
+
+    const asignado = (m.tipo === 'cargo' && m.referencia_id)
+      ? (asigPorVenta[m.referencia_id] || 0)
+      : 0;
+    const asigCell = (m.tipo === 'cargo' && asignado > 0.001) ? fmt(asignado) : '';
+
+    const svgDel = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+    html += `<tr class="row-${m.tipo}" data-mov-id="${m.id}">
+      <td class="col-fecha">${fmtFecha(m.fecha)}</td>
+      <td class="col-concepto">${concepto}${obsLine}</td>
+      <td class="col-debito">${m.tipo === 'cargo' ? fmt(m.monto) : ''}</td>
+      <td class="col-asig">${asigCell}</td>
+      <td class="col-credito">${m.tipo === 'pago'  ? fmt(m.monto) : ''}</td>
+      <td class="col-saldo" style="${saldoColor}">${fmt(saldo)}</td>
+      <td class="col-acciones">
+        <button class="btn-del-mov"
+          data-id="${m.id}" data-tipo="${m.tipo}"
+          data-monto="${m.monto}" data-fecha="${m.fecha}"
+          data-ref="${m.referencia_id || ''}"
+          title="Eliminar">${svgDel}</button>
+      </td>
+    </tr>`;
+  }
+
+  $('libro-body').innerHTML = html;
+
+  $('libro-body').querySelectorAll('.btn-del-mov').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      abrirModalEliminar({
+        id:    parseInt(btn.dataset.id),
+        tipo:  btn.dataset.tipo,
+        monto: parseFloat(btn.dataset.monto),
+        fecha: btn.dataset.fecha,
+        ref:   btn.dataset.ref || null,
+      });
+    });
+  });
+
+  $('libro-body').querySelectorAll('tr.row-cargo').forEach(tr => {
+    tr.addEventListener('click', e => {
+      if (e.target.closest('.btn-del-mov')) return;
+      const movId = parseInt(tr.dataset.movId);
+      const mov   = movsActuales.find(m => m.id === movId);
+      if (mov && mov.referencia_id) abrirModalRemito(mov);
+    });
+  });
+}
+
+// ── Modal: Editar ficha ─────────────────────────────────────
+function abrirModalEditar() {
+  const c = clienteActual;
+  $('edit-nombre').value  = c.nombre           ?? '';
+  $('edit-cuit').value    = c.cuit             ?? '';
+  $('edit-iva').value     = c.condicion_iva    ?? '';
+  $('edit-limite').value  = c.limite_credito   != null && c.limite_credito > 0 ? c.limite_credito : '';
+  $('edit-email').value   = c.email            ?? '';
+  $('edit-tel').value     = c.telefono         ?? '';
+  $('edit-dom').value     = c.domicilio        ?? '';
+  $('edit-loc').value     = c.localidad        ?? '';
+  $('edit-prov').value    = c.provincia        ?? '';
+  $('edit-obs').value     = c.observaciones    ?? '';
+
+  const soloProveedor = modoEntidad === 'proveedor';
+  ['edit-limite', 'edit-email', 'edit-tel', 'edit-dom', 'edit-loc', 'edit-prov', 'edit-obs'].forEach(id => {
+    $(id).closest('.form-campo').style.display = soloProveedor ? 'none' : '';
+  });
+  $('editar-cli-h').textContent = soloProveedor ? 'Editar ficha del proveedor' : 'Editar ficha del cliente';
+
+  $('overlay-editar').classList.add('abierto');
+  setTimeout(() => $('edit-nombre').focus(), 50);
+}
+
+function cerrarModalEditar() {
+  $('overlay-editar').classList.remove('abierto');
+}
+
+async function guardarCliente() {
+  const nombre = $('edit-nombre').value.trim();
+  if (!nombre) { toast_('El nombre es requerido', 'err'); return; }
+
+  const emailInp = $('edit-email');
+  if (emailInp.value.trim() && !emailInp.checkValidity()) {
+    toast_('El email no tiene un formato válido', 'err');
+    emailInp.focus();
+    return;
+  }
+
+  const btn = $('editar-guardar');
+  btn.disabled    = true;
+  btn.textContent = 'Guardando…';
+
+  try {
+    const recurso = modoEntidad === 'proveedor' ? 'proveedores' : 'clientes';
+    const limiteVal = $('edit-limite').value.trim();
+    const payload = {
+      nombre,
+      cuit:          $('edit-cuit').value.trim()  || null,
+      condicion_iva: $('edit-iva').value           || null,
+    };
+    if (modoEntidad !== 'proveedor') {
+      Object.assign(payload, {
+        limite_credito: limiteVal !== '' ? parseFloat(limiteVal) : null,
+        email:         $('edit-email').value.trim() || null,
+        telefono:      $('edit-tel').value.trim()   || null,
+        domicilio:     $('edit-dom').value.trim()   || null,
+        localidad:     $('edit-loc').value.trim()   || null,
+        provincia:     $('edit-prov').value.trim()  || null,
+        observaciones: $('edit-obs').value.trim()   || null,
+      });
+    }
+    const r = await fetch(`${API}/${recurso}/${clienteActual.id}`, {
+      method:  'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error ?? 'Error al guardar');
+
+    cerrarModalEditar();
+    toast_('Ficha actualizada', 'ok');
+    await cargarCC(clienteActual.id);
+  } catch (e) {
+    toast_(e.message, 'err');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Guardar cambios';
+  }
+}
+
+$('btn-edit-ficha').addEventListener('click',  abrirModalEditar);
+$('editar-cerrar').addEventListener('click',   cerrarModalEditar);
+$('editar-cancelar').addEventListener('click', cerrarModalEditar);
+$('editar-guardar').addEventListener('click',  guardarCliente);
+
+// ── Modal: Registrar pago ───────────────────────────────────
+function resetFileDrop(prefix) {
+  const inp = $(prefix + '-file');
+  if (inp) inp.value = '';
+  const txt = $(prefix + '-file-txt');
+  if (txt) { txt.textContent = '📎 Seleccionar archivo…'; txt.className = 'file-drop-txt'; }
+}
+
+async function subirArchivo(fileInput) {
+  const file = fileInput.files[0];
+  if (!file) return null;
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error(`El archivo supera el máximo de 5 MB (${(file.size / 1024 / 1024).toFixed(1)} MB)`);
+  }
+  const fd = new FormData();
+  fd.append('archivo', file);
+  const r = await fetch(`${API}/uploads`, { method: 'POST', body: fd });
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error ?? 'Error al subir archivo');
+  return d.path;
+}
+
+function abrirModalPago() {
+  $('pago-cli-nombre').textContent = clienteActual.nombre;
+  $('pago-monto').value            = '';
+  $('pago-fecha').value            = new Date().toISOString().split('T')[0];
+  $('pago-obs').value              = '';
+  $('pago-medio').value            = 'efectivo';
+  $('wrap-transferencia').style.display = 'none';
+  $('wrap-cheque').style.display        = 'none';
+  $('transf-banco').value   = '';
+  $('transf-ref').value     = '';
+  $('cheque-banco').value   = '';
+  $('cheque-num').value     = '';
+  $('cheque-fecha').value   = '';
+  $('cheque-titular').value = '';
+  resetFileDrop('transf');
+  resetFileDrop('cheque');
+
+  const lim = clienteActual.limite_credito;
+  const sal = clienteActual.saldo_cuenta_corriente;
+  $('pago-limit-banner').style.display = (modoEntidad !== 'proveedor' && lim && lim > 0 && sal > lim + 0.001) ? '' : 'none';
+  $('pago-fecha').max = new Date().toISOString().split('T')[0];
+
+  $('pago-confirmar').disabled     = false;
+  $('pago-confirmar').textContent  = 'Registrar pago';
+
+  renderAsignaciones();
+
+  $('overlay-pago').classList.add('abierto');
+  setTimeout(() => $('pago-monto').focus(), 50);
+}
+
+function cerrarModalPago() {
+  $('overlay-pago').classList.remove('abierto');
+}
+
+function renderAsignaciones() {
+  const lista = $('asig-lista');
+
+  if (!ventasPendientes.length) {
+    $('asig-section').style.display  = 'none';
+    $('sin-pendientes').style.display = '';
+    lista.innerHTML = '';
+    return;
+  }
+
+  $('asig-section').style.display   = '';
+  $('sin-pendientes').style.display = 'none';
+  $('asig-section-titulo-txt').textContent = modoEntidad === 'proveedor' ? 'Asignar a compras pendientes ' : 'Asignar a ventas pendientes ';
+
+  lista.innerHTML = ventasPendientes.map(v => {
+    const badge = (v.tipo_comprobante ?? (modoEntidad === 'proveedor' ? 'Compra' : 'Venta')).substring(0, 8);
+    return `<div class="asig-fila">
+      <div class="asig-info">
+        <div class="asig-tipo-num">${esc(badge)} N°${pad(v.id)}</div>
+        <div class="asig-meta">${fmtFecha(v.fecha)} · Saldo: ${fmt(v.saldo_pendiente)}</div>
+      </div>
+      <div class="asig-input-wrap">
+        <span class="asig-peso">$</span>
+        <input class="asig-input" type="number" min="0" max="${v.saldo_pendiente}"
+               step="any" value="0"
+               data-venta-id="${v.id}" data-max="${v.saldo_pendiente}"
+               oninput="actualizarAsigTotal()">
+      </div>
+    </div>`;
+  }).join('');
+
+  actualizarAsigTotal();
+}
+
+function actualizarAsigTotal() {
+  const monto = parseFloat($('pago-monto').value) || 0;
+  let total   = 0;
+  document.querySelectorAll('.asig-input').forEach(inp => { total += parseFloat(inp.value) || 0; });
+
+  const excede = total > monto + 0.001;
+  const el = $('asig-total');
+  el.textContent = total > 0 ? `Asignado: ${fmt(total)} de ${fmt(monto)}` : '';
+  el.className   = 'asig-total' + (excede ? ' asig-excede' : total > 0.001 ? ' asig-ok' : '');
+
+  $('pago-confirmar').disabled = excede;
+}
+
+function autoDistribuir() {
+  let restante = parseFloat($('pago-monto').value) || 0;
+  if (!restante) { toast_('Ingresá el monto del pago primero', 'err'); return; }
+
+  document.querySelectorAll('.asig-input').forEach(inp => {
+    const max  = parseFloat(inp.dataset.max) || 0;
+    const asig = Math.min(restante, max);
+    inp.value  = asig > 0 ? asig.toFixed(2) : '0';
+    restante   = Math.max(0, restante - asig);
+  });
+
+  actualizarAsigTotal();
+}
+
+function autoDistribuirSilent() {
+  let restante = parseFloat($('pago-monto').value) || 0;
+  document.querySelectorAll('.asig-input').forEach(inp => {
+    const max  = parseFloat(inp.dataset.max) || 0;
+    if (restante <= 0) { inp.value = '0'; return; }
+    const asig = Math.min(restante, max);
+    inp.value  = asig > 0 ? asig.toFixed(2) : '0';
+    restante   = Math.max(0, restante - asig);
+  });
+  actualizarAsigTotal();
+}
+
+async function confirmarPago() {
+  const monto = parseFloat($('pago-monto').value);
+  if (isNaN(monto) || monto <= 0) { toast_('Ingresá un monto válido', 'err'); return; }
+
+  const asignaciones = [];
+  document.querySelectorAll('.asig-input').forEach(inp => {
+    const venta_id = parseInt(inp.dataset.ventaId);
+    const monto_a  = parseFloat(inp.value) || 0;
+    if (monto_a > 0.001) asignaciones.push({ venta_id, monto: monto_a });
+  });
+
+  const medio = $('pago-medio').value;
+  let pago_datos  = null;
+  let comprobante = null;
+  let fileInput   = null;
+
+  if (medio === 'transferencia') {
+    pago_datos = {
+      banco:      $('transf-banco').value.trim() || null,
+      referencia: $('transf-ref').value.trim()   || null,
+    };
+    fileInput = $('transf-file');
+  } else if (medio === 'cheque') {
+    pago_datos = {
+      banco:   $('cheque-banco').value.trim()   || null,
+      numero:  $('cheque-num').value.trim()     || null,
+      fecha:   $('cheque-fecha').value          || null,
+      titular: $('cheque-titular').value.trim() || null,
+    };
+    fileInput = $('cheque-file');
+  }
+
+  const btn = $('pago-confirmar');
+  btn.disabled    = true;
+  btn.textContent = 'Guardando…';
+
+  try {
+    if (fileInput && fileInput.files[0]) {
+      btn.textContent = 'Subiendo archivo…';
+      comprobante = await subirArchivo(fileInput);
+    }
+
+    const r = await fetch(`${API}/cc`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        entidad_tipo:  modoEntidad,
+        entidad_id:    clienteActual.id,
+        monto,
+        tipo:          'pago',
+        fecha:         $('pago-fecha').value,
+        observaciones: $('pago-obs').value.trim() || null,
+        asignaciones,
+        medio_pago:  medio,
+        pago_datos,
+        comprobante,
+      }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error ?? 'Error al registrar');
+
+    cerrarModalPago();
+    toast_(`Pago de ${fmt(monto)} registrado`, 'ok');
+    await cargarCC(clienteActual.id);
+  } catch (e) {
+    toast_(e.message, 'err');
+    btn.disabled    = false;
+    btn.textContent = 'Registrar pago';
+  }
+}
+
+$('btn-reg-pago').addEventListener('click',   abrirModalPago);
+$('pago-cerrar').addEventListener('click',    cerrarModalPago);
+$('pago-cancelar').addEventListener('click',  cerrarModalPago);
+$('pago-confirmar').addEventListener('click', confirmarPago);
+$('btn-auto-dist').addEventListener('click',  autoDistribuir);
+let autoDistTimer = null;
+$('pago-monto').addEventListener('input', () => {
+  actualizarAsigTotal();
+  if (!ventasPendientes.length) return;
+  clearTimeout(autoDistTimer);
+  autoDistTimer = setTimeout(autoDistribuirSilent, 400);
+});
+
+$('pago-medio').addEventListener('change', () => {
+  const v = $('pago-medio').value;
+  $('wrap-transferencia').style.display = v === 'transferencia' ? '' : 'none';
+  $('wrap-cheque').style.display        = v === 'cheque'        ? '' : 'none';
+});
+
+(function() {
+  function bindFileDrop(fileId, txtId) {
+    $(fileId).addEventListener('change', () => {
+      const f = $(fileId).files[0];
+      const t = $(txtId);
+      if (f) { t.textContent = f.name; t.className = 'file-drop-nom'; }
+      else   { t.textContent = '📎 Seleccionar archivo…'; t.className = 'file-drop-txt'; }
+    });
+  }
+  bindFileDrop('transf-file', 'transf-file-txt');
+  bindFileDrop('cheque-file', 'cheque-file-txt');
+})();
+
+// ── Modal: Detalle de remito ────────────────────────────────
+let remitoVentaIdActual = null;
+
+function abrirModalRemito(mov) {
+  const ventaId = mov.referencia_id;
+  const tipo    = mov.ref_tipo || (modoEntidad === 'proveedor' ? 'Compra' : 'Venta');
+  remitoVentaIdActual = ventaId;
+
+  $('remito-titulo').textContent = `${tipo} N°${pad(ventaId)}`;
+  $('remito-meta').textContent   = `Fecha: ${fmtFecha(mov.fecha)} · Total: ${fmt(mov.monto)}`;
+  $('remito-items-body').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--gris3)">Cargando…</td></tr>';
+  $('remito-totales').innerHTML    = '';
+  $('remito-pagos-wrap').innerHTML = '';
+  $('btn-print-remito').style.display = modoEntidad === 'proveedor' ? 'none' : '';
+  $('overlay-remito').classList.add('abierto');
+
+  // Pagos asignados a esta venta (calculado desde movsActuales)
+  const pagosAsig = [];
+  for (const m of movsActuales) {
+    if (m.tipo === 'pago' && m.asignaciones) {
+      for (const a of m.asignaciones) {
+        if (a.venta_id === ventaId) {
+          pagosAsig.push({
+            fecha:       m.fecha,
+            monto:       a.monto,
+            obs:         m.observaciones,
+            medio_pago:  m.medio_pago,
+            pago_datos:  m.pago_datos,
+            comprobante: m.comprobante,
+          });
+        }
+      }
+    }
+  }
+  renderRemitoPagos(pagosAsig, mov.monto);
+
+  // Detalle de productos desde la API
+  const recurso = modoEntidad === 'proveedor' ? 'compras' : 'ventas';
+  fetch(`${API}/${recurso}/${ventaId}`)
+    .then(r => r.json())
+    .then(venta => {
+      if (!venta.items) throw new Error('Sin detalle de productos');
+      renderRemitoItems(venta);
+    })
+    .catch(e => {
+      $('remito-items-body').innerHTML =
+        `<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--rojo)">${esc(e.message)}</td></tr>`;
+    });
+}
+
+function cerrarModalRemito() {
+  $('overlay-remito').classList.remove('abierto');
+}
+
+async function imprimirRemito() {
+  if (!remitoVentaIdActual) return;
+  try {
+    const res = await fetch(`${API}/ventas/${remitoVentaIdActual}/imprimir`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) { toast_(data.error || 'Error al imprimir', 'err'); return; }
+    toast_('Enviado a imprimir', 'ok');
+  } catch {
+    toast_('Error de conexión', 'err');
+  }
+}
+
+function renderRemitoItems(venta) {
+  const items = venta.items || [];
+
+  if (!items.length) {
+    $('remito-items-body').innerHTML =
+      '<tr><td colspan="5" style="text-align:center;padding:16px;color:var(--gris3)">Sin ítems registrados</td></tr>';
+    $('remito-totales').innerHTML = '';
+    return;
+  }
+
+  $('remito-items-body').innerHTML = items.map(it => `
+    <tr>
+      <td class="remito-cod">${esc(it.producto_codigo || it.codigo || '')}</td>
+      <td>${esc(it.producto_nombre || it.nombre || '')}</td>
+      <td class="r">${parseFloat(it.cantidad).toLocaleString('es-AR', { maximumFractionDigits: 3 })}</td>
+      <td class="r">${fmt(it.precio_unitario ?? it.costo_unitario)}</td>
+      <td class="r">${fmt(it.subtotal)}</td>
+    </tr>`).join('');
+
+  const subtotal = items.reduce((s, it) => s + parseFloat(it.subtotal || 0), 0);
+  const envio    = venta.envio_precio ? parseFloat(venta.envio_precio) : 0;
+
+  let totalesHtml = `
+    <div class="tot-row"><span class="tot-label">Subtotal</span><span class="tot-val">${fmt(subtotal)}</span></div>`;
+  if (envio > 0) {
+    totalesHtml += `
+    <div class="tot-row"><span class="tot-label">Envío</span><span class="tot-val">${fmt(envio)}</span></div>`;
+  }
+  totalesHtml += `
+    <div class="tot-row tot-total"><span class="tot-label">Total</span><span class="tot-val">${fmt(venta.total)}</span></div>`;
+
+  $('remito-totales').innerHTML = totalesHtml;
+}
+
+function renderRemitoPagos(pagos, totalVenta) {
+  const wrap = $('remito-pagos-wrap');
+
+  if (!pagos.length) {
+    wrap.innerHTML = '<p class="remito-sin-pagos">Sin pagos asignados a este comprobante.</p>';
+    return;
+  }
+
+  function extraPago(p) {
+    const d = p.pago_datos;
+    if (!d) return '';
+    const parts = [];
+    if (d.banco)      parts.push(`Banco: ${esc(d.banco)}`);
+    if (d.referencia) parts.push(`Ref: ${esc(d.referencia)}`);
+    if (d.numero)     parts.push(`N°${esc(d.numero)}`);
+    if (d.fecha)      parts.push(fmtFecha(d.fecha));
+    if (d.titular)    parts.push(esc(d.titular));
+    return parts.length ? `<div style="font-size:11px;color:var(--gris3);margin-top:2px">${parts.join(' · ')}</div>` : '';
+  }
+
+  const totalPagado = pagos.reduce((s, p) => s + p.monto, 0);
+  const pendiente   = totalVenta - totalPagado;
+  const pendClass   = pendiente > 0.001 ? 'tot-pend-rojo' : 'tot-pend-ok';
+  const pendLabel   = pendiente > 0.001 ? 'Saldo pendiente' : 'Saldo';
+
+  wrap.innerHTML = `
+    <table class="remito-tabla">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Medio / Detalle</th>
+          <th class="r">Monto asignado</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${pagos.map(p => `<tr>
+          <td>${fmtFecha(p.fecha)}</td>
+          <td>
+            ${p.medio_pago ? `<span class="medio-badge medio-${esc(p.medio_pago)}">${esc(p.medio_pago)}</span>` : ''}
+            ${p.obs ? `<span style="font-size:12px;color:var(--gris3);margin-left:4px">${esc(p.obs)}</span>` : ''}
+            ${extraPago(p)}
+            ${p.comprobante ? `<div style="margin-top:3px"><a href="${esc(p.comprobante)}" target="_blank" class="comprobante-link">📄 Ver comprobante</a></div>` : ''}
+          </td>
+          <td class="r" style="color:var(--verde);font-weight:600">${fmt(p.monto)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    <div class="remito-totales" style="margin-top:8px">
+      <div class="tot-row"><span class="tot-label">Total pagado</span><span class="tot-val" style="color:var(--verde)">${fmt(totalPagado)}</span></div>
+      <div class="tot-row ${pendiente <= 0.001 ? '' : 'tot-total'}"><span class="tot-label">${pendLabel}</span><span class="tot-val ${pendClass}">${fmt(Math.abs(pendiente))}</span></div>
+    </div>`;
+}
+
+$('remito-cerrar').addEventListener('click',    cerrarModalRemito);
+$('btn-print-remito').addEventListener('click', imprimirRemito);
+
+// ── Modal: Eliminar movimiento ──────────────────────────────
+let movAEliminar = null;
+
+function abrirModalEliminar(mov) {
+  movAEliminar = mov;
+
+  const esProveedor = modoEntidad === 'proveedor';
+  let encabezado, extra = '';
+  if (mov.tipo === 'cargo') {
+    encabezado = mov.ref
+      ? `${esProveedor ? 'Compra' : 'Remito / Venta'} <strong>N°${pad(mov.ref)}</strong>`
+      : 'Cargo manual';
+    if (mov.ref) {
+      extra = `<p class="elim-warning">⚠ También se eliminará ${esProveedor ? 'la compra' : 'la venta'} N°<strong>${pad(mov.ref)}</strong> y todos sus ítems.</p>`;
+    }
+  } else {
+    encabezado = 'Pago';
+    extra = `<p class="elim-warning">⚠ También se eliminarán las asignaciones a comprobantes vinculadas a este pago.</p>`;
+  }
+
+  $('eliminar-body').innerHTML = `
+    <p class="elim-info">¿Eliminar <strong>${encabezado}</strong> del <strong>${fmtFecha(mov.fecha)}</strong> por <strong>${fmt(mov.monto)}</strong>?</p>
+    ${extra}
+    <p class="elim-aviso">Esta acción no se puede deshacer.</p>
+  `;
+
+  $('eliminar-confirmar').disabled = false;
+  $('eliminar-confirmar').textContent = 'Eliminar';
+  $('overlay-eliminar').classList.add('abierto');
+}
+
+function cerrarModalEliminar() {
+  $('overlay-eliminar').classList.remove('abierto');
+  movAEliminar = null;
+}
+
+async function confirmarEliminar() {
+  if (!movAEliminar) return;
+  const btn = $('eliminar-confirmar');
+  btn.disabled = true;
+  btn.textContent = 'Eliminando…';
+
+  try {
+    const r = await fetch(`${API}/cc/${movAEliminar.id}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error ?? 'Error al eliminar');
+
+    const label = movAEliminar.tipo === 'pago' ? 'Pago' : 'Cargo';
+    cerrarModalEliminar();
+    toast_(`${label} eliminado`, 'ok');
+    await cargarCC(clienteActual.id);
+  } catch (e) {
+    toast_(e.message, 'err');
+    btn.disabled = false;
+    btn.textContent = 'Eliminar';
+  }
+}
+
+$('eliminar-cerrar').addEventListener('click',    cerrarModalEliminar);
+$('eliminar-cancelar').addEventListener('click',  cerrarModalEliminar);
+$('eliminar-confirmar').addEventListener('click', confirmarEliminar);
+
+// ── Escape cierra modales ───────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if ($('overlay-eliminar').classList.contains('abierto')) { cerrarModalEliminar(); return; }
+  if ($('overlay-remito').classList.contains('abierto'))   { cerrarModalRemito();   return; }
+  if ($('overlay-editar').classList.contains('abierto'))   { cerrarModalEditar();   return; }
+  if ($('overlay-pago').classList.contains('abierto'))     { cerrarModalPago();     return; }
+});
+
+// ── Init ─────────────────────────────────────────────────────
+(function initEntidad() {
+  if (modoEntidad === 'proveedor') {
+    $('input-busq').placeholder = 'Buscar proveedor por nombre o CUIT…';
+    $('cc-empty').textContent   = 'Buscá un proveedor para ver su cuenta corriente';
+    $('libro-empty').textContent = 'Seleccioná un proveedor para ver sus movimientos';
+  }
+  const idParam = parseInt(params.get('id'));
+  if (idParam) cargarCC(idParam);
+})();
+</script>
+</body>
+</html>
