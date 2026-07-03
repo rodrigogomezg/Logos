@@ -393,6 +393,10 @@
             <option value="cheque">Cheque</option>
           </select>
         </div>
+        <div class="form-campo" id="wrap-pago-caja" style="display:none">
+          <label>Registrar en caja</label>
+          <select id="pago-caja"></select>
+        </div>
       </div>
 
       <!-- Transferencia -->
@@ -887,7 +891,40 @@ async function subirArchivo(fileInput) {
   return d.path;
 }
 
+// ── Selector de caja destino del cobro (solo admin) ─────────
+// Un admin puede estar operando desde una caja de compras (sin turno de
+// venta); el cobro tiene que poder registrarse en la caja de venta que
+// corresponda, o en ninguna (ej. pagos históricos que no tocan el arqueo).
+const esAdminCC = window.LOGOS_SESION?.rol === 'admin';
+let cajasVentaCache = null;
+
+async function poblarSelectorCajaPago() {
+  if (!esAdminCC) return;
+  if (!cajasVentaCache) {
+    try {
+      const r = await fetch(`${API}/cajas`);
+      cajasVentaCache = (await r.json()).filter(c => c.activo && c.tipo === 'venta');
+    } catch { cajasVentaCache = []; }
+  }
+  const sel = $('pago-caja');
+  const operativa = window.cajaOperativaId?.() ?? window.LOGOS_SESION?.caja_id ?? null;
+  sel.innerHTML = '<option value="">— No registrar en caja —</option>' +
+    cajasVentaCache.map(c => `<option value="${c.id}"${c.id === operativa ? ' selected' : ''}>${esc(c.nombre)}</option>`).join('');
+  // Si la caja operativa no es de venta (ej. caja de compras), preseleccionar
+  // la única caja de venta disponible
+  if (!cajasVentaCache.some(c => c.id === operativa) && cajasVentaCache.length === 1) {
+    sel.value = String(cajasVentaCache[0].id);
+  }
+}
+
+function actualizarVisibilidadCajaPago() {
+  const medio = $('pago-medio').value;
+  $('wrap-pago-caja').style.display = (esAdminCC && medio !== 'cheque') ? '' : 'none';
+}
+
 function abrirModalPago() {
+  poblarSelectorCajaPago();
+  actualizarVisibilidadCajaPago();
   $('pago-cli-nombre').textContent = clienteActual.nombre;
   $('pago-monto').value            = '';
   $('pago-fecha').value            = new Date().toISOString().split('T')[0];
@@ -1051,8 +1088,11 @@ async function confirmarPago() {
         medio_pago:  medio,
         pago_datos,
         comprobante,
-        // El cobro en efectivo/transferencia entra al arqueo de esta caja
-        caja_id: window.cajaOperativaId?.() ?? window.LOGOS_SESION?.caja_id ?? null,
+        // El cobro en efectivo/transferencia entra al arqueo de una caja:
+        // el admin la elige en el modal (o ninguna); el cajero usa la suya.
+        caja_id: esAdminCC
+          ? ($('pago-caja').value ? Number($('pago-caja').value) : null)
+          : (window.cajaOperativaId?.() ?? window.LOGOS_SESION?.caja_id ?? null),
       }),
     });
     const d = await r.json();
@@ -1085,6 +1125,7 @@ $('pago-medio').addEventListener('change', () => {
   const v = $('pago-medio').value;
   $('wrap-transferencia').style.display = v === 'transferencia' ? '' : 'none';
   $('wrap-cheque').style.display        = v === 'cheque'        ? '' : 'none';
+  actualizarVisibilidadCajaPago();
 });
 
 (function() {
