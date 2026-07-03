@@ -205,7 +205,14 @@ $margenInferior = $tieneCae ? '72mm' : '42mm';
     <td class="cab-doc">
       <div class="doc-tipo"><?= cp_esc($docTipo) ?></div>
       <div class="doc-box">
-        <div class="num">N° <?= cp_esc(sprintf('%04d', (int)$config['punto_venta'])) ?>-<?= cp_esc($venta['numero']) ?></div>
+        <?php
+        // Factura electrónica autorizada: el número oficial es el que asignó
+        // AFIP (numero_afip), no el correlativo interno del sistema.
+        $numeroImpreso = !empty($venta['numero_afip'])
+            ? sprintf('%08d', (int)$venta['numero_afip'])
+            : $venta['numero'];
+        ?>
+        <div class="num">N° <?= cp_esc(sprintf('%04d', (int)$config['punto_venta'])) ?>-<?= cp_esc($numeroImpreso) ?></div>
         <div><span class="lbl">Fecha:</span> <?= cp_fecha($venta['fecha']) ?></div>
       </div>
     </td>
@@ -309,6 +316,9 @@ $margenInferior = $tieneCae ? '72mm' : '42mm';
         <td></td>
         <td class="cae-info">
           <div class="cae-num">CAE: <?= cp_esc($venta['cae']) ?></div>
+          <?php if (!empty($venta['cae_vencimiento'])): ?>
+            <div>Vto. CAE: <?= cp_fecha($venta['cae_vencimiento']) ?></div>
+          <?php endif; ?>
         </td>
       </tr>
     </table>

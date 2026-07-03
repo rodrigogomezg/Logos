@@ -2091,8 +2091,13 @@ async function confirmarVenta() {
     });
     const d = await r.json();
     if (!r.ok) { toast_(d.error ?? 'Error al guardar', 'err'); return; }
-    const accion = editandoVentaId ? 'Actualizado' : '✓';
-    toast_(`${accion}  ${body.tipo_comprobante} N° ${d.numero}  —  ${fmt(d.total)}`, 'ok');
+    if (d.afip_error) {
+      toast_(`La venta se guardó pero AFIP no autorizó la factura: ${d.afip_error}`, 'err');
+    } else {
+      const accion = editandoVentaId ? 'Actualizado' : '✓';
+      const numeroMostrar = d.cae ? `${String(d.numero_afip).padStart(8, '0')} · CAE ${d.cae}` : d.numero;
+      toast_(`${accion}  ${body.tipo_comprobante} N° ${numeroMostrar}  —  ${fmt(d.total)}`, 'ok');
+    }
     const uvData = { id: d.id, tipo_comprobante: body.tipo_comprobante, numero: d.numero, total: d.total };
     const volverA = sessionStorage.getItem('logos_volver_tras_editar');
     if (volverA) {

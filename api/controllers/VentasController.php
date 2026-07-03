@@ -7,6 +7,50 @@ require_once __DIR__ . '/../helpers/Configuracion.php';
 class VentasController {
 
     private const TIPOS_PAGO_SIMPLES = ['efectivo', 'transferencia', 'cc', 'tarjeta', 'cheque', 'mercado_pago'];
+    private const TIPOS_ELECTRONICOS = ['FC A-ELECT', 'FC B-ELECT'];
+
+    /**
+     * Pide el CAE a AFIP para una venta ya guardada y persiste el resultado.
+     * Devuelve null si salió bien, o el mensaje de error (que también queda
+     * registrado en ventas.afip_error para reintentar después).
+     */
+    private function solicitarCae(int $venta_id): ?string {
+        require_once __DIR__ . '/../helpers/AfipWs.php';
+
+        $db = DB::get();
+        $stmt = $db->prepare("
+            SELECT v.id, v.fecha, v.total, v.tipo_comprobante, v.cae,
+                   c.cuit AS cliente_cuit, c.condicion_iva AS cliente_condicion_iva
+            FROM ventas v
+            LEFT JOIN clientes c ON c.id = v.cliente_id
+            WHERE v.id = ?
+        ");
+        $stmt->execute([$venta_id]);
+        $venta = $stmt->fetch();
+        if (!$venta) return 'Venta no encontrada';
+        if (!in_array($venta['tipo_comprobante'], self::TIPOS_ELECTRONICOS, true)) {
+            return 'Este comprobante no es una factura electrónica.';
+        }
+        if (!empty($venta['cae'])) return null; // ya autorizada
+
+        try {
+            $r = AfipWs::facturar($venta, Configuracion::get());
+            $db->prepare("UPDATE ventas SET numero_afip = ?, cae = ?, cae_vencimiento = ?, afip_error = NULL WHERE id = ?")
+               ->execute([(string)$r['numero_afip'], $r['cae'], $r['cae_vencimiento'], $venta_id]);
+            return null;
+        } catch (Throwable $e) {
+            $msg = mb_substr($e->getMessage(), 0, 500);
+            $db->prepare("UPDATE ventas SET afip_error = ? WHERE id = ?")->execute([$msg, $venta_id]);
+            return $msg;
+        }
+    }
+
+    /** POST /ventas/{id}/facturar — reintento manual de una factura sin CAE */
+    public function facturar(int $id): void {
+        $error = $this->solicitarCae($id);
+        if ($error !== null) json(502, ['error' => $error]);
+        $this->get($id);
+    }
 
     // Valida el array de pagos de un pago mixto: cada línea con tipo simple + monto > 0,
     // y que la suma coincida con el total de la venta.
@@ -306,6 +350,13 @@ class VentasController {
             json(500, ['error' => 'Error al guardar la venta: ' . $e->getMessage()]);
         }
 
+        // Factura electrónica: pedir CAE después del commit (la llamada a AFIP
+        // es red externa y no debe estar dentro de la transacción). Si falla,
+        // la venta queda guardada con afip_error y se puede reintentar.
+        if (in_array($tipo_comprobante, self::TIPOS_ELECTRONICOS, true)) {
+            $this->solicitarCae($venta_id);
+        }
+
         // Devolver la venta creada
         $this->get($venta_id);
     }
@@ -322,10 +373,13 @@ class VentasController {
 
         $db = DB::get();
 
-        $stmt = $db->prepare("SELECT id, tipo_pago FROM ventas WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, tipo_pago, cae FROM ventas WHERE id = ?");
         $stmt->execute([$id]);
         $venta = $stmt->fetch();
         if (!$venta) json(404, ['error' => 'Venta no encontrada']);
+        if (!empty($venta['cae'])) {
+            json(422, ['error' => 'Esta factura ya fue autorizada por AFIP (tiene CAE) y no se puede modificar. Corresponde emitir una nota de crédito.']);
+        }
 
         // Pago mixto: el desglose solo se edita desde "Editar ítems" (POS), no desde este modal rápido
         if (isset($body['tipo_pago']) && ($body['tipo_pago'] === 'mixto' || $venta['tipo_pago'] === 'mixto')) {
@@ -373,10 +427,13 @@ class VentasController {
     private function actualizarCompleto(int $id, array $body): void {
         $db = DB::get();
 
-        $stmt = $db->prepare("SELECT id, cliente_id, tipo_pago, total FROM ventas WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, cliente_id, tipo_pago, total, cae FROM ventas WHERE id = ?");
         $stmt->execute([$id]);
         $venta = $stmt->fetch();
         if (!$venta) json(404, ['error' => 'Venta no encontrada']);
+        if (!empty($venta['cae'])) {
+            json(422, ['error' => 'Esta factura ya fue autorizada por AFIP (tiene CAE) y no se puede modificar. Corresponde emitir una nota de crédito.']);
+        }
 
         $nuevo_tipo_pago    = $body['tipo_pago'] ?? $venta['tipo_pago'];
         $tipos_pago_validos = [...self::TIPOS_PAGO_SIMPLES, 'mixto'];
@@ -808,6 +865,8 @@ class VentasController {
                 v.envio_direccion,
                 v.numero_afip,
                 v.cae,
+                v.cae_vencimiento,
+                v.afip_error,
                 c.id                AS cliente_id,
                 c.nombre            AS cliente_nombre,
                 c.cuit              AS cliente_cuit,
@@ -885,6 +944,7 @@ class VentasController {
                 v.envio_direccion,
                 v.numero_afip,
                 v.cae,
+                v.cae_vencimiento,
                 c.id                AS cliente_id,
                 c.nombre            AS cliente_nombre,
                 c.cuit              AS cliente_cuit,

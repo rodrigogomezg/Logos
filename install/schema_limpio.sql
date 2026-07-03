@@ -330,6 +330,17 @@ CREATE TABLE IF NOT EXISTS `venta_pagos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `afip_tokens` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `servicio` varchar(20) NOT NULL,
+  `entorno` varchar(20) NOT NULL,
+  `token` text NOT NULL,
+  `sign` text NOT NULL,
+  `expira` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_servicio_entorno` (`servicio`,`entorno`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 CREATE TABLE IF NOT EXISTS `ventas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fecha` date NOT NULL,
@@ -340,6 +351,8 @@ CREATE TABLE IF NOT EXISTS `ventas` (
   `tipo_comprobante` varchar(50) DEFAULT NULL,
   `numero_afip` varchar(50) DEFAULT NULL,
   `cae` varchar(50) DEFAULT NULL,
+  `cae_vencimiento` date DEFAULT NULL,
+  `afip_error` varchar(500) DEFAULT NULL,
   `estado` varchar(20) NOT NULL DEFAULT 'completado',
   `tipo_pago` varchar(20) NOT NULL DEFAULT 'efectivo',
   `observaciones` varchar(255) DEFAULT NULL,

@@ -1097,7 +1097,9 @@ function renderDetalle(v) {
       ${v.envio_precio  ? `<div class="comp-bloque"><label>Envío</label><div class="val">${fmt(v.envio_precio)}</div></div>` : ''}
       ${v.envio_direccion ? `<div class="comp-bloque"><label>Dirección de entrega</label><div class="val">${esc(v.envio_direccion)}</div></div>` : ''}
       ${v.origen_descripcion ? `<div class="comp-bloque" style="flex-basis:100%"><label>Origen</label><div class="val" style="font-size:12px;color:var(--gris3)">${esc(v.origen_descripcion)}</div></div>` : ''}
-      ${v.cae ? `<div class="comp-bloque"><label>CAE</label><div class="val">${esc(v.cae)}</div></div>` : ''}
+      ${v.cae ? `<div class="comp-bloque"><label>CAE</label><div class="val">${esc(v.cae)}${v.numero_afip ? ` <span style="font-size:11px;color:var(--gris3)">· N° AFIP ${esc(String(v.numero_afip).padStart(8, '0'))}</span>` : ''}</div></div>` : ''}
+      ${!v.cae && v.afip_error ? `<div class="comp-bloque" style="flex-basis:100%"><label style="color:var(--rojo)">Factura sin autorizar por AFIP</label><div class="val" style="font-size:12px;color:var(--rojo)">${esc(v.afip_error)}</div>
+        <button id="btn-reintentar-afip" style="margin-top:6px;padding:6px 14px;border:1.5px solid var(--rojo);background:#fff;color:var(--rojo);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;font-family:inherit">Reintentar facturación</button></div>` : ''}
     </div>
     <table class="comp-items">
       <thead>
@@ -1109,6 +1111,21 @@ function renderDetalle(v) {
       <span class="label">TOTAL</span>
       <span class="monto">${fmt(v.total)}</span>
     </div>`;
+
+  document.getElementById('btn-reintentar-afip')?.addEventListener('click', async function () {
+    this.disabled = true; this.textContent = 'Facturando…';
+    try {
+      const res = await fetch(`${API}/ventas/${v.id}/facturar`, { method: 'POST' });
+      const d = await res.json();
+      if (!res.ok) { toast_(d.error || 'AFIP rechazó la factura', 'err'); this.disabled = false; this.textContent = 'Reintentar facturación'; return; }
+      toast_(`Factura autorizada · CAE ${d.cae}`, 'ok');
+      renderDetalle(d);
+      buscar();
+    } catch {
+      toast_('Error de conexión', 'err');
+      this.disabled = false; this.textContent = 'Reintentar facturación';
+    }
+  });
 }
 
 $('ver-close').addEventListener('click', () => $('overlay-ver').classList.remove('abierto'));

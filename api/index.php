@@ -133,6 +133,7 @@ try {
             match (true) {
                 $metodo === 'GET'    && $id !== null && $subAccion === 'comprobante' => $ctrl->comprobante($id),
                 $metodo === 'POST'   && $id !== null && $subAccion === 'imprimir'    => $ctrl->imprimir($id),
+                $metodo === 'POST'   && $id !== null && $subAccion === 'facturar'    => $ctrl->facturar($id),
                 $metodo === 'GET'    && $id !== null        => $ctrl->get($id),
                 $metodo === 'GET'                           => $ctrl->listar(),
                 $metodo === 'POST'   && $accion === 'unificar' => $ctrl->unificar(),
