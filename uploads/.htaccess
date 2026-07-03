@@ -1,0 +1,8 @@
+# Carpeta de archivos subidos por usuarios: nunca ejecutar código acá.
+# Aunque un archivo lograra guardarse con extensión .php, no se sirve ni ejecuta.
+<FilesMatch "\.(php|phtml|php\d|pht|phar)$">
+    Require all denied
+</FilesMatch>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .phar
+RemoveType .php .phtml
+php_flag engine off

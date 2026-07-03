@@ -2,7 +2,15 @@
 
 class UploadsController {
 
-    private const TIPOS_OK  = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+    // La extensión sale SIEMPRE del MIME detectado por contenido, nunca del nombre
+    // que mandó el cliente: un "foto.php" con bytes de JPEG terminaría ejecutable.
+    private const TIPOS_OK  = [
+        'image/jpeg'      => 'jpg',
+        'image/png'       => 'png',
+        'image/gif'       => 'gif',
+        'image/webp'      => 'webp',
+        'application/pdf' => 'pdf',
+    ];
     private const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
     private const DIR_DISCO = __DIR__ . '/../../uploads/comprobantes/';
     private const DIR_WEB   = '/Logos/uploads/comprobantes/';
@@ -29,7 +37,7 @@ class UploadsController {
         }
 
         $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
-        if (!in_array($mime, self::TIPOS_OK, true)) {
+        if (!isset(self::TIPOS_OK[$mime])) {
             json(400, ['error' => 'Tipo de archivo no permitido. Solo imágenes (JPG, PNG, WEBP) o PDF.']);
         }
 
@@ -37,7 +45,7 @@ class UploadsController {
             mkdir(self::DIR_DISCO, 0755, true);
         }
 
-        $ext  = $mime === 'application/pdf' ? 'pdf' : strtolower(pathinfo($f['name'], PATHINFO_EXTENSION) ?: 'jpg');
+        $ext  = self::TIPOS_OK[$mime];
         $name = date('Ymd_His') . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
         $dest = self::DIR_DISCO . $name;
 

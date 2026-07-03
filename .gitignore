@@ -1,0 +1,15 @@
+# Config específica de cada instalación (contiene la contraseña de la base)
+api/config/db.local.php
+
+# Archivos generados en runtime
+api/logs/*.log
+uploads/*
+!uploads/.htaccess
+install/backups/
+
+# Artefactos del entorno de desarrollo
+.impeccable/
+pos/.impeccable/
+.claude/
+.agents/
+PRODUCT.md

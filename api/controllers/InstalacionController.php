@@ -6,7 +6,7 @@ class InstalacionController {
 
     // ── Estado actual de la instalación ───────────────────────────────
     public function estado(): void {
-        $base = ['requiere_conexion' => false, 'requiere_schema' => false, 'requiere_admin' => false, 'requiere_negocio' => false, 'requiere_caja' => false];
+        $base = ['sin_conexion' => false, 'requiere_conexion' => false, 'requiere_schema' => false, 'requiere_admin' => false, 'requiere_negocio' => false, 'requiere_caja' => false];
 
         if (!DB::estaConfigurado()) {
             json(200, array_merge($base, ['requiere_conexion' => true]));
@@ -15,7 +15,9 @@ class InstalacionController {
         try {
             $db = DB::get();
         } catch (\Throwable $e) {
-            json(200, array_merge($base, ['requiere_conexion' => true]));
+            // Hay configuración guardada pero el servidor no responde (ej. MySQL apagado):
+            // no es una instalación pendiente, es un problema de servicio.
+            json(200, array_merge($base, ['sin_conexion' => true]));
         }
 
         try {
@@ -36,6 +38,7 @@ class InstalacionController {
         }
 
         json(200, [
+            'sin_conexion'      => false,
             'requiere_conexion' => false,
             'requiere_schema'   => false,
             'requiere_admin'    => !$hayAdmin,
@@ -81,6 +84,20 @@ class InstalacionController {
 
     // ── Crear/conectar y escribir db.local.php ────────────────────────
     public function instalar(): void {
+        // Si ya hay una instalación funcionando (config + base alcanzable con esquema),
+        // no se permite reinstalar: reinstalar reescribe db.local.php y recrea el usuario
+        // de aplicación, lo que desconectaría la base actual. Para reinstalar a propósito,
+        // hay que borrar api/config/db.local.php a mano.
+        if (DB::estaConfigurado()) {
+            try {
+                DB::get()->query("SELECT 1 FROM usuarios LIMIT 1");
+                json(403, ['error' => 'El sistema ya está instalado. Si realmente necesitás reinstalar, eliminá api/config/db.local.php en el servidor y volvé a intentar.']);
+            } catch (\Throwable $e) {
+                // Config presente pero base inalcanzable o sin esquema: se permite
+                // reinstalar como vía de recuperación.
+            }
+        }
+
         $body   = json_decode(file_get_contents('php://input'), true) ?: [];
         $modo   = $body['modo'] ?? '';
         $host   = trim($body['host'] ?? '127.0.0.1');

@@ -4,15 +4,10 @@ declare(strict_types=1);
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+// La app es same-origin (el POS y la API viven en el mismo servidor).
+// No se emiten headers CORS a propósito: así ninguna página web ajena
+// puede hacer requests a la API desde un navegador de la red.
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, X-Usuario-Id');
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(204);
-    exit;
-}
 
 // Helper global para responder JSON y terminar
 function json(int $status, mixed $data): never {
@@ -90,26 +85,44 @@ try {
             };
         })(),
 
-        'clientes' => (function () use ($metodo, $id) {
+        'clientes' => (function () use ($metodo, $id, $accion) {
             require_once __DIR__ . '/controllers/ClientesController.php';
             $ctrl = new ClientesController();
             match (true) {
-                $metodo === 'GET'  && $id !== null => $ctrl->get($id),
-                $metodo === 'GET'                  => $ctrl->search(),
-                $metodo === 'POST' && $id === null => $ctrl->crear(),
-                $metodo === 'PUT'  && $id !== null => $ctrl->put($id),
+                $metodo === 'GET'  && $id !== null                      => $ctrl->get($id),
+                $metodo === 'GET'  && isset($_GET['page'])              => $ctrl->listar(),
+                $metodo === 'GET'  && $accion === 'plantilla-csv'       => $ctrl->plantillaCSV(),
+                $metodo === 'GET'                                        => $ctrl->search(),
+                $metodo === 'POST' && $accion === 'importar'            => $ctrl->importar(),
+                $metodo === 'POST' && $id === null                      => $ctrl->crear(),
+                $metodo === 'PUT'  && $id !== null                      => $ctrl->put($id),
+                $metodo === 'DELETE' && $id !== null                    => $ctrl->eliminar($id),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
 
-        'proveedores' => (function () use ($metodo, $id) {
+        'proveedores' => (function () use ($metodo, $id, $accion) {
             require_once __DIR__ . '/controllers/ProveedoresController.php';
             $ctrl = new ProveedoresController();
             match (true) {
-                $metodo === 'GET'  && $id !== null => $ctrl->get($id),
-                $metodo === 'GET'                  => $ctrl->search(),
-                $metodo === 'POST' && $id === null => $ctrl->crear(),
-                $metodo === 'PUT'  && $id !== null => $ctrl->put($id),
+                $metodo === 'GET'  && $id !== null         => $ctrl->get($id),
+                $metodo === 'GET'  && isset($_GET['page']) => $ctrl->listar(),
+                $metodo === 'GET'                          => $ctrl->search(),
+                $metodo === 'POST' && $id === null         => $ctrl->crear(),
+                $metodo === 'PUT'  && $id !== null         => $ctrl->put($id),
+                $metodo === 'DELETE' && $id !== null       => $ctrl->eliminar($id),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'listas-precio' => (function () use ($metodo, $id) {
+            require_once __DIR__ . '/controllers/ListasPrecioController.php';
+            $ctrl = new ListasPrecioController();
+            match (true) {
+                $metodo === 'GET'                    => $ctrl->listar(),
+                $metodo === 'POST'   && $id === null => $ctrl->crear(),
+                $metodo === 'PUT'    && $id !== null => $ctrl->actualizar($id),
+                $metodo === 'DELETE' && $id !== null => $ctrl->eliminar($id),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
@@ -240,12 +253,14 @@ try {
             require_once __DIR__ . '/controllers/CajaTurnosController.php';
             $ctrl = new CajaTurnosController();
             match (true) {
-                $metodo === 'GET'    && $accion === 'actual'                     => $ctrl->actual(),
-                $metodo === 'GET'    && $id !== null                             => $ctrl->get($id),
-                $metodo === 'GET'                                                => $ctrl->listar(),
-                $metodo === 'POST'   && $id === null                            => $ctrl->abrir(),
-                $metodo === 'POST'   && $id !== null && $subAccion === 'cerrar' => $ctrl->cerrar($id),
-                $metodo === 'DELETE' && $id !== null                            => $ctrl->eliminar($id),
+                $metodo === 'GET'    && $accion === 'actual'                              => $ctrl->actual(),
+                $metodo === 'GET'    && $id !== null && $subAccion === 'periodo'          => $ctrl->periodo($id),
+                $metodo === 'GET'    && $id !== null                                      => $ctrl->get($id),
+                $metodo === 'GET'                                                         => $ctrl->listar(),
+                $metodo === 'POST'   && $id === null                                      => $ctrl->abrir(),
+                $metodo === 'POST'   && $id !== null && $subAccion === 'cierre-parcial'  => $ctrl->cierreParcial($id),
+                $metodo === 'POST'   && $id !== null && $subAccion === 'cerrar'           => $ctrl->cerrar($id),
+                $metodo === 'DELETE' && $id !== null                                      => $ctrl->eliminar($id),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
@@ -264,7 +279,9 @@ try {
         default => json(404, ['error' => "Recurso '$recurso' no existe"]),
     };
 } catch (PDOException $e) {
-    json(500, ['error' => 'Error de base de datos: ' . $e->getMessage()]);
+    error_log(sprintf("[%s] %s %s — PDO: %s\n", date('Y-m-d H:i:s'), $metodo, $uri, $e->getMessage()), 3, __DIR__ . '/logs/error.log');
+    json(500, ['error' => 'Error de base de datos. Revisá el log del servidor.']);
 } catch (Throwable $e) {
-    json(500, ['error' => $e->getMessage()]);
+    error_log(sprintf("[%s] %s %s — %s: %s\n", date('Y-m-d H:i:s'), $metodo, $uri, get_class($e), $e->getMessage()), 3, __DIR__ . '/logs/error.log');
+    json(500, ['error' => 'Error interno del servidor. Revisá el log.']);
 }
