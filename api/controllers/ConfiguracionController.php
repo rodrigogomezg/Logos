@@ -15,6 +15,10 @@ class ConfiguracionController {
         unset($config['afip_cert'], $config['afip_key']);
         $config['clave_autorizacion_configurada'] = !empty($config['clave_autorizacion_hash']);
         unset($config['clave_autorizacion_hash']);
+        // Decodificar columnas JSON
+        if (isset($config['posnet_terminales']) && is_string($config['posnet_terminales'])) {
+            $config['posnet_terminales'] = json_decode($config['posnet_terminales'], true) ?? [];
+        }
         return $config;
     }
 
@@ -33,12 +37,16 @@ class ConfiguracionController {
         $claveAutorizacion = trim($body['clave_autorizacion'] ?? '');
         $claveHash = $claveAutorizacion !== '' ? password_hash($claveAutorizacion, PASSWORD_DEFAULT) : null;
 
+        $posnetTerminales = isset($body['posnet_terminales']) && is_array($body['posnet_terminales'])
+            ? json_encode(array_values($body['posnet_terminales']))
+            : null;
+
         DB::get()->prepare("
             INSERT INTO configuracion
                 (id, razon_social, nombre_fantasia, cuit, condicion_iva, domicilio, iibb, telefono, website,
-                 punto_venta, iva_porcentaje, impresora_nombre, carpeta_comprobantes, carpeta_backups,
+                 punto_venta, iva_porcentaje, impresora_nombre, posnet_terminales, carpeta_comprobantes, carpeta_backups,
                  clave_autorizacion_hash, color_tema, actualizado_en)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ON DUPLICATE KEY UPDATE
                 razon_social         = VALUES(razon_social),
                 nombre_fantasia      = VALUES(nombre_fantasia),
@@ -51,6 +59,7 @@ class ConfiguracionController {
                 punto_venta          = VALUES(punto_venta),
                 iva_porcentaje       = VALUES(iva_porcentaje),
                 impresora_nombre     = VALUES(impresora_nombre),
+                posnet_terminales    = COALESCE(VALUES(posnet_terminales), posnet_terminales),
                 carpeta_comprobantes = VALUES(carpeta_comprobantes),
                 carpeta_backups      = VALUES(carpeta_backups),
                 clave_autorizacion_hash = COALESCE(?, clave_autorizacion_hash),
@@ -68,6 +77,7 @@ class ConfiguracionController {
             (int)($body['punto_venta'] ?? 1),
             (float)($body['iva_porcentaje'] ?? 21),
             trim($body['impresora_nombre'] ?? '') ?: null,
+            $posnetTerminales,
             trim($body['carpeta_comprobantes'] ?? '') ?: null,
             trim($body['carpeta_backups'] ?? '') ?: null,
             $claveHash,   // INSERT clave_autorizacion_hash

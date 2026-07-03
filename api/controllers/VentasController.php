@@ -6,7 +6,7 @@ require_once __DIR__ . '/../helpers/Configuracion.php';
 
 class VentasController {
 
-    private const TIPOS_PAGO_SIMPLES = ['efectivo', 'transferencia', 'cc', 'tarjeta', 'cheque'];
+    private const TIPOS_PAGO_SIMPLES = ['efectivo', 'transferencia', 'cc', 'tarjeta', 'cheque', 'mercado_pago'];
 
     // Valida el array de pagos de un pago mixto: cada línea con tipo simple + monto > 0,
     // y que la suma coincida con el total de la venta.
@@ -342,7 +342,7 @@ class VentasController {
         $params = [];
 
         $tipos_comp = ['REMITO', 'FC B-ELECT', 'FC A-ELECT', 'PRESUPUESTO'];
-        $tipos_pago = ['efectivo', 'transferencia', 'tarjeta', 'cheque', 'cc'];
+        $tipos_pago = ['efectivo', 'transferencia', 'tarjeta', 'cheque', 'cc', 'mercado_pago'];
 
         if (isset($body['tipo_comprobante'])) {
             if (!in_array($body['tipo_comprobante'], $tipos_comp, true))
@@ -540,7 +540,7 @@ class VentasController {
             json(400, ['error' => 'Se necesitan al menos 2 comprobantes para unificar']);
         }
 
-        $tipos_pago_validos = ['efectivo', 'transferencia', 'cc', 'tarjeta', 'cheque'];
+        $tipos_pago_validos = ['efectivo', 'transferencia', 'cc', 'tarjeta', 'cheque', 'mercado_pago'];
         if (!in_array($tipo_pago, $tipos_pago_validos, true)) {
             json(400, ['error' => 'tipo_pago inválido']);
         }

@@ -318,13 +318,20 @@ label.envio-toggle {
 .btn-sec:hover { background: var(--gris3); color: white; }
 
 /* ── PAGO ── */
-.pago-simple { display:flex; align-items:center; gap:10px; }
-.pago-simple-sel {
-  flex:1; padding:7px 8px; border:1px solid var(--borde); border-radius:6px;
-  font-size:var(--fs-sm); font-family:inherit; background:white; outline:none;
-  cursor:pointer; transition:border-color .12s;
+.pago-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+.pago-tile {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:5px; padding:9px 4px 8px; cursor:pointer; font-family:inherit;
+  border:1.5px solid var(--borde); background:#fff; border-radius:0;
+  transition:background 90ms, border-color 90ms, color 90ms;
+  user-select:none;
 }
-.pago-simple-sel:focus { border-color:var(--azul); }
+.pago-tile:hover { border-color:var(--azul); color:var(--azul); }
+.pago-tile:active { transform:scale(.96); }
+.pago-tile.activo { background:var(--azul); border-color:var(--azul); color:#fff; }
+.pago-tile svg { width:20px; height:20px; flex-shrink:0; }
+.pago-tile-lbl { font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; line-height:1.25; text-align:center; }
+.pago-mixto-footer { display:flex; justify-content:flex-end; margin-top:7px; }
 .pago-mixto-link {
   background:none; border:none; cursor:pointer; padding:0;
   font-size:12px; font-weight:600; color:var(--azul); white-space:nowrap;
@@ -909,17 +916,19 @@ label.envio-toggle {
   <div class="col-der">
 
     <!-- Pago -->
-    <div class="card">
+    <div class="card" style="border-top:3px solid var(--azul)">
       <label>Forma de pago</label>
-      <div class="pago-simple" id="pago-simple">
-        <select id="tipo-pago-sel" class="pago-simple-sel">
-          <option value="efectivo">Efectivo</option>
-          <option value="transferencia">Transferencia</option>
-          <option value="cc">Cta. Corriente</option>
-          <option value="tarjeta">Tarjeta</option>
-          <option value="cheque">Cheque</option>
-        </select>
-        <button class="pago-mixto-link" id="btn-pago-mixto">Pago mixto</button>
+      <select id="tipo-pago-sel" style="display:none">
+        <option value="efectivo">Efectivo</option>
+        <option value="transferencia">Transferencia</option>
+        <option value="cc">Cta. Corriente</option>
+        <option value="tarjeta">Tarjeta</option>
+        <option value="cheque">Cheque</option>
+        <option value="mercado_pago">Mercado Pago</option>
+      </select>
+      <div class="pago-grid" id="pago-simple"></div>
+      <div class="pago-mixto-footer">
+        <button class="pago-mixto-link" id="btn-pago-mixto">+ Pago mixto</button>
       </div>
       <div class="pago-mixto-resumen" id="pago-mixto-resumen" style="display:none">
         <div id="pago-mixto-detalle" class="pago-mixto-detalle"></div>
@@ -945,6 +954,7 @@ label.envio-toggle {
           </div>
           <div>
             <label>Dirección</label>
+            <select id="envio-dir-sel" style="display:none;padding:7px 8px;border:1px solid var(--borde);border-radius:0;font-size:12px;font-family:inherit;outline:none;background:#fff;width:100%"></select>
             <input type="text" id="envio-dir" placeholder="Calle, número, piso...">
           </div>
         </div>
@@ -981,6 +991,7 @@ label.envio-toggle {
       <span>CONFIRMAR VENTA</span>
       <span style="font-size:11px;font-weight:500;opacity:.75;font-family:monospace;background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px;margin-left:2px">F10</span>
     </button>
+    <div id="cc-alerta" style="display:none;background:#fef2f2;border:1px solid #fecaca;padding:9px 12px;font-size:12px;line-height:1.55;color:#991b1b"></div>
     <button class="btn btn-sec" id="btn-nueva">
       <span>↺  Nueva venta</span>
     </button>
@@ -1163,12 +1174,31 @@ let contadorFalloCodigo = 0;
 
 // ── Pago ─────────────────────────────────────────────
 const TIPOS_PAGO = [
-  { val:'efectivo',      lbl:'Efectivo' },
-  { val:'transferencia', lbl:'Transferencia' },
-  { val:'cc',            lbl:'Cta. Corriente' },
-  { val:'tarjeta',       lbl:'Tarjeta' },
-  { val:'cheque',        lbl:'Cheque' },
+  { val:'efectivo',      lbl:'Efectivo',      icon:'<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><line x1="6" y1="9" x2="6" y2="15"/><line x1="18" y1="9" x2="18" y2="15"/>' },
+  { val:'tarjeta',       lbl:'Tarjeta',       icon:'<rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="5" y1="15" x2="10" y2="15"/>' },
+  { val:'transferencia', lbl:'Transferencia', icon:'<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>' },
+  { val:'cc',            lbl:'Cta. Cte.',     icon:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
+  { val:'cheque',        lbl:'Cheque',        icon:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/>' },
+  { val:'mercado_pago',  lbl:'Mercado Pago',  icon:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="5.5" y="5.5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="15.5" y="5.5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5.5" y="15.5" width="3" height="3" fill="currentColor" stroke="none"/><path d="M14 14h3v3h-3M20 14v3M17 20h3M20 17v4"/>' },
 ];
+
+function renderPagoTiles() {
+  const current = $('tipo-pago-sel').value;
+  $('pago-simple').innerHTML = TIPOS_PAGO.map(t =>
+    `<button type="button" class="pago-tile${t.val === current ? ' activo' : ''}" data-val="${t.val}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${t.icon}</svg>
+      <span class="pago-tile-lbl">${t.lbl}</span>
+    </button>`
+  ).join('');
+  $('pago-simple').querySelectorAll('.pago-tile').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $('tipo-pago-sel').value = btn.dataset.val;
+      renderPagoTiles();
+      actualizarBtnConfirmar();
+    });
+  });
+}
+
 let esMixto       = false;
 let pagosMixto    = [];
 let pagosMixtoTemp = [];
@@ -1257,6 +1287,7 @@ function resetMixto() {
   esMixto = false; pagosMixto = [];
   $('pago-simple').style.display = '';
   $('pago-mixto-resumen').style.display = 'none';
+  renderPagoTiles();
 }
 function confirmarPM() {
   pagosMixto = JSON.parse(JSON.stringify(pagosMixtoTemp));
@@ -1359,10 +1390,53 @@ function subtotalProductos() {
 }
 
 $('chk-envio').addEventListener('change', () => {
-  $('envio-reveal').classList.toggle('visible', $('chk-envio').checked);
-  if ($('chk-envio').checked) setTimeout(() => $('envio-precio').focus(), 50);
+  const checked = $('chk-envio').checked;
+  $('envio-reveal').classList.toggle('visible', checked);
+  if (checked) {
+    autocompletarEnvio();
+    setTimeout(() => $('envio-precio').focus(), 50);
+  } else {
+    $('envio-dir').value = '';
+    $('envio-dir-sel').style.display = 'none';
+    $('envio-dir').style.display = '';
+  }
   actualizarTotalConEnvio(subtotalProductos());
 });
+
+function autocompletarEnvio() {
+  const dirs = clienteActual?.domicilios_envio;
+  if (!dirs || !dirs.length) return;
+
+  const fmtDir = d => [d.domicilio, d.localidad, d.provincia].filter(Boolean).join(', ');
+
+  if (dirs.length === 1) {
+    $('envio-dir').value = fmtDir(dirs[0]);
+    $('envio-dir-sel').style.display = 'none';
+    $('envio-dir').style.display = '';
+    return;
+  }
+
+  // múltiples → dropdown selector
+  const sel = $('envio-dir-sel');
+  sel.innerHTML = dirs.map((d, i) =>
+    `<option value="${i}">${d.etiqueta ? d.etiqueta + ' — ' : ''}${fmtDir(d)}</option>`
+  ).join('') + '<option value="manual">Escribir a mano…</option>';
+
+  sel.style.display = '';
+  $('envio-dir').style.display = 'none';
+  $('envio-dir').value = fmtDir(dirs[0]);
+
+  sel.onchange = () => {
+    if (sel.value === 'manual') {
+      sel.style.display = 'none';
+      $('envio-dir').style.display = '';
+      $('envio-dir').value = '';
+      $('envio-dir').focus();
+    } else {
+      $('envio-dir').value = fmtDir(dirs[parseInt(sel.value)]);
+    }
+  };
+}
 
 $('envio-precio').addEventListener('input', () => actualizarTotalConEnvio(subtotalProductos()));
 
@@ -1633,6 +1707,7 @@ function seleccionarCliente(c) {
   cliSaldo.textContent  = `CC: ${fmt(c.saldo_cuenta_corriente)}  ·  Límite: ${fmt(c.limite_credito)}`;
   cerrarDD(ddCliente);
   checkAfipGuard();
+  actualizarBtnConfirmar();
   setTimeout(() => inputCodigo.focus(), 50);
 }
 
@@ -1641,6 +1716,7 @@ $('btn-quitar-cli').addEventListener('click', () => {
   inputCliente.value = '';
   mostrarBuscadorCliente(true);
   checkAfipGuard();
+  actualizarBtnConfirmar();
 });
 
 // ── Modal Nuevo Cliente ──────────────────────────────
@@ -1928,6 +2004,33 @@ function checkAfipGuard() {
 
 function actualizarBtnConfirmar() {
   const vacio = items.length === 0;
+
+  // Alerta de límite de crédito (solo cuando pago = cc)
+  const elAlerta = $('cc-alerta');
+  const pagoActual = esMixto ? 'mixto' : $('tipo-pago-sel').value;
+  let excedeLimite = false;
+
+  if (!vacio && pagoActual === 'cc' && clienteActual) {
+    const limite = parseFloat(clienteActual.limite_credito) || 0;
+    const saldo  = parseFloat(clienteActual.saldo_cuenta_corriente) || 0;
+    const total  = totalConEnvio();
+    const disponible = limite - saldo;
+
+    if (limite > 0 && total > disponible) {
+      excedeLimite = true;
+      const fmtN = n => n.toLocaleString('es-AR', { style:'currency', currency:'ARS', maximumFractionDigits:2 });
+      elAlerta.innerHTML =
+        `<strong>Límite de crédito insuficiente</strong><br>` +
+        `Saldo actual: <strong>${fmtN(saldo)}</strong> &nbsp;·&nbsp; Límite: <strong>${fmtN(limite)}</strong><br>` +
+        `Disponible: <strong style="color:${disponible<=0?'#b91c1c':'#92400e'}">${fmtN(disponible)}</strong> &nbsp;·&nbsp; Esta venta: <strong>${fmtN(total)}</strong>`;
+      elAlerta.style.display = '';
+    } else {
+      elAlerta.style.display = 'none';
+    }
+  } else {
+    elAlerta.style.display = 'none';
+  }
+
   btnConfirmar.disabled = vacio || afipGuardActivo;
   btnConfirmar.title = vacio ? 'Agregá productos al carrito para confirmar' : '';
 }
@@ -2024,12 +2127,15 @@ function nuevaVenta() {
   $('tipo-pago-sel').value = 'efectivo';
   $('pago-simple').style.display = '';
   $('pago-mixto-resumen').style.display = 'none';
+  renderPagoTiles();
   $('observaciones').value = '';
   $('fecha-venta').value   = new Date().toISOString().split('T')[0];
   $('fecha-venta').classList.remove('fecha-modificada');
   $('chk-envio').checked   = false;
   $('envio-precio').value  = '';
   $('envio-dir').value     = '';
+  $('envio-dir-sel').style.display = 'none';
+  $('envio-dir').style.display     = '';
   $('envio-reveal').classList.remove('visible');
   $('t-envio-row').style.display = 'none';
   inputCodigo.value = ''; limpiarEstadoCodigo();
@@ -2194,6 +2300,7 @@ $('uv-nc').addEventListener('click', () => {
 });
 
 renderItems();
+renderPagoTiles();
 checkAfipGuard();
 inputCodigo.focus();
 
@@ -2260,6 +2367,7 @@ $('edit-banner-cancel').addEventListener('click', () => {
   } else if (v.tipo_pago && tiposSimples.includes(v.tipo_pago)) {
     $('tipo-pago-sel').value = v.tipo_pago;
   }
+  renderPagoTiles();
 
   // Observaciones
   if (v.observaciones) $('observaciones').value = v.observaciones;

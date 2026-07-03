@@ -7,59 +7,209 @@
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
-.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; }
-.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
-.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+/* ── layout ──────────────────────────────────────────────── */
+.page-header {
+  background:#fff; border-bottom:1px solid var(--borde); padding:14px clamp(20px,4vw,48px);
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-shrink:0;
+}
+.page-header h1 { font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; }
+.page-header p   { font-size:11px; color:var(--gris3); margin-top:2px; }
+.page-header-meta { display:flex; align-items:center; gap:10px; }
 
-.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
-.contenido-inner { max-width:1100px; margin:0 auto; }
+.contenido { flex:1; min-height:0; overflow-y:auto; padding:20px clamp(16px,3vw,40px); background:var(--gris1); }
+.contenido-inner { max-width:1560px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+.contenido-inner.solo { max-width:980px; }
 
-.card { background:white; border:1px solid var(--borde); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.03); padding:24px clamp(20px, 3vw, 30px); margin-bottom:20px; }
-.card-titulo { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--texto); padding-bottom:12px; margin-bottom:20px; border-bottom:1px solid var(--gris2); display:flex; align-items:center; justify-content:space-between; }
+/* ── layout turno abierto: cifras izquierda / gráficos derecha ── */
+.layout-turno { display:grid; grid-template-columns:minmax(400px,470px) minmax(0,1fr); gap:14px; align-items:start; }
+.layout-col { display:flex; flex-direction:column; gap:14px; min-width:0; }
+.layout-full { grid-column:1 / -1; }
+@media (max-width:1080px) { .layout-turno { grid-template-columns:1fr; } }
 
-.estado-pill { display:inline-flex; align-items:center; gap:6px; padding:4px 11px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+/* ── card ─────────────────────────────────────────────────── */
+.card { background:#fff; border:1px solid var(--borde); border-radius:0; }
+.card-header {
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:11px 18px; border-bottom:1px solid var(--borde); background:var(--gris1);
+}
+.card-header h2 { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--gris3); }
+.card-body { padding:18px; }
+
+/* ── pill estado ──────────────────────────────────────────── */
+.estado-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
 .estado-pill.abierto { background:#DCFCE7; color:#15803D; }
 .estado-pill.cerrado { background:var(--gris2); color:var(--gris3); }
-.estado-pill .dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+.estado-pill .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
 
-.form-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px 20px; }
-@media (max-width: 700px) { .form-grid { grid-template-columns:repeat(2, 1fr); } }
-@media (max-width: 480px) { .form-grid { grid-template-columns:1fr; } }
-.form-group { display:flex; flex-direction:column; gap:6px; min-width:0; }
-.form-group.full { grid-column:1 / -1; }
-.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.form-input { padding:9px 12px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); transition:border-color 140ms ease-out, background 140ms ease-out; width:100%; }
-.form-input:focus { border-color:var(--azul); background:white; }
-.form-hint { font-size:11px; color:var(--gris3); margin-top:2px; line-height:1.4; }
+/* ── ledger (lista contable de totales) ───────────────────── */
+.ledger { display:table; width:100%; border-collapse:collapse; }
+.ledger-row { display:table-row; }
+.ledger-row.sep > * { border-top:1px solid var(--borde); padding-top:9px; margin-top:5px; }
+.ledger-lbl { display:table-cell; padding:5px 0; font-size:12px; color:var(--gris3); white-space:nowrap; }
+.ledger-fill { display:table-cell; width:100%; padding:5px 10px; vertical-align:bottom; }
+.ledger-fill::after { content:''; display:block; border-bottom:1px dotted #ccc; margin-bottom:3px; }
+.ledger-val  { display:table-cell; padding:5px 0 5px 16px; text-align:right; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ledger-row.bold .ledger-lbl { font-weight:700; color:var(--texto); font-size:13px; }
+.ledger-row.bold .ledger-val { font-size:14px; font-weight:700; }
+.ledger-row.accent .ledger-val { color:var(--azul); }
+.ledger-row.positivo .ledger-val { color:#15803D; }
+.ledger-row.negativo .ledger-val { color:var(--rojo); }
 
-.btn { padding:10px 20px; border:1.5px solid transparent; border-radius:8px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; font-family:inherit; transition:background 140ms ease-out, border-color 140ms ease-out, transform 120ms ease-out; }
-.btn:active { transform:scale(0.97); }
-.btn:disabled { opacity:.5; cursor:default; }
-.btn-ok { background:var(--azul); color:white; border-color:var(--azul); }
-.btn-ok:hover { background:var(--azul-h); border-color:var(--azul-h); }
-.btn-sec { background:white; color:var(--texto); border-color:var(--borde); }
-.btn-sec:hover { border-color:var(--gris3); background:var(--gris1); }
-.btn-row { display:flex; gap:12px; align-items:center; margin-top:16px; flex-wrap:wrap; }
+/* ── apertura ─────────────────────────────────────────────── */
+.form-group { display:flex; flex-direction:column; gap:5px; max-width:280px; }
+.form-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.form-input { padding:8px 11px; border:1px solid var(--borde); border-radius:0; font-size:14px; font-family:inherit; outline:none; background:#fff; font-variant-numeric:tabular-nums; }
+.form-input:focus { border-color:var(--texto); }
+.form-hint { font-size:11px; color:var(--gris3); line-height:1.4; }
 
-.totales-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:14px; }
-.total-box { background:var(--gris1); border-radius:10px; padding:14px 16px; }
-.total-box .lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); margin-bottom:4px; }
-.total-box .val { font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; }
-.total-box.destacado { background:#FEF2F2; }
-.total-box.destacado .val { color:var(--azul); }
+/* ── botones ──────────────────────────────────────────────── */
+.btn { padding:9px 18px; border:1.5px solid transparent; border-radius:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; cursor:pointer; font-family:inherit; }
+.btn:disabled { opacity:.45; cursor:default; }
+.btn-ok      { background:var(--azul); color:#fff; border-color:var(--azul); }
+.btn-ok:hover:not(:disabled) { background:var(--azul-h); }
+.btn-sec     { background:#fff; color:var(--texto); border-color:#888; }
+.btn-sec:hover { border-color:var(--texto); }
+.btn-danger  { background:#fff; color:var(--rojo); border-color:var(--rojo); }
+.btn-danger:hover { background:#FEF2F2; }
 
-.diferencia-box { margin-top:16px; padding:14px 16px; border-radius:10px; background:var(--gris1); }
-.diferencia-box .val { font-size:20px; font-weight:700; font-variant-numeric:tabular-nums; }
-.diferencia-box.ok .val { color:#15803D; }
-.diferencia-box.falta .val { color:var(--rojo); }
-.diferencia-box.sobra .val { color:var(--bajo); }
-
-.no-aplica { text-align:center; padding:40px 20px; color:var(--gris3); }
-
-@media (max-width: 640px) {
-  .page-header h1 { font-size:19px; }
-  .card { padding:18px; }
+/* ── acciones turno ───────────────────────────────────────── */
+.acciones { display:flex; flex-direction:column; gap:10px; }
+.accion-btn {
+  display:flex; align-items:center; gap:10px; padding:10px 18px; width:100%; text-align:left;
+  background:#fff; border:1px solid var(--borde); cursor:pointer; font-family:inherit;
+  transition:border-color 120ms;
 }
+.accion-btn:hover { border-color:var(--texto); }
+.accion-btn.danger:hover { border-color:var(--rojo); color:var(--rojo); }
+.accion-btn .kbd {
+  display:inline-flex; align-items:center; justify-content:center;
+  width:26px; height:26px; border:1px solid var(--borde); background:var(--gris1);
+  font-size:12px; font-weight:800; color:var(--texto); flex-shrink:0;
+}
+.accion-btn.danger .kbd { border-color:#fca5a5; background:#fef2f2; color:var(--rojo); }
+.accion-lbl strong { font-size:12px; font-weight:700; display:block; }
+.accion-lbl span   { font-size:10px; color:var(--gris3); display:block; margin-top:1px; }
+.accion-btn.danger:hover .accion-lbl span { color:inherit; }
+
+/* ── link-btn ─────────────────────────────────────────────── */
+.link-btn { background:none; border:none; cursor:pointer; font-family:inherit; font-size:11px; color:var(--azul); font-weight:600; text-decoration:underline; padding:0; }
+.link-btn:hover { color:var(--azul-h); }
+
+/* ── franja de indicadores del turno ──────────────────────── */
+.stats-strip { display:grid; grid-template-columns:repeat(4,1fr); background:#fff; border:1px solid var(--borde); }
+.stat { padding:11px 16px; min-width:0; }
+.stat + .stat { border-left:1px solid var(--borde); }
+.stat-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); white-space:nowrap; }
+.stat-val { font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; margin-top:3px; white-space:nowrap; }
+.stat-sub { font-size:10px; color:var(--gris3); margin-top:1px; white-space:nowrap; }
+@media (max-width:1400px) { .stats-strip { grid-template-columns:repeat(2,1fr); } .stat:nth-child(3) { border-left:none; } .stat:nth-child(n+3) { border-top:1px solid var(--borde); } }
+
+/* ── donut medios de cobro ────────────────────────────────── */
+.mix-grid { display:grid; grid-template-columns:auto minmax(0,1fr); gap:10px 28px; align-items:center; }
+@media (max-width:1300px) { .mix-grid { grid-template-columns:1fr; justify-items:center; } }
+.mix-leyenda { width:100%; }
+.leyenda-row { display:table-row; }
+.mix-leyenda .ledger-lbl { display:table-cell; }
+.swatch { display:inline-block; width:10px; height:10px; margin-right:7px; vertical-align:baseline; }
+.leyenda-pct { display:table-cell; padding:5px 0 5px 14px; text-align:right; font-size:11px; color:var(--gris3); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+/* ── barras ventas por hora ───────────────────────────────── */
+.horas-chart { display:flex; align-items:flex-end; gap:5px; height:150px; padding-top:14px; }
+.hora-col { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:0; height:100%; }
+.hora-val { font-size:9px; color:var(--gris3); font-variant-numeric:tabular-nums; white-space:nowrap; margin-bottom:3px; }
+.hora-bar { width:100%; max-width:44px; background:var(--azul); }
+.hora-bar.vacia { background:var(--gris2); height:2px !important; }
+.hora-lbl { font-size:10px; color:var(--gris3); margin-top:5px; font-variant-numeric:tabular-nums; }
+.chart-vacio { padding:36px 20px; text-align:center; color:var(--gris3); font-size:12px; }
+
+/* ── cierres parciales tabla ──────────────────────────────── */
+.hist-tabla { width:100%; border-collapse:collapse; font-size:12px; }
+.hist-tabla th { text-align:left; padding:7px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); border-bottom:1px solid var(--borde); white-space:nowrap; }
+.hist-tabla th.r, .hist-tabla td.r { text-align:right; }
+.hist-tabla td { padding:8px 12px; border-bottom:1px solid var(--borde); font-variant-numeric:tabular-nums; }
+.hist-tabla tbody tr:last-child td { border-bottom:none; }
+.hist-tabla tbody tr:hover { background:var(--gris1); }
+.badge-parcial { display:inline-block; padding:1px 7px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; background:#FEF9C3; color:#854D0E; }
+.no-aplica { text-align:center; padding:40px 20px; color:var(--gris3); font-size:13px; }
+
+/* ══════════════════════════════════════════════════════════
+   MODAL DE CIERRE — ancho, 2 columnas
+   ══════════════════════════════════════════════════════════ */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; opacity:0; pointer-events:none; transition:opacity 160ms; }
+.modal-overlay.visible { opacity:1; pointer-events:auto; }
+
+.modal-cierre {
+  background:#fff; border:1px solid var(--borde); border-radius:0;
+  width:min(96vw, 920px); max-height:90vh;
+  display:flex; flex-direction:column;
+  transform:translateY(10px); transition:transform 180ms cubic-bezier(.23,1,.32,1);
+}
+.modal-overlay.visible .modal-cierre { transform:none; }
+
+.modal-header {
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:12px 20px; border-bottom:1px solid var(--borde); background:var(--gris1); flex-shrink:0;
+}
+.modal-header-txt h2 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; }
+.modal-header-txt p  { font-size:11px; color:var(--gris3); margin-top:2px; }
+.modal-close { background:none; border:none; cursor:pointer; font-size:18px; color:var(--gris3); line-height:1; padding:2px 6px; }
+.modal-close:hover { color:var(--texto); }
+
+/* dos columnas en el body */
+.modal-body {
+  flex:1; overflow:hidden; min-height:0;
+  display:grid; grid-template-columns:1fr 1px 340px;
+}
+.modal-col { padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:16px; }
+.modal-divider { background:var(--borde); }
+
+.modal-footer {
+  padding:12px 20px; border-top:1px solid var(--borde);
+  display:flex; gap:10px; justify-content:flex-end; flex-shrink:0;
+}
+
+/* títulos de sección dentro del modal */
+.ms-titulo {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.8px; color:var(--gris3); padding-bottom:6px; border-bottom:1px solid var(--borde);
+}
+
+/* ledger compacto para el modal */
+.ml-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; gap:12px; }
+.ml-row + .ml-row { border-top:1px solid var(--gris1); }
+.ml-lbl { font-size:12px; color:var(--gris3); }
+.ml-val { font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
+.ml-row.bold .ml-lbl { font-weight:700; color:var(--texto); }
+.ml-row.bold .ml-val { font-size:14px; font-weight:700; }
+.ml-row.sep-top { margin-top:4px; padding-top:8px; border-top:1px solid var(--borde) !important; }
+.ml-row.accent .ml-val { color:var(--azul); }
+.ml-row.verde .ml-val { color:#15803D; }
+
+/* inputs en el modal */
+.mf-group { display:flex; flex-direction:column; gap:4px; }
+.mf-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.mf-input  { padding:8px 10px; border:1px solid var(--borde); border-radius:0; font-size:13px; font-family:inherit; outline:none; background:#fff; font-variant-numeric:tabular-nums; }
+.mf-input:focus { border-color:var(--texto); }
+
+/* posnet */
+.posnet-row { display:flex; align-items:center; gap:8px; }
+.posnet-nombre { font-size:12px; font-weight:600; min-width:110px; flex-shrink:0; }
+.posnet-input { flex:1; padding:7px 9px; border:1px solid var(--borde); border-radius:0; font-size:13px; font-family:inherit; outline:none; font-variant-numeric:tabular-nums; background:#fff; }
+.posnet-input:focus { border-color:var(--texto); }
+
+/* diferencia */
+.dif-row { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-top:4px; border:1px solid var(--borde); }
+.dif-row .lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.dif-row .val { font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; }
+.dif-row.ok     { background:#DCFCE7; border-color:#86efac; }
+.dif-row.ok .lbl     { color:#166534; }
+.dif-row.ok .val     { color:#15803D; }
+.dif-row.falta  { background:#FEF2F2; border-color:#fca5a5; }
+.dif-row.falta .lbl  { color:#991b1b; }
+.dif-row.falta .val  { color:var(--rojo); }
+.dif-row.sobra  { background:#FEF9C3; border-color:#fde047; }
+.dif-row.sobra .lbl  { color:#713f12; }
+.dif-row.sobra .val  { color:#854D0E; }
 
 </style>
 </head>
@@ -68,14 +218,52 @@
 <?php $nav_activo = 'caja'; include __DIR__ . '/nav.php'; ?>
 
 <div class="page-header">
-  <h1>Caja</h1>
-  <p>Apertura, movimientos y cierre del turno actual</p>
+  <div>
+    <h1>Caja</h1>
+    <p>Apertura, movimientos y cierre del turno</p>
+  </div>
+  <div class="page-header-meta">
+    <a href="/Logos/pos/operaciones.html" target="_blank" class="btn btn-sec" style="text-decoration:none;font-size:10px">
+      Ver operaciones ↗
+    </a>
+    <span style="font-size:11px;color:var(--gris3)">
+      <kbd style="font-size:10px;padding:1px 5px;border:1px solid #ccc;background:#f5f5f5;">X</kbd> Cierre parcial
+      &nbsp;·&nbsp;
+      <kbd style="font-size:10px;padding:1px 5px;border:1px solid #ccc;background:#f5f5f5;">Z</kbd> Cierre diario
+    </span>
+  </div>
 </div>
 
 <div class="contenido">
-<div class="contenido-inner" id="contenido-inner">
-  <div class="card"><p class="form-hint">Cargando...</p></div>
+  <div class="contenido-inner" id="contenido-inner">
+    <div class="card"><div class="card-body"><p class="form-hint">Cargando…</p></div></div>
+  </div>
 </div>
+
+<!-- ═══ Modal de cierre (X y Z) ═════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+  <div class="modal-cierre">
+    <div class="modal-header">
+      <div class="modal-header-txt">
+        <h2 id="modal-titulo">Cierre</h2>
+        <p id="modal-subtitulo"></p>
+      </div>
+      <button class="modal-close" id="modal-close" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body" id="modal-body">
+      <!-- columna izquierda: totales del sistema -->
+      <div class="modal-col" id="modal-col-izq">
+        <p class="form-hint">Cargando…</p>
+      </div>
+      <div class="modal-divider"></div>
+      <!-- columna derecha: arqueo -->
+      <div class="modal-col" id="modal-col-der"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" id="modal-btn-cancelar">Cancelar</button>
+      <button class="btn btn-ok" id="modal-btn-confirmar" disabled>Confirmar</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -95,53 +283,68 @@ function toast(msg, tipo = '') {
   toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
 }
 function fmt(n) {
-  return '$' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '$ ' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtDt(s) {
+  return new Date(s).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' });
+}
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 }
 
 const cajaId = window.LOGOS_SESION?.caja_id ?? null;
-let estadoActual  = null; // datos del turno actual / sugerencia
+let turnoActualId    = null;
+let modalTipo        = null;
+let periodoData      = null;
+let terminalesPostnet = [];
 
+// ── Carga inicial ──────────────────────────────────────────
 async function cargar() {
   if (!cajaId) {
-    $('contenido-inner').innerHTML = '<div class="card"><p class="form-hint">No hay una caja activa en la sesión.</p></div>';
+    $('contenido-inner').innerHTML = '<div class="card"><div class="card-body"><p class="form-hint">No hay una caja activa en la sesión.</p></div></div>';
     return;
   }
-  const res = await fetch(`${API}/caja-turnos/actual?caja_id=${cajaId}`);
-  const data = await res.json();
-  estadoActual = data;
+  try {
+    const rc  = await fetch(`${API}/configuracion`);
+    const cfg = await rc.json();
+    terminalesPostnet = Array.isArray(cfg.posnet_terminales) ? cfg.posnet_terminales : [];
+  } catch (_) { terminalesPostnet = []; }
 
-  if (data.no_aplica) {
-    renderNoAplica();
-  } else if (!data.turno) {
-    renderApertura(data.fondo_sugerido || 0);
-  } else {
-    renderTurnoAbierto(data);
-  }
+  const res  = await fetch(`${API}/caja-turnos/actual?caja_id=${cajaId}`);
+  const data = await res.json();
+
+  if (data.no_aplica)  { renderNoAplica(); }
+  else if (!data.turno){ renderApertura(data.fondo_sugerido || 0); }
+  else { turnoActualId = data.turno.id; renderTurnoAbierto(data); }
 }
 
 function renderNoAplica() {
+  $('contenido-inner').className = 'contenido-inner solo';
   $('contenido-inner').innerHTML = `
-    <div class="card">
-      <div class="no-aplica">Esta caja (<strong>${esc(window.LOGOS_SESION?.caja_nombre || '')}</strong>) no maneja apertura ni cierre de turno.</div>
-    </div>`;
+    <div class="card"><div class="card-body">
+      <p class="no-aplica">Esta caja (<strong>${esc(window.LOGOS_SESION?.caja_nombre || '')}</strong>) no maneja apertura ni cierre de turno.</p>
+    </div></div>`;
 }
 
 function renderApertura(fondoSugerido) {
+  turnoActualId = null;
+  $('contenido-inner').className = 'contenido-inner solo';
   $('contenido-inner').innerHTML = `
     <div class="card">
-      <div class="card-titulo">
-        Abrir caja — ${esc(window.LOGOS_SESION?.caja_nombre || '')}
+      <div class="card-header">
+        <h2>Apertura de caja — ${esc(window.LOGOS_SESION?.caja_nombre || '')}</h2>
         <span class="estado-pill cerrado"><span class="dot"></span>Sin turno abierto</span>
       </div>
-      <div class="form-grid">
-        <div class="form-group full">
+      <div class="card-body">
+        <div class="form-group">
           <label class="form-label">Fondo inicial</label>
-          <input class="form-input" id="ap-fondo" type="number" min="0" step="0.01" value="${Number(fondoSugerido).toFixed(2)}">
-          <span class="form-hint">Sugerido a partir del efectivo contado en el último cierre de esta caja.</span>
+          <input class="form-input" id="ap-fondo" type="number" min="0" step="0.01" value="${Number(fondoSugerido).toFixed(2)}" style="width:200px">
+          <span class="form-hint" style="margin-top:4px">Sugerido a partir del efectivo contado en el último cierre.</span>
         </div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-ok" id="ap-btn">Abrir caja</button>
+        <div style="margin-top:16px">
+          <button class="btn btn-ok" id="ap-btn">Abrir caja</button>
+        </div>
       </div>
     </div>`;
   $('ap-btn').addEventListener('click', abrirCaja);
@@ -150,7 +353,6 @@ function renderApertura(fondoSugerido) {
 async function abrirCaja() {
   const fondo_inicial = parseFloat($('ap-fondo').value);
   if (isNaN(fondo_inicial) || fondo_inicial < 0) { toast('Fondo inicial inválido', 'err'); return; }
-
   $('ap-btn').disabled = true;
   const res = await fetch(`${API}/caja-turnos`, {
     method: 'POST',
@@ -159,94 +361,609 @@ async function abrirCaja() {
   });
   const data = await res.json();
   if (!res.ok) { toast(data.error || 'Error al abrir la caja', 'err'); $('ap-btn').disabled = false; return; }
-
   toast('Caja abierta');
   cargar();
 }
 
-function renderTurnoAbierto(data) {
-  const t = data.turno;
-  const esperado = Number(t.fondo_inicial) + data.total_efectivo;
+function cnt(n) { return n > 0 ? `<span style="font-size:10px;color:var(--gris3);font-weight:400;margin-left:4px">(${n} op.)</span>` : ''; }
 
-  $('contenido-inner').innerHTML = `
-    <div class="card">
-      <div class="card-titulo">
-        Turno actual — ${esc(window.LOGOS_SESION?.caja_nombre || '')}
-        <span class="estado-pill abierto"><span class="dot"></span>Abierto</span>
-      </div>
-      <p class="form-hint" style="margin-bottom:16px;">Abierto por ${esc(t.usuario_nombre)} el ${new Date(t.abierto_en).toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' })} · Fondo inicial ${fmt(t.fondo_inicial)}</p>
-      <div class="totales-grid">
-        <div class="total-box"><div class="lbl">Efectivo</div><div class="val">${fmt(data.total_efectivo)}</div></div>
-        <div class="total-box"><div class="lbl">Tarjeta</div><div class="val">${fmt(data.total_tarjeta)}</div></div>
-        <div class="total-box"><div class="lbl">Transferencia</div><div class="val">${fmt(data.total_transferencia)}</div></div>
-        <div class="total-box"><div class="lbl">Cheque</div><div class="val">${fmt(data.total_cheque)}</div></div>
-        <div class="total-box"><div class="lbl">Cuenta corriente</div><div class="val">${fmt(data.total_cc)}</div></div>
-        <div class="total-box destacado"><div class="lbl">Efectivo esperado</div><div class="val">${fmt(esperado)}</div></div>
-      </div>
-    </div>
+// ── Visualizaciones del turno ──────────────────────────────
+const MEDIOS_COBRO = [
+  { k: 'efectivo',      lbl: 'Efectivo',      color: '#15803D' },
+  { k: 'tarjeta',       lbl: 'Tarjeta',       color: '#2563EB' },
+  { k: 'transferencia', lbl: 'Transferencia', color: '#7C3AED' },
+  { k: 'mercado_pago',  lbl: 'Mercado Pago',  color: '#0891B2' },
+  { k: 'cheque',        lbl: 'Cheque',        color: '#B45309' },
+  { k: 'cc',            lbl: 'Cta. Cte.',     color: '#9B9590' },
+];
 
-    <div class="card">
-      <div class="card-titulo">Cerrar caja</div>
-      <div class="form-grid">
-        <div class="form-group full">
-          <label class="form-label">Efectivo contado</label>
-          <input class="form-input" id="cierre-contado" type="number" min="0" step="0.01">
+function pct(v, total) { return (v / total * 100).toFixed(1).replace('.', ',') + ' %'; }
+
+function fmtCompacto(n) {
+  n = Number(n || 0);
+  if (n >= 1000000) return (n / 1000000).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + 'M';
+  if (n >= 1000)    return (n / 1000).toLocaleString('es-AR', { maximumFractionDigits: 1 }) + 'k';
+  return String(Math.round(n));
+}
+
+function statsStripHTML(data, t, totalVentas) {
+  const ops    = Number(data.count_total || 0);
+  const ticket = ops > 0 ? totalVentas / ops : 0;
+  const ahora  = new Date();
+
+  const durMin = Math.max(0, Math.floor((ahora - new Date(t.abierto_en)) / 60000));
+  const dur    = Math.floor(durMin / 60) + ' h ' + String(durMin % 60).padStart(2, '0') + ' m';
+  const desde  = new Date(t.abierto_en).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+  let ultimaVal = '—', ultimaSub = 'sin ventas aún';
+  if (data.ultima_venta) {
+    const uv   = new Date(data.ultima_venta);
+    const hace = Math.max(0, Math.round((ahora - uv) / 60000));
+    ultimaVal = uv.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    ultimaSub = hace < 1 ? 'recién' : hace < 60 ? `hace ${hace} min` : `hace ${Math.floor(hace / 60)} h ${hace % 60} m`;
+  }
+
+  const nDev = Number(data.count_devoluciones || 0);
+  return `
+    <div class="stats-strip">
+      <div class="stat">
+        <div class="stat-lbl">Operaciones</div>
+        <div class="stat-val">${ops}</div>
+        <div class="stat-sub">${nDev > 0 ? nDev + (nDev > 1 ? ' devoluciones' : ' devolución') : 'sin devoluciones'}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Ticket promedio</div>
+        <div class="stat-val">${fmt(ticket)}</div>
+        <div class="stat-sub">sobre lo vendido</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Última venta</div>
+        <div class="stat-val">${ultimaVal}</div>
+        <div class="stat-sub">${ultimaSub}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-lbl">Turno abierto</div>
+        <div class="stat-val">${dur}</div>
+        <div class="stat-sub">desde las ${desde}</div>
+      </div>
+    </div>`;
+}
+
+function mediosCobroHTML(data) {
+  // Ventas puras (sin ingresos/retiros/transferencias de caja): cómo pagaron los clientes
+  const items = MEDIOS_COBRO
+    .map(m => ({ ...m, val: Number(data['ventas_' + m.k] || 0), cnt: Number(data['count_' + m.k] || 0) }))
+    .filter(m => m.val > 0.009);
+  const total = items.reduce((s, m) => s + m.val, 0);
+  if (!items.length || total <= 0) {
+    return '<div class="chart-vacio">Todavía no hay cobros registrados en este turno.</div>';
+  }
+
+  const R = 62, C = 2 * Math.PI * R;
+  const gap = items.length > 1 ? 2.5 : 0;
+  let off = 0;
+  const segs = items.map(m => {
+    const len = m.val / total * C;
+    const seg = `<circle cx="90" cy="90" r="${R}" fill="none" stroke="${m.color}" stroke-width="30"
+      stroke-dasharray="${Math.max(len - gap, 1).toFixed(2)} ${C.toFixed(2)}"
+      stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 90 90)">
+      <title>${m.lbl}: ${fmt(m.val)} (${pct(m.val, total)})</title></circle>`;
+    off += len;
+    return seg;
+  }).join('');
+
+  const leyenda = items.map(m => `
+    <div class="ledger-row">
+      <span class="ledger-lbl"><span class="swatch" style="background:${m.color}"></span>${m.lbl}${cnt(m.cnt)}</span>
+      <span class="ledger-fill"></span>
+      <span class="ledger-val">${fmt(m.val)}</span>
+      <span class="leyenda-pct">${pct(m.val, total)}</span>
+    </div>`).join('');
+
+  return `
+    <div class="mix-grid">
+      <svg width="180" height="180" viewBox="0 0 180 180" role="img" aria-label="Distribución de medios de cobro">${segs}</svg>
+      <div class="ledger mix-leyenda">
+        ${leyenda}
+        <div class="ledger-row bold sep">
+          <span class="ledger-lbl">Total vendido</span>
+          <span class="ledger-fill"></span>
+          <span class="ledger-val">${fmt(total)}</span>
+          <span class="leyenda-pct">100 %</span>
         </div>
       </div>
-      <div class="diferencia-box" id="diferencia-box" style="display:none;">
-        <div class="lbl form-label">Diferencia</div>
-        <div class="val" id="diferencia-val"></div>
+    </div>`;
+}
+
+function ventasPorHoraHTML(data, t) {
+  const map = {};
+  (data.ventas_por_hora || []).forEach(h => { map[h.hora] = h; });
+  const pad2 = n => String(n).padStart(2, '0');
+
+  const desde = new Date(t.abierto_en);
+  if (isNaN(desde)) return '';
+  desde.setMinutes(0, 0, 0);
+  const ahora = new Date();
+
+  // Si el turno lleva más de 24 h abierto, mostrar la ventana de las últimas 24 horas
+  const ventana = new Date(ahora);
+  ventana.setMinutes(0, 0, 0);
+  ventana.setHours(ventana.getHours() - 23);
+  const inicio = desde > ventana ? desde : ventana;
+
+  const cols = [];
+  for (let d = new Date(inicio); d <= ahora && cols.length < 24; d.setHours(d.getHours() + 1)) {
+    const key = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + ' ' + pad2(d.getHours());
+    const h = map[key];
+    cols.push({ lbl: pad2(d.getHours()), total: Number(h?.total || 0), cnt: Number(h?.cnt || 0) });
+  }
+
+  const max = Math.max(...cols.map(c => c.total), 0);
+  if (max <= 0) {
+    return Object.keys(map).length
+      ? '<div class="chart-vacio">Sin ventas en las últimas 24 horas.</div>'
+      : '<div class="chart-vacio">Sin ventas registradas en el turno todavía.</div>';
+  }
+
+  const barras = cols.map(c => {
+    const alto = c.total > 0 ? Math.max(4, Math.round(c.total / max * 100)) : 0;
+    return `<div class="hora-col" title="${c.lbl}:00 — ${c.cnt} op. · ${fmt(c.total)}">
+      ${c.total > 0 ? `<span class="hora-val">${fmtCompacto(c.total)}</span>` : ''}
+      <div class="hora-bar${c.total > 0 ? '' : ' vacia'}" style="height:${alto}%"></div>
+      <span class="hora-lbl">${c.lbl}</span>
+    </div>`;
+  }).join('');
+
+  return `<div class="horas-chart">${barras}</div>`;
+}
+
+function renderTurnoAbierto(data) {
+  const t = data.turno;
+  const cierres = data.cierres_parciales || [];
+  const totalRecaudado = Number(data.total_efectivo) + Number(data.total_tarjeta) +
+    Number(data.total_transferencia) + Number(data.total_cheque) + Number(data.total_mercado_pago) +
+    Number(data.total_cc);
+  const totalVentas = MEDIOS_COBRO.reduce((s, m) => s + Number(data['ventas_' + m.k] || 0), 0);
+  const efectivoEsperado = Number(t.fondo_inicial) + Number(data.total_efectivo);
+
+  let cierresHtml = '';
+  if (cierres.length) {
+    const filas = cierres.map(c => {
+      const dif = Number(c.diferencia_efectivo);
+      const difCls = dif < -0.01 ? 'negativo' : dif > 0.01 ? 'positivo' : '';
+      return `<tr>
+        <td>${fmtDt(c.registrado_en)}</td>
+        <td><span class="badge-parcial">Parcial</span></td>
+        <td>${esc(c.usuario_nombre || '—')}</td>
+        <td class="r">${fmt(c.total_efectivo)}</td>
+        <td class="r">${fmt(c.total_tarjeta)}</td>
+        <td class="r">${fmt(c.total_mercado_pago)}</td>
+        <td class="r" style="font-weight:700;${difCls === 'negativo' ? 'color:var(--rojo)' : difCls === 'positivo' ? 'color:#15803D' : ''}">
+          ${dif >= 0 ? '+' : ''}${fmt(dif)}
+        </td>
+      </tr>`;
+    }).join('');
+    cierresHtml = `
+      <div class="card">
+        <div class="card-header"><h2>Cierres parciales del turno</h2></div>
+        <div style="overflow-x:auto">
+          <table class="hist-tabla">
+            <thead><tr>
+              <th>Fecha / Hora</th><th>Tipo</th><th>Cajero</th>
+              <th class="r">Efectivo</th><th class="r">Tarjeta</th><th class="r">Mercado Pago</th><th class="r">Diferencia</th>
+            </tr></thead>
+            <tbody>${filas}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+
+  $('contenido-inner').className = 'contenido-inner layout-turno';
+  $('contenido-inner').innerHTML = `
+    <div class="layout-col">
+    <div class="card">
+      <div class="card-header">
+        <h2>Turno actual — ${esc(window.LOGOS_SESION?.caja_nombre || '')}</h2>
+        <span class="estado-pill abierto"><span class="dot"></span>Abierto</span>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-ok" id="cierre-btn">Cerrar caja</button>
+      <div class="card-body">
+        <p class="form-hint" style="margin-bottom:16px">
+          Abierto por <strong>${esc(t.usuario_nombre)}</strong> · ${fmtDt(t.abierto_en)}
+        </p>
+        <div>
+          <div class="ledger">
+            <div class="ledger-row">
+              <span class="ledger-lbl">Fondo inicial</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val">${fmt(t.fondo_inicial)}</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-lbl">Efectivo${cnt(data.count_efectivo)}</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val">${fmt(data.total_efectivo)}</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-lbl">Tarjeta${cnt(data.count_tarjeta)}</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val">${fmt(data.total_tarjeta)}</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-lbl">Transferencia${cnt(data.count_transferencia)}</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val">${fmt(data.total_transferencia)}</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-lbl">Cheque${cnt(data.count_cheque)}</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val">${fmt(data.total_cheque)}</span>
+            </div>
+            <div class="ledger-row">
+              <span class="ledger-lbl">Mercado Pago${cnt(data.count_mercado_pago)}</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val">${fmt(data.total_mercado_pago)}</span>
+            </div>
+            ${data.total_cc > 0 ? `<div class="ledger-row">
+              <span class="ledger-lbl">Cta. Cte.${cnt(data.count_cc)}</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val">${fmt(data.total_cc)}</span>
+            </div>` : ''}
+            ${data.count_mixto > 0 ? `<div class="ledger-row">
+              <span class="ledger-lbl">Pago mixto${cnt(data.count_mixto)}</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val" style="color:var(--gris3);font-size:11px">desglosado arriba</span>
+            </div>` : ''}
+            ${data.total_ingresos > 0 ? `<div class="ledger-row" style="color:#15803D">
+              <span class="ledger-lbl" style="color:#15803D">+ Ingresos de caja</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val" style="color:#15803D">+${fmt(data.total_ingresos)}</span>
+            </div>` : ''}
+            ${data.total_retiros > 0 ? `<div class="ledger-row" style="color:var(--rojo)">
+              <span class="ledger-lbl" style="color:var(--rojo)">− Retiros de caja</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val" style="color:var(--rojo)">-${fmt(data.total_retiros)}</span>
+            </div>` : ''}
+            ${data.count_devoluciones > 0 ? `<div class="ledger-row" style="color:var(--rojo)">
+              <span class="ledger-lbl" style="color:var(--rojo)">Devoluciones${cnt(data.count_devoluciones)}</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val" style="color:var(--rojo)">-${fmt(data.total_devoluciones)}</span>
+            </div>` : ''}
+            <div class="ledger-row bold sep">
+              <span class="ledger-lbl">Total recaudado</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val">${fmt(totalRecaudado)}</span>
+            </div>
+            <div class="ledger-row accent" style="margin-top:6px">
+              <span class="ledger-lbl" style="color:var(--azul);font-weight:600">Efectivo esperado en caja</span>
+              <span class="ledger-fill"></span>
+              <span class="ledger-val" style="color:var(--azul)">${fmt(efectivoEsperado)}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  `;
 
-  $('cierre-contado').addEventListener('input', () => actualizarDiferencia(esperado));
-  $('cierre-btn').addEventListener('click', () => cerrarCaja(t.id));
+    <div class="acciones">
+      <button class="accion-btn" id="btn-x">
+        <span class="kbd">X</span>
+        <div class="accion-lbl">
+          <strong>Cierre Parcial</strong>
+          <span>Cambio de cajero — la caja sigue abierta</span>
+        </div>
+      </button>
+      <button class="accion-btn danger" id="btn-z">
+        <span class="kbd">Z</span>
+        <div class="accion-lbl">
+          <strong>Cierre Diario</strong>
+          <span>Cierra el turno definitivamente</span>
+        </div>
+      </button>
+    </div>
+    </div>
+
+    <div class="layout-col">
+      ${statsStripHTML(data, t, totalVentas)}
+      <div class="card">
+        <div class="card-header"><h2>Medios de cobro del turno</h2></div>
+        <div class="card-body">${mediosCobroHTML(data)}</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h2>Ventas por hora</h2></div>
+        <div class="card-body" style="padding-top:6px">${ventasPorHoraHTML(data, t)}</div>
+      </div>
+    </div>
+
+    ${cierresHtml ? `<div class="layout-full">${cierresHtml}</div>` : ''}`;
+
+  $('btn-x').addEventListener('click', () => abrirModal('parcial'));
+  $('btn-z').addEventListener('click', () => abrirModal('total'));
 }
 
-function actualizarDiferencia(esperado) {
-  const contado = parseFloat($('cierre-contado').value);
-  const box = $('diferencia-box');
-  if (isNaN(contado)) { box.style.display = 'none'; return; }
-  const dif = contado - esperado;
-  box.style.display = 'block';
-  box.className = 'diferencia-box ' + (Math.abs(dif) < 0.01 ? 'ok' : (dif < 0 ? 'falta' : 'sobra'));
-  $('diferencia-val').textContent = (dif >= 0 ? '+' : '') + fmt(dif) + (Math.abs(dif) < 0.01 ? ' (sin diferencia)' : (dif < 0 ? ' (falta)' : ' (sobra)'));
+// ── Modal de cierre ────────────────────────────────────────
+async function abrirModal(tipo) {
+  modalTipo   = tipo;
+  periodoData = null;
+
+  $('modal-titulo').textContent = tipo === 'parcial' ? 'Cierre Parcial (X)' : 'Cierre Diario (Z)';
+  $('modal-subtitulo').textContent = tipo === 'parcial'
+    ? 'Corte de turno. La caja continúa abierta.'
+    : 'Cierre definitivo del turno. No se podrán registrar ventas hasta nueva apertura.';
+  $('modal-col-izq').innerHTML = '<p class="form-hint">Cargando…</p>';
+  $('modal-col-der').innerHTML = '';
+  $('modal-btn-confirmar').disabled = true;
+  $('modal-btn-confirmar').textContent = tipo === 'parcial' ? 'Confirmar cierre parcial' : 'Confirmar cierre diario';
+  $('modal-overlay').classList.add('visible');
+
+  const url = tipo === 'parcial'
+    ? `${API}/caja-turnos/${turnoActualId}/periodo`
+    : `${API}/caja-turnos/actual?caja_id=${cajaId}`;
+
+  try {
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    if (tipo === 'total') {
+      const t = data.turno;
+      periodoData = {
+        turno_id:            t.id,
+        periodo_desde:       t.abierto_en,
+        fondo_periodo:       Number(t.fondo_inicial),
+        efectivo_esperado:   Number(t.fondo_inicial) + Number(data.total_efectivo),
+        total_efectivo:      data.total_efectivo,
+        total_tarjeta:       data.total_tarjeta,
+        total_transferencia: data.total_transferencia,
+        total_cheque:        data.total_cheque,
+        total_mercado_pago:  data.total_mercado_pago,
+        total_cc:            data.total_cc,
+        total_ingresos:      data.total_ingresos,
+        total_retiros:       data.total_retiros,
+        count_efectivo:      data.count_efectivo,
+        count_tarjeta:       data.count_tarjeta,
+        count_transferencia: data.count_transferencia,
+        count_cheque:        data.count_cheque,
+        count_mercado_pago:  data.count_mercado_pago,
+        count_cc:            data.count_cc,
+        count_mixto:         data.count_mixto,
+        count_total:         data.count_total,
+        count_devoluciones:  data.count_devoluciones,
+        total_devoluciones:  data.total_devoluciones,
+      };
+    } else {
+      periodoData = data;
+    }
+
+    renderModalCols();
+    $('modal-btn-confirmar').disabled = false;
+  } catch (_) {
+    $('modal-col-izq').innerHTML = '<p class="form-hint" style="color:var(--rojo)">Error al cargar los totales. Intentá de nuevo.</p>';
+  }
 }
 
-async function cerrarCaja(turnoId) {
-  const efectivo_contado = parseFloat($('cierre-contado').value);
-  if (isNaN(efectivo_contado) || efectivo_contado < 0) { toast('Efectivo contado inválido', 'err'); return; }
+function mlRow(lbl, val, cls = '') {
+  return `<div class="ml-row ${cls}"><span class="ml-lbl">${lbl}</span><span class="ml-val">${val}</span></div>`;
+}
+function mlCnt(n) { return n > 0 ? ` <span style="font-size:10px;color:var(--gris3);font-weight:400">(${n})</span>` : ''; }
 
-  $('cierre-btn').disabled = true;
-  const res = await fetch(`${API}/caja-turnos/${turnoId}/cerrar`, {
+function renderModalCols() {
+  const d = periodoData;
+  const totalRecaudado = Number(d.total_efectivo) + Number(d.total_tarjeta) +
+    Number(d.total_transferencia) + Number(d.total_cheque) + Number(d.total_mercado_pago) +
+    Number(d.total_cc || 0);
+
+  const movHtml = [
+    Number(d.total_ingresos) > 0
+      ? `<div class="ml-row" style="color:#15803D"><span class="ml-lbl" style="color:#15803D">+ Ingresos de caja</span><span class="ml-val" style="color:#15803D">+${fmt(d.total_ingresos)}</span></div>`
+      : '',
+    Number(d.total_retiros) > 0
+      ? `<div class="ml-row" style="color:var(--rojo)"><span class="ml-lbl" style="color:var(--rojo)">− Retiros de caja</span><span class="ml-val" style="color:var(--rojo)">-${fmt(d.total_retiros)}</span></div>`
+      : '',
+    Number(d.count_devoluciones) > 0
+      ? `<div class="ml-row" style="color:var(--rojo)"><span class="ml-lbl" style="color:var(--rojo)">Devoluciones${mlCnt(d.count_devoluciones)}</span><span class="ml-val" style="color:var(--rojo)">-${fmt(d.total_devoluciones)}</span></div>`
+      : '',
+  ].join('');
+
+  // ── Columna izquierda: totales del sistema ──
+  $('modal-col-izq').innerHTML = `
+    <div>
+      <div class="ms-titulo">Ventas del período</div>
+      <div style="margin-top:10px">
+        ${mlRow('Efectivo' + mlCnt(d.count_efectivo), fmt(d.total_efectivo))}
+        ${mlRow('Tarjeta' + mlCnt(d.count_tarjeta), fmt(d.total_tarjeta))}
+        ${mlRow('Transferencia' + mlCnt(d.count_transferencia), fmt(d.total_transferencia))}
+        ${mlRow('Cheque' + mlCnt(d.count_cheque), fmt(d.total_cheque))}
+        ${mlRow('Mercado Pago' + mlCnt(d.count_mercado_pago), fmt(d.total_mercado_pago))}
+        ${Number(d.total_cc) > 0 ? mlRow('Cta. Cte.' + mlCnt(d.count_cc), fmt(d.total_cc)) : ''}
+        ${Number(d.count_mixto) > 0 ? `<div class="ml-row"><span class="ml-lbl">Pago mixto${mlCnt(d.count_mixto)}</span><span class="ml-val" style="font-size:11px;color:var(--gris3)">desglosado arriba</span></div>` : ''}
+        ${movHtml}
+        ${mlRow('Total recaudado', fmt(totalRecaudado), 'bold sep-top')}
+        <div style="margin-top:4px;padding-top:2px;font-size:10px;color:var(--gris3)">
+          ${Number(d.count_total||0)} operaciones totales
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="ms-titulo">Efectivo en caja</div>
+      <div style="margin-top:10px">
+        ${mlRow('Fondo del período', fmt(d.fondo_periodo))}
+        ${mlRow('Ventas en efectivo', fmt(d.total_efectivo))}
+        ${Number(d.total_ingresos) > 0 ? `<div class="ml-row" style="color:#15803D"><span class="ml-lbl" style="color:#15803D">+ Ingresos</span><span class="ml-val" style="color:#15803D">+${fmt(d.total_ingresos)}</span></div>` : ''}
+        ${Number(d.total_retiros) > 0 ? `<div class="ml-row" style="color:var(--rojo)"><span class="ml-lbl" style="color:var(--rojo)">− Retiros</span><span class="ml-val" style="color:var(--rojo)">-${fmt(d.total_retiros)}</span></div>` : ''}
+        ${mlRow('Efectivo esperado', fmt(d.efectivo_esperado), 'bold sep-top verde')}
+      </div>
+    </div>
+    ${d.periodo_desde ? `<p class="form-hint" style="margin-top:auto">Período desde: ${fmtDt(d.periodo_desde)}</p>` : ''}`;
+
+  // ── Columna derecha: arqueo ──
+  const posnetHtml = terminalesPostnet.length
+    ? terminalesPostnet.map((t, i) => `
+        <div class="posnet-row">
+          <span class="posnet-nombre">${esc(t.nombre || t)}</span>
+          <input class="posnet-input" type="number" min="0" step="0.01" placeholder="0,00"
+            id="posnet-${i}" data-terminal="${esc(t.nombre || t)}" data-idx="${i}">
+        </div>`).join('')
+    : '<p class="form-hint" style="color:var(--gris3)">Sin terminales configuradas.</p>';
+
+  $('modal-col-der').innerHTML = `
+    <div>
+      <div class="ms-titulo">Arqueo de efectivo</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px">
+        <div class="mf-group">
+          <label class="mf-label">Efectivo contado *</label>
+          <input class="mf-input" id="ef-contado" type="number" min="0" step="0.01" placeholder="0,00">
+        </div>
+        <div class="dif-row" id="dif-row" style="display:none">
+          <span class="lbl">Diferencia vs. esperado</span>
+          <span class="val" id="dif-val"></span>
+        </div>
+        <div class="mf-group">
+          <label class="mf-label">Efectivo a dejar en caja (fondo siguiente)</label>
+          <input class="mf-input" id="fondo-sig" type="number" min="0" step="0.01" placeholder="0,00">
+          <span style="font-size:10px;color:var(--gris3);margin-top:3px">Se pre-completa con el total contado. Reducilo si retirás efectivo.</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="ms-titulo">Cierre Mercado Pago</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+        <div class="mf-group">
+          <label class="mf-label">Monto liquidado (del resumen MP)</label>
+          <input class="mf-input" id="mp-contado" type="number" min="0" step="0.01" placeholder="0,00">
+        </div>
+        ${Number(d.total_mercado_pago) > 0 ? `<div style="font-size:11px;color:var(--gris3)">Sistema registra: <strong>${fmt(d.total_mercado_pago)}</strong></div>` : ''}
+      </div>
+    </div>
+    <div>
+      <div class="ms-titulo">Cierre Posnet</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+        ${posnetHtml}
+      </div>
+    </div>
+    <div>
+      <div class="ms-titulo">Otros cobros recibidos</div>
+      <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px">
+        <div class="mf-group">
+          <label class="mf-label">Cheques recibidos</label>
+          <input class="mf-input" id="cheques-rec" type="number" min="0" step="0.01" placeholder="0,00">
+        </div>
+        <div class="mf-group">
+          <label class="mf-label">Depósitos recibidos</label>
+          <input class="mf-input" id="depositos-rec" type="number" min="0" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="ms-titulo">Observaciones</div>
+      <div style="margin-top:10px">
+        <textarea id="obs-cierre" rows="3"
+          style="width:100%;padding:8px 10px;border:1px solid var(--borde);border-radius:0;font-size:12px;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box"
+          placeholder="Notas del cajero, incidentes, diferencias…"></textarea>
+      </div>
+    </div>`;
+
+  $('ef-contado').addEventListener('input', actualizarDiferencia);
+  setTimeout(() => $('ef-contado').focus(), 60);
+}
+
+function actualizarDiferencia() {
+  const contado = parseFloat($('ef-contado').value);
+  const row = $('dif-row');
+  if (isNaN(contado) || !periodoData) { row.style.display = 'none'; return; }
+  const dif = contado - periodoData.efectivo_esperado;
+  row.style.display = 'flex';
+  row.className = 'dif-row ' + (Math.abs(dif) < 0.01 ? 'ok' : dif < 0 ? 'falta' : 'sobra');
+  $('dif-val').textContent = (dif >= 0 ? '+' : '') + fmt(dif) +
+    (Math.abs(dif) < 0.01 ? '' : dif < 0 ? ' (falta)' : ' (sobra)');
+  // Auto-completar fondo siguiente solo si el campo está vacío o igual al valor anterior
+  const fondoEl = $('fondo-sig');
+  if (fondoEl && (fondoEl.value === '' || fondoEl.dataset.autoSet === 'true')) {
+    fondoEl.value = contado.toFixed(2);
+    fondoEl.dataset.autoSet = 'true';
+  }
+}
+
+// Si el usuario edita manualmente el fondo, desactivar el auto-complete
+document.addEventListener('input', e => {
+  if (e.target?.id === 'fondo-sig') {
+    e.target.dataset.autoSet = 'false';
+  }
+});
+
+async function confirmarCierre() {
+  const ef = parseFloat($('ef-contado').value);
+  if (isNaN(ef) || ef < 0) { toast('Ingresá el efectivo contado', 'err'); return; }
+
+  const cheques         = parseFloat($('cheques-rec').value)  || 0;
+  const depositos       = parseFloat($('depositos-rec').value) || 0;
+  const mp_contado      = parseFloat($('mp-contado')?.value)  || null;
+  const fondo_sig_raw   = parseFloat($('fondo-sig')?.value);
+  const fondo_siguiente = !isNaN(fondo_sig_raw) ? fondo_sig_raw : ef;
+  const observaciones   = $('obs-cierre')?.value?.trim() || null;
+
+  const posnet_cierres = terminalesPostnet.map((t, i) => ({
+    nombre: t.nombre || t,
+    monto: parseFloat($(`posnet-${i}`)?.value) || 0,
+  })).filter(p => p.monto > 0);
+
+  const body = {
+    efectivo_contado:     ef,
+    cheques_recibidos:    cheques   || null,
+    depositos_recibidos:  depositos || null,
+    posnet_cierres:       posnet_cierres.length ? posnet_cierres : null,
+    mercado_pago_contado: mp_contado,
+    fondo_siguiente,
+    observaciones,
+  };
+
+  $('modal-btn-confirmar').disabled = true;
+
+  const url = modalTipo === 'parcial'
+    ? `${API}/caja-turnos/${turnoActualId}/cierre-parcial`
+    : `${API}/caja-turnos/${turnoActualId}/cerrar`;
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ efectivo_contado }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
-  if (!res.ok) { toast(data.error || 'Error al cerrar la caja', 'err'); $('cierre-btn').disabled = false; return; }
 
-  toast('Caja cerrada');
+  if (!res.ok) {
+    toast(data.error || 'Error al registrar el cierre', 'err');
+    $('modal-btn-confirmar').disabled = false;
+    return;
+  }
+
+  cerrarModal();
+  toast(modalTipo === 'parcial' ? 'Cierre parcial registrado' : 'Caja cerrada');
   cargar();
 }
 
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c =>
-    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+function cerrarModal() {
+  $('modal-overlay').classList.remove('visible');
+  modalTipo   = null;
+  periodoData = null;
 }
 
-function actualizarFecha() {
-  const f = $('fecha-hora');
-  if (f) f.textContent = new Date().toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' });
-}
-actualizarFecha();
-setInterval(actualizarFecha, 30000);
+// ── Eventos ──────────────────────────────────────────────
+$('modal-close').addEventListener('click',         cerrarModal);
+$('modal-btn-cancelar').addEventListener('click',  cerrarModal);
+$('modal-btn-confirmar').addEventListener('click', confirmarCierre);
+$('modal-overlay').addEventListener('click', e => { if (e.target === $('modal-overlay')) cerrarModal(); });
+
+document.addEventListener('keydown', e => {
+  const tag          = document.activeElement?.tagName;
+  const modalVisible = $('modal-overlay').classList.contains('visible');
+  if (!modalVisible && (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT')) return;
+  if (modalVisible) { if (e.key === 'Escape') cerrarModal(); return; }
+  if ((e.key === 'x' || e.key === 'X') && turnoActualId) { e.preventDefault(); abrirModal('parcial'); }
+  if ((e.key === 'z' || e.key === 'Z') && turnoActualId) { e.preventDefault(); abrirModal('total'); }
+});
 
 cargar();
+
+// Refresco periódico del tablero (solo con turno abierto y sin el modal en uso)
+setInterval(() => {
+  if (turnoActualId && !$('modal-overlay').classList.contains('visible')) cargar();
+}, 60000);
 </script>
 </body>
 </html>

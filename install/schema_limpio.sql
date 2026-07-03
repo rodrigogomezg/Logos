@@ -333,6 +333,7 @@ CREATE TABLE IF NOT EXISTS `venta_pagos` (
 CREATE TABLE IF NOT EXISTS `ventas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fecha` date NOT NULL,
+  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
   `cliente_id` int(11) DEFAULT NULL,
   `vendedor_id` int(11) DEFAULT NULL,
   `total` decimal(14,4) NOT NULL DEFAULT 0.0000,

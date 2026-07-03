@@ -42,7 +42,31 @@ window.LOGOS_aplicarTema = function (key) {
   }
   window.LOGOS_SESION = sesion;
 
+  function mostrarSinConexion() {
+    function pintar() {
+      if (document.getElementById('logos-sin-conexion')) return;
+      var overlay = document.createElement('div');
+      overlay.id = 'logos-sin-conexion';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#1A1A1A;display:flex;align-items:center;justify-content:center;';
+      overlay.innerHTML =
+        '<div style="max-width:420px;text-align:center;color:rgba(255,255,255,.9);font-family:inherit;display:flex;flex-direction:column;gap:16px;align-items:center;padding:24px;">' +
+          '<div style="font-size:40px;">🔌</div>' +
+          '<div style="font-size:20px;font-weight:700;">No se pudo conectar a la base de datos</div>' +
+          '<div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.5;">El sistema ya está instalado, pero el servidor de base de datos no responde.<br>Abrí el <b>Panel de Control de XAMPP</b> y presioná <b>Start</b> en <b>MySQL</b>.</div>' +
+          '<button id="logos-reintentar" style="background:var(--azul,#2563eb);color:white;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:600;cursor:pointer;">Reintentar</button>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      document.getElementById('logos-reintentar').addEventListener('click', function () { location.reload(); });
+    }
+    if (document.body) pintar();
+    else document.addEventListener('DOMContentLoaded', pintar);
+  }
+
   fetch('/Logos/api/instalacion/estado').then(function (r) { return r.json(); }).then(function (estado) {
+    if (estado.sin_conexion) {
+      mostrarSinConexion();
+      return;
+    }
     if (estado.requiere_conexion || estado.requiere_schema || estado.requiere_admin ||
         estado.requiere_negocio || estado.requiere_caja) {
       location.href = '/Logos/pos/instalar.html';

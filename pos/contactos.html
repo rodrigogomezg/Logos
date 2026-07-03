@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contactos — Logos</title>
+<link rel="stylesheet" href="/Logos/pos/pos-base.css">
+<style>
+/* ── layout ─────────────────────────────────────────────── */
+.page-body { flex:1; display:flex; flex-direction:column; overflow:hidden; padding:16px; gap:12px; }
+
+/* ── toolbar ─────────────────────────────────────────────── */
+.toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.toolbar .tab-grupo { display:flex; border:1px solid var(--borde); overflow:hidden; }
+.tab-tipo { padding:7px 18px; background:#fff; border:none; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; cursor:pointer; color:var(--gris3); font-family:inherit; }
+.tab-tipo.activo { background:var(--azul); color:#fff; }
+.toolbar-sep { width:1px; background:var(--borde); height:30px; margin:0 4px; }
+.busqueda { flex:1; min-width:180px; max-width:360px; padding:7px 11px; border:1px solid var(--borde); border-radius:0; font-size:13px; font-family:inherit; outline:none; }
+.busqueda:focus { border-color:var(--texto); }
+.filtro-activo { padding:7px 12px; border:1px solid var(--borde); border-radius:0; font-size:11px; font-family:inherit; outline:none; background:#fff; cursor:pointer; }
+
+/* ── card/table ─────────────────────────────────────────── */
+.card { background:#fff; border:1px solid var(--borde); border-radius:0; flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.tabla-wrap { flex:1; overflow:auto; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+thead th { position:sticky; top:0; background:var(--gris1); padding:9px 12px; text-align:left; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--gris3); border-bottom:1px solid var(--borde); white-space:nowrap; }
+tbody tr { border-bottom:1px solid var(--borde); cursor:pointer; }
+tbody tr:hover { background:var(--gris1); }
+tbody tr.inactivo { opacity:.5; }
+tbody td { padding:9px 12px; vertical-align:middle; }
+.badge { display:inline-block; padding:2px 7px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+.badge-verde { background:#dcfce7; color:#15803d; }
+.badge-gris  { background:#f1f5f9; color:#64748b; }
+.badge-azul  { background:#dbeafe; color:#1d4ed8; }
+
+/* ── pagination ─────────────────────────────────────────── */
+.pagination { display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:10px 14px; border-top:1px solid var(--borde); background:var(--gris1); font-size:12px; color:var(--gris3); }
+.pagination button { padding:4px 10px; border:1px solid var(--borde); background:#fff; font-size:11px; cursor:pointer; font-family:inherit; border-radius:0; }
+.pagination button:disabled { opacity:.4; cursor:default; }
+.pagination button.activo { background:var(--azul); color:#fff; border-color:var(--azul); }
+
+/* ── btn strip ───────────────────────────────────────────── */
+.btn { padding:7px 16px; border:1.5px solid transparent; border-radius:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; cursor:pointer; font-family:inherit; }
+.btn-ok  { background:var(--azul); color:#fff; border-color:var(--azul); }
+.btn-sec { background:#fff; color:var(--texto); border-color:#888; }
+
+/* ── empty/loading ───────────────────────────────────────── */
+.estado-tabla { text-align:center; padding:48px 20px; color:var(--gris3); font-size:13px; }
+
+/* ── import modal ────────────────────────────────────────── */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:200; }
+.modal-overlay.oculto { display:none; }
+.modal { background:#fff; border:1px solid var(--borde); width:620px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; border-radius:0; }
+.modal-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--borde); background:var(--gris1); }
+.modal-header h3 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--gris3); margin:0; }
+.modal-header button { background:none; border:none; cursor:pointer; color:var(--gris3); font-size:18px; line-height:1; padding:2px 6px; }
+.modal-header button:hover { color:var(--texto); }
+.modal-body { overflow-y:auto; padding:20px; flex:1; }
+.modal-footer { padding:14px 20px; border-top:1px solid var(--borde); display:flex; gap:8px; justify-content:flex-end; }
+.drop-zone { border:2px dashed var(--borde); padding:32px; text-align:center; cursor:pointer; font-size:13px; color:var(--gris3); }
+.drop-zone.drag-over { border-color:var(--azul); background:#eff6ff; }
+.import-result { font-size:13px; line-height:1.7; }
+.import-result .ok  { color:var(--verde); }
+.import-result .err { color:var(--rojo); }
+.errores-lista { max-height:120px; overflow-y:auto; background:var(--gris1); padding:8px 10px; font-size:12px; color:var(--rojo); border:1px solid var(--borde); margin-top:6px; }
+</style>
+</head>
+<body>
+<?php $nav_activo = 'contactos'; require __DIR__ . '/nav.php'; ?>
+
+<main class="page-body">
+  <!-- toolbar -->
+  <div class="toolbar">
+    <div class="tab-grupo">
+      <button class="tab-tipo activo" data-tipo="clientes">Clientes</button>
+      <button class="tab-tipo" data-tipo="proveedores">Proveedores</button>
+    </div>
+    <div class="toolbar-sep"></div>
+    <input type="search" class="busqueda" id="buscador" placeholder="Buscar por nombre, CUIT o email…">
+    <select class="filtro-activo" id="filtro-activo">
+      <option value="">Todos</option>
+      <option value="1" selected>Activos</option>
+      <option value="0">Inactivos</option>
+    </select>
+    <div class="nav-spacer" style="flex:1"></div>
+    <button class="btn btn-sec" id="btn-importar" style="display:none">Importar CSV</button>
+    <button class="btn btn-ok" id="btn-nuevo">+ Nuevo</button>
+  </div>
+
+  <!-- tabla -->
+  <div class="card">
+    <div class="tabla-wrap">
+      <table id="tabla-contactos">
+        <thead id="thead-contactos"></thead>
+        <tbody id="tbody-contactos"><tr><td colspan="99" class="estado-tabla">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="pagination" id="paginacion"></div>
+  </div>
+</main>
+
+<!-- ═══ Modal Importar CSV ════════════════════════════════════════ -->
+<div class="modal-overlay oculto" id="modal-import">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Importar clientes — CSV</h3>
+      <button id="import-cerrar">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--gris3);margin:0 0 14px">
+        Subí un archivo CSV con los datos. Si un cliente ya existe (mismo CUIT) se actualizan sus datos.
+        <a href="#" id="link-plantilla" style="color:var(--azul)">Descargar plantilla</a>.
+      </p>
+      <div class="drop-zone" id="drop-zone">
+        <div>Arrastrá el archivo aquí o hacé click para seleccionar</div>
+        <input type="file" id="input-csv" accept=".csv,text/csv" style="display:none">
+      </div>
+      <div id="import-nombre" style="font-size:12px;color:var(--gris3);margin-top:8px;display:none"></div>
+      <div id="import-result" class="import-result" style="margin-top:14px;display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" id="import-cancelar">Cancelar</button>
+      <button class="btn btn-ok" id="btn-subir" disabled>Subir e importar</button>
+    </div>
+  </div>
+</div>
+
+<?php include __DIR__ . '/contacto-modal.php'; ?>
+
+<script>
+'use strict';
+
+/* ─── estado ─────────────────────────────────────────────── */
+let tipo    = 'clientes';
+let pagina  = 1;
+let total   = 0;
+let paginas = 1;
+const POR_PAGINA = 50;
+let debounceTimer;
+let csvFile = null;
+
+/* ─── DOM refs ───────────────────────────────────────────── */
+const $ = id => document.getElementById(id);
+const thead = $('thead-contactos');
+const tbody = $('tbody-contactos');
+const pag   = $('paginacion');
+
+/* ─── iniciar ────────────────────────────────────────────── */
+document.querySelectorAll('.tab-tipo').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-tipo').forEach(b => b.classList.remove('activo'));
+    btn.classList.add('activo');
+    tipo   = btn.dataset.tipo;
+    pagina = 1;
+    $('btn-importar').style.display = tipo === 'clientes' ? '' : 'none';
+    renderCabecera();
+    cargar();
+  });
+});
+
+$('buscador').addEventListener('input', () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => { pagina = 1; cargar(); }, 280);
+});
+
+$('filtro-activo').addEventListener('change', () => { pagina = 1; cargar(); });
+
+$('btn-nuevo').addEventListener('click', () =>
+  ContactoModal.nuevo(tipo, { onGuardado: () => cargar() })
+);
+$('btn-importar').addEventListener('click', abrirImport);
+
+/* ─── cabecera tabla ─────────────────────────────────────── */
+function renderCabecera() {
+  const comunes = '<th>Nombre</th><th>CUIT</th><th>Condición IVA</th><th>Teléfono</th><th>CC</th><th>Límite CC</th><th>Lista</th>';
+  if (tipo === 'clientes') {
+    thead.innerHTML = '<tr>' + comunes + '<th>Dto extra</th><th>Estado</th></tr>';
+  } else {
+    thead.innerHTML = '<tr>' + comunes + '<th>Plazo pago</th><th>Estado</th></tr>';
+  }
+}
+
+/* ─── cargar datos ───────────────────────────────────────── */
+async function cargar() {
+  tbody.innerHTML = '<tr><td colspan="99" class="estado-tabla">Cargando…</td></tr>';
+  pag.innerHTML = '';
+
+  const q      = $('buscador').value.trim();
+  const activo = $('filtro-activo').value;
+  let url = `/Logos/api/${tipo}?page=${pagina}&per_page=${POR_PAGINA}`;
+  if (q)           url += `&q=${encodeURIComponent(q)}`;
+  if (activo !== '') url += `&activo=${activo}`;
+
+  const resp = await fetch(url);
+  if (!resp.ok) { tbody.innerHTML = '<tr><td colspan="99" class="estado-tabla">Error al cargar.</td></tr>'; return; }
+  const data = await resp.json();
+
+  total   = data.total;
+  paginas = data.paginas;
+
+  if (!data.datos.length) {
+    tbody.innerHTML = '<tr><td colspan="99" class="estado-tabla">Sin resultados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.datos.map(r => filaHTML(r)).join('');
+  tbody.querySelectorAll('tr').forEach(tr => {
+    tr.addEventListener('click', () =>
+      ContactoModal.abrir(parseInt(tr.dataset.id), tipo, { onGuardado: () => cargar(), onEliminado: () => cargar() })
+    );
+  });
+
+  renderPaginacion();
+}
+
+function filaHTML(r) {
+  const cc    = r.cc_habilitada ? '<span class="badge badge-verde">Sí</span>' : '<span class="badge badge-gris">No</span>';
+  const lista = r.lista_precio_nombre ? `<span class="badge badge-azul">${esc(r.lista_precio_nombre)}</span>` : '—';
+  const estado = r.activo ? '<span class="badge badge-verde">Activo</span>' : '<span class="badge badge-gris">Inactivo</span>';
+  const limite = r.cc_habilitada ? `$${r.limite_credito.toLocaleString('es-AR',{maximumFractionDigits:0})}` : '—';
+  const extra  = tipo === 'clientes'
+    ? `<td>${r.descuento_extra ? r.descuento_extra + '%' : '—'}</td>`
+    : `<td>${r.plazo_pago_dias ? r.plazo_pago_dias + ' días' : '—'}</td>`;
+  return `<tr data-id="${r.id}" class="${r.activo ? '' : 'inactivo'}">
+    <td>${esc(r.nombre)}</td>
+    <td>${esc(r.cuit || '—')}</td>
+    <td>${esc(r.condicion_iva || '—')}</td>
+    <td>${esc(r.telefono || '—')}</td>
+    <td>${cc}</td>
+    <td>${limite}</td>
+    <td>${lista}</td>
+    ${extra}
+    <td>${estado}</td>
+  </tr>`;
+}
+
+function renderPaginacion() {
+  if (paginas <= 1) { pag.innerHTML = `<span>${total} registro${total !== 1 ? 's' : ''}</span>`; return; }
+  let html = `<span>${total} registros</span>`;
+  html += `<button ${pagina === 1 ? 'disabled' : ''} data-p="${pagina-1}">‹</button>`;
+  for (let p = 1; p <= paginas; p++) {
+    if (paginas > 10 && Math.abs(p - pagina) > 2 && p !== 1 && p !== paginas) { if (p === 2 || p === paginas - 1) html += '<span>…</span>'; continue; }
+    html += `<button class="${p === pagina ? 'activo' : ''}" data-p="${p}">${p}</button>`;
+  }
+  html += `<button ${pagina === paginas ? 'disabled' : ''} data-p="${pagina+1}">›</button>`;
+  pag.innerHTML = html;
+  pag.querySelectorAll('button[data-p]').forEach(btn => {
+    btn.addEventListener('click', () => { pagina = parseInt(btn.dataset.p); cargar(); });
+  });
+}
+
+/* ─── importar CSV (solo clientes) ──────────────────────── */
+function abrirImport() {
+  csvFile = null;
+  $('input-csv').value = '';
+  $('import-nombre').style.display = 'none';
+  $('import-result').style.display = 'none';
+  $('btn-subir').disabled = true;
+  $('modal-import').classList.remove('oculto');
+}
+
+$('import-cerrar').addEventListener('click',   () => $('modal-import').classList.add('oculto'));
+$('import-cancelar').addEventListener('click', () => $('modal-import').classList.add('oculto'));
+$('link-plantilla').addEventListener('click', e => { e.preventDefault(); window.location = '/Logos/api/clientes/plantilla-csv'; });
+
+const dropZone = $('drop-zone');
+dropZone.addEventListener('click', () => $('input-csv').click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) setCSV(e.dataTransfer.files[0]);
+});
+$('input-csv').addEventListener('change', () => { if ($('input-csv').files[0]) setCSV($('input-csv').files[0]); });
+
+function setCSV(file) {
+  csvFile = file;
+  $('import-nombre').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+  $('import-nombre').style.display = '';
+  $('import-result').style.display = 'none';
+  $('btn-subir').disabled = false;
+}
+
+$('btn-subir').addEventListener('click', async () => {
+  if (!csvFile) return;
+  $('btn-subir').disabled = true;
+  $('btn-subir').textContent = 'Importando…';
+
+  const fd = new FormData();
+  fd.append('csv', csvFile);
+  const resp = await fetch('/Logos/api/clientes/importar', { method: 'POST', body: fd });
+  const data = await resp.json();
+
+  const el = $('import-result');
+  if (!resp.ok) {
+    el.innerHTML = `<span class="err">Error: ${esc(data.error)}</span>`;
+  } else {
+    let html = `<span class="ok">Creados: ${data.creados} · Actualizados: ${data.actualizados}</span>`;
+    if (data.errores?.length) {
+      html += `<div class="errores-lista">${data.errores.map(e => esc(e)).join('<br>')}</div>`;
+    }
+    el.innerHTML = html;
+    if (!data.errores?.length) cargar();
+  }
+  el.style.display = '';
+  $('btn-subir').disabled = false;
+  $('btn-subir').textContent = 'Subir e importar';
+});
+
+/* ─── helpers ────────────────────────────────────────────── */
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ─── boot ───────────────────────────────────────────────── */
+renderCabecera();
+$('btn-importar').style.display = '';
+cargar();
+</script>
+</body>
+</html>

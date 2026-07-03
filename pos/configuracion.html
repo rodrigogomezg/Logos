@@ -7,79 +7,298 @@
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
-/* Page header */
-.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; }
-.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
-.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+/* ── Page header ─────────────────────────────────────────── */
+.page-header {
+  background: #fff;
+  border-bottom: 2px solid var(--texto);
+  padding: 16px clamp(20px, 4vw, 48px);
+  flex-shrink: 0;
+}
+.page-header h1 {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--texto);
+}
+.page-header p {
+  font-size: 11px;
+  color: var(--gris3);
+  margin-top: 3px;
+  letter-spacing: .2px;
+}
 
-/* Tab bar */
-.tab-bar { background:white; border-bottom:1px solid var(--borde); display:flex; padding:0 clamp(20px, 4vw, 48px); flex-shrink:0; overflow-x:auto; scrollbar-width:none; }
-.tab-bar::-webkit-scrollbar { display:none; }
-.tab-btn { padding:13px 20px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.5px; border:none; background:none; cursor:pointer; color:var(--gris3); border-bottom:2px solid transparent; margin-bottom:-1px; transition:color 160ms cubic-bezier(0.23,1,0.32,1), border-color 160ms cubic-bezier(0.23,1,0.32,1); white-space:nowrap; flex-shrink:0; }
-.tab-btn:hover { color:var(--texto); }
-.tab-btn.activo { color:var(--azul); border-bottom-color:var(--azul); }
+/* ── Tab bar ─────────────────────────────────────────────── */
+.tab-bar {
+  background: #fff;
+  border-bottom: 1px solid var(--borde);
+  display: flex;
+  padding: 0 clamp(20px, 4vw, 48px);
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-btn {
+  padding: 12px 18px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--gris3);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 120ms, border-color 120ms;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.tab-btn:hover { color: var(--texto); }
+.tab-btn.activo { color: var(--azul); border-bottom-color: var(--azul); }
 
-/* Contenido */
-.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
-.contenido-inner { max-width:1680px; margin:0 auto; }
-.panel { display:none; }
-.panel.activo { display:block; }
+/* ── Content layout ──────────────────────────────────────── */
+.contenido {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px clamp(20px, 4vw, 48px);
+  background: var(--gris1);
+}
+.contenido-inner { max-width: 1280px; margin: 0 auto; }
+.panel { display: none; }
+.panel.activo { display: block; }
 
-.card { background:white; border:1px solid var(--borde); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.03); padding:24px clamp(20px, 3vw, 30px); margin-bottom:20px; }
-.card-titulo { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--texto); padding-bottom:12px; margin-bottom:20px; border-bottom:1px solid var(--gris2); }
+/* ── Cards ───────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border: 1px solid var(--borde);
+  border-radius: 0;
+  box-shadow: none;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.card-titulo {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--gris3);
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--borde);
+  background: var(--gris1);
+}
+.card-body { padding: 20px; }
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 16px;
+}
+.grid-2 .card { margin-bottom: 0; }
 
-.grid-2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:20px; align-items:start; }
-.grid-2 .card { margin-bottom:0; height:100%; }
+/* ── Form elements ───────────────────────────────────────── */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 20px;
+}
+@media (max-width: 900px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+.form-group { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--gris3);
+}
+.form-input, .form-select {
+  padding: 9px 11px;
+  border: 1px solid var(--borde);
+  border-radius: 0;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  background: #fff;
+  transition: border-color 120ms;
+  width: 100%;
+}
+.form-input:focus, .form-select:focus { border-color: var(--texto); }
+.form-hint { font-size: 11px; color: var(--gris3); margin-top: 3px; line-height: 1.5; }
 
-.form-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px 20px; }
-@media (max-width: 900px) { .form-grid { grid-template-columns:repeat(2, 1fr); } }
-@media (max-width: 560px) { .form-grid { grid-template-columns:1fr; } }
-.form-group { display:flex; flex-direction:column; gap:6px; min-width:0; }
-.form-group.full { grid-column:1 / -1; }
-.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.form-input, .form-select { padding:9px 12px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); transition:border-color 140ms ease-out, background 140ms ease-out; width:100%; }
-.form-input:focus, .form-select:focus { border-color:var(--azul); background:white; }
-.form-hint { font-size:11px; color:var(--gris3); margin-top:2px; line-height:1.4; }
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  padding: 10px 20px;
+  border: 1.5px solid transparent;
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 100ms, border-color 100ms;
+}
+.btn:active { opacity: .85; }
+.btn-ok {
+  background: var(--azul);
+  color: #fff;
+  border-color: var(--azul);
+}
+.btn-ok:hover { background: var(--azul-h); border-color: var(--azul-h); }
+.btn-sec {
+  background: #fff;
+  color: var(--texto);
+  border-color: #888;
+}
+.btn-sec:hover { background: var(--gris1); border-color: var(--texto); }
+.btn-row { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
 
-.btn { padding:10px 20px; border:1.5px solid transparent; border-radius:8px; font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.4px; cursor:pointer; font-family:inherit; transition:background 140ms ease-out, border-color 140ms ease-out, transform 120ms ease-out; }
-.btn:active { transform:scale(0.97); }
-.btn-ok { background:var(--azul); color:white; border-color:var(--azul); }
-.btn-ok:hover { background:var(--azul-h); border-color:var(--azul-h); }
-.btn-sec { background:white; color:var(--texto); border-color:var(--borde); }
-.btn-sec:hover { border-color:var(--gris3); background:var(--gris1); }
-.btn-row { display:flex; gap:12px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+/* ── Logo & swatches ─────────────────────────────────────── */
+.logo-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform 120ms, border-color 120ms;
+  position: relative;
+  flex-shrink: 0;
+}
+.swatch:hover { transform: scale(1.12); }
+.swatch.activo { border-color: var(--texto); }
+.swatch[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 7px;
+  white-space: nowrap;
+  pointer-events: none;
+  letter-spacing: .3px;
+}
+.logo-preview {
+  width: 60px;
+  height: 60px;
+  border: 1px solid var(--borde);
+  border-radius: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--gris1);
+  flex-shrink: 0;
+}
+.logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-.logo-row { display:flex; align-items:center; gap:20px; flex-wrap:wrap; }
-.swatch { width:36px; height:36px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:transform 120ms ease-out, border-color 120ms ease-out; position:relative; flex-shrink:0; }
-.swatch:hover { transform:scale(1.15); }
-.swatch.activo { border-color:var(--texto); transform:scale(1.1); }
-.swatch[title]:hover::after { content:attr(title); position:absolute; bottom:calc(100% + 6px); left:50%; transform:translateX(-50%); background:#111; color:#fff; font-size:11px; font-weight:600; padding:3px 8px; border-radius:5px; white-space:nowrap; pointer-events:none; }
-.logo-preview { width:72px; height:72px; border:1.5px solid var(--borde); border-radius:10px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:var(--gris1); flex-shrink:0; }
-.logo-preview img { max-width:100%; max-height:100%; object-fit:contain; }
+/* ── Tables ──────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table.cajas {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 480px;
+}
+table.cajas th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--gris3);
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--texto);
+  white-space: nowrap;
+  background: var(--gris1);
+}
+table.cajas td {
+  padding: 9px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--gris2);
+  vertical-align: middle;
+}
+table.cajas tbody tr:hover { background: #FAFAFA; }
+table.cajas input[type="text"] {
+  padding: 7px 10px;
+  border: 1px solid var(--borde);
+  border-radius: 0;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  transition: border-color 120ms;
+  background: #fff;
+}
+table.cajas input[type="text"]:focus { border-color: var(--texto); }
+.check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+.check-label input { width: 15px; height: 15px; accent-color: var(--azul); cursor: pointer; }
 
-.table-wrap { overflow-x:auto; border-radius:10px; }
-table.cajas { width:100%; border-collapse:collapse; min-width:480px; }
-table.cajas th { text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); padding:11px 10px; border-bottom:2px solid var(--texto); white-space:nowrap; }
-table.cajas td { padding:9px 10px; font-size:var(--fs-md); border-bottom:1px solid var(--gris2); }
-table.cajas tbody tr { transition:background 100ms ease-out; }
-table.cajas tbody tr:hover { background:var(--gris1); }
-table.cajas input[type="text"] { padding:7px 10px; border:1.5px solid var(--borde); border-radius:7px; font-size:14px; font-family:inherit; outline:none; width:100%; transition:border-color 120ms ease-out; background:white; }
-table.cajas input[type="text"]:focus { border-color:var(--azul); }
-.check-label { display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer; }
-.check-label input { width:16px; height:16px; accent-color:var(--azul); cursor:pointer; }
-.btn-mini { padding:6px 13px; background:white; color:var(--texto); border:1.5px solid var(--borde); border-radius:7px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; cursor:pointer; transition:border-color 120ms ease-out, transform 120ms ease-out, background 120ms ease-out; white-space:nowrap; }
-.btn-mini:active { transform:scale(0.97); }
-.btn-mini:hover { border-color:var(--gris3); background:var(--gris1); }
-.btn-mini.danger { color:var(--rojo); border-color:#E8B4B4; }
-.btn-mini.danger:hover { border-color:var(--rojo); background:#FEF2F2; }
-.fila-nueva { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
-.fila-nueva input { flex:1; min-width:160px; }
+.btn-mini {
+  padding: 5px 11px;
+  background: #fff;
+  color: var(--texto);
+  border: 1px solid #999;
+  border-radius: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  cursor: pointer;
+  transition: background 100ms, border-color 100ms;
+  white-space: nowrap;
+}
+.btn-mini:hover { background: var(--gris1); border-color: var(--texto); }
+.btn-mini:active { opacity: .8; }
+.btn-mini.danger { color: var(--rojo); border-color: var(--rojo); }
+.btn-mini.danger:hover { background: #FEF2F2; }
+
+.fila-nueva {
+  display: flex;
+  gap: 8px;
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid var(--borde);
+  flex-wrap: wrap;
+}
+.fila-nueva input { flex: 1; min-width: 160px; }
+
+/* ── Danger zone ─────────────────────────────────────────── */
+.danger-card {
+  border-color: var(--rojo);
+}
+.danger-card .card-titulo {
+  color: var(--rojo);
+  border-bottom-color: #F3D2D2;
+  background: #FFF5F5;
+}
+#btn-reset-fabrica {
+  background: var(--rojo);
+  color: #fff;
+  border-color: var(--rojo);
+  border-radius: 0;
+  transition: opacity 200ms, background 100ms;
+}
+#btn-reset-fabrica:disabled {
+  background: #ccc;
+  border-color: #ccc;
+  color: #888;
+  cursor: not-allowed;
+  opacity: 1;
+}
 
 @media (max-width: 640px) {
-  .page-header h1 { font-size:19px; }
-  .card { padding:18px; }
-  .fila-nueva { flex-direction:column; }
-  .fila-nueva select, .fila-nueva button { flex:1 1 auto; }
+  .page-header h1 { font-size: 12px; }
+  .card-body { padding: 16px; }
+  .fila-nueva { flex-direction: column; }
 }
 
 </style>
@@ -94,55 +313,103 @@ table.cajas input[type="text"]:focus { border-color:var(--azul); }
 </div>
 
 <div class="tab-bar">
-  <button class="tab-btn activo" data-tab="negocio">Datos del negocio</button>
-  <button class="tab-btn" data-tab="cajas">Datos contables / Cajas</button>
-  <button class="tab-btn" data-tab="usuarios">Usuarios</button>
-  <button class="tab-btn" data-tab="avanzado">Avanzado</button>
+  <button class="tab-btn activo" data-tab="contables">Datos contables</button>
+  <button class="tab-btn" data-tab="negocio">Datos del negocio</button>
+  <button class="tab-btn" data-tab="avanzado">Configuración avanzada</button>
 </div>
 
 <div class="contenido">
 <div class="contenido-inner">
 
-  <div class="panel activo" id="panel-negocio">
+  <!-- ── Panel: Datos contables ── -->
+  <div class="panel activo" id="panel-contables">
+
+    <div class="card">
+      <div class="card-titulo">Cajas</div>
+      <div class="card-body">
+        <div class="form-hint" style="margin-bottom:14px">El tipo define quién puede usar cada caja: los usuarios "Admin" pueden usar cualquiera, los usuarios "User" solo las de tipo Venta.</div>
+        <div class="table-wrap">
+          <table class="cajas">
+            <thead><tr><th>Nombre</th><th style="width:130px">Tipo</th><th style="width:90px">Activa</th><th style="width:110px"></th></tr></thead>
+            <tbody id="cajas-tbody"></tbody>
+          </table>
+        </div>
+        <div class="fila-nueva">
+          <input type="text" id="caja-nueva-nombre" class="form-input" placeholder="Nombre de la nueva caja">
+          <select class="form-select" id="caja-nueva-tipo" style="flex:0 0 130px">
+            <option value="venta">Venta</option>
+            <option value="compra">Compra</option>
+          </select>
+          <button class="btn btn-sec" id="btn-caja-agregar">Agregar caja</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Terminales Posnet</div>
+      <div class="card-body">
+        <div class="form-hint" style="margin-bottom:14px">Cada terminal aparecerá como un campo de cierre en la pantalla de Caja (X / Z). Ingresá el nombre o número que identifica cada dispositivo.</div>
+        <div class="table-wrap">
+          <table class="cajas">
+            <thead><tr><th>Nombre / Identificación</th><th style="width:90px"></th></tr></thead>
+            <tbody id="posnet-tbody"></tbody>
+          </table>
+        </div>
+        <div class="fila-nueva">
+          <input type="text" id="posnet-nueva-nombre" class="form-input" placeholder="Ej: Terminal 1, Naranja X, etc.">
+          <button class="btn btn-sec" id="btn-posnet-agregar">Agregar terminal</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ok" id="btn-posnet-guardar">Guardar terminales</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Panel: Datos del negocio ── -->
+  <div class="panel" id="panel-negocio">
 
     <div class="card">
       <div class="card-titulo">Datos fiscales</div>
-      <div class="form-grid">
-        <div class="form-group full">
-          <label class="form-label">Razón social</label>
-          <input class="form-input" id="cfg-razon_social">
-        </div>
-        <div class="form-group">
-          <label class="form-label">CUIT</label>
-          <input class="form-input" id="cfg-cuit" placeholder="20396273455">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Condición IVA</label>
-          <input class="form-input" id="cfg-condicion_iva">
-        </div>
-        <div class="form-group">
-          <label class="form-label">IIBB</label>
-          <input class="form-input" id="cfg-iibb">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Teléfono</label>
-          <input class="form-input" id="cfg-telefono">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Punto de venta</label>
-          <input class="form-input" type="number" min="1" id="cfg-punto_venta">
-        </div>
-        <div class="form-group">
-          <label class="form-label">% IVA</label>
-          <input class="form-input" type="number" min="0" max="100" step="0.01" id="cfg-iva_porcentaje">
-        </div>
-        <div class="form-group full">
-          <label class="form-label">Domicilio</label>
-          <input class="form-input" id="cfg-domicilio">
-        </div>
-        <div class="form-group full">
-          <label class="form-label">Website</label>
-          <input class="form-input" id="cfg-website">
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Razón social</label>
+            <input class="form-input" id="cfg-razon_social">
+          </div>
+          <div class="form-group">
+            <label class="form-label">CUIT</label>
+            <input class="form-input" id="cfg-cuit" placeholder="20396273455">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Condición IVA</label>
+            <input class="form-input" id="cfg-condicion_iva">
+          </div>
+          <div class="form-group">
+            <label class="form-label">IIBB</label>
+            <input class="form-input" id="cfg-iibb">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Teléfono</label>
+            <input class="form-input" id="cfg-telefono">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Punto de venta</label>
+            <input class="form-input" type="number" min="1" id="cfg-punto_venta">
+          </div>
+          <div class="form-group">
+            <label class="form-label">% IVA</label>
+            <input class="form-input" type="number" min="0" max="100" step="0.01" id="cfg-iva_porcentaje">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Domicilio</label>
+            <input class="form-input" id="cfg-domicilio">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Website</label>
+            <input class="form-input" id="cfg-website">
+          </div>
         </div>
       </div>
     </div>
@@ -150,36 +417,38 @@ table.cajas input[type="text"]:focus { border-color:var(--azul); }
     <div class="grid-2">
       <div class="card">
         <div class="card-titulo">Logo</div>
-        <div class="logo-row">
-          <div class="logo-preview" id="logo-preview"><img src="/Logos/logo_background.png?t=0" id="logo-preview-img" alt=""></div>
-          <div>
-            <input type="file" id="logo-file" accept="image/png,image/jpeg,image/gif,image/webp">
-            <div class="form-hint">Se usa en el menú de todas las páginas y en los comprobantes PDF.</div>
+        <div class="card-body">
+          <div class="logo-row">
+            <div class="logo-preview" id="logo-preview">
+              <img src="/Logos/logo_background.png?t=0" id="logo-preview-img" alt="">
+            </div>
+            <div>
+              <input type="file" id="logo-file" accept="image/png,image/jpeg,image/gif,image/webp">
+              <div class="form-hint" style="margin-top:8px">Se usa en el menú de todas las páginas y en los comprobantes PDF.</div>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="card-titulo">Color del sistema</div>
-        <div id="tema-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:4px"></div>
-        <div class="form-hint">El color principal afecta botones, bordes y destacados en todo el sistema.</div>
       </div>
 
       <div class="card">
         <div class="card-titulo">Impresión</div>
-        <div class="form-grid">
-          <div class="form-group full">
-            <label class="form-label">Impresora por defecto</label>
-            <select class="form-select" id="cfg-impresora_nombre"><option value="">Cargando impresoras…</option></select>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label">Impresora por defecto</label>
+              <select class="form-select" id="cfg-impresora_nombre">
+                <option value="">Cargando impresoras…</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Carpeta donde guardar copia de cada comprobante</label>
+              <input class="form-input" id="cfg-carpeta_comprobantes" placeholder="C:\Logos\comprobantes">
+              <div class="form-hint">Ruta en este servidor. Se guarda una copia automática de cada comprobante generado.</div>
+            </div>
           </div>
-          <div class="form-group full">
-            <label class="form-label">Carpeta donde guardar copia de cada comprobante</label>
-            <input class="form-input" id="cfg-carpeta_comprobantes" placeholder="C:\Logos\comprobantes">
-            <div class="form-hint">Ruta en este servidor. Se guarda una copia automática de cada comprobante generado.</div>
+          <div class="btn-row">
+            <button class="btn btn-sec" id="btn-probar-impresion">Probar impresión</button>
           </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-sec" id="btn-probar-impresion">Probar impresión</button>
         </div>
       </div>
     </div>
@@ -190,104 +459,96 @@ table.cajas input[type="text"]:focus { border-color:var(--azul); }
 
   </div>
 
-  <div class="panel" id="panel-cajas">
-
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-titulo">Backup de la base de datos</div>
-        <div class="form-grid">
-          <div class="form-group full">
-            <label class="form-label">Carpeta de backups</label>
-            <input class="form-input" id="cfg-carpeta_backups" placeholder="C:\Logos\backups">
-          </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-ok" id="btn-guardar-carpeta-backups">Guardar carpeta</button>
-          <button class="btn btn-sec" id="btn-backup-ahora">Backup ahora</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-titulo">Seguridad</div>
-        <div class="form-grid">
-          <div class="form-group full">
-            <label class="form-label">Clave de autorización para eliminar ventas</label>
-            <input class="form-input" type="password" id="cfg-clave_autorizacion" placeholder="(sin cambios)" autocomplete="new-password">
-            <div class="form-hint" id="cfg-clave-hint">Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.</div>
-          </div>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-ok" id="btn-guardar-clave">Guardar clave</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Cajas</div>
-      <div class="form-hint" style="margin-bottom:14px">El tipo define quién puede usar cada caja: los usuarios "Admin" pueden usar cualquiera, los usuarios "User" solo las de tipo Venta.</div>
-      <div class="table-wrap">
-        <table class="cajas">
-          <thead><tr><th>Nombre</th><th style="width:130px">Tipo</th><th style="width:90px">Activa</th><th style="width:90px"></th></tr></thead>
-          <tbody id="cajas-tbody"></tbody>
-        </table>
-      </div>
-      <div class="fila-nueva">
-        <input type="text" id="caja-nueva-nombre" placeholder="Nombre de la nueva caja">
-        <select class="form-select" id="caja-nueva-tipo" style="flex:0 0 130px">
-          <option value="venta">Venta</option>
-          <option value="compra">Compra</option>
-        </select>
-        <button class="btn btn-sec" id="btn-caja-agregar">Agregar caja</button>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="panel" id="panel-usuarios">
+  <!-- ── Panel: Configuración avanzada ── -->
+  <div class="panel" id="panel-avanzado">
 
     <div class="card">
       <div class="card-titulo">Usuarios</div>
-      <div class="form-hint" style="margin-bottom:14px">El rol "Admin" entra directo a la caja de tipo Compra. El rol "User" elige entre las cajas de tipo Venta al iniciar sesión.</div>
-      <div class="table-wrap">
-        <table class="cajas">
-          <thead><tr><th>Nombre</th><th style="width:120px">Rol</th><th style="width:140px">Nuevo PIN</th><th style="width:90px">Activo</th><th style="width:90px"></th></tr></thead>
-          <tbody id="usuarios-tbody"></tbody>
-        </table>
-      </div>
-      <div class="fila-nueva">
-        <input type="text" id="usuario-nuevo-nombre" placeholder="Nombre">
-        <select class="form-select" id="usuario-nuevo-rol" style="flex:0 0 120px">
-          <option value="user">User</option>
-          <option value="admin">Admin</option>
-        </select>
-        <input type="text" id="usuario-nuevo-pin" placeholder="PIN (4-6 dígitos)" style="flex:0 0 140px" inputmode="numeric">
-        <button class="btn btn-sec" id="btn-usuario-agregar">Agregar usuario</button>
+      <div class="card-body">
+        <div class="form-hint" style="margin-bottom:14px">El rol "Admin" entra directo a la caja de tipo Compra. El rol "User" elige entre las cajas de tipo Venta al iniciar sesión.</div>
+        <div class="table-wrap">
+          <table class="cajas">
+            <thead><tr><th>Nombre</th><th style="width:120px">Rol</th><th style="width:140px">Nuevo PIN</th><th style="width:90px">Activo</th><th style="width:110px"></th></tr></thead>
+            <tbody id="usuarios-tbody"></tbody>
+          </table>
+        </div>
+        <div class="fila-nueva">
+          <input type="text" id="usuario-nuevo-nombre" class="form-input" placeholder="Nombre">
+          <select class="form-select" id="usuario-nuevo-rol" style="flex:0 0 120px">
+            <option value="user">User</option>
+            <option value="admin">Admin</option>
+          </select>
+          <input type="text" id="usuario-nuevo-pin" class="form-input" placeholder="PIN (4-6 dígitos)" style="flex:0 0 160px" inputmode="numeric">
+          <button class="btn btn-sec" id="btn-usuario-agregar">Agregar usuario</button>
+        </div>
       </div>
     </div>
 
-  </div>
-
-  <div class="panel" id="panel-avanzado">
-
-    <div class="card" style="border-color:#E8B4B4">
-      <div class="card-titulo" style="color:var(--rojo); border-bottom-color:#F3D2D2">Zona de peligro</div>
-      <div class="form-hint" style="margin-bottom:14px">
-        Restablecer de fábrica borra <b>todos</b> los datos operativos (productos, clientes, ventas,
-        compras, movimientos, cajas y usuarios) y deja el sistema como recién instalado. Se genera un
-        backup completo antes de borrar nada. Esta acción no se puede deshacer.
-      </div>
-      <div class="form-grid">
-        <div class="form-group full">
-          <label class="form-label">Escribí BORRAR TODO para habilitar el botón</label>
-          <input class="form-input" id="rf-confirmacion" placeholder="BORRAR TODO" autocomplete="off">
-        </div>
-        <div class="form-group full" id="rf-clave-grupo" style="display:none">
-          <label class="form-label">Clave de autorización</label>
-          <input class="form-input" type="password" id="rf-clave" autocomplete="new-password">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-titulo">Seguridad</div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label">Clave de autorización para eliminar ventas</label>
+              <input class="form-input" type="password" id="cfg-clave_autorizacion" placeholder="(sin cambios)" autocomplete="new-password">
+              <div class="form-hint" id="cfg-clave-hint">Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.</div>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ok" id="btn-guardar-clave">Guardar clave</button>
+          </div>
         </div>
       </div>
-      <div class="btn-row">
-        <button class="btn btn-mini danger" style="padding:10px 20px; font-size:var(--fs-sm)" id="btn-reset-fabrica" disabled>Restablecer de fábrica</button>
+
+      <div class="card">
+        <div class="card-titulo">Color del sistema</div>
+        <div class="card-body">
+          <div id="tema-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px"></div>
+          <div class="form-hint">El color principal afecta botones, bordes y destacados en todo el sistema.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Backup de la base de datos</div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label">Carpeta de backups</label>
+              <input class="form-input" id="cfg-carpeta_backups" placeholder="C:\Logos\backups">
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ok" id="btn-guardar-carpeta-backups">Guardar carpeta</button>
+            <button class="btn btn-sec" id="btn-backup-ahora">Backup ahora</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card danger-card">
+      <div class="card-titulo">Zona de peligro</div>
+      <div class="card-body">
+        <div class="form-hint" style="margin-bottom:16px">
+          Restablecer de fábrica borra <b>todos</b> los datos operativos (productos, clientes, ventas,
+          compras, movimientos, cajas y usuarios) y deja el sistema como recién instalado. Se genera un
+          backup completo antes de borrar nada. Esta acción no se puede deshacer.
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Escribí BORRAR TODO para habilitar el botón</label>
+            <input class="form-input" id="rf-confirmacion" placeholder="BORRAR TODO" autocomplete="off">
+          </div>
+          <div class="form-group full" id="rf-clave-grupo" style="display:none">
+            <label class="form-label">Clave de autorización</label>
+            <input class="form-input" type="password" id="rf-clave" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="btn-reset-fabrica" disabled>
+            Restablecer de fábrica
+          </button>
+        </div>
       </div>
     </div>
 
@@ -357,6 +618,8 @@ async function cargarConfig() {
     : 'Todavía no hay clave configurada — los usuarios no Admin podrán eliminar libremente. ')
     + 'Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.';
   renderSwatches(configActual.color_tema || 'bordo');
+  posnetTerminales = Array.isArray(configActual.posnet_terminales) ? configActual.posnet_terminales : [];
+  renderPosnetTabla();
 }
 
 let temaSeleccionado = 'bordo';
@@ -559,6 +822,60 @@ $('btn-caja-agregar').addEventListener('click', async () => {
   $('caja-nueva-nombre').value = '';
   toast('Caja creada', 'ok');
   cargarCajas();
+});
+
+// ── Terminales Posnet ────────────────────────────────────────
+let posnetTerminales = []; // [{nombre}]
+
+function renderPosnetTabla() {
+  $('posnet-tbody').innerHTML = posnetTerminales.length
+    ? posnetTerminales.map((t, i) => `
+        <tr data-idx="${i}">
+          <td><input type="text" value="${esc(t.nombre)}" class="posnet-t-nombre"></td>
+          <td><button class="btn-mini danger posnet-borrar">Borrar</button></td>
+        </tr>`).join('')
+    : '<tr><td colspan="2" style="color:var(--gris3)">Sin terminales configuradas.</td></tr>';
+}
+
+$('posnet-tbody').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-idx]');
+  if (!tr) return;
+  const idx = parseInt(tr.dataset.idx);
+  if (e.target.classList.contains('posnet-borrar')) {
+    posnetTerminales.splice(idx, 1);
+    renderPosnetTabla();
+  }
+});
+
+$('btn-posnet-agregar').addEventListener('click', () => {
+  const nombre = $('posnet-nueva-nombre').value.trim();
+  if (!nombre) { toast('Ingresá un nombre para la terminal', 'err'); return; }
+  posnetTerminales.push({ nombre });
+  $('posnet-nueva-nombre').value = '';
+  renderPosnetTabla();
+});
+
+$('btn-posnet-guardar').addEventListener('click', async () => {
+  // Leer nombres editados en la tabla antes de guardar
+  document.querySelectorAll('#posnet-tbody tr[data-idx]').forEach(tr => {
+    const idx = parseInt(tr.dataset.idx);
+    const nombre = tr.querySelector('.posnet-t-nombre')?.value.trim();
+    if (nombre && posnetTerminales[idx]) posnetTerminales[idx].nombre = nombre;
+  });
+
+  try {
+    const res = await fetch(`${API}/configuracion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...recolectarConfig(), posnet_terminales: posnetTerminales }),
+    });
+    const d = await res.json();
+    if (!res.ok) { toast(d.error || 'Error al guardar', 'err'); return; }
+    configActual = d;
+    posnetTerminales = Array.isArray(d.posnet_terminales) ? d.posnet_terminales : [];
+    renderPosnetTabla();
+    toast('Terminales guardadas', 'ok');
+  } catch { toast('Error de conexión', 'err'); }
 });
 
 // ── Usuarios ─────────────────────────────────────────────────

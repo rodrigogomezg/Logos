@@ -361,70 +361,7 @@
 
 </div><!-- /cc-main -->
 
-<!-- ── Modal: Editar ficha ── -->
-<div class="overlay" id="overlay-editar">
-  <div class="modal modal-sm" id="modal-editar" role="dialog" aria-modal="true" aria-labelledby="editar-cli-h">
-    <div class="modal-header">
-      <span class="modal-titulo" id="editar-cli-h">Editar ficha del cliente</span>
-      <button class="modal-cerrar" id="editar-cerrar" aria-label="Cerrar">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-campo span2">
-          <label>Nombre *</label>
-          <input type="text" id="edit-nombre">
-        </div>
-        <div class="form-campo">
-          <label>CUIT</label>
-          <input type="text" id="edit-cuit" placeholder="20-12345678-9">
-        </div>
-        <div class="form-campo">
-          <label>Condición IVA</label>
-          <select id="edit-iva">
-            <option value="">— Sin especificar —</option>
-            <option value="Responsable Inscripto">Responsable Inscripto</option>
-            <option value="Monotributista">Monotributista</option>
-            <option value="Exento">Exento</option>
-            <option value="Consumidor Final">Consumidor Final</option>
-            <option value="No Categorizado">No Categorizado</option>
-          </select>
-        </div>
-        <div class="form-campo">
-          <label>Email</label>
-          <input type="email" id="edit-email" placeholder="contacto@empresa.com">
-        </div>
-        <div class="form-campo">
-          <label>Teléfono</label>
-          <input type="text" id="edit-tel" placeholder="011 4567-8901">
-        </div>
-        <div class="form-campo span2">
-          <label>Domicilio</label>
-          <input type="text" id="edit-dom" placeholder="Av. Corrientes 1234">
-        </div>
-        <div class="form-campo">
-          <label>Localidad</label>
-          <input type="text" id="edit-loc">
-        </div>
-        <div class="form-campo">
-          <label>Provincia</label>
-          <input type="text" id="edit-prov">
-        </div>
-        <div class="form-campo">
-          <label>Límite de crédito ($)</label>
-          <input type="number" id="edit-limite" min="0" step="any">
-        </div>
-        <div class="form-campo span2">
-          <label>Observaciones</label>
-          <textarea id="edit-obs" placeholder="Notas sobre el cliente…"></textarea>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-sec" id="editar-cancelar">Cancelar</button>
-      <button class="btn-prim" id="editar-guardar">Guardar cambios</button>
-    </div>
-  </div>
-</div>
+<?php include __DIR__ . '/contacto-modal.php'; ?>
 
 <!-- ── Modal: Registrar pago ── -->
 <div class="overlay" id="overlay-pago">
@@ -918,90 +855,15 @@ function renderLibro(movs) {
 }
 
 // ── Modal: Editar ficha ─────────────────────────────────────
-function abrirModalEditar() {
-  const c = clienteActual;
-  $('edit-nombre').value  = c.nombre           ?? '';
-  $('edit-cuit').value    = c.cuit             ?? '';
-  $('edit-iva').value     = c.condicion_iva    ?? '';
-  $('edit-limite').value  = c.limite_credito   != null && c.limite_credito > 0 ? c.limite_credito : '';
-  $('edit-email').value   = c.email            ?? '';
-  $('edit-tel').value     = c.telefono         ?? '';
-  $('edit-dom').value     = c.domicilio        ?? '';
-  $('edit-loc').value     = c.localidad        ?? '';
-  $('edit-prov').value    = c.provincia        ?? '';
-  $('edit-obs').value     = c.observaciones    ?? '';
-
-  const soloProveedor = modoEntidad === 'proveedor';
-  ['edit-limite', 'edit-email', 'edit-tel', 'edit-dom', 'edit-loc', 'edit-prov', 'edit-obs'].forEach(id => {
-    $(id).closest('.form-campo').style.display = soloProveedor ? 'none' : '';
+$('btn-edit-ficha').addEventListener('click', () => {
+  const tipo = modoEntidad === 'proveedor' ? 'proveedores' : 'clientes';
+  ContactoModal.abrir(clienteActual.id, tipo, {
+    onGuardado: async () => {
+      toast_('Ficha actualizada', 'ok');
+      await cargarCC(clienteActual.id);
+    },
   });
-  $('editar-cli-h').textContent = soloProveedor ? 'Editar ficha del proveedor' : 'Editar ficha del cliente';
-
-  $('overlay-editar').classList.add('abierto');
-  setTimeout(() => $('edit-nombre').focus(), 50);
-}
-
-function cerrarModalEditar() {
-  $('overlay-editar').classList.remove('abierto');
-}
-
-async function guardarCliente() {
-  const nombre = $('edit-nombre').value.trim();
-  if (!nombre) { toast_('El nombre es requerido', 'err'); return; }
-
-  const emailInp = $('edit-email');
-  if (emailInp.value.trim() && !emailInp.checkValidity()) {
-    toast_('El email no tiene un formato válido', 'err');
-    emailInp.focus();
-    return;
-  }
-
-  const btn = $('editar-guardar');
-  btn.disabled    = true;
-  btn.textContent = 'Guardando…';
-
-  try {
-    const recurso = modoEntidad === 'proveedor' ? 'proveedores' : 'clientes';
-    const limiteVal = $('edit-limite').value.trim();
-    const payload = {
-      nombre,
-      cuit:          $('edit-cuit').value.trim()  || null,
-      condicion_iva: $('edit-iva').value           || null,
-    };
-    if (modoEntidad !== 'proveedor') {
-      Object.assign(payload, {
-        limite_credito: limiteVal !== '' ? parseFloat(limiteVal) : null,
-        email:         $('edit-email').value.trim() || null,
-        telefono:      $('edit-tel').value.trim()   || null,
-        domicilio:     $('edit-dom').value.trim()   || null,
-        localidad:     $('edit-loc').value.trim()   || null,
-        provincia:     $('edit-prov').value.trim()  || null,
-        observaciones: $('edit-obs').value.trim()   || null,
-      });
-    }
-    const r = await fetch(`${API}/${recurso}/${clienteActual.id}`, {
-      method:  'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error ?? 'Error al guardar');
-
-    cerrarModalEditar();
-    toast_('Ficha actualizada', 'ok');
-    await cargarCC(clienteActual.id);
-  } catch (e) {
-    toast_(e.message, 'err');
-  } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Guardar cambios';
-  }
-}
-
-$('btn-edit-ficha').addEventListener('click',  abrirModalEditar);
-$('editar-cerrar').addEventListener('click',   cerrarModalEditar);
-$('editar-cancelar').addEventListener('click', cerrarModalEditar);
-$('editar-guardar').addEventListener('click',  guardarCliente);
+});
 
 // ── Modal: Registrar pago ───────────────────────────────────
 function resetFileDrop(prefix) {
@@ -1459,7 +1321,7 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if ($('overlay-eliminar').classList.contains('abierto')) { cerrarModalEliminar(); return; }
   if ($('overlay-remito').classList.contains('abierto'))   { cerrarModalRemito();   return; }
-  if ($('overlay-editar').classList.contains('abierto'))   { cerrarModalEditar();   return; }
+  if (!$('cm-overlay').classList.contains('cm-oculto'))    { $('cm-cerrar').click(); return; }
   if ($('overlay-pago').classList.contains('abierto'))     { cerrarModalPago();     return; }
 });
 

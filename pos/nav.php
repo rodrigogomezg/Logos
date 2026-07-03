@@ -1,6 +1,6 @@
 <?php
 // Header compartido por todas las páginas de pos/.
-// Definir $nav_activo antes del include: 'pos' | 'ventas' | 'cuentacorriente' | 'productos' | 'compras' | 'configuracion' | 'caja' | 'movimientos' | 'operaciones' | 'cierres' | 'importar'
+// Definir $nav_activo antes del include: 'pos' | 'ventas' | 'cuentacorriente' | 'contactos' | 'productos' | 'compras' | 'configuracion' | 'caja' | 'movimientos' | 'operaciones' | 'cierres' | 'importar'
 $nav_activo = $nav_activo ?? '';
 function nav_clase(string $clave, string $actual): string {
     return $clave === $actual ? ' activo' : '';
@@ -20,6 +20,7 @@ $cc_tipo = $nav_activo === 'cuentacorriente' && ($_GET['tipo'] ?? 'cliente') ===
       <a href="/Logos/pos/cuentacorriente.html?tipo=proveedor" class="<?= $nav_activo === 'cuentacorriente' && $cc_tipo === 'proveedor' ? 'activo' : '' ?>">Proveedores</a>
     </div>
   </div>
+  <a href="/Logos/pos/contactos.html" class="nav-link<?= nav_clase('contactos', $nav_activo) ?>">Contactos</a>
   <a href="/Logos/pos/productos.html" class="nav-link<?= nav_clase('productos', $nav_activo) ?>">Productos</a>
   <a href="/Logos/pos/compras.html" id="nav-compras-link" class="nav-link<?= nav_clase('compras', $nav_activo) ?>">Compras</a>
   <div class="nav-drop">

@@ -74,6 +74,16 @@
     <div class="titulo">¿Con qué caja vas a trabajar?</div>
     <div class="caja-grid" id="caja-grid"></div>
   </div>
+
+  <div class="paso" id="paso-sin-conexion">
+    <div style="font-size:40px;">🔌</div>
+    <div class="titulo">No se pudo conectar a la base de datos</div>
+    <div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.5;text-align:center;">
+      El sistema ya está instalado, pero el servidor de base de datos no responde.<br>
+      Abrí el <b>Panel de Control de XAMPP</b> y presioná <b>Start</b> en <b>MySQL</b>.
+    </div>
+    <button class="usuario-btn" onclick="location.reload()">Reintentar</button>
+  </div>
 </div>
 
 <script>
@@ -247,6 +257,10 @@ document.addEventListener('keydown', (e) => {
 async function chequearInstalacion() {
   try {
     const estado = await fetch(`${API}/instalacion/estado`).then(r => r.json());
+    if (estado.sin_conexion) {
+      mostrarPaso('paso-sin-conexion');
+      return true;
+    }
     if (estado.requiere_conexion || estado.requiere_schema || estado.requiere_admin ||
         estado.requiere_negocio || estado.requiere_caja) {
       location.href = '/Logos/pos/instalar.html';
