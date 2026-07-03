@@ -4,6 +4,11 @@ declare(strict_types=1);
 ini_set('display_errors', '0');
 error_reporting(E_ALL);
 
+// El negocio opera en Argentina. Sin esto PHP hereda el timezone del php.ini
+// (Europe/Berlin en XAMPP) y las ventas nocturnas quedarían fechadas al día
+// siguiente, incluso ante AFIP.
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+
 // La app es same-origin (el POS y la API viven en el mismo servidor).
 // No se emiten headers CORS a propósito: así ninguna página web ajena
 // puede hacer requests a la API desde un navegador de la red.
@@ -33,6 +38,24 @@ $metodo  = $_SERVER['REQUEST_METHOD'];
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/helpers/Auth.php';
+
+// ── Gate global de autenticación ──────────────────────────────────
+// Todo requiere sesión válida salvo lo que necesita la pantalla de login
+// y el asistente de instalación. Auth::modoInstalacion() abre el paso solo
+// mientras el sistema no está completamente configurado.
+$esRutaPublica =
+    $recurso === 'instalacion' ||
+    ($recurso === 'usuarios'      && $metodo === 'POST' && $accion === 'login') ||
+    ($recurso === 'usuarios'      && $metodo === 'GET'  && $id === null && $accion === null) ||
+    ($recurso === 'configuracion' && $metodo === 'GET'  && $accion === null);
+
+try {
+    if (!$esRutaPublica && Auth::usuarioActual() === null && !Auth::modoInstalacion()) {
+        json(401, ['error' => 'Sesión inválida o vencida. Iniciá sesión de nuevo.']);
+    }
+} catch (PDOException $e) {
+    json(500, ['error' => 'Error de base de datos al validar la sesión.']);
+}
 
 try {
     match ($recurso) {
@@ -225,7 +248,8 @@ try {
                 Auth::requireAdmin();
             }
             match (true) {
-                $metodo === 'POST'   && $accion === 'login' => $ctrl->login(),
+                $metodo === 'POST'   && $accion === 'login'  => $ctrl->login(),
+                $metodo === 'POST'   && $accion === 'logout' => $ctrl->logout(),
                 $metodo === 'GET'    && $accion === 'todos' => $ctrl->listarTodos(),
                 $metodo === 'GET'    && $id === null        => $ctrl->listar(),
                 $metodo === 'POST'   && $id === null        => $ctrl->crear(),

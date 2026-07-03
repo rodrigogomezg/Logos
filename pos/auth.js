@@ -36,7 +36,8 @@ window.LOGOS_aplicarTema = function (key) {
   if (raw) {
     try { sesion = JSON.parse(raw); } catch (e) { sesion = null; }
   }
-  if (!sesion || !sesion.usuario_id || !sesion.caja_id) {
+  if (!sesion || !sesion.usuario_id || !sesion.caja_id || !sesion.token) {
+    localStorage.removeItem('logos_sesion');
     location.href = '/Logos/pos/login.html';
     return;
   }
@@ -93,9 +94,18 @@ window.LOGOS_aplicarTema = function (key) {
     opciones = opciones || {};
     var esApi = typeof url === 'string' && url.indexOf('/Logos/api') !== -1;
     if (esApi) {
-      opciones.headers = Object.assign({}, opciones.headers, { 'X-Usuario-Id': String(sesion.usuario_id) });
+      opciones.headers = Object.assign({}, opciones.headers, { 'X-Auth-Token': sesion.token });
     }
-    return fetchOriginal.call(this, url, opciones);
+    var promesa = fetchOriginal.call(this, url, opciones);
+    if (!esApi) return promesa;
+    return promesa.then(function (r) {
+      // Sesión vencida o inválida: volver al login limpiando la sesión local
+      if (r.status === 401) {
+        localStorage.removeItem('logos_sesion');
+        location.href = '/Logos/pos/login.html';
+      }
+      return r;
+    });
   };
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -115,7 +125,7 @@ window.LOGOS_aplicarTema = function (key) {
     if (elCajaOp) {
       if (sesion.rol === 'admin') {
         elCajaOp.style.display = '';
-        fetchOriginal('/Logos/api/cajas').then(function (r) { return r.json(); }).then(function (cajas) {
+        window.fetch('/Logos/api/cajas').then(function (r) { return r.json(); }).then(function (cajas) {
           var activa = window.cajaOperativaId();
           elCajaOp.innerHTML = cajas.map(function (c) {
             var etiqueta = c.id === sesion.caja_id ? c.nombre + ' (mi caja)' : c.nombre;
@@ -140,8 +150,14 @@ window.LOGOS_aplicarTema = function (key) {
     if (elLogout) {
       elLogout.addEventListener('click', function (e) {
         e.preventDefault();
-        localStorage.removeItem('logos_sesion');
-        location.href = '/Logos/pos/login.html';
+        // Invalidar la sesión en el servidor antes de limpiar la local
+        fetchOriginal('/Logos/api/usuarios/logout', {
+          method: 'POST',
+          headers: { 'X-Auth-Token': sesion.token },
+        }).catch(function () {}).finally(function () {
+          localStorage.removeItem('logos_sesion');
+          location.href = '/Logos/pos/login.html';
+        });
       });
     }
 

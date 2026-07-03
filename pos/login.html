@@ -101,6 +101,7 @@
 const API = '/Logos/api';
 let usuarioActual = null;
 let pin = '';
+let tokenSesion = null;
 
 const LOGOS_TEMAS_LOGIN = {
   azul:    ['#2563eb','#1d4ed8'], verde:   ['#16a34a','#15803d'],
@@ -200,6 +201,8 @@ async function intentarLogin() {
     return;
   }
 
+  tokenSesion = data.token;
+
   if (data.usuario.rol === 'admin' && data.caja_default) {
     iniciarSesion(data.usuario, data.caja_default);
     return;
@@ -230,7 +233,8 @@ function iniciarSesion(usuario, caja) {
     nombre: usuario.nombre,
     rol: usuario.rol,
     caja_id: caja.id,
-    caja_nombre: caja.nombre
+    caja_nombre: caja.nombre,
+    token: tokenSesion
   }));
   location.href = '/Logos/pos/';
 }

@@ -27,14 +27,48 @@ class UsuariosController {
 
         if (!$usuario_id || $pin === '') json(400, ['error' => 'usuario_id y pin son requeridos']);
 
-        $db   = DB::get();
+        $db = DB::get();
+
+        // Rate limiting: 5 PIN incorrectos bloquean el usuario por 5 minutos.
+        // La comparación se hace en SQL para no depender del reloj de PHP.
+        $stmt = $db->prepare("
+            SELECT TIMESTAMPDIFF(SECOND, NOW(), bloqueado_hasta) AS faltan_seg
+            FROM login_intentos WHERE usuario_id = ?
+        ");
+        $stmt->execute([$usuario_id]);
+        $rl = $stmt->fetch();
+        if ($rl && $rl['faltan_seg'] !== null && (int)$rl['faltan_seg'] > 0) {
+            $min = (int)ceil((int)$rl['faltan_seg'] / 60);
+            json(429, ['error' => "Demasiados intentos fallidos. Esperá $min minuto" . ($min > 1 ? 's' : '') . '.']);
+        }
+
         $stmt = $db->prepare("SELECT id, nombre, pin_hash, rol, activo FROM usuarios WHERE id = ?");
         $stmt->execute([$usuario_id]);
         $usuario = $stmt->fetch();
 
         if (!$usuario || !$usuario['activo'] || !password_verify($pin, $usuario['pin_hash'])) {
+            $db->prepare("
+                INSERT INTO login_intentos (usuario_id, intentos, bloqueado_hasta, actualizado)
+                VALUES (?, 1, NULL, NOW())
+                ON DUPLICATE KEY UPDATE
+                    -- bloqueado_hasta va primero: MySQL evalúa los SET en orden y
+                    -- si intentos se reseteara antes, la condición vería el valor nuevo
+                    bloqueado_hasta = IF(intentos + 1 >= 5, DATE_ADD(NOW(), INTERVAL 5 MINUTE), bloqueado_hasta),
+                    intentos        = IF(intentos + 1 >= 5, 0, intentos + 1),
+                    actualizado     = NOW()
+            ")->execute([$usuario_id]);
             json(401, ['error' => 'PIN incorrecto']);
         }
+
+        // Login OK: limpiar el contador y emitir el token de sesión
+        $db->prepare("DELETE FROM login_intentos WHERE usuario_id = ?")->execute([$usuario_id]);
+        $db->prepare("DELETE FROM sesiones WHERE expira < NOW()")->execute();
+
+        $token = bin2hex(random_bytes(32));
+        $db->prepare("
+            INSERT INTO sesiones (token_hash, usuario_id, creado_en, ultimo_uso, expira)
+            VALUES (?, ?, NOW(), NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))
+        ")->execute([hash('sha256', $token), (int)$usuario['id']]);
 
         if ($usuario['rol'] === 'admin') {
             $cajas = $db->query("SELECT id, nombre, tipo, orden FROM cajas WHERE activo = 1 ORDER BY orden, nombre")->fetchAll();
@@ -48,10 +82,16 @@ class UsuariosController {
 
         json(200, [
             'ok'           => true,
+            'token'        => $token,
             'usuario'      => ['id' => (int)$usuario['id'], 'nombre' => $usuario['nombre'], 'rol' => $usuario['rol']],
             'cajas'        => $cajas,
             'caja_default' => $caja_default ?: null,
         ]);
+    }
+
+    public function logout(): void {
+        Auth::cerrarSesion();
+        json(200, ['ok' => true]);
     }
 
     public function crear(): void {

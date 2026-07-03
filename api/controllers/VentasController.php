@@ -168,7 +168,8 @@ class VentasController {
         $tipo_comprobante = $body['tipo_comprobante'] ?? 'REMITO';
         $cliente_id       = isset($body['cliente_id']) ? (int)$body['cliente_id'] : null;
         $caja_id          = isset($body['caja_id'])    && is_numeric($body['caja_id'])    ? (int)$body['caja_id']    : null;
-        $usuario_id       = isset($body['usuario_id']) && is_numeric($body['usuario_id']) ? (int)$body['usuario_id'] : null;
+        $usuario_id       = Auth::usuarioActual()['id']
+                            ?? (isset($body['usuario_id']) && is_numeric($body['usuario_id']) ? (int)$body['usuario_id'] : null);
         $observaciones    = $body['observaciones']    ?? null;
         $envio_precio     = isset($body['envio_precio']) && is_numeric($body['envio_precio']) && $body['envio_precio'] > 0
                             ? (float)$body['envio_precio'] : null;

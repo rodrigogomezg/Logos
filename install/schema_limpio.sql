@@ -330,6 +330,26 @@ CREATE TABLE IF NOT EXISTS `venta_pagos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
+CREATE TABLE IF NOT EXISTS `sesiones` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `token_hash` char(64) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `creado_en` datetime NOT NULL,
+  `ultimo_uso` datetime NOT NULL,
+  `expira` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_token` (`token_hash`),
+  KEY `idx_usuario` (`usuario_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `login_intentos` (
+  `usuario_id` int(11) NOT NULL,
+  `intentos` int(11) NOT NULL DEFAULT 0,
+  `bloqueado_hasta` datetime DEFAULT NULL,
+  `actualizado` datetime NOT NULL,
+  PRIMARY KEY (`usuario_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 CREATE TABLE IF NOT EXISTS `afip_tokens` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `servicio` varchar(20) NOT NULL,

@@ -733,20 +733,9 @@ $('ls-btn-instalar').addEventListener('click', ejecutarCommit);
 $('ls-btn-retry').addEventListener('click', ejecutarCommit);
 
 $('ls-btn-entrar').addEventListener('click', () => {
-  const { adminId, adminNombre, cajasCreadas } = commitResult;
-  const primeraCaja = cajasCreadas[0];
-  if (primeraCaja) {
-    localStorage.setItem('logos_sesion', JSON.stringify({
-      usuario_id:  adminId,
-      nombre:      adminNombre,
-      rol:         'admin',
-      caja_id:     primeraCaja.id,
-      caja_nombre: primeraCaja.nombre,
-    }));
-    location.href = '/Logos/pos/';
-  } else {
-    location.href = '/Logos/pos/login.html';
-  }
+  // La sesión real se abre en el login con el PIN (emite el token del servidor)
+  localStorage.removeItem('logos_sesion');
+  location.href = '/Logos/pos/login.html';
 });
 
 // ── Init ──────────────────────────────────────────────────────────
