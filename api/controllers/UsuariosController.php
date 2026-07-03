@@ -111,6 +111,17 @@ class UsuariosController {
         json(200, ['ok' => true, 'id' => (int)$db->lastInsertId()]);
     }
 
+    /** ¿El usuario es el único admin activo del sistema? */
+    private function esUltimoAdmin(int $id): bool {
+        $db = DB::get();
+        $stmt = $db->prepare("SELECT rol, activo FROM usuarios WHERE id = ?");
+        $stmt->execute([$id]);
+        $u = $stmt->fetch();
+        if (!$u || $u['rol'] !== 'admin' || !(int)$u['activo']) return false;
+        $otros = (int)$db->query("SELECT COUNT(*) FROM usuarios WHERE rol = 'admin' AND activo = 1")->fetchColumn();
+        return $otros <= 1;
+    }
+
     public function actualizar(int $id): void {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!$body) json(400, ['error' => 'Body JSON inválido']);
@@ -129,6 +140,16 @@ class UsuariosController {
         if ($rol !== null && !in_array($rol, ['admin', 'user'], true)) json(400, ['error' => 'rol inválido']);
         if ($pin !== '' && !preg_match('/^\d{4,6}$/', $pin)) json(400, ['error' => 'pin debe ser numérico de 4 a 6 dígitos']);
 
+        // No dejar el sistema sin ningún administrador activo
+        if (($rol === 'user' || $activo === 0) && $this->esUltimoAdmin($id)) {
+            json(409, ['error' => 'Es el único administrador activo. Nombrá otro administrador antes de degradarlo o desactivarlo.']);
+        }
+
+        // Al desactivar un usuario, matar sus sesiones abiertas
+        if ($activo === 0) {
+            $db->prepare("DELETE FROM sesiones WHERE usuario_id = ?")->execute([$id]);
+        }
+
         if ($pin !== '') {
             $db->prepare("UPDATE usuarios SET nombre = ?, rol = COALESCE(?, rol), activo = COALESCE(?, activo), pin_hash = ? WHERE id = ?")
                ->execute([$nombre, $rol, $activo, password_hash($pin, PASSWORD_DEFAULT), $id]);
@@ -146,6 +167,22 @@ class UsuariosController {
         $check->execute([$id]);
         if (!$check->fetch()) json(404, ['error' => 'Usuario no encontrado']);
 
+        if ($this->esUltimoAdmin($id)) {
+            json(409, ['error' => 'Es el único administrador activo. Nombrá otro administrador antes de eliminarlo.']);
+        }
+
+        // Con historial (ventas, turnos, movimientos) no se elimina: se desactiva,
+        // para no dejar registros huérfanos sin autor.
+        foreach ([['ventas', 'usuario_id'], ['caja_turnos', 'usuario_id'], ['caja_movimientos', 'usuario_id']] as [$tabla, $col]) {
+            $s = $db->prepare("SELECT COUNT(*) FROM $tabla WHERE $col = ?");
+            $s->execute([$id]);
+            if ((int)$s->fetchColumn() > 0) {
+                json(409, ['error' => 'El usuario tiene operaciones registradas. Desactivalo en lugar de eliminarlo.']);
+            }
+        }
+
+        $db->prepare("DELETE FROM sesiones WHERE usuario_id = ?")->execute([$id]);
+        $db->prepare("DELETE FROM login_intentos WHERE usuario_id = ?")->execute([$id]);
         $db->prepare("DELETE FROM usuarios WHERE id = ?")->execute([$id]);
         json(200, ['ok' => true]);
     }

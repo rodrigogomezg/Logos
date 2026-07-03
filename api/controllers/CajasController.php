@@ -56,6 +56,16 @@ class CajasController {
         $check->execute([$id]);
         if (!$check->fetch()) json(404, ['error' => 'Caja no encontrada']);
 
+        // Una caja con historial no se elimina: se desactiva, para que los
+        // turnos y ventas viejos no queden apuntando a la nada.
+        foreach ([['caja_turnos', 'caja_id'], ['ventas', 'caja_id'], ['compras', 'caja_id']] as [$tabla, $col]) {
+            $s = $db->prepare("SELECT COUNT(*) FROM $tabla WHERE $col = ?");
+            $s->execute([$id]);
+            if ((int)$s->fetchColumn() > 0) {
+                json(409, ['error' => 'La caja tiene turnos u operaciones registradas. Desactivala en lugar de eliminarla.']);
+            }
+        }
+
         $db->prepare("DELETE FROM cajas WHERE id = ?")->execute([$id]);
         json(200, ['ok' => true]);
     }

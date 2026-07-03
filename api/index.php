@@ -197,6 +197,9 @@ try {
         'cc' => (function () use ($metodo, $id) {
             require_once __DIR__ . '/controllers/CuentaCorrienteController.php';
             $ctrl = new CuentaCorrienteController();
+            if ($metodo === 'DELETE') {
+                Auth::requireAdmin();
+            }
             match (true) {
                 $metodo === 'GET'                          => $ctrl->listar(),
                 $metodo === 'POST'                         => $ctrl->registrar(),

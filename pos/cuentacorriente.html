@@ -1051,6 +1051,8 @@ async function confirmarPago() {
         medio_pago:  medio,
         pago_datos,
         comprobante,
+        // El cobro en efectivo/transferencia entra al arqueo de esta caja
+        caja_id: window.cajaOperativaId?.() ?? window.LOGOS_SESION?.caja_id ?? null,
       }),
     });
     const d = await r.json();

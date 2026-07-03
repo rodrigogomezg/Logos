@@ -1587,7 +1587,7 @@ $('uni-confirmar').addEventListener('click', async () => {
     const r = await fetch(`${API}/ventas/unificar`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ ids, tipo_pago }),
+      body:    JSON.stringify({ ids, tipo_pago, caja_id: window.cajaOperativaId?.() ?? window.LOGOS_SESION?.caja_id ?? null }),
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error ?? 'Error al unificar');

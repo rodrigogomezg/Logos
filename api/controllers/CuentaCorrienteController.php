@@ -153,22 +153,55 @@ class CuentaCorrienteController {
         $tablaComp  = $this->tablaComprobante($mov['entidad_tipo']);
         $tablaEnt   = $this->tablaEntidad($mov['entidad_tipo']);
 
+        // Eliminar un cargo implica eliminar el comprobante que lo originó:
+        // hay que revertir también su stock, igual que al eliminar la venta
+        // o la compra directamente.
+        $refId = $mov['tipo'] === 'cargo' && $mov['referencia_id'] ? (int)$mov['referencia_id'] : null;
+
+        if ($refId !== null && $mov['entidad_tipo'] === 'cliente') {
+            $stmt = $db->prepare("SELECT cae FROM ventas WHERE id = ?");
+            $stmt->execute([$refId]);
+            $venta = $stmt->fetch();
+            if ($venta && !empty($venta['cae'])) {
+                json(422, ['error' => 'La venta asociada ya fue autorizada por AFIP (tiene CAE) y no se puede eliminar. Corresponde emitir una nota de crédito.']);
+            }
+        }
+
         $db->beginTransaction();
         try {
-            if ($mov['tipo'] === 'cargo' && $mov['referencia_id']) {
+            if ($refId !== null) {
                 if ($mov['entidad_tipo'] === 'cliente') {
-                    // Eliminar ítems de la venta (en caso de no tener CASCADE)
-                    $db->prepare("DELETE FROM venta_items WHERE venta_id = ?")
-                       ->execute([$mov['referencia_id']]);
+                    // Revertir stock de la venta y borrar sus rastros
+                    $stmt = $db->prepare("SELECT producto_id, cantidad FROM venta_items WHERE venta_id = ?");
+                    $stmt->execute([$refId]);
+                    foreach ($stmt->fetchAll() as $it) {
+                        $db->prepare("UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?")
+                           ->execute([(float)$it['cantidad'], (int)$it['producto_id']]);
+                    }
+                    $db->prepare("DELETE FROM movimientos_stock WHERE referencia_id = ? AND tipo = 'venta'")->execute([$refId]);
+                    $db->prepare("DELETE FROM venta_pagos WHERE venta_id = ?")->execute([$refId]);
+                    $db->prepare("DELETE FROM venta_items WHERE venta_id = ?")->execute([$refId]);
                 } else {
-                    $db->prepare("DELETE FROM compra_items WHERE compra_id = ?")
-                       ->execute([$mov['referencia_id']]);
-                    $db->prepare("DELETE FROM compra_pagos WHERE compra_id = ?")
-                       ->execute([$mov['referencia_id']]);
+                    // Revertir stock de la compra (la compra lo había sumado)
+                    $stmt = $db->prepare("SELECT producto_id, cantidad FROM compra_items WHERE compra_id = ?");
+                    $stmt->execute([$refId]);
+                    foreach ($stmt->fetchAll() as $it) {
+                        $db->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?")
+                           ->execute([(float)$it['cantidad'], (int)$it['producto_id']]);
+                    }
+                    $db->prepare("DELETE FROM movimientos_stock WHERE referencia_id = ? AND tipo = 'compra'")->execute([$refId]);
+                    $db->prepare("DELETE FROM compra_items WHERE compra_id = ?")->execute([$refId]);
+                    $db->prepare("DELETE FROM compra_pagos WHERE compra_id = ?")->execute([$refId]);
+                    // Retiros de caja generados por la compra: solo se revierten
+                    // si el turno sigue abierto (un turno cerrado ya fue arqueado)
+                    $db->prepare("
+                        DELETE cm FROM caja_movimientos cm
+                        JOIN caja_turnos t ON t.id = cm.turno_id
+                        WHERE t.estado = 'abierto' AND cm.tipo = 'retiro' AND cm.motivo LIKE ?
+                    ")->execute(['Compra #' . $refId . ' - %']);
                 }
                 // Eliminar el comprobante (cc_asignaciones tiene CASCADE sobre venta_id/compra_id)
-                $db->prepare("DELETE FROM $tablaComp WHERE id = ?")
-                   ->execute([$mov['referencia_id']]);
+                $db->prepare("DELETE FROM $tablaComp WHERE id = ?")->execute([$refId]);
             }
 
             // Eliminar el movimiento (cc_asignaciones.movimiento_id tiene CASCADE para pagos)
@@ -225,9 +258,24 @@ class CuentaCorrienteController {
         $colEntComp = $this->columnaEntidadComprobante($entidad_tipo);
         $colAsig   = $this->columnaAsignacion($entidad_tipo);
 
-        $stmt = $db->prepare("SELECT id, saldo_cuenta_corriente FROM $tablaEnt WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, nombre, saldo_cuenta_corriente FROM $tablaEnt WHERE id = ?");
         $stmt->execute([$entidad_id]);
-        if (!$stmt->fetch()) json(404, ['error' => ucfirst($entidad_tipo) . ' no encontrado']);
+        $entidad = $stmt->fetch();
+        if (!$entidad) json(404, ['error' => ucfirst($entidad_tipo) . ' no encontrado']);
+
+        // Un pago de CC en efectivo o transferencia mueve plata real: entra a la
+        // caja (cobro de cliente) o sale de ella (pago a proveedor). Sin esto,
+        // el efectivo esperado del arqueo no coincide con el cajón.
+        $caja_id  = isset($body['caja_id']) && is_numeric($body['caja_id']) ? (int)$body['caja_id'] : null;
+        $turno_id = null;
+        $tocaCaja = $tipo === 'pago' && in_array($medio_pago, ['efectivo', 'transferencia'], true) && $caja_id !== null;
+        if ($tocaCaja) {
+            $stmt = $db->prepare("SELECT id FROM caja_turnos WHERE caja_id = ? AND estado = 'abierto'");
+            $stmt->execute([$caja_id]);
+            $turno = $stmt->fetch();
+            if (!$turno) json(409, ['error' => 'No hay un turno abierto en la caja para registrar el cobro. Abrí la caja o registrá el pago sin caja desde una sesión de administrador.']);
+            $turno_id = (int)$turno['id'];
+        }
 
         // Validar asignaciones
         $asigs_ok       = [];
@@ -280,6 +328,15 @@ class CuentaCorrienteController {
             $delta = $tipo === 'pago' ? -$monto : $monto;
             $db->prepare("UPDATE $tablaEnt SET saldo_cuenta_corriente = saldo_cuenta_corriente + ? WHERE id = ?")
                ->execute([$delta, $entidad_id]);
+
+            if ($tocaCaja) {
+                $tipoMov = $entidad_tipo === 'cliente' ? 'ingreso' : 'retiro';
+                $motivo  = ($entidad_tipo === 'cliente' ? 'Cobro CC - ' : 'Pago CC - ') . $entidad['nombre'] . " (mov #$mov_id)";
+                $db->prepare("
+                    INSERT INTO caja_movimientos (turno_id, tipo, medio_pago, monto, motivo, usuario_id, creado_en)
+                    VALUES (?, ?, ?, ?, ?, ?, NOW())
+                ")->execute([$turno_id, $tipoMov, $medio_pago, $monto, $motivo, Auth::usuarioActual()['id'] ?? null]);
+            }
 
             $db->commit();
 

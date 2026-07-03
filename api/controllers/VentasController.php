@@ -264,6 +264,12 @@ class VentasController {
         }
         $monto_cc = $this->montoCC($tipo_pago, $total, $pagos_mixto);
 
+        // Una venta a cuenta corriente sin cliente no se puede cobrar nunca:
+        // la plata desaparecería del circuito.
+        if ($monto_cc > 0 && $cliente_id === null) {
+            json(422, ['error' => 'Una venta en cuenta corriente necesita un cliente asignado.']);
+        }
+
         // Verificar límite de CC por la porción que efectivamente va a cuenta corriente
         if ($monto_cc > 0 && $cliente_id !== null) {
             $nuevo_saldo = (float)$cliente['saldo_cuenta_corriente'] + $monto_cc;
@@ -508,6 +514,27 @@ class VentasController {
         if (($monto_cc_viejo > 0) !== ($monto_cc_nuevo > 0)) {
             json(422, ['error' => 'No se puede cambiar la forma de pago a/desde Cuenta Corriente.']);
         }
+        if ($monto_cc_nuevo > 0 && !$nuevo_cliente_id) {
+            json(422, ['error' => 'Una venta en cuenta corriente necesita un cliente asignado.']);
+        }
+
+        // Re-verificar el límite de crédito con el nuevo monto (la creación lo
+        // controla; la edición no puede ser la puerta de atrás)
+        if ($monto_cc_nuevo > 0 && $nuevo_cliente_id) {
+            $stmt = $db->prepare("SELECT saldo_cuenta_corriente, limite_credito FROM clientes WHERE id = ?");
+            $stmt->execute([$nuevo_cliente_id]);
+            $cli = $stmt->fetch();
+            if (!$cli) json(404, ['error' => 'Cliente no encontrado']);
+            $descuentaViejo = ((int)$venta['cliente_id'] === (int)$nuevo_cliente_id) ? $monto_cc_viejo : 0.0;
+            $nuevoSaldo = (float)$cli['saldo_cuenta_corriente'] - $descuentaViejo + $monto_cc_nuevo;
+            if ((float)$cli['limite_credito'] > 0 && $nuevoSaldo > (float)$cli['limite_credito']) {
+                json(422, [
+                    'error'  => 'Límite de crédito insuficiente para esta edición',
+                    'saldo_actual' => (float)$cli['saldo_cuenta_corriente'],
+                    'limite'       => (float)$cli['limite_credito'],
+                ]);
+            }
+        }
 
         try {
             $db->beginTransaction();
@@ -663,8 +690,27 @@ class VentasController {
         }
         $items_finales = array_values($merged);
 
-        // Total
-        $total_final = array_sum(array_map(fn($i) => $i['cantidad'] * $i['precio_unitario'], $items_finales));
+        // Total: ítems + envíos de los comprobantes originales (antes se perdían)
+        $envio_total = array_sum(array_map(fn($v) => (float)($v['envio_precio'] ?? 0), $ventas));
+        $total_final = array_sum(array_map(fn($i) => $i['cantidad'] * $i['precio_unitario'], $items_finales)) + $envio_total;
+
+        // Caja y turno: el comprobante unificado tiene que entrar al arqueo
+        // como cualquier venta (antes quedaba sin caja ni turno).
+        $caja_id    = isset($body['caja_id']) && is_numeric($body['caja_id']) ? (int)$body['caja_id'] : null;
+        $usuario_id = Auth::usuarioActual()['id'] ?? null;
+        $turno_id   = null;
+        if ($caja_id !== null) {
+            $stmt = $db->prepare("SELECT tipo FROM cajas WHERE id = ?");
+            $stmt->execute([$caja_id]);
+            $caja = $stmt->fetch();
+            if ($caja && $caja['tipo'] === 'venta') {
+                $stmt = $db->prepare("SELECT id FROM caja_turnos WHERE caja_id = ? AND estado = 'abierto'");
+                $stmt->execute([$caja_id]);
+                $turno = $stmt->fetch();
+                if (!$turno) json(409, ['error' => 'No hay un turno de caja abierto. Abrí la caja antes de unificar con cobro.']);
+                $turno_id = (int)$turno['id'];
+            }
+        }
 
         // Observaciones: concatenar únicas
         $obs_partes   = array_unique(array_filter(array_map(fn($v) => trim($v['observaciones'] ?? ''), $ventas)));
@@ -714,9 +760,11 @@ class VentasController {
             // Insertar nueva venta unificada
             $db->prepare("
                 INSERT INTO ventas
-                    (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado, observaciones, origen_descripcion)
-                VALUES (CURDATE(), ?, ?, ?, ?, 'completado', ?, ?)
-            ")->execute([$cliente_id, $total_final, $tipo_final, $tipo_pago, $observaciones, $origen_descripcion]);
+                    (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado, observaciones, origen_descripcion,
+                     envio_precio, caja_id, usuario_id, turno_id)
+                VALUES (CURDATE(), ?, ?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?)
+            ")->execute([$cliente_id, $total_final, $tipo_final, $tipo_pago, $observaciones, $origen_descripcion,
+                         $envio_total > 0 ? $envio_total : null, $caja_id, $usuario_id, $turno_id]);
             $nueva_id = (int)$db->lastInsertId();
 
             // Insertar ítems, descontar stock, movimientos
@@ -759,7 +807,7 @@ class VentasController {
     private function loadVenta(int $id, PDO $db): ?array {
         $stmt = $db->prepare("
             SELECT v.id, LPAD(v.id,8,'0') AS numero, v.fecha, v.tipo_comprobante,
-                   v.tipo_pago, v.total, v.observaciones, v.cliente_id
+                   v.tipo_pago, v.total, v.observaciones, v.cliente_id, v.envio_precio
             FROM ventas v WHERE v.id = ?
         ");
         $stmt->execute([$id]);
@@ -792,10 +840,13 @@ class VentasController {
 
         $db = DB::get();
 
-        $stmt = $db->prepare("SELECT id, cliente_id, tipo_pago, total FROM ventas WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, cliente_id, tipo_pago, total, cae FROM ventas WHERE id = ?");
         $stmt->execute([$id]);
         $venta = $stmt->fetch();
         if (!$venta) json(404, ['error' => 'Venta no encontrada']);
+        if (!empty($venta['cae'])) {
+            json(422, ['error' => 'Esta factura ya fue autorizada por AFIP (tiene CAE) y no se puede eliminar. Corresponde emitir una nota de crédito.']);
+        }
 
         $stmt = $db->prepare("SELECT producto_id, cantidad FROM venta_items WHERE venta_id = ?");
         $stmt->execute([$id]);
