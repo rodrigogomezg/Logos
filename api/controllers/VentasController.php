@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../helpers/Auth.php';
 require_once __DIR__ . '/../helpers/Configuracion.php';
+require_once __DIR__ . '/../helpers/Validadores.php';
 
 class VentasController {
 
@@ -979,6 +980,7 @@ class VentasController {
 
     private function construirPdf(int $id): array {
         require_once __DIR__ . '/../helpers/Configuracion.php';
+require_once __DIR__ . '/../helpers/Validadores.php';
         require_once __DIR__ . '/../helpers/AfipQr.php';
 
         $db = DB::get();

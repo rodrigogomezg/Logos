@@ -13,6 +13,7 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 // No se emiten headers CORS a propósito: así ninguna página web ajena
 // puede hacer requests a la API desde un navegador de la red.
 header('Content-Type: application/json; charset=utf-8');
+Seguridad::agregarHeadersSeguridad();
 
 // Helper global para responder JSON y terminar
 function json(int $status, mixed $data): never {
@@ -38,6 +39,7 @@ $metodo  = $_SERVER['REQUEST_METHOD'];
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/config/db.php';
 require_once __DIR__ . '/helpers/Auth.php';
+require_once __DIR__ . '/helpers/Seguridad.php';
 
 // ── Gate global de autenticación ──────────────────────────────────
 // Todo requiere sesión válida salvo lo que necesita la pantalla de login
@@ -139,6 +141,9 @@ try {
         })(),
 
         'listas-precio' => (function () use ($metodo, $id) {
+            if ($metodo === 'POST' || $metodo === 'PUT' || $metodo === 'DELETE') {
+                Auth::requireAdmin();
+            }
             require_once __DIR__ . '/controllers/ListasPrecioController.php';
             $ctrl = new ListasPrecioController();
             match (true) {

@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Caja</title>
+<script src="config.js"></script>
+<script src="helpers.js"></script>
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
@@ -448,6 +450,8 @@ function mediosCobroHTML(data) {
       stroke-dasharray="${Math.max(len - gap, 1).toFixed(2)} ${C.toFixed(2)}"
       stroke-dashoffset="${(-off).toFixed(2)}" transform="rotate(-90 90 90)">
       <title>${m.lbl}: ${fmt(m.val)} (${pct(m.val, total)})</title></circle>`;
+<script src="config.js"></script>
+<script src="helpers.js"></script>
     off += len;
     return seg;
   }).join('');

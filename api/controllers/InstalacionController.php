@@ -2,7 +2,6 @@
 
 class InstalacionController {
 
-    private const MYSQL_BIN = 'C:\\xampp\\mysql\\bin\\mysql.exe';
 
     // ── Estado actual de la instalación ───────────────────────────────
     public function estado(): void {
@@ -145,7 +144,7 @@ class InstalacionController {
                 if (!is_file($schemaFile)) json(500, ['error' => 'No se encontró install/schema_limpio.sql']);
 
                 $passArg = '-p' . $appPass . ' ';
-                $cmd = '"' . self::MYSQL_BIN . '" --default-character-set=utf8mb4 -h' . $host . ' -P' . $port .
+                $cmd = '"' . SystemPaths::findMysqlBin() . '" --default-character-set=utf8mb4 -h' . escapeshellarg($host) . ' -P' . escapeshellarg((string)$port) . '
                        ' -ulogos_app ' . $passArg . $dbname . ' < "' . $schemaFile . '" 2>&1';
                 exec($cmd, $salida, $codigo);
                 if ($codigo !== 0) {

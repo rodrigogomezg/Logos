@@ -22,7 +22,6 @@ class ListasPrecioController {
     }
 
     public function crear(): void {
-        Auth::requireAdmin();
         $body = json_decode(file_get_contents('php://input'), true);
         if (!$body) json(400, ['error' => 'Body JSON inválido']);
         $nombre = trim($body['nombre'] ?? '');
@@ -38,7 +37,6 @@ class ListasPrecioController {
     }
 
     public function actualizar(int $id): void {
-        Auth::requireAdmin();
         $body = json_decode(file_get_contents('php://input'), true);
         if (!$body) json(400, ['error' => 'Body JSON inválido']);
         $nombre = trim($body['nombre'] ?? '');
@@ -54,7 +52,6 @@ class ListasPrecioController {
     }
 
     public function eliminar(int $id): void {
-        Auth::requireAdmin();
         $db = DB::get();
         $s  = $db->prepare("SELECT COUNT(*) FROM clientes WHERE lista_precio_id = ?");
         $s->execute([$id]);

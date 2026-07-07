@@ -151,7 +151,7 @@ class SystemPaths {
             $prohibida = rtrim($prohibida, '/');
             
             if ($carpeta_real === $prohibida) {
-                throw new Exception("No se puede usar la carpeta del sistema: $carpeta");
+                throw new Exception("No se puede usar la carpeta del sistema: $carpeta_real");
             }
             
             if (strpos($carpeta_real, $prohibida . '/') === 0) {
