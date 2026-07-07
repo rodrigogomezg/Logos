@@ -42,7 +42,6 @@ class UploadsController {
         }
 
         if (!is_dir(self::DIR_DISCO)) {
-            SystemPaths::validarCarpetaSegura(self::DIR_DISCO);
             mkdir(self::DIR_DISCO, 0755, true);
         }
 

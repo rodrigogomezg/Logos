@@ -90,10 +90,12 @@ class VentasController {
         $params = [];
 
         $fecha_desde      = $_GET['fecha_desde']      ?? '';
-        try {
-            if ($_GET['fecha_desde'] ?? null) Validadores::validarFecha($_GET['fecha_desde']);
-        } catch (Throwable $e) { json(400, ["error" => "Fecha desde inválida: " . $e->getMessage()]); }
         $fecha_hasta      = $_GET['fecha_hasta']       ?? '';
+        try {
+            if ($fecha_desde !== '') Validadores::validarFecha($fecha_desde, 'fecha_desde');
+            if ($fecha_hasta !== '') Validadores::validarFecha($fecha_hasta, 'fecha_hasta');
+            if ($fecha_desde !== '' && $fecha_hasta !== '') Validadores::validarRangoFechas($fecha_desde, $fecha_hasta);
+        } catch (Throwable $e) { json(400, ['error' => $e->getMessage()]); }
         $tipo_comprobante = trim($_GET['tipo']         ?? '');
         $cliente_id       = isset($_GET['cliente_id']) && is_numeric($_GET['cliente_id'])
                             ? (int)$_GET['cliente_id'] : null;
@@ -651,6 +653,9 @@ class VentasController {
             if (!in_array($v['tipo_comprobante'], $tipos_unificables, true)) {
                 json(422, ['error' => "El comprobante N°{$v['numero']} ({$v['tipo_comprobante']}) no puede unificarse"]);
             }
+            if ($v['tipo_comprobante'] === 'REMITO' && $v['tipo_pago'] !== 'cc') {
+                json(422, ['error' => "El remito N°{$v['numero']} tiene forma de pago \"{$v['tipo_pago']}\" y no puede unificarse. Solo se pueden unificar remitos a cuenta corriente."]);
+            }
         }
 
         // Validar mismo cliente (incluye consumidor final = null)
@@ -983,7 +988,6 @@ class VentasController {
 
     private function construirPdf(int $id): array {
         require_once __DIR__ . '/../helpers/Configuracion.php';
-require_once __DIR__ . '/../helpers/Validadores.php';
         require_once __DIR__ . '/../helpers/AfipQr.php';
 
         $db = DB::get();

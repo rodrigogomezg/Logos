@@ -273,6 +273,27 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
 }
 .fila-nueva input { flex: 1; min-width: 160px; }
 
+/* ── AFIP status ─────────────────────────────────────────── */
+.afip-estado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 0;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--borde);
+  background: var(--gris1);
+  margin-bottom: 16px;
+}
+.afip-estado.ok   { border-color: #BBF7D0; background: #F0FDF4; color: #15803D; }
+.afip-estado.warn { border-color: #FED7AA; background: #FFF7ED; color: #C2410C; }
+.afip-estado .afip-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+}
+.afip-estado.ok   .afip-dot { background: #16A34A; }
+.afip-estado.warn .afip-dot { background: #EA580C; }
+
 /* ── Danger zone ─────────────────────────────────────────── */
 .danger-card {
   border-color: var(--rojo);
@@ -412,6 +433,34 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
             <label class="form-label">Website</label>
             <input class="form-input" id="cfg-website">
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Facturación electrónica AFIP</div>
+      <div class="card-body">
+        <div id="afip-estado-row"></div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Nuevo certificado digital (.p12)</label>
+            <input type="file" class="form-input" id="afip-cert-file" accept=".p12,.pfx">
+            <div class="form-hint">Descargalo desde el portal de AFIP → Administración de Certificados Digitales. Subir un nuevo archivo reemplaza el anterior.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contraseña del .p12</label>
+            <input type="password" class="form-input" id="afip-cert-pass" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Entorno</label>
+            <select class="form-select" id="afip-entorno">
+              <option value="homologacion">Homologación (pruebas)</option>
+              <option value="produccion">Producción</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ok" id="btn-subir-cert">Guardar certificado</button>
         </div>
       </div>
     </div>
@@ -622,6 +671,19 @@ async function cargarConfig() {
   renderSwatches(configActual.color_tema || 'bordo');
   posnetTerminales = Array.isArray(configActual.posnet_terminales) ? configActual.posnet_terminales : [];
   renderPosnetTabla();
+  renderAfipEstado(configActual);
+  $('afip-entorno').value = configActual.afip_entorno || 'homologacion';
+}
+
+function renderAfipEstado(cfg) {
+  const div = $('afip-estado-row');
+  if (cfg.afip_configurado) {
+    const entorno = cfg.afip_entorno === 'produccion' ? 'Producción' : 'Homologación';
+    const venc    = cfg.afip_cert_vencimiento ? ` — vence el ${cfg.afip_cert_vencimiento}` : '';
+    div.innerHTML = `<div class="afip-estado ok"><span class="afip-dot"></span>Certificado cargado · ${esc(entorno)}${esc(venc)}</div>`;
+  } else {
+    div.innerHTML = `<div class="afip-estado warn"><span class="afip-dot"></span>Sin certificado — las facturas electrónicas no van a funcionar hasta que lo configures.</div>`;
+  }
 }
 
 let temaSeleccionado = 'bordo';
@@ -984,6 +1046,30 @@ $('btn-reset-fabrica').addEventListener('click', async () => {
     toast('Error de conexión', 'err');
     btn.disabled = false; btn.textContent = 'Restablecer de fábrica';
   }
+});
+
+// ── Certificado AFIP ────────────────────────────────────────
+$('btn-subir-cert').addEventListener('click', async () => {
+  const file    = $('afip-cert-file').files[0];
+  const pass    = $('afip-cert-pass').value;
+  const entorno = $('afip-entorno').value;
+  if (!file) { toast('Seleccioná un archivo .p12', 'err'); return; }
+  const fd = new FormData();
+  fd.append('cert_p12', file);
+  fd.append('cert_pass', pass);
+  fd.append('entorno', entorno);
+  const btn = $('btn-subir-cert');
+  btn.disabled = true; btn.textContent = 'Cargando…';
+  try {
+    const res  = await fetch(`${API}/configuracion/cert-afip`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al cargar el certificado', 'err'); return; }
+    toast(`Certificado guardado — ${data.entorno === 'produccion' ? 'Producción' : 'Homologación'}`, 'ok');
+    $('afip-cert-file').value = '';
+    $('afip-cert-pass').value = '';
+    await cargarConfig();
+  } catch { toast('Error de conexión', 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Guardar certificado'; }
 });
 
 // ── Init ─────────────────────────────────────────────────────

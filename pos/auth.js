@@ -38,7 +38,7 @@ window.LOGOS_aplicarTema = function (key) {
   }
   if (!sesion || !sesion.usuario_id || !sesion.caja_id || !sesion.token) {
     localStorage.removeItem('logos_sesion');
-    location.href = window.APP_CONFIG.POS_BASE + 'login.html';
+    location.href = window.APP_CONFIG.POS_BASE + '/login.html';
     return;
   }
   window.LOGOS_SESION = sesion;
@@ -63,14 +63,14 @@ window.LOGOS_aplicarTema = function (key) {
     else document.addEventListener('DOMContentLoaded', pintar);
   }
 
-  fetch(window.API.instalacion.estado).then(function (r) { return r.json(); }).then(function (estado) {
+  fetch(window.API + '/instalacion/estado').then(function (r) { return r.json(); }).then(function (estado) {
     if (estado.sin_conexion) {
       mostrarSinConexion();
       return;
     }
     if (estado.requiere_conexion || estado.requiere_schema || estado.requiere_admin ||
         estado.requiere_negocio || estado.requiere_caja) {
-      location.href = window.APP_CONFIG.POS_BASE + 'instalar.html';
+      location.href = window.APP_CONFIG.POS_BASE + '/instalar.html';
     }
   }).catch(function () {});
 
@@ -92,7 +92,7 @@ window.LOGOS_aplicarTema = function (key) {
   var fetchOriginal = window.fetch;
   window.fetch = function (url, opciones) {
     opciones = opciones || {};
-    var esApi = typeof url === 'string' && typeof url === 'string' && url.indexOf(window.APP_CONFIG.API_BASE) !== -1;
+    var esApi = typeof url === 'string' && url.indexOf(window.APP_CONFIG.API_BASE) !== -1;
     if (esApi) {
       opciones.headers = Object.assign({}, opciones.headers, { 'X-Auth-Token': sesion.token });
     }
@@ -102,7 +102,7 @@ window.LOGOS_aplicarTema = function (key) {
       // Sesión vencida o inválida: volver al login limpiando la sesión local
       if (r.status === 401) {
         localStorage.removeItem('logos_sesion');
-        location.href = window.APP_CONFIG.POS_BASE + 'login.html';
+        location.href = window.APP_CONFIG.POS_BASE + '/login.html';
       }
       return r;
     });
@@ -125,7 +125,7 @@ window.LOGOS_aplicarTema = function (key) {
     if (elCajaOp) {
       if (sesion.rol === 'admin') {
         elCajaOp.style.display = '';
-        window.fetch(window.API.cajas).then(function (r) { return r.json(); }).then(function (cajas) {
+        window.fetch(window.API + '/cajas').then(function (r) { return r.json(); }).then(function (cajas) {
           var activa = window.cajaOperativaId();
           elCajaOp.innerHTML = cajas.map(function (c) {
             var etiqueta = c.id === sesion.caja_id ? c.nombre + ' (mi caja)' : c.nombre;
@@ -151,18 +151,18 @@ window.LOGOS_aplicarTema = function (key) {
       elLogout.addEventListener('click', function (e) {
         e.preventDefault();
         // Invalidar la sesión en el servidor antes de limpiar la local
-        fetchOriginal(window.API.usuarios.logout, {
+        fetchOriginal(window.API + '/usuarios/logout', {
           method: 'POST',
           headers: { 'X-Auth-Token': sesion.token },
         }).catch(function () {}).finally(function () {
           localStorage.removeItem('logos_sesion');
-          location.href = window.APP_CONFIG.POS_BASE + 'login.html';
+          location.href = window.APP_CONFIG.POS_BASE + '/login.html';
         });
       });
     }
 
     // Aplica el tema de color y actualiza el título con la razón social
-    fetchOriginal(window.API.configuracion).then(function (r) { return r.json(); }).then(function (cfg) {
+    fetchOriginal(window.API + '/configuracion').then(function (r) { return r.json(); }).then(function (cfg) {
       if (cfg && cfg.color_tema) window.LOGOS_aplicarTema(cfg.color_tema);
       if (cfg && cfg.razon_social) {
         window.LOGOS_EMPRESA = cfg.razon_social;

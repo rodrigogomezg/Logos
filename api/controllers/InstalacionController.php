@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../helpers/SystemPaths.php';
+
 class InstalacionController {
 
 
@@ -144,8 +146,11 @@ class InstalacionController {
                 if (!is_file($schemaFile)) json(500, ['error' => 'No se encontró install/schema_limpio.sql']);
 
                 $passArg = '-p' . $appPass . ' ';
-                $cmd = '"' . SystemPaths::findMysqlBin() . '" --default-character-set=utf8mb4 -h' . escapeshellarg($host) . ' -P' . escapeshellarg((string)$port) . '
-                       ' -ulogos_app ' . $passArg . $dbname . ' < "' . $schemaFile . '" 2>&1';
+                $cmd = '"' . SystemPaths::findMysqlBin() . '" --default-character-set=utf8mb4'
+                     . ' -h' . escapeshellarg($host)
+                     . ' -P' . escapeshellarg((string)$port)
+                     . ' -ulogos_app ' . $passArg . $dbname
+                     . ' < "' . $schemaFile . '" 2>&1';
                 exec($cmd, $salida, $codigo);
                 if ($codigo !== 0) {
                     json(500, ['error' => 'Falló la creación del esquema: ' . implode(' ', $salida)]);

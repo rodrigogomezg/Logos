@@ -308,6 +308,39 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
 .uni-fila .uni-fecha { color:var(--gris3); font-size:12px; }
 .uni-fila .uni-cli   { flex:1; color:var(--gris3); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .uni-fila .r         { font-weight:700; margin-left:auto; flex-shrink:0; }
+.uni-resumen {
+  background: #EFF6FF;
+  border: 1px solid #BFDBFE;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.uni-resumen-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E40AF;
+  margin-bottom: 6px;
+}
+.uni-resumen-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  color: #374151;
+  padding: 2px 0;
+}
+.uni-resumen-fila .lbl { color: var(--gris3); font-size: 12px; }
+.uni-resumen-fila .val { font-weight: 600; }
+.uni-resumen-total {
+  border-top: 1px solid #BFDBFE;
+  margin-top: 8px;
+  padding-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 700;
+  color: #1E40AF;
+}
 .uni-pago-wrap { margin-top:14px; }
 .uni-pago-wrap label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:6px; }
 .uni-pago-wrap select { width:100%; padding:9px 10px; border:1px solid var(--borde); border-radius:6px; font-size:14px; font-family:inherit; outline:none; }
@@ -1509,7 +1542,9 @@ const multiSel = new Map(); // id → venta objeto
 
 function puedeUnificar(v) {
   const t = v.tipo_comprobante ?? '';
-  return t === 'REMITO' || t === 'PRESUPUESTO';
+  if (t === 'PRESUPUESTO') return true;
+  if (t === 'REMITO') return v.tipo_pago === 'cc';
+  return false;
 }
 
 let modoDeleteBulk = false;
@@ -1549,8 +1584,14 @@ $('tabla-wrap').addEventListener('change', e => {
 });
 
 function abrirModalUnificar() {
-  const lista = [...multiSel.values()].sort((a, b) => a.fecha < b.fecha ? -1 : 1);
-  let filas = lista.map(v => `
+  const lista   = [...multiSel.values()].sort((a, b) => a.fecha < b.fecha ? -1 : 1);
+  const total   = lista.reduce((s, v) => s + (parseFloat(v.total) || 0), 0);
+  const cliente = lista[0]?.cliente_nombre ?? '— Consumidor final —';
+  const fDesde  = fmtFecha(lista[0].fecha);
+  const fHasta  = fmtFecha(lista[lista.length - 1].fecha);
+  const rango   = fDesde === fHasta ? fDesde : `${fDesde} → ${fHasta}`;
+
+  const filas = lista.map(v => `
     <div class="uni-fila">
       <span class="tipo-badge ${tipoBadgeClass(v.tipo_comprobante)}">${esc(v.tipo_comprobante)}</span>
       <span>N° ${esc(v.numero)}</span>
@@ -1560,13 +1601,19 @@ function abrirModalUnificar() {
     </div>`).join('');
 
   $('uni-modal-body').innerHTML = `
+    <div class="uni-resumen">
+      <div class="uni-resumen-titulo">Estás por unificar ${lista.length} comprobante${lista.length !== 1 ? 's' : ''}</div>
+      <div class="uni-resumen-fila"><span class="lbl">Cliente</span><span class="val">${esc(cliente)}</span></div>
+      <div class="uni-resumen-fila"><span class="lbl">Período</span><span class="val">${esc(rango)}</span></div>
+      <div class="uni-resumen-total"><span>Total unificado</span><span>${fmt(total)}</span></div>
+    </div>
     <div class="uni-lista">${filas}</div>
     <div class="uni-pago-wrap">
       <label>Forma de pago del remito unificado</label>
       <select id="uni-tipo-pago">
         <option value="efectivo">Efectivo</option>
         <option value="transferencia">Transferencia</option>
-        <option value="cc">Cta. Corriente</option>
+        <option value="cc" selected>Cta. Corriente</option>
         <option value="tarjeta">Tarjeta</option>
         <option value="cheque">Cheque</option>
       </select>

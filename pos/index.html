@@ -1965,14 +1965,12 @@ function renderModalResultados(lista) {
 
 // ════════ AFIP GUARD ══════════════════════════════════
 
-const TIPOS_REQUIEREN_CUIT = ['FC A-ELECT', 'FC B-ELECT'];
-
 function checkAfipGuard() {
   const tipo      = $('tipo-comp').value;
   const tieneCuit = clienteActual?.cuit;
   const esRI      = clienteActual?.condicion_iva === 'Responsable Inscripto';
 
-  if (!TIPOS_REQUIEREN_CUIT.includes(tipo)) {
+  if (tipo !== 'FC A-ELECT' && tipo !== 'FC B-ELECT') {
     afipGuardActivo = false;
     $('afip-warn').classList.remove('visible');
     actualizarBtnConfirmar();
@@ -1991,14 +1989,9 @@ function checkAfipGuard() {
       $('afip-warn').classList.add('visible');
     }
   } else {
-    if (tieneCuit) {
-      afipGuardActivo = false;
-      $('afip-warn').classList.remove('visible');
-    } else {
-      afipGuardActivo = true;
-      $('afip-warn-msg').textContent = 'FC B-ELECT requiere cliente con CUIT registrado.';
-      $('afip-warn').classList.add('visible');
-    }
+    // FC B-ELECT: permite consumidor final (sin CUIT)
+    afipGuardActivo = false;
+    $('afip-warn').classList.remove('visible');
   }
 
   actualizarBtnConfirmar();

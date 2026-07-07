@@ -12,6 +12,12 @@ class ConfiguracionController {
 
     private function sanitizar(array $config): array {
         $config['afip_configurado'] = !empty($config['afip_cert']);
+        if ($config['afip_configurado']) {
+            $parsed = @openssl_x509_parse($config['afip_cert']);
+            $config['afip_cert_vencimiento'] = $parsed ? date('d/m/Y', $parsed['validTo_time_t']) : null;
+        } else {
+            $config['afip_cert_vencimiento'] = null;
+        }
         unset($config['afip_cert'], $config['afip_key']);
         $config['clave_autorizacion_configurada'] = !empty($config['clave_autorizacion_hash']);
         unset($config['clave_autorizacion_hash']);

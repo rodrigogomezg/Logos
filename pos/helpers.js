@@ -3,23 +3,6 @@
  * Se carga en config.js o inmediatamente después
  */
 
-function $(id) {
-  const el = document.getElementById(id);
-  if (!el) {
-    console.warn(`[Helpers] Elemento con ID no encontrado: ${id}`);
-  }
-  return el;
-}
-
-function fmt(valor) {
-  if (typeof valor !== 'number') valor = parseFloat(valor) || 0;
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 2,
-  }).format(valor);
-}
-
 function toast_(mensaje, tipo = 'info') {
   const tipos = {
     'ok': { bg: '#4ade80', color: '#15803d' },

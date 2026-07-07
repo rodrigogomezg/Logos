@@ -61,9 +61,13 @@
 
   .sep { border:none; border-top:1px solid rgba(255,255,255,.08); margin:2px 0; }
 
-  .afip-info { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:14px; font-size:13px; color:rgba(255,255,255,.6); line-height:1.6; }
-  .afip-info ol { margin:8px 0 0 18px; padding:0; }
-  .afip-info li { margin-bottom:4px; }
+  .afip-pasos { display:flex; flex-direction:column; gap:10px; }
+  .afip-paso { display:flex; gap:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:12px 14px; }
+  .afip-paso-num { width:22px; height:22px; border-radius:50%; background:rgba(37,99,235,.3); color:#93C5FD; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
+  .afip-paso-body { font-size:13px; color:rgba(255,255,255,.65); line-height:1.55; }
+  .afip-paso-body strong { color:rgba(255,255,255,.9); font-weight:700; display:block; margin-bottom:2px; }
+  .afip-paso-body code { background:rgba(255,255,255,.08); border-radius:4px; padding:1px 5px; font-size:12px; color:#FCD34D; font-family:monospace; }
+  .afip-sep { border:none; border-top:1px solid rgba(255,255,255,.08); margin:2px 0; }
 
   /* Progreso del commit */
   .prog-lista { display:flex; flex-direction:column; gap:4px; }
@@ -191,17 +195,46 @@
 
   <!-- ── 4. AFIP (opcional) ───────────────────────────────────── -->
   <div class="panel" id="panel-afip">
-    <div class="titulo">Certificado AFIP <span class="badge-opcional">Opcional</span></div>
-    <div class="sub">Necesario para emitir Facturas Electrónicas A y B con CAE automático.</div>
-    <div class="afip-info">
-      Para obtener el certificado:
-      <ol>
-        <li>Ingresá al portal de AFIP con clave fiscal nivel 3</li>
-        <li>Ir a <strong>Administrador de Relaciones → Adherir Servicio → wsfe</strong></li>
-        <li>En <strong>Administración de Certificados Digitales</strong>, creá el certificado y descargá el <strong>.p12</strong></li>
-      </ol>
-      Si todavía no lo tenés, hacé clic en <em>Configurar después</em>.
+    <div class="titulo">Facturación electrónica AFIP <span class="badge-opcional">Opcional</span></div>
+    <div class="sub">Necesario para emitir Facturas A y B electrónicas con CAE. Si todavía no hiciste los trámites en AFIP, omitilo y configuralo después.</div>
+
+    <div class="aviso info" style="margin-top:0">
+      Antes de subir el certificado necesitás hacer <strong>4 pasos en el portal de AFIP</strong> (afip.gob.ar). Si ya los hiciste, subí el archivo abajo.
     </div>
+
+    <div class="afip-pasos">
+      <div class="afip-paso">
+        <div class="afip-paso-num">1</div>
+        <div class="afip-paso-body">
+          <strong>Tener clave fiscal nivel 3</strong>
+          Necesitás clave fiscal con nivel de seguridad 3 o superior. Si solo tenés nivel 2, solicitá la suba de nivel en cualquier agencia de AFIP o por TAD.
+        </div>
+      </div>
+      <div class="afip-paso">
+        <div class="afip-paso-num">2</div>
+        <div class="afip-paso-body">
+          <strong>Adherir el servicio de Factura Electrónica</strong>
+          Ingresá con tu CUIT y clave fiscal → <code>Administrador de Relaciones</code> → <code>Adherir Servicio</code> → buscá <code>wsfe</code> (Facturación Electrónica versión 1) → seleccioná tu CUIT como representado y confirmá.
+        </div>
+      </div>
+      <div class="afip-paso">
+        <div class="afip-paso-num">3</div>
+        <div class="afip-paso-body">
+          <strong>Crear y descargar el certificado digital (.p12)</strong>
+          Desde el menú principal → <code>Administración de Certificados Digitales</code> → <code>Nueva solicitud de certificado</code> → completá los datos → descargá el archivo <code>.p12</code> y guardá bien la contraseña. El certificado tiene vigencia de 2 años.
+        </div>
+      </div>
+      <div class="afip-paso">
+        <div class="afip-paso-num">4</div>
+        <div class="afip-paso-body">
+          <strong>Habilitar un punto de venta para Web Services</strong>
+          Desde el menú principal → <code>Comprobantes en línea</code> → <code>Datos adicionales del comprobante</code> → <code>ABM Puntos de Venta</code> → creá un nuevo PV de tipo <code>BFEWS — Web Services</code>. El número que le asignes es el que tenés que usar en el campo "Punto de venta AFIP" del sistema.
+        </div>
+      </div>
+    </div>
+
+    <hr class="afip-sep">
+
     <div class="form-grid">
       <div class="form-group fg-full">
         <label class="form-label">Archivo .p12</label>
@@ -209,7 +242,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Contraseña del certificado</label>
-        <input class="form-input" id="af-pass" type="password" placeholder="Contraseña del .p12">
+        <input class="form-input" id="af-pass" type="password" placeholder="Contraseña del .p12" autocomplete="new-password">
       </div>
       <div class="form-group">
         <label class="form-label">Entorno AFIP</label>
@@ -217,8 +250,10 @@
           <option value="homologacion">Homologación (pruebas)</option>
           <option value="produccion">Producción</option>
         </select>
+        <span class="form-hint">Usá Homologación para probar que todo funciona antes de pasar a Producción.</span>
       </div>
     </div>
+    <div id="af-resultado"></div>
     <div class="btn-row">
       <button class="btn-sec" id="af-btn-omitir">Configurar después</button>
       <button class="btn-pri" id="af-btn-siguiente">Guardar y continuar</button>

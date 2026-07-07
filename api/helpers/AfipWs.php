@@ -58,8 +58,8 @@ class AfipWs {
         if ($ptoVta < 1) throw new AfipException('El punto de venta no está configurado.');
 
         $cuitReceptor = (int)preg_replace('/\D/', '', (string)($venta['cliente_cuit'] ?? ''));
-        if (!$cuitReceptor) {
-            throw new AfipException('La factura electrónica requiere un cliente con CUIT.');
+        if (!$cuitReceptor && $tipoCmp !== 6) {
+            throw new AfipException('FC A-ELECT requiere un cliente con CUIT registrado.');
         }
 
         $entorno = ($config['afip_entorno'] ?? 'homologacion') === 'produccion' ? 'produccion' : 'homologacion';
@@ -194,7 +194,9 @@ class AfipWs {
         $fechaCbte = date('Ymd', strtotime((string)$venta['fecha']));
 
         $condReceptor = self::condicionIvaReceptorId((string)($venta['cliente_condicion_iva'] ?? ''), $tipoCmp);
-        $docNro = (int)preg_replace('/\D/', '', (string)$venta['cliente_cuit']);
+        $docNro = (int)preg_replace('/\D/', '', (string)($venta['cliente_cuit'] ?? ''));
+        $docTipo = $docNro ? 80 : 99;
+        if (!$docNro) $docNro = 0;
 
         $body =
             '<ar:FECAESolicitar>' .
@@ -203,7 +205,7 @@ class AfipWs {
             "<ar:FeCabReq><ar:CantReg>1</ar:CantReg><ar:PtoVta>$ptoVta</ar:PtoVta><ar:CbteTipo>$tipoCmp</ar:CbteTipo></ar:FeCabReq>" .
             '<ar:FeDetReq><ar:FECAEDetRequest>' .
             '<ar:Concepto>1</ar:Concepto>' .
-            '<ar:DocTipo>80</ar:DocTipo>' .
+            "<ar:DocTipo>$docTipo</ar:DocTipo>" .
             "<ar:DocNro>$docNro</ar:DocNro>" .
             "<ar:CbteDesde>$numero</ar:CbteDesde><ar:CbteHasta>$numero</ar:CbteHasta>" .
             "<ar:CbteFch>$fechaCbte</ar:CbteFch>" .
