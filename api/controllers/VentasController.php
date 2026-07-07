@@ -90,6 +90,9 @@ class VentasController {
         $params = [];
 
         $fecha_desde      = $_GET['fecha_desde']      ?? '';
+        try {
+            if ($_GET['fecha_desde'] ?? null) Validadores::validarFecha($_GET['fecha_desde']);
+        } catch (Throwable $e) { json(400, ["error" => "Fecha desde inválida: " . $e->getMessage()]); }
         $fecha_hasta      = $_GET['fecha_hasta']       ?? '';
         $tipo_comprobante = trim($_GET['tipo']         ?? '');
         $cliente_id       = isset($_GET['cliente_id']) && is_numeric($_GET['cliente_id'])
