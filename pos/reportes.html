@@ -475,6 +475,36 @@ async function cargarFlujo(cnt, desde, hasta) {
 
 // Init
 cargarVista();
+
+// ── Tour guiado ───────────────────────────────────────────────────
+window.TOUR_PAGE_KEY = 'reportes';
+window.TOUR_STEPS = [
+  {
+    el: null,
+    title: 'Reportes de gestión',
+    body: 'Reportes operativos avanzados para analizar el negocio desde distintos ángulos: ventas consolidadas, rotación de inventario, compras por proveedor y flujo de caja.',
+  },
+  {
+    el: '.tab-grupo',
+    title: 'Tipo de reporte',
+    body: '<b>Resumen</b>: ventas totales, devoluciones y medios de pago del período. <b>Rotación</b>: qué productos se mueven rápido y cuáles están parados. <b>Compras x Prov.</b>: cuánto compraste a cada proveedor. <b>Flujo de Caja</b>: ingresos y egresos agrupados por día, semana o mes.',
+  },
+  {
+    el: '#kpis-row',
+    title: 'KPIs del reporte',
+    body: 'Los 4 indicadores se adaptan al reporte activo. En Resumen muestran totales de ventas y devoluciones. En Rotación muestran productos en stock y rotación promedio.',
+  },
+  {
+    el: '#contenido',
+    title: 'Datos y gráficos',
+    body: 'El cuerpo del reporte combina tablas y gráficos según la vista. Podés filtrar por categoría en Rotación o agrupar por período en Flujo de Caja.',
+  },
+  {
+    el: '.btn-export',
+    title: 'Exportar a Excel',
+    body: 'Descargá los datos del reporte activo como planilla Excel para procesarlos fuera del sistema, compartirlos o archivarlos.',
+  },
+];
 </script>
 </body>
 </html>

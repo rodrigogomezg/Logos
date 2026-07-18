@@ -288,6 +288,31 @@ async function cargar() {
   $('btn-buscar').addEventListener('click', cargar);
   cargar();
 })();
+
+// ── Tour guiado ───────────────────────────────────────────────────
+window.TOUR_PAGE_KEY = 'log';
+window.TOUR_STEPS = [
+  {
+    el: null,
+    title: 'Bitácora de acciones',
+    body: 'El Log registra automáticamente todas las operaciones sensibles del sistema: anulaciones, ediciones, cierres de caja, ajustes de stock, logins y cambios de usuarios. No se puede editar ni borrar.',
+  },
+  {
+    el: '.filtros',
+    title: 'Filtros de búsqueda',
+    body: 'Filtrá por rango de fechas, tipo de acción y nombre del equipo desde el que se realizó la operación. Combiná filtros para encontrar exactamente lo que buscás.',
+  },
+  {
+    el: '#f-accion',
+    title: 'Tipo de acción',
+    body: 'Las acciones están agrupadas por categoría: Ventas, Compras, Caja y Usuarios. Seleccioná una para ver solo ese tipo de eventos y reducir el ruido.',
+  },
+  {
+    el: '#tbody',
+    title: 'Registro de operaciones',
+    body: 'Cada fila muestra: fecha/hora exacta, qué usuario hizo qué, desde qué equipo y con qué detalle. Útil para auditorías, reclamos de clientes o detectar usos incorrectos del sistema.',
+  },
+];
 </script>
 </body>
 </html>
