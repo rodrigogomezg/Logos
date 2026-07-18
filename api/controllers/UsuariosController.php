@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../helpers/Auth.php';
+require_once __DIR__ . '/../helpers/LogAcciones.php';
 
 class UsuariosController {
 
@@ -13,11 +15,39 @@ class UsuariosController {
     }
 
     public function listarTodos(): void {
-        $stmt = DB::get()->query("SELECT id, nombre, rol, activo FROM usuarios ORDER BY rol = 'admin' DESC, nombre");
+        // La ruta la consume también el dashboard (estado de usuarios), así que
+        // no puede ser admin-only; pero la matriz de permisos solo viaja a admin.
+        $esAdmin = Auth::esAdmin();
+        $cols    = $esAdmin ? "id, nombre, rol, permisos, sucursal_ids, activo" : "id, nombre, rol, activo";
+        $stmt = DB::get()->query("SELECT $cols FROM usuarios ORDER BY rol = 'admin' DESC, nombre");
         $items = $stmt->fetchAll();
-        foreach ($items as &$u) { $u['activo'] = (bool)$u['activo']; }
+        foreach ($items as &$u) {
+            $u['activo'] = (bool)$u['activo'];
+            if ($esAdmin) {
+                $u['permisos']     = $u['rol'] === 'admin' ? null : (json_decode((string)($u['permisos'] ?? ''), true) ?: []);
+                $u['sucursal_ids'] = isset($u['sucursal_ids']) ? json_decode((string)$u['sucursal_ids'], true) : null;
+            }
+        }
         unset($u);
         json(200, $items);
+    }
+
+    /**
+     * Valida y normaliza la matriz de permisos del body: solo claves de
+     * Auth::PERMISOS, valores booleanos, faltantes completados en false.
+     * Devuelve el JSON listo para guardar.
+     */
+    private function validarPermisos($raw): string {
+        if (!is_array($raw)) json(400, ['error' => 'permisos debe ser un objeto {clave: bool}']);
+        $out = [];
+        foreach ($raw as $k => $v) {
+            if (!in_array($k, Auth::PERMISOS, true)) {
+                json(400, ['error' => "Permiso desconocido: $k"]);
+            }
+            $out[$k] = (bool)$v;
+        }
+        foreach (Auth::PERMISOS as $k) { $out[$k] = $out[$k] ?? false; }
+        return json_encode($out);
     }
 
     public function login(): void {
@@ -42,7 +72,7 @@ class UsuariosController {
             json(429, ['error' => "Demasiados intentos fallidos. Esperá $min minuto" . ($min > 1 ? 's' : '') . '.']);
         }
 
-        $stmt = $db->prepare("SELECT id, nombre, pin_hash, rol, activo FROM usuarios WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, nombre, pin_hash, rol, permisos, sucursal_ids, activo FROM usuarios WHERE id = ?");
         $stmt->execute([$usuario_id]);
         $usuario = $stmt->fetch();
 
@@ -60,32 +90,74 @@ class UsuariosController {
             json(401, ['error' => 'PIN incorrecto']);
         }
 
-        // Login OK: limpiar el contador y emitir el token de sesión
+        // Login OK: registrar antes de limpiar contador
+        LogAcciones::registrar('login', 'usuario', (int)$usuario['id'], ['rol' => $usuario['rol']], (int)$usuario['id'], $usuario['nombre']);
+
         $db->prepare("DELETE FROM login_intentos WHERE usuario_id = ?")->execute([$usuario_id]);
         $db->prepare("DELETE FROM sesiones WHERE expira < NOW()")->execute();
 
-        $token = bin2hex(random_bytes(32));
+        $token       = bin2hex(random_bytes(32));
+        $device_name = isset($_SERVER['HTTP_X_DEVICE_NAME']) ? substr(trim($_SERVER['HTTP_X_DEVICE_NAME']), 0, 100) : null;
         $db->prepare("
-            INSERT INTO sesiones (token_hash, usuario_id, creado_en, ultimo_uso, expira)
-            VALUES (?, ?, NOW(), NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY))
-        ")->execute([hash('sha256', $token), (int)$usuario['id']]);
+            INSERT INTO sesiones (token_hash, usuario_id, creado_en, ultimo_uso, expira, device_name)
+            VALUES (?, ?, NOW(), NOW(), DATE_ADD(NOW(), INTERVAL 7 DAY), ?)
+        ")->execute([hash('sha256', $token), (int)$usuario['id'], $device_name]);
 
-        if ($usuario['rol'] === 'admin') {
-            $cajas = $db->query("SELECT id, nombre, tipo, orden FROM cajas WHERE activo = 1 ORDER BY orden, nombre")->fetchAll();
-            $stmt  = $db->prepare("SELECT id, nombre FROM cajas WHERE activo = 1 AND tipo = 'compra' ORDER BY orden, nombre LIMIT 1");
+        $permisos     = json_decode((string)($usuario['permisos']     ?? ''), true) ?: [];
+        $sucursal_ids = json_decode((string)($usuario['sucursal_ids'] ?? ''), true);
+        $verTodas = $usuario['rol'] === 'admin' || !empty($permisos['cajas_todas']);
+
+        if ($verTodas) {
+            $cajas = $db->query("SELECT id, nombre, tipo, orden, sucursal_id FROM cajas WHERE activo = 1 ORDER BY orden, nombre")->fetchAll();
         } else {
-            $cajas = $db->query("SELECT id, nombre, tipo, orden FROM cajas WHERE activo = 1 AND tipo = 'venta' ORDER BY orden, nombre")->fetchAll();
-            $stmt  = $db->prepare("SELECT id, nombre FROM cajas WHERE activo = 1 AND tipo = 'venta' ORDER BY orden, nombre LIMIT 1");
+            $cajas = $db->query("SELECT id, nombre, tipo, orden, sucursal_id FROM cajas WHERE activo = 1 AND tipo = 'venta' ORDER BY orden, nombre")->fetchAll();
         }
-        $stmt->execute();
+        // Caja default: los admin arrancan en la caja administrativa ('compra');
+        // el resto (incluso con cajas_todas) arranca vendiendo.
+        $tipoDefault = $usuario['rol'] === 'admin' ? 'compra' : 'venta';
+        $stmt = $db->prepare("SELECT id, nombre FROM cajas WHERE activo = 1 AND tipo = ? ORDER BY orden, nombre LIMIT 1");
+        $stmt->execute([$tipoDefault]);
         $caja_default = $stmt->fetch();
+
+        // Sucursales accesibles para este usuario
+        if ($sucursal_ids === null || $usuario['rol'] === 'admin') {
+            $sucursales = $db->query("
+                SELECT s.id, s.nombre, s.nombre_fantasia,
+                       (SELECT id FROM depositos WHERE sucursal_id = s.id AND es_principal = 1 LIMIT 1) AS deposito_principal_id
+                FROM sucursales s
+                WHERE s.activo = 1
+                ORDER BY s.nombre
+            ")->fetchAll();
+        } else {
+            $placeholders = implode(',', array_fill(0, count($sucursal_ids), '?'));
+            $stmt2 = $db->prepare("
+                SELECT s.id, s.nombre, s.nombre_fantasia,
+                       (SELECT id FROM depositos WHERE sucursal_id = s.id AND es_principal = 1 LIMIT 1) AS deposito_principal_id
+                FROM sucursales s
+                WHERE s.activo = 1 AND s.id IN ($placeholders)
+                ORDER BY s.nombre
+            ");
+            $stmt2->execute($sucursal_ids);
+            $sucursales = $stmt2->fetchAll();
+        }
+        foreach ($sucursales as &$s) {
+            $s['id']                  = (int)$s['id'];
+            $s['deposito_principal_id'] = $s['deposito_principal_id'] ? (int)$s['deposito_principal_id'] : null;
+        }
 
         json(200, [
             'ok'           => true,
             'token'        => $token,
-            'usuario'      => ['id' => (int)$usuario['id'], 'nombre' => $usuario['nombre'], 'rol' => $usuario['rol']],
+            'usuario'      => [
+                'id'           => (int)$usuario['id'],
+                'nombre'       => $usuario['nombre'],
+                'rol'          => $usuario['rol'],
+                'permisos'     => $usuario['rol'] === 'admin' ? null : $permisos,
+                'sucursal_ids' => $sucursal_ids,
+            ],
             'cajas'        => $cajas,
             'caja_default' => $caja_default ?: null,
+            'sucursales'   => $sucursales,
         ]);
     }
 
@@ -104,11 +176,25 @@ class UsuariosController {
         if (!preg_match('/^\d{4,6}$/', $pin)) json(400, ['error' => 'pin debe ser numérico de 4 a 6 dígitos']);
         if (!in_array($rol, ['admin', 'user'], true)) json(400, ['error' => 'rol inválido']);
 
-        $db = DB::get();
-        $db->prepare("INSERT INTO usuarios (nombre, pin_hash, rol, activo) VALUES (?, ?, ?, 1)")
-           ->execute([$nombre, password_hash($pin, PASSWORD_DEFAULT), $rol]);
+        // Permisos granulares: admin no los usa (NULL); user arranca con lo que
+        // venga en el body o todo en false (plantilla Vendedor).
+        $permisos     = null;
+        $sucursal_ids = null;
+        if ($rol === 'user') {
+            $permisos = $this->validarPermisos($body['permisos'] ?? []);
+            if (isset($body['sucursal_ids']) && is_array($body['sucursal_ids']) && count($body['sucursal_ids']) > 0) {
+                $sucursal_ids = json_encode(array_map('intval', $body['sucursal_ids']));
+            }
+        }
 
-        json(200, ['ok' => true, 'id' => (int)$db->lastInsertId()]);
+        $db = DB::get();
+        $db->prepare("INSERT INTO usuarios (nombre, pin_hash, rol, permisos, sucursal_ids, activo) VALUES (?, ?, ?, ?, ?, 1)")
+           ->execute([$nombre, password_hash($pin, PASSWORD_DEFAULT), $rol, $permisos, $sucursal_ids]);
+        $new_id = (int)$db->lastInsertId();
+
+        LogAcciones::registrar('crear_usuario', 'usuario', $new_id, ['nombre' => $nombre, 'rol' => $rol]);
+
+        json(200, ['ok' => true, 'id' => $new_id]);
     }
 
     /** ¿El usuario es el único admin activo del sistema? */
@@ -131,17 +217,17 @@ class UsuariosController {
         $check->execute([$id]);
         if (!$check->fetch()) json(404, ['error' => 'Usuario no encontrado']);
 
-        $nombre = isset($body['nombre']) ? trim($body['nombre']) : '';
+        $nombre = array_key_exists('nombre', $body) ? trim($body['nombre']) : null;
         $rol    = $body['rol'] ?? null;
         $activo = array_key_exists('activo', $body) ? ($body['activo'] ? 1 : 0) : null;
         $pin    = isset($body['pin']) ? (string)$body['pin'] : '';
 
-        if ($nombre === '') json(400, ['error' => 'nombre es requerido']);
+        if ($nombre !== null && $nombre === '') json(400, ['error' => 'nombre es requerido']);
         if ($rol !== null && !in_array($rol, ['admin', 'user'], true)) json(400, ['error' => 'rol inválido']);
         if ($pin !== '' && !preg_match('/^\d{4,6}$/', $pin)) json(400, ['error' => 'pin debe ser numérico de 4 a 6 dígitos']);
 
         // No dejar el sistema sin ningún administrador activo
-        if (($rol === 'user' || $activo === 0) && $this->esUltimoAdmin($id)) {
+        if (($rol === 'user' || $activo === 0) && ($rol !== null || $activo !== null) && $this->esUltimoAdmin($id)) {
             json(409, ['error' => 'Es el único administrador activo. Nombrá otro administrador antes de degradarlo o desactivarlo.']);
         }
 
@@ -151,21 +237,47 @@ class UsuariosController {
         }
 
         if ($pin !== '') {
-            $db->prepare("UPDATE usuarios SET nombre = ?, rol = COALESCE(?, rol), activo = COALESCE(?, activo), pin_hash = ? WHERE id = ?")
+            $db->prepare("UPDATE usuarios SET nombre = COALESCE(?, nombre), rol = COALESCE(?, rol), activo = COALESCE(?, activo), pin_hash = ? WHERE id = ?")
                ->execute([$nombre, $rol, $activo, password_hash($pin, PASSWORD_DEFAULT), $id]);
         } else {
-            $db->prepare("UPDATE usuarios SET nombre = ?, rol = COALESCE(?, rol), activo = COALESCE(?, activo) WHERE id = ?")
+            $db->prepare("UPDATE usuarios SET nombre = COALESCE(?, nombre), rol = COALESCE(?, rol), activo = COALESCE(?, activo) WHERE id = ?")
                ->execute([$nombre, $rol, $activo, $id]);
         }
+
+        // Permisos granulares: si viene la matriz, validarla y guardarla.
+        // Al promover a admin la matriz se limpia (NULL = acceso total implícito).
+        if ($rol === 'admin') {
+            $db->prepare("UPDATE usuarios SET permisos = NULL, sucursal_ids = NULL WHERE id = ?")->execute([$id]);
+        } elseif (array_key_exists('permisos', $body)) {
+            $db->prepare("UPDATE usuarios SET permisos = ? WHERE id = ?")
+               ->execute([$this->validarPermisos($body['permisos']), $id]);
+        }
+
+        // sucursal_ids: null = todas, [] vacío = todas, [1,2] = solo esas
+        if ($rol !== 'admin' && array_key_exists('sucursal_ids', $body)) {
+            $ids = $body['sucursal_ids'];
+            $encoded = (is_array($ids) && count($ids) > 0)
+                ? json_encode(array_map('intval', $ids))
+                : null;
+            $db->prepare("UPDATE usuarios SET sucursal_ids = ? WHERE id = ?")->execute([$encoded, $id]);
+        }
+
+        LogAcciones::registrar('editar_usuario', 'usuario', $id, [
+            'nombre'       => $nombre,
+            'rol'          => $rol,
+            'activo'       => $activo,
+            'pin_cambiado' => $pin !== '',
+        ]);
 
         json(200, ['ok' => true]);
     }
 
     public function eliminar(int $id): void {
         $db = DB::get();
-        $check = $db->prepare("SELECT id FROM usuarios WHERE id = ?");
+        $check = $db->prepare("SELECT id, nombre FROM usuarios WHERE id = ?");
         $check->execute([$id]);
-        if (!$check->fetch()) json(404, ['error' => 'Usuario no encontrado']);
+        $usuario_a_eliminar = $check->fetch();
+        if (!$usuario_a_eliminar) json(404, ['error' => 'Usuario no encontrado']);
 
         if ($this->esUltimoAdmin($id)) {
             json(409, ['error' => 'Es el único administrador activo. Nombrá otro administrador antes de eliminarlo.']);
@@ -184,6 +296,9 @@ class UsuariosController {
         $db->prepare("DELETE FROM sesiones WHERE usuario_id = ?")->execute([$id]);
         $db->prepare("DELETE FROM login_intentos WHERE usuario_id = ?")->execute([$id]);
         $db->prepare("DELETE FROM usuarios WHERE id = ?")->execute([$id]);
+
+        LogAcciones::registrar('eliminar_usuario', 'usuario', $id, ['nombre' => $usuario_a_eliminar['nombre']]);
+
         json(200, ['ok' => true]);
     }
 }

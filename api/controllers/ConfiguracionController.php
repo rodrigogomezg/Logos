@@ -7,7 +7,11 @@ require_once __DIR__ . '/../helpers/SilentPrint.php';
 class ConfiguracionController {
 
     public function get(): void {
-        json(200, $this->sanitizar(Configuracion::get()));
+        $config = $this->sanitizar(Configuracion::get());
+        if (!Auth::esAdmin()) {
+            unset($config['carpeta_backups'], $config['carpeta_backups_secundaria'], $config['carpeta_comprobantes']);
+        }
+        json(200, $config);
     }
 
     private function sanitizar(array $config): array {
@@ -21,9 +25,15 @@ class ConfiguracionController {
         unset($config['afip_cert'], $config['afip_key']);
         $config['clave_autorizacion_configurada'] = !empty($config['clave_autorizacion_hash']);
         unset($config['clave_autorizacion_hash']);
+        $config['mp_configurado'] = !empty($config['mp_access_token']);
+        $config['wa_configurado'] = !empty($config['wa_phone_id']) && !empty($config['wa_token']);
+        unset($config['mp_access_token'], $config['mp_webhook_secret'], $config['wa_token']);
         // Decodificar columnas JSON
         if (isset($config['posnet_terminales']) && is_string($config['posnet_terminales'])) {
             $config['posnet_terminales'] = json_decode($config['posnet_terminales'], true) ?? [];
+        }
+        if (isset($config['tipos_habilitados']) && is_string($config['tipos_habilitados'])) {
+            $config['tipos_habilitados'] = json_decode($config['tipos_habilitados'], true) ?? [];
         }
         return $config;
     }
@@ -38,7 +48,7 @@ class ConfiguracionController {
         if ($cuit === '')        json(400, ['error' => 'cuit es requerido']);
 
         $coloresTema = ['azul','verde','rojo','naranja','violeta','rosa','indigo','teal','gris','negro'];
-        $colorTema   = in_array($body['color_tema'] ?? '', $coloresTema, true) ? $body['color_tema'] : null;
+        $colorTema   = in_array($body['color_tema'] ?? '', $coloresTema, true) ? $body['color_tema'] : 'azul';
 
         $claveAutorizacion = trim($body['clave_autorizacion'] ?? '');
         $claveHash = $claveAutorizacion !== '' ? password_hash($claveAutorizacion, PASSWORD_DEFAULT) : null;
@@ -47,12 +57,26 @@ class ConfiguracionController {
             ? json_encode(array_values($body['posnet_terminales']))
             : null;
 
+        $tiposValidos     = ['FC A-ELECT', 'FC B-ELECT', 'FC C-ELECT', 'REMITO', 'PRESUPUESTO'];
+        $tiposHabilitados = isset($body['tipos_habilitados']) && is_array($body['tipos_habilitados'])
+            ? json_encode(array_values(array_filter($body['tipos_habilitados'], fn($t) => in_array($t, $tiposValidos, true))))
+            : null;
+
+        $mpToken   = trim($body['mp_access_token']   ?? '') ?: null;
+        $mpSecret  = trim($body['mp_webhook_secret'] ?? '') ?: null;
+        $waPhoneId = trim($body['wa_phone_id']       ?? '') ?: null;
+        $waToken   = trim($body['wa_token']           ?? '') ?: null;
+        $waTemplate = trim($body['wa_template_name'] ?? '') ?: 'envio_comprobante';
+
         DB::get()->prepare("
             INSERT INTO configuracion
                 (id, razon_social, nombre_fantasia, cuit, condicion_iva, domicilio, iibb, telefono, website,
                  punto_venta, iva_porcentaje, impresora_nombre, posnet_terminales, carpeta_comprobantes, carpeta_backups,
-                 clave_autorizacion_hash, color_tema, actualizado_en)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                 carpeta_backups_secundaria,
+                 clave_autorizacion_hash, color_tema, tipos_habilitados,
+                 mp_access_token, mp_webhook_secret, wa_phone_id, wa_token, wa_template_name,
+                 actualizado_en)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ON DUPLICATE KEY UPDATE
                 razon_social         = VALUES(razon_social),
                 nombre_fantasia      = VALUES(nombre_fantasia),
@@ -68,8 +92,15 @@ class ConfiguracionController {
                 posnet_terminales    = COALESCE(VALUES(posnet_terminales), posnet_terminales),
                 carpeta_comprobantes = VALUES(carpeta_comprobantes),
                 carpeta_backups      = VALUES(carpeta_backups),
+                carpeta_backups_secundaria = VALUES(carpeta_backups_secundaria),
                 clave_autorizacion_hash = COALESCE(?, clave_autorizacion_hash),
                 color_tema           = COALESCE(?, color_tema),
+                tipos_habilitados    = COALESCE(VALUES(tipos_habilitados), tipos_habilitados),
+                mp_access_token      = COALESCE(VALUES(mp_access_token),   mp_access_token),
+                mp_webhook_secret    = COALESCE(VALUES(mp_webhook_secret),  mp_webhook_secret),
+                wa_phone_id          = VALUES(wa_phone_id),
+                wa_token             = COALESCE(VALUES(wa_token), wa_token),
+                wa_template_name     = COALESCE(VALUES(wa_template_name), wa_template_name),
                 actualizado_en       = NOW()
         ")->execute([
             $razonSocial,
@@ -86,10 +117,17 @@ class ConfiguracionController {
             $posnetTerminales,
             trim($body['carpeta_comprobantes'] ?? '') ?: null,
             trim($body['carpeta_backups'] ?? '') ?: null,
-            $claveHash,   // INSERT clave_autorizacion_hash
-            $colorTema,   // INSERT color_tema
-            $claveHash,   // UPDATE COALESCE clave_autorizacion_hash
-            $colorTema,   // UPDATE COALESCE color_tema
+            trim($body['carpeta_backups_secundaria'] ?? '') ?: null,
+            $claveHash,         // INSERT clave_autorizacion_hash
+            $colorTema,         // INSERT color_tema
+            $tiposHabilitados,  // INSERT tipos_habilitados
+            $mpToken,
+            $mpSecret,
+            $waPhoneId,
+            $waToken,
+            $waTemplate,
+            $claveHash,         // UPDATE COALESCE clave_autorizacion_hash
+            $colorTema,         // UPDATE COALESCE color_tema
         ]);
 
         Configuracion::invalidar();
@@ -182,23 +220,16 @@ class ConfiguracionController {
 
     public function backupAhora(): void {
         $config  = Configuracion::get();
-        $carpeta = $config['carpeta_backups'];
+        $carpeta = $config['carpeta_backups'] ?? '';
         if (!$carpeta) json(400, ['error' => 'No hay carpeta de backups configurada']);
         if (!is_dir($carpeta)) json(400, ['error' => 'La carpeta de backups no existe: ' . $carpeta]);
 
-        $archivo   = rtrim($carpeta, '\\/') . '/logos_backup_' . date('Ymd_His') . '.sql';
-        $mysqldump = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
-        $c    = DB::config();
-        $pass = $c['pass'] !== '' ? '-p' . $c['pass'] . ' ' : '';
-        $cmd  = '"' . $mysqldump . '" -h' . $c['host'] . ' -P' . $c['port'] . ' -u' . $c['user'] . ' ' . $pass . $c['dbname'] . ' > "' . $archivo . '" 2>&1';
-
-        exec($cmd, $salida, $codigo);
-
-        if ($codigo !== 0 || !file_exists($archivo) || filesize($archivo) === 0) {
-            json(500, ['error' => 'Falló el backup: ' . implode(' ', $salida)]);
+        try {
+            $archivo = Configuracion::ejecutarBackup();
+            json(200, ['ok' => true, 'archivo' => $archivo]);
+        } catch (\RuntimeException $e) {
+            json(500, ['error' => $e->getMessage()]);
         }
-
-        json(200, ['ok' => true, 'archivo' => $archivo]);
     }
 
     public function resetFabrica(): void {
@@ -216,19 +247,15 @@ class ConfiguracionController {
             }
         }
 
-        $c       = DB::config();
         $carpeta = $config['carpeta_backups'] ?: (__DIR__ . '/../../install/backups');
         if (!is_dir($carpeta)) @mkdir($carpeta, 0777, true);
         if (!is_dir($carpeta)) json(500, ['error' => 'No se pudo crear la carpeta de backups: ' . $carpeta]);
 
-        $archivo   = rtrim($carpeta, '\\/') . '/logos_pre_reset_' . date('Ymd_His') . '.sql';
-        $mysqldump = 'C:\\xampp\\mysql\\bin\\mysqldump.exe';
-        $pass      = $c['pass'] !== '' ? '-p' . $c['pass'] . ' ' : '';
-        $cmd       = '"' . $mysqldump . '" -h' . $c['host'] . ' -P' . $c['port'] . ' -u' . $c['user'] . ' ' . $pass . $c['dbname'] . ' > "' . $archivo . '" 2>&1';
-
-        exec($cmd, $salida, $codigo);
-        if ($codigo !== 0 || !file_exists($archivo) || filesize($archivo) === 0) {
-            json(500, ['error' => 'No se pudo generar el backup previo. Se abortó el reset sin borrar nada: ' . implode(' ', $salida)]);
+        $archivo = rtrim($carpeta, '\\/') . '/logos_pre_reset_' . date('Ymd_His') . '.sql';
+        try {
+            Configuracion::dumpBase($archivo);
+        } catch (\RuntimeException $e) {
+            json(500, ['error' => 'No se pudo generar el backup previo. Se abortó el reset sin borrar nada: ' . $e->getMessage()]);
         }
 
         $tablas = [

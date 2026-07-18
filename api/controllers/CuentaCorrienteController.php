@@ -42,13 +42,13 @@ class CuentaCorrienteController {
         // 1. Entidad (cliente o proveedor)
         if ($entidad_tipo === 'cliente') {
             $stmt = $db->prepare("
-                SELECT id, nombre, cuit, condicion_iva, limite_credito, saldo_cuenta_corriente,
+                SELECT id, nombre, cuit, condicion_iva, limite_credito, plazo_pago_dias, saldo_cuenta_corriente,
                        email, telefono, domicilio, localidad, provincia, observaciones
                 FROM clientes WHERE id = ?
             ");
         } else {
             $stmt = $db->prepare("
-                SELECT id, nombre, cuit, condicion_iva, saldo_cuenta_corriente
+                SELECT id, nombre, cuit, condicion_iva, plazo_pago_dias, saldo_cuenta_corriente
                 FROM proveedores WHERE id = ?
             ");
         }
@@ -56,6 +56,7 @@ class CuentaCorrienteController {
         $entidad = $stmt->fetch();
         if (!$entidad) json(404, ['error' => ucfirst($entidad_tipo) . ' no encontrado']);
         if (isset($entidad['limite_credito'])) $entidad['limite_credito'] = (float)$entidad['limite_credito'];
+        $entidad['plazo_pago_dias'] = $entidad['plazo_pago_dias'] !== null ? (int)$entidad['plazo_pago_dias'] : null;
         $entidad['saldo_cuenta_corriente'] = (float)$entidad['saldo_cuenta_corriente'];
 
         // 2. Movimientos en orden cronológico (ASC), join al comprobante para los cargos
@@ -135,6 +136,172 @@ class CuentaCorrienteController {
             'movimientos'     => $movimientos,
             $clavePendiente   => $pendientes,
         ]);
+    }
+
+    /**
+     * GET /cc/aging — antigüedad de saldos con vencimientos por plazo de pago.
+     *
+     * Para cada entidad con saldo deudor, desarma la deuda en cargos pendientes:
+     * a cada cargo se le imputa primero lo asignado explícitamente a su
+     * comprobante (cc_asignaciones) y después los pagos a cuenta, FIFO del más
+     * viejo al más nuevo. Cada residual "vence" a los plazo_pago_dias de la
+     * fecha del comprobante (o del cargo manual); sin plazo definido no vence.
+     *
+     * Buckets: a_vencer | v1_30 | v31_60 | v61_90 | v90 (días DESPUÉS del
+     * vencimiento, no de la fecha del cargo).
+     */
+    public function aging(): void {
+        $entidad_tipo = $_GET['entidad_tipo'] ?? 'cliente';
+        if (!in_array($entidad_tipo, ['cliente', 'proveedor'], true)) {
+            json(400, ['error' => 'entidad_tipo inválido']);
+        }
+
+        $db        = DB::get();
+        $tablaEnt  = $this->tablaEntidad($entidad_tipo);
+        $tablaComp = $this->tablaComprobante($entidad_tipo);
+        $colAsig   = $this->columnaAsignacion($entidad_tipo);
+
+        // Filtro opcional por entidad: lo usa el mini-dashboard de la ficha
+        $filtroId = isset($_GET['entidad_id']) && is_numeric($_GET['entidad_id']) ? (int)$_GET['entidad_id'] : null;
+
+        $sqlEnts = "
+            SELECT id, nombre, telefono, plazo_pago_dias, saldo_cuenta_corriente
+            FROM $tablaEnt
+            WHERE saldo_cuenta_corriente > 0.001" . ($filtroId !== null ? ' AND id = ?' : '') . "
+            ORDER BY nombre
+        ";
+        $stmt = $db->prepare($sqlEnts);
+        $stmt->execute($filtroId !== null ? [$filtroId] : []);
+        $ents = $stmt->fetchAll();
+
+        if (!$ents) {
+            json(200, ['hoy' => date('Y-m-d'), 'filas' => [], 'totales' => null]);
+        }
+
+        $ids = array_map(fn($e) => (int)$e['id'], $ents);
+        $ph  = implode(',', array_fill(0, count($ids), '?'));
+
+        // Cargos, con la fecha del comprobante como fecha de la deuda (los
+        // cargos de ventas se insertan con CURDATE() aunque la venta sea
+        // retroactiva; la fecha fiscal manda). Cargos manuales usan la propia.
+        $stmt = $db->prepare("
+            SELECT m.entidad_id, m.monto, COALESCE(c.fecha, m.fecha) AS fecha, m.referencia_id
+            FROM cuenta_corriente_movimientos m
+            LEFT JOIN $tablaComp c ON c.id = m.referencia_id
+            WHERE m.entidad_tipo = ? AND m.tipo = 'cargo' AND m.entidad_id IN ($ph)
+            ORDER BY fecha ASC, m.id ASC
+        ");
+        $stmt->execute([$entidad_tipo, ...$ids]);
+        $cargosPorEnt = [];
+        foreach ($stmt->fetchAll() as $c) {
+            $cargosPorEnt[(int)$c['entidad_id']][] = $c;
+        }
+
+        // Total de pagos por entidad
+        $stmt = $db->prepare("
+            SELECT entidad_id, COALESCE(SUM(monto), 0) AS total
+            FROM cuenta_corriente_movimientos
+            WHERE entidad_tipo = ? AND tipo = 'pago' AND entidad_id IN ($ph)
+            GROUP BY entidad_id
+        ");
+        $stmt->execute([$entidad_tipo, ...$ids]);
+        $pagosPorEnt = array_column($stmt->fetchAll(), 'total', 'entidad_id');
+
+        // Asignaciones: por comprobante (para imputar a cada cargo) y total por entidad
+        $stmt = $db->prepare("
+            SELECT m.entidad_id, a.$colAsig AS ref, SUM(a.monto) AS asignado
+            FROM cc_asignaciones a
+            JOIN cuenta_corriente_movimientos m ON m.id = a.movimiento_id
+            WHERE m.entidad_tipo = ? AND m.entidad_id IN ($ph) AND a.$colAsig IS NOT NULL
+            GROUP BY m.entidad_id, a.$colAsig
+        ");
+        $stmt->execute([$entidad_tipo, ...$ids]);
+        $asigPorRef = [];
+        $asigPorEnt = [];
+        foreach ($stmt->fetchAll() as $a) {
+            $asigPorRef[(int)$a['ref']] = (float)$a['asignado'];
+            $asigPorEnt[(int)$a['entidad_id']] = ($asigPorEnt[(int)$a['entidad_id']] ?? 0) + (float)$a['asignado'];
+        }
+
+        $hoy    = new DateTimeImmutable(date('Y-m-d'));
+        $filas  = [];
+        $tot    = ['saldo' => 0, 'a_vencer' => 0, 'v1_30' => 0, 'v31_60' => 0, 'v61_90' => 0, 'v90' => 0, 'vencido' => 0];
+
+        foreach ($ents as $e) {
+            $eid   = (int)$e['id'];
+            $plazo = $e['plazo_pago_dias'] !== null ? (int)$e['plazo_pago_dias'] : null;
+
+            // Residual de cada cargo tras imputar lo asignado a su comprobante
+            $residuales = [];
+            foreach ($cargosPorEnt[$eid] ?? [] as $c) {
+                $monto = (float)$c['monto'];
+                $ref   = $c['referencia_id'] !== null ? (int)$c['referencia_id'] : null;
+                if ($ref !== null && isset($asigPorRef[$ref])) {
+                    $usa = min($monto, $asigPorRef[$ref]);
+                    $asigPorRef[$ref] -= $usa;
+                    $monto -= $usa;
+                }
+                if ($monto > 0.001) $residuales[] = ['fecha' => $c['fecha'], 'monto' => $monto];
+            }
+
+            // Pagos a cuenta (no asignados): FIFO del cargo más viejo al más nuevo
+            $libre = max(0.0, (float)($pagosPorEnt[$eid] ?? 0) - (float)($asigPorEnt[$eid] ?? 0));
+            foreach ($residuales as &$r) {
+                if ($libre < 0.001) break;
+                $usa = min($r['monto'], $libre);
+                $r['monto'] -= $usa;
+                $libre      -= $usa;
+            }
+            unset($r);
+
+            $b = ['a_vencer' => 0.0, 'v1_30' => 0.0, 'v31_60' => 0.0, 'v61_90' => 0.0, 'v90' => 0.0];
+            $maxDiasVencido = 0;
+            foreach ($residuales as $r) {
+                if ($r['monto'] < 0.001) continue;
+                $edad     = (int)$hoy->diff(new DateTimeImmutable($r['fecha']))->format('%a');
+                $diasVenc = $plazo === null ? -1 : $edad - $plazo;
+                $bucket   = $diasVenc <= 0 ? 'a_vencer'
+                          : ($diasVenc <= 30 ? 'v1_30'
+                          : ($diasVenc <= 60 ? 'v31_60'
+                          : ($diasVenc <= 90 ? 'v61_90' : 'v90')));
+                $b[$bucket] += $r['monto'];
+                if ($diasVenc > $maxDiasVencido) $maxDiasVencido = $diasVenc;
+            }
+
+            $vencido = $b['v1_30'] + $b['v31_60'] + $b['v61_90'] + $b['v90'];
+            $saldo   = (float)$e['saldo_cuenta_corriente'];
+
+            $filas[] = [
+                'id'               => $eid,
+                'nombre'           => $e['nombre'],
+                'telefono'         => $e['telefono'] ?? null,
+                'plazo_pago_dias'  => $plazo,
+                'saldo'            => round($saldo, 2),
+                'a_vencer'         => round($b['a_vencer'], 2),
+                'v1_30'            => round($b['v1_30'], 2),
+                'v31_60'           => round($b['v31_60'], 2),
+                'v61_90'           => round($b['v61_90'], 2),
+                'v90'              => round($b['v90'], 2),
+                'vencido'          => round($vencido, 2),
+                'max_dias_vencido' => $maxDiasVencido,
+            ];
+
+            $tot['saldo']    += $saldo;
+            $tot['a_vencer'] += $b['a_vencer'];
+            $tot['v1_30']    += $b['v1_30'];
+            $tot['v31_60']   += $b['v31_60'];
+            $tot['v61_90']   += $b['v61_90'];
+            $tot['v90']      += $b['v90'];
+            $tot['vencido']  += $vencido;
+        }
+
+        // Los más vencidos primero; a igualdad, mayor monto vencido
+        usort($filas, fn($a, $b2) => $b2['max_dias_vencido'] <=> $a['max_dias_vencido'] ?: $b2['vencido'] <=> $a['vencido']);
+
+        foreach ($tot as &$v) { $v = round($v, 2); }
+        unset($v);
+
+        json(200, ['hoy' => date('Y-m-d'), 'filas' => $filas, 'totales' => $tot]);
     }
 
     public function eliminar(int $id): void {

@@ -185,9 +185,24 @@
               <label class="cm-label">Límite de crédito ($)</label>
               <input class="cm-input" name="limite_credito" type="number" min="0" step="0.01" value="0">
             </div>
-            <div class="cm-group" id="cm-campo-plazo" style="display:none">
-              <label class="cm-label">Plazo de pago (días)</label>
-              <input class="cm-input" name="plazo_pago_dias" type="number" min="0" step="1">
+            <div class="cm-group" id="cm-campo-plazo">
+              <label class="cm-label">Plazo de pago</label>
+              <div style="display:flex;gap:8px">
+                <select class="cm-select" id="cm-plazo-preset" style="flex:1">
+                  <option value="">Sin plazo</option>
+                  <option value="7">7 días</option>
+                  <option value="15">15 días</option>
+                  <option value="30">30 días</option>
+                  <option value="60">60 días</option>
+                  <option value="90">90 días</option>
+                  <option value="custom">Personalizado…</option>
+                </select>
+                <input class="cm-input" name="plazo_pago_dias" type="number" min="1" step="1"
+                       placeholder="días" style="width:90px;display:none">
+              </div>
+              <div class="cm-hint" style="font-size:11px;color:#8A8578;margin-top:4px">
+                Los cargos de cuenta corriente vencen a estos días. Define las alertas de vencimiento.
+              </div>
             </div>
           </div>
 
@@ -286,8 +301,33 @@ window.ContactoModal = (function () {
     const esCliente = tipo === 'clientes';
     $('cm-seccion-comercial').style.display = esCliente ? 'flex' : 'none';
     $('cm-seccion-envio').style.display     = esCliente ? 'flex' : 'none';
-    $('cm-campo-plazo').style.display       = esCliente ? 'none' : '';
   }
+
+  /* ── plazo de pago: presets + personalizado ───────── */
+  const PLAZO_PRESETS = ['7', '15', '30', '60', '90'];
+
+  // Sincroniza el select de presets desde el valor real del input (que es lo
+  // que se serializa en el form).
+  function _syncPlazoPreset() {
+    const input = document.querySelector('#cm-form [name=plazo_pago_dias]');
+    const sel   = $('cm-plazo-preset');
+    const v     = String(input.value ?? '').trim();
+    if (v === '')                        { sel.value = '';       input.style.display = 'none'; }
+    else if (PLAZO_PRESETS.includes(v))  { sel.value = v;        input.style.display = 'none'; }
+    else                                 { sel.value = 'custom'; input.style.display = ''; }
+  }
+
+  $('cm-plazo-preset').addEventListener('change', () => {
+    const input = document.querySelector('#cm-form [name=plazo_pago_dias]');
+    const v     = $('cm-plazo-preset').value;
+    if (v === 'custom') {
+      input.style.display = '';
+      input.focus();
+    } else {
+      input.value = v;
+      input.style.display = 'none';
+    }
+  });
 
   /* ── listas de precio ────────────────────────────── */
   async function _cargarListas() {
@@ -363,6 +403,7 @@ window.ContactoModal = (function () {
     $('cm-chk-remito').checked = false;
     _envios = [];
     _renderEnvio();
+    _syncPlazoPreset();
   }
 
   function _poblar(r) {
@@ -376,6 +417,7 @@ window.ContactoModal = (function () {
     set('limite_credito', r.limite_credito ?? 0);
     set('descuento_extra', r.descuento_extra ?? 0);
     set('plazo_pago_dias', r.plazo_pago_dias ?? '');
+    _syncPlazoPreset();
     set('lista_precio_id', r.lista_precio_id ?? '');
     chk('cc_habilitada', r.cc_habilitada);
     chk('activo', r.activo !== false);

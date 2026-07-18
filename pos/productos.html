@@ -10,190 +10,407 @@
 <style>
 
 /* Toolbar */
-.toolbar { background:white; border-bottom:2px solid var(--gris2); padding:8px 14px; display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
-.busq-wrap { position:relative; flex:0 0 260px; }
-.busq-icon { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--gris3); pointer-events:none; }
-#busq { width:100%; padding:8px 10px 8px 34px; border:1.5px solid var(--borde); border-radius:7px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); }
-#busq:focus { border-color:var(--azul); background:white; }
-.fil-select { padding:7px 10px; border:1.5px solid var(--borde); border-radius:7px; font-size:var(--fs-sm); background:var(--gris1); color:var(--texto); font-family:inherit; cursor:pointer; outline:none; max-width:160px; }
-.fil-select:focus { border-color:var(--azul); background:white; }
-.fil-select.activo { border-color:var(--azul); background:#FEF2F2; color:var(--azul); font-weight:600; }
-.btn-limpiar { padding:7px 12px; background:var(--gris2); color:var(--gris3); border:none; border-radius:7px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; display:none; white-space:nowrap; }
-.btn-limpiar.visible { display:block; }
-.btn-limpiar:hover { background:var(--borde); color:var(--texto); }
-.toolbar-sep { flex:1; }
-.info-total { font-size:12px; color:var(--gris3); white-space:nowrap; }
+.toolbar {
+  background: var(--neo-bg);
+  box-shadow: 0 3px 8px var(--neo-sd), 0 -1px 4px var(--neo-sl);
+  padding: 8px 14px; display: flex; align-items: center; gap: 8px;
+  flex-shrink: 0; flex-wrap: wrap; position: relative; z-index: 10;
+}
+.busq-wrap { position: relative; flex: 0 0 260px; }
+.busq-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--neo-text-3); pointer-events: none; }
+#busq {
+  width: 100%; padding: 8px 10px 8px 34px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 13px; font-family: inherit; outline: none;
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-i1);
+  transition: box-shadow var(--neo-t-fast);
+}
+#busq:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.fil-select {
+  padding: 7px 10px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; background: var(--neo-bg); color: var(--neo-text);
+  font-family: inherit; cursor: pointer; outline: none; max-width: 160px;
+  box-shadow: var(--neo-i1); transition: color var(--neo-t-fast);
+}
+.fil-select.activo { color: var(--neo-accent); }
+.btn-limpiar {
+  padding: 7px 12px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-bg); color: var(--neo-text-3); box-shadow: var(--neo-e1);
+  font-size: 12px; font-weight: 600; cursor: pointer; display: none; white-space: nowrap;
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
+}
+.btn-limpiar.visible { display: block; }
+.btn-limpiar:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+.toolbar-sep { flex: 1; }
+.info-total { font-size: 12px; color: var(--neo-text-3); white-space: nowrap; }
 
 /* Tab bar */
-.tab-bar { background:white; border-bottom:2px solid var(--gris2); display:flex; padding:0 14px; flex-shrink:0; }
-.tab-btn { padding:9px 20px; font-size:var(--fs-sm); font-weight:600; border:none; background:none; cursor:pointer; color:var(--gris3); border-bottom:2px solid transparent; margin-bottom:-2px; transition:color .12s,border-color .12s; white-space:nowrap; }
-.tab-btn:hover { color:var(--texto); }
-.tab-btn.activo { color:var(--azul); border-bottom-color:var(--azul); }
+.tab-bar {
+  background: var(--neo-bg); border-bottom: 1px solid rgba(163,177,198,.3);
+  display: flex; padding: 0 14px; flex-shrink: 0;
+}
+.tab-btn {
+  padding: 10px 20px; font-size: 12px; font-weight: 600; border: none; background: none;
+  cursor: pointer; color: var(--neo-text-3); border-bottom: 2px solid transparent;
+  margin-bottom: -1px; transition: color var(--neo-t-fast), border-color var(--neo-t-fast); white-space: nowrap;
+}
+.tab-btn:hover { color: var(--neo-text); }
+.tab-btn.activo { color: var(--neo-accent); border-bottom-color: var(--neo-accent); }
 
 /* Bulk bar */
-.bulk-bar { display:none; background:#FEF2F2; border-bottom:2px solid #FECACA; padding:7px 14px; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
-.bulk-bar.visible { display:flex; }
-.bulk-count { font-size:var(--fs-sm); font-weight:700; color:var(--azul); white-space:nowrap; margin-right:4px; }
-.btn-bulk { padding:5px 11px; background:var(--azul); color:white; border:none; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
-.btn-bulk:hover { background:var(--azul-h); }
-.btn-bulk-alt { padding:5px 11px; background:white; color:var(--texto); border:1.5px solid var(--borde); border-radius:6px; font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap; }
-.btn-bulk-alt:hover { background:var(--gris2); }
-.bulk-div { width:1px; height:20px; background:var(--borde); flex-shrink:0; margin:0 2px; }
+.bulk-bar {
+  display: none; background: var(--neo-bg);
+  box-shadow: 0 3px 8px var(--neo-sd);
+  border-bottom: 2px solid var(--neo-accent);
+  padding: 7px 14px; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap;
+}
+.bulk-bar.visible { display: flex; }
+.bulk-count { font-size: 12px; font-weight: 700; color: var(--neo-accent); white-space: nowrap; margin-right: 4px; }
+.btn-bulk {
+  padding: 5px 11px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-accent); color: white; box-shadow: 3px 3px 6px var(--neo-accent-glow);
+  font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.btn-bulk:hover { background: var(--neo-accent-h); }
+.btn-bulk-alt {
+  padding: 5px 11px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e1);
+  font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: box-shadow var(--neo-t-fast);
+}
+.btn-bulk-alt:hover { box-shadow: var(--neo-e2); }
+.bulk-div { width: 1px; height: 20px; background: rgba(163,177,198,.35); flex-shrink: 0; margin: 0 2px; }
 
 /* Tabla container */
-.tabla-container { flex:1; min-height:0; display:flex; flex-direction:column; background:white; margin:10px 12px 12px; border:1px solid var(--borde); border-radius:10px; overflow:hidden; }
-.tabla-wrap { flex:1; overflow-y:auto; min-height:0; }
+.tabla-container {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  background: var(--neo-bg-deep); margin: 10px 12px 12px;
+  border-radius: var(--neo-r-lg); box-shadow: var(--neo-i1); overflow: hidden; border: none !important;
+}
+.tabla-wrap { flex: 1; overflow-y: auto; min-height: 0; }
+.tabla-wrap::-webkit-scrollbar { width: 6px; }
+.tabla-wrap::-webkit-scrollbar-track { background: var(--neo-bg-deep); }
+.tabla-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
 
 /* Tabla base */
-table { width:100%; border-collapse:collapse; table-layout:fixed; }
-thead th { position:sticky; top:0; background:white; z-index:10; padding:9px 12px; text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); border-bottom:2px solid var(--gris2); white-space:nowrap; user-select:none; }
-thead th.r { text-align:right; }
-thead th.th-chk { padding:9px 0 9px 12px; }
-tbody td { padding:8px 12px; font-size:var(--fs-md); border-bottom:1px solid var(--gris2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
-tbody td.r { text-align:right; font-variant-numeric:tabular-nums; }
-tbody tr:last-child td { border-bottom:none; }
+table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+thead th {
+  position: sticky; top: 0; background: var(--neo-bg-deep); z-index: 10;
+  padding: 9px 12px; text-align: left; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3);
+  border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap; user-select: none;
+}
+thead th.r { text-align: right; }
+thead th.th-chk { padding: 9px 0 9px 12px; }
+tbody td {
+  padding: 8px 12px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; color: var(--neo-text);
+}
+tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
+tbody tr:last-child td { border-bottom: none; }
 
 /* Datos cols */
-.cd-chk  { width:38px; }
-.cd-cod  { width:90px; }
-.cd-prov { width:130px; }
-.cd-marc { width:100px; }
-.cd-rub  { width:100px; }
-.cd-prec { width:90px; }
-.cd-cost { width:82px; }
+.cd-chk  { width: 38px; }
+.cd-cod  { width: 90px; }
+.cd-prov { width: 130px; }
+.cd-marc { width: 100px; }
+.cd-rub  { width: 100px; }
+.cd-prec { width: 90px; }
+.cd-cost { width: 82px; }
 
 /* Stock cols */
-.cs-cod  { width:92px; }
-.cs-prov { width:140px; }
-.cs-marc { width:110px; }
-.cs-rub  { width:110px; }
-.cs-stk  { width:100px; }
-.cs-min  { width:72px; }
-.cs-prec { width:100px; }
+.cs-cod  { width: 92px; }
+.cs-prov { width: 140px; }
+.cs-marc { width: 110px; }
+.cs-rub  { width: 110px; }
+.cs-stk  { width: 100px; }
+.cs-min  { width: 72px; }
+.cs-prec { width: 100px; }
 
 /* Celdas */
-.td-chk { padding:8px 0 8px 12px !important; }
-.chk-row { cursor:pointer; accent-color:var(--azul); width:15px; height:15px; }
-#chk-todos { cursor:pointer; accent-color:var(--azul); width:15px; height:15px; }
-.fila-prod { cursor:default; }
-.fila-prod:hover { background:#FAFAF8; }
-.fila-prod.sel  { background:#FEF2F2; }
-.col-codigo { font-family:monospace; font-size:12px; color:var(--gris3); }
-.col-nombre { font-weight:500; }
-.col-sub    { font-size:12px; color:var(--gris3); }
-.col-precio { font-weight:600; }
-.col-costo  { color:var(--gris3); }
+.td-chk { padding: 8px 0 8px 12px !important; }
+.chk-row { cursor: pointer; accent-color: var(--neo-accent); width: 15px; height: 15px; }
+#chk-todos { cursor: pointer; accent-color: var(--neo-accent); width: 15px; height: 15px; }
+.fila-prod { cursor: default; }
+.fila-prod:hover { background: rgba(255,255,255,.4); }
+.fila-prod.sel  { background: rgba(79,142,247,.1); }
+.col-codigo { font-family: monospace; font-size: 12px; color: var(--neo-text-3); }
+.col-nombre { font-weight: 500; color: var(--neo-text); }
+.col-sub    { font-size: 12px; color: var(--neo-text-3); }
+.col-precio { font-weight: 600; font-variant-numeric: tabular-nums; }
+.col-costo  { color: var(--neo-text-3); font-variant-numeric: tabular-nums; }
 
 /* Stock cell */
-.col-stock { text-align:right; cursor:pointer; user-select:none; }
-.col-stock:not(.editando):hover { background:#FFFBF0; }
-.col-stock.editando { background:#FFF7ED; cursor:default; }
-.stock-ok   { color:var(--verde); font-weight:700; }
-.stock-bajo { color:var(--bajo);  font-weight:700; }
-.stock-cero { color:var(--rojo);  font-weight:700; }
-.stock-neg  { color:#7F1D1D;      font-weight:700; }
-.stock-edit-wrap { display:flex; align-items:center; gap:3px; justify-content:flex-end; }
-.stock-edit-input { width:66px; padding:4px 6px; border:1.5px solid #F97316; border-radius:5px; font-size:var(--fs-md); font-family:inherit; outline:none; text-align:right; background:white; font-variant-numeric:tabular-nums; -moz-appearance:textfield; }
+.col-stock { text-align: right; cursor: pointer; user-select: none; }
+.col-stock:not(.editando):hover { background: rgba(243,156,18,.06); }
+.col-stock.editando { background: rgba(243,156,18,.08); cursor: default; padding-left: 2px; padding-right: 2px; overflow: visible; }
+.stock-ok   { color: var(--neo-success); font-weight: 700; }
+.stock-bajo { color: var(--neo-warning); font-weight: 700; }
+.stock-cero { color: var(--neo-danger);  font-weight: 700; }
+.stock-neg  { color: var(--neo-danger);  font-weight: 700; }
+.stock-edit-wrap { display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
+.stock-edit-input {
+  width: 50px; padding: 3px 5px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 13px; font-family: inherit; outline: none; text-align: right;
+  background: var(--neo-bg); box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-warning);
+  color: var(--neo-text); font-variant-numeric: tabular-nums; -moz-appearance: textfield;
+}
 .stock-edit-input::-webkit-inner-spin-button,
-.stock-edit-input::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
-.sbtn { width:22px; height:22px; border:none; border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:background .1s; }
-.sbtn-ok { background:var(--verde); color:white; }
-.sbtn-ok:hover:not(:disabled) { background:#15803d; }
-.sbtn-ok:disabled { background:var(--gris3); cursor:not-allowed; }
-.sbtn-x  { background:var(--gris2); color:var(--gris3); }
-.sbtn-x:hover { background:var(--borde); color:var(--texto); }
+.stock-edit-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.sbtn { width: 20px; height: 20px; border: none; border-radius: var(--neo-r-xs); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: box-shadow var(--neo-t-fast); }
+.sbtn-ok { background: var(--neo-success); color: white; box-shadow: 2px 2px 5px var(--neo-success-glow); }
+.sbtn-ok:hover:not(:disabled) { background: var(--neo-success-h); }
+.sbtn-ok:disabled { background: var(--neo-text-3); cursor: not-allowed; }
+.sbtn-x { background: var(--neo-bg); color: var(--neo-text-2); box-shadow: var(--neo-e1); }
+.sbtn-x:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
 
-@keyframes rowFlash { 0%,65%{ background:#DCFCE7; } 100%{ background:transparent; } }
-tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
-.estado-vacio { padding:50px 20px; text-align:center; color:var(--gris3); font-size:14px; }
+@keyframes rowFlash { 0%,65%{ background: rgba(39,174,96,.15); } 100%{ background: transparent; } }
+tr.row-saved { animation: rowFlash 1.5s ease-out forwards; }
+.estado-vacio { padding: 50px 20px; text-align: center; color: var(--neo-text-3); font-size: 14px; }
 
 /* Paginación */
-.pag-bar { padding:8px 16px; border-top:2px solid var(--gris2); background:var(--gris1); display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
-.pag-nav { display:flex; align-items:center; gap:12px; }
-.pag-right { display:flex; align-items:center; gap:8px; }
-.btn-group { display:flex; border:1.5px solid var(--borde); border-radius:7px; overflow:hidden; flex-shrink:0; }
-.btn-group-item { padding:7px 14px; background:white; color:var(--texto); border:none; font-size:var(--fs-sm); font-weight:600; cursor:pointer; white-space:nowrap; text-decoration:none; display:flex; align-items:center; transition:background .12s; }
-.btn-group-item:hover { background:var(--gris2); }
-.btn-group-item + .btn-group-item { border-left:1.5px solid var(--borde); }
-.btn-pag { padding:5px 14px; background:white; border:1.5px solid var(--borde); border-radius:7px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; color:var(--texto); transition:background .1s; white-space:nowrap; }
-.btn-pag:hover:not(:disabled) { background:var(--gris2); }
-.btn-pag:disabled { color:var(--gris3); cursor:not-allowed; border-color:var(--gris2); }
-.pag-info { font-size:var(--fs-sm); color:var(--gris3); display:flex; align-items:center; gap:6px; }
-#pag-input { width:54px; padding:4px 6px; border:1.5px solid var(--borde); border-radius:5px; font-size:var(--fs-sm); text-align:center; font-family:inherit; outline:none; -moz-appearance:textfield; }
-#pag-input:focus { border-color:var(--azul); }
+.pag-bar {
+  padding: 8px 16px; border-top: 1px solid rgba(163,177,198,.3);
+  background: var(--neo-bg-deep); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+}
+.pag-nav { display: flex; align-items: center; gap: 12px; }
+.pag-right { display: flex; align-items: center; gap: 8px; }
+.btn-group { display: flex; border-radius: var(--neo-r-sm); overflow: hidden; flex-shrink: 0; box-shadow: var(--neo-e1); }
+.btn-group-item {
+  padding: 7px 14px; background: var(--neo-bg); color: var(--neo-text); border: none;
+  font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  text-decoration: none; display: flex; align-items: center; transition: background var(--neo-t-fast), color var(--neo-t-fast);
+}
+.btn-group-item:hover { background: rgba(255,255,255,.6); color: var(--neo-accent); }
+.btn-group-item + .btn-group-item { border-left: 1px solid rgba(163,177,198,.3); }
+.btn-pag {
+  padding: 5px 14px; border: none; border-radius: var(--neo-r-xs); font-family: inherit;
+  font-size: 12px; font-weight: 600; cursor: pointer; color: var(--neo-text);
+  background: var(--neo-bg); box-shadow: var(--neo-e1); white-space: nowrap;
+  transition: box-shadow var(--neo-t-fast);
+}
+.btn-pag:hover:not(:disabled) { box-shadow: var(--neo-e2); }
+.btn-pag:disabled { color: var(--neo-text-3); cursor: not-allowed; }
+.pag-info { font-size: 12px; color: var(--neo-text-3); display: flex; align-items: center; gap: 6px; }
+#pag-input {
+  width: 54px; padding: 4px 6px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; text-align: center; font-family: inherit; outline: none;
+  background: var(--neo-bg); box-shadow: var(--neo-i1); color: var(--neo-text);
+  -moz-appearance: textfield;
+}
+#pag-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
 #pag-input::-webkit-inner-spin-button,
-#pag-input::-webkit-outer-spin-button { -webkit-appearance:none; }
-.pag-sep { width:1px; height:20px; background:var(--borde); }
-#per-page-sel { padding:5px 8px; border:1.5px solid var(--borde); border-radius:7px; font-size:12px; background:white; color:var(--texto); font-family:inherit; cursor:pointer; outline:none; }
-#per-page-sel:focus { border-color:var(--azul); }
+#pag-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.pag-sep { width: 1px; height: 20px; background: rgba(163,177,198,.35); }
+#per-page-sel {
+  padding: 5px 8px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; background: var(--neo-bg); color: var(--neo-text);
+  font-family: inherit; cursor: pointer; outline: none; box-shadow: var(--neo-i1);
+}
 
 /* Modales productos */
-.m-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; display:none; align-items:center; justify-content:center; }
-.m-overlay.abierto { display:flex; }
-.modal { background:white; border-radius:12px; box-shadow:0 24px 60px rgba(0,0,0,.25); max-height:90vh; display:flex; flex-direction:column; overflow:hidden; }
-.modal-lg { width:660px; }
-.modal-sm { width:420px; }
-.m-head { padding:16px 20px; border-bottom:1.5px solid var(--gris2); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-shrink:0; }
-.m-head-info { flex:1; min-width:0; }
-.m-head-info h3 { font-size:var(--fs-lg); font-weight:800; }
-.m-head-sub { font-size:12px; color:var(--gris3); margin-top:2px; }
-.m-cerrar { width:28px; height:28px; background:var(--gris2); border:none; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--gris3); flex-shrink:0; }
-.m-cerrar:hover { background:var(--gris3); color:white; }
-.m-body { padding:20px; overflow-y:auto; flex:1; }
-.m-foot { padding:14px 20px; border-top:1.5px solid var(--gris2); display:flex; justify-content:flex-end; gap:8px; flex-shrink:0; }
-.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px 16px; }
-.fg-full { grid-column:1 / -1; }
-.form-group { display:flex; flex-direction:column; gap:4px; }
-.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.form-input { padding:8px 10px; border:1.5px solid var(--borde); border-radius:7px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); }
-.form-input:focus { border-color:var(--azul); background:white; }
-.form-input[type="number"] { -moz-appearance:textfield; }
+.m-overlay {
+  position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center;
+  background: rgba(49,52,75,.48); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.m-overlay.abierto { display: flex; }
+.modal {
+  background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e4);
+  max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;
+}
+.modal-lg { width: 660px; }
+.modal-sm { width: 420px; }
+.m-head {
+  padding: 16px 22px; border-bottom: 1px solid rgba(163,177,198,.3);
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0;
+}
+.m-head-info { flex: 1; min-width: 0; }
+.m-head-info h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); }
+.m-head-sub { font-size: 11px; color: var(--neo-text-3); margin-top: 2px; }
+.m-cerrar {
+  background: none; border: none; cursor: pointer;
+  color: var(--neo-text-3); font-size: 18px; line-height: 1; padding: 2px 6px;
+  border-radius: var(--neo-r-xs); flex-shrink: 0;
+}
+.m-cerrar:hover { background: rgba(163,177,198,.2); color: var(--neo-text); }
+.m-body { padding: 20px 22px; overflow-y: auto; flex: 1; }
+.m-foot {
+  padding: 14px 22px; border-top: 1px solid rgba(163,177,198,.3);
+  display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0;
+}
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+.fg-full { grid-column: 1 / -1; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.form-input {
+  padding: 8px 10px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 13px; font-family: inherit; outline: none;
+  background: var(--neo-bg); box-shadow: var(--neo-i1); color: var(--neo-text);
+  transition: box-shadow var(--neo-t-fast);
+}
+.form-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.form-input[type="number"] { -moz-appearance: textfield; }
 .form-input[type="number"]::-webkit-inner-spin-button,
-.form-input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; }
-.check-label { display:flex; align-items:center; gap:8px; font-size:14px; cursor:pointer; }
-.check-label input { width:16px; height:16px; accent-color:var(--azul); cursor:pointer; }
-.btn-pri { padding:9px 18px; background:var(--azul); color:white; border:none; border-radius:7px; font-size:14px; font-weight:600; cursor:pointer; }
-.btn-pri:hover:not(:disabled) { background:var(--azul-h); }
-.btn-pri:disabled { opacity:.5; cursor:not-allowed; }
-.btn-sec { padding:9px 18px; background:var(--gris2); color:var(--texto); border:none; border-radius:7px; font-size:14px; font-weight:500; cursor:pointer; }
-.btn-sec:hover { background:var(--borde); }
-.btn-danger { padding:9px 18px; background:var(--rojo); color:white; border:none; border-radius:7px; font-size:14px; font-weight:600; cursor:pointer; }
-.btn-danger:hover:not(:disabled) { background:#991b1b; }
-.btn-danger:disabled { opacity:.5; cursor:not-allowed; }
-.m-foot-link { background:none; border:none; cursor:pointer; font-family:inherit; font-size:13px; font-weight:600; color:var(--rojo); padding:9px 4px; margin-right:auto; }
-.m-foot-link:hover { text-decoration:underline; }
-.btn-bulk-danger { padding:5px 11px; background:var(--rojo); color:white; border:none; border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; }
-.btn-bulk-danger:hover { background:#991b1b; }
-.bulk-desc { font-size:var(--fs-sm); color:var(--gris3); margin-bottom:14px; line-height:1.5; }
-.bulk-warn { font-size:12px; color:#92400E; background:#FEF3C7; border:1px solid #FCD34D; border-radius:6px; padding:8px 10px; margin-bottom:14px; }
-.pct-wrap { display:flex; align-items:center; gap:8px; }
-.pct-sym { font-size:16px; font-weight:700; color:var(--gris3); }
-.bulk-hint { font-size:12px; color:var(--gris3); margin-top:6px; }
+.form-input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--neo-text); }
+.check-label input { width: 16px; height: 16px; accent-color: var(--neo-accent); cursor: pointer; }
+
+/* Separadores de sección en formularios */
+.form-section { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.form-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--neo-accent); white-space: nowrap; flex-shrink: 0; }
+.form-section-line { flex: 1; height: 1px; background: rgba(163,177,198,.35); }
+.form-input.destacado { font-size: 15px; font-weight: 700; }
+
+/* Combo dropdown */
+.combo-dropdown {
+  position: fixed; z-index: 3000;
+  background: #fff; border: 1px solid #D5D0CA;
+  box-shadow: 0 4px 16px rgba(0,0,0,.13);
+  max-height: 200px; overflow-y: auto; min-width: 120px;
+  display: none;
+}
+.combo-dropdown.abierto { display: block; }
+.combo-dropdown::-webkit-scrollbar { width: 5px; }
+.combo-dropdown::-webkit-scrollbar-thumb { background: #D5D0CA; border-radius: 2px; }
+.combo-item {
+  padding: 8px 11px; font-size: 13px; font-family: inherit;
+  cursor: pointer; color: #111;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.combo-item:hover,
+.combo-item.activo { background: rgba(79,142,247,.1); color: var(--neo-accent); }
+.combo-vacio { padding: 8px 11px; font-size: 12px; color: #aaa; font-family: inherit; }
+
+.btn-pri {
+  padding: 9px 18px; background: var(--neo-accent); color: white; border: none; border-radius: var(--neo-r-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  box-shadow: 4px 4px 10px var(--neo-accent-glow), -2px -2px 5px rgba(255,255,255,.15);
+  transition: box-shadow var(--neo-t-fast);
+}
+.btn-pri:hover:not(:disabled) { background: var(--neo-accent-h); box-shadow: 6px 6px 14px var(--neo-accent-glow); }
+.btn-pri:disabled { opacity: .5; cursor: not-allowed; }
+.btn-sec {
+  padding: 9px 18px; border: none; border-radius: var(--neo-r-sm);
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2);
+  font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit;
+  transition: box-shadow var(--neo-t-fast);
+}
+.btn-sec:hover { box-shadow: var(--neo-e3); }
+.btn-danger {
+  padding: 9px 18px; background: var(--neo-danger); color: white; border: none; border-radius: var(--neo-r-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  box-shadow: 4px 4px 10px var(--neo-danger-glow), -2px -2px 5px rgba(255,255,255,.15);
+}
+.btn-danger:hover:not(:disabled) { background: var(--neo-danger-h); }
+.btn-danger:disabled { opacity: .5; cursor: not-allowed; }
+.m-foot-link { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--neo-danger); padding: 9px 4px; margin-right: auto; }
+.m-foot-link:hover { text-decoration: underline; }
+.btn-bulk-danger {
+  padding: 5px 11px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-danger); color: white; box-shadow: 3px 3px 6px var(--neo-danger-glow);
+  font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+}
+.btn-bulk-danger:hover { background: var(--neo-danger-h); }
+.bulk-desc { font-size: 12px; color: var(--neo-text-2); margin-bottom: 14px; line-height: 1.5; }
+.bulk-warn { font-size: 12px; color: var(--neo-warning); background: rgba(243,156,18,.1); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); padding: 8px 10px; margin-bottom: 14px; }
+.pct-wrap { display: flex; align-items: center; gap: 8px; }
+.pct-sym { font-size: 16px; font-weight: 700; color: var(--neo-text-3); }
+.bulk-hint { font-size: 12px; color: var(--neo-text-3); margin-top: 6px; }
 
 /* Modal historial */
-.h-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:1000; }
-.h-overlay.abierto { display:flex; }
-.modal-hist { background:white; border-radius:12px; box-shadow:0 24px 60px rgba(0,0,0,.2); width:500px; max-height:85vh; display:flex; flex-direction:column; }
-.hist-header { padding:14px 18px; border-bottom:1px solid var(--gris2); display:flex; align-items:flex-start; gap:10px; flex-shrink:0; }
-.hist-header-info { flex:1; min-width:0; }
-.hist-nombre { font-size:var(--fs-lg); font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.hist-meta { font-size:12px; color:var(--gris3); margin-top:3px; }
-.hist-cerrar { width:28px; height:28px; background:var(--gris2); border:none; border-radius:50%; font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--gris3); flex-shrink:0; }
-.hist-cerrar:hover { background:var(--gris3); color:white; }
-.hist-body { overflow-y:auto; flex:1; }
-.hist-tabla { width:100%; border-collapse:collapse; }
-.hist-tabla thead th { position:sticky; top:0; background:white; padding:8px 14px; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); border-bottom:2px solid var(--gris2); text-align:left; }
-.hist-tabla thead th.r { text-align:right; }
-.hist-tabla tbody td { padding:9px 14px; font-size:var(--fs-md); border-bottom:1px solid var(--gris2); }
-.hist-tabla tbody td.r { text-align:right; font-variant-numeric:tabular-nums; }
-.hist-tabla tbody tr:last-child td { border-bottom:none; }
-.tipo-entrada { color:var(--verde); font-weight:600; }
-.tipo-salida  { color:var(--rojo);  font-weight:600; }
-.tipo-ajuste  { color:var(--azul);  font-weight:600; }
-.tipo-compra  { color:#7c3aed;      font-weight:600; }
-.tipo-venta   { color:var(--gris3); font-weight:500; }
-.cant-pos { color:var(--verde); font-weight:700; font-variant-numeric:tabular-nums; }
-.cant-neg { color:var(--rojo);  font-weight:700; font-variant-numeric:tabular-nums; }
+.h-overlay {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 1000;
+  background: rgba(49,52,75,.48); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.h-overlay.abierto { display: flex; }
+.modal-hist { background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e4); width: 500px; max-height: 85vh; display: flex; flex-direction: column; }
+.hist-header { padding: 14px 18px; border-bottom: 1px solid rgba(163,177,198,.3); display: flex; align-items: flex-start; gap: 10px; flex-shrink: 0; }
+.hist-header-info { flex: 1; min-width: 0; }
+.hist-nombre { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--neo-text-3); }
+.hist-meta { font-size: 11px; color: var(--neo-text-3); margin-top: 3px; }
+.hist-cerrar {
+  background: none; border: none; cursor: pointer;
+  color: var(--neo-text-3); font-size: 18px; line-height: 1; padding: 2px 6px;
+  border-radius: var(--neo-r-xs); flex-shrink: 0;
+}
+.hist-cerrar:hover { background: rgba(163,177,198,.2); color: var(--neo-text); }
+.hist-body { overflow-y: auto; flex: 1; }
+.hist-tabla { width: 100%; border-collapse: collapse; }
+.hist-tabla thead th {
+  position: sticky; top: 0; background: var(--neo-bg); padding: 8px 14px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4); text-align: left;
+}
+.hist-tabla thead th.r { text-align: right; }
+.hist-tabla tbody td { padding: 9px 14px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); color: var(--neo-text); }
+.hist-tabla tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
+.hist-tabla tbody tr:last-child td { border-bottom: none; }
+.tipo-entrada { color: var(--neo-success); font-weight: 600; }
+.tipo-salida  { color: var(--neo-danger);  font-weight: 600; }
+.tipo-ajuste  { color: var(--neo-accent);  font-weight: 600; }
+.tipo-compra  { color: #7c3aed;            font-weight: 600; }
+.tipo-venta   { color: var(--neo-text-3);  font-weight: 500; }
+.cant-pos { color: var(--neo-success); font-weight: 700; font-variant-numeric: tabular-nums; }
+.cant-neg { color: var(--neo-danger);  font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Banner de alerta stock mínimo */
+.banner-stock {
+  display: none; padding: 9px 16px;
+  background: rgba(243,156,18,.1); border-bottom: 2px solid var(--neo-warning);
+  font-size: 13px; color: var(--neo-warning); align-items: center; gap: 10px; flex-shrink: 0;
+}
+.banner-stock.visible { display: flex; }
+.banner-stock-link { font-weight: 700; color: var(--neo-warning); text-decoration: underline; cursor: pointer; background: none; border: none; font-family: inherit; font-size: inherit; padding: 0; }
+
+/* ── Flat modal — igual a contacto-modal ── */
+.m-overlay .modal,
+.h-overlay .modal-hist {
+  background: #fff;
+  border: 1px solid #D5D0CA;
+  border-radius: 0;
+  box-shadow: 0 4px 24px rgba(0,0,0,.13);
+}
+.m-overlay .m-head,
+.h-overlay .hist-header {
+  background: #F0EEEB;
+  border-bottom-color: #D5D0CA;
+  border-radius: 0;
+}
+.m-overlay .m-foot {
+  border-top-color: #D5D0CA;
+}
+.m-overlay .form-input {
+  box-shadow: none;
+  border: 1px solid #D5D0CA;
+  border-radius: 0;
+  background: #fff;
+}
+.m-overlay .form-input:focus {
+  box-shadow: none;
+  border-color: #111;
+}
+.m-overlay .btn-pri {
+  box-shadow: none;
+  border-radius: 0;
+}
+.m-overlay .btn-pri:hover:not(:disabled) { box-shadow: none; }
+.m-overlay .btn-sec {
+  background: #fff;
+  color: #111;
+  border: 1.5px solid #888;
+  box-shadow: none;
+  border-radius: 0;
+}
+.m-overlay .btn-sec:hover { box-shadow: none; }
+.m-overlay .btn-danger {
+  background: #fff;
+  color: #B91C1C;
+  border: 1.5px solid #B91C1C;
+  box-shadow: none;
+  border-radius: 0;
+}
+.m-overlay .btn-danger:hover:not(:disabled) { background: #fff; }
+.m-overlay .form-section-line { background: #D5D0CA; }
+.m-overlay .form-section-label { color: #888; }
 
 </style>
 </head>
@@ -223,6 +440,7 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
     <option value="sin_stock">Sin stock</option>
     <option value="stock_bajo">Stock bajo</option>
   </select>
+  <select class="fil-select" id="fil-deposito" style="display:none" title="Ver stock de un depósito específico"></select>
   <button class="btn-limpiar" id="btn-limpiar">× Limpiar filtros</button>
   <div class="toolbar-sep"></div>
   <div class="btn-group" id="grupo-admin" style="display:none">
@@ -248,6 +466,12 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
   <div class="bulk-div"></div>
   <button class="btn-bulk-alt" id="btn-sel-filtrados"></button>
   <button class="btn-bulk-alt" id="btn-desel">Deseleccionar todo</button>
+</div>
+
+<div class="banner-stock" id="banner-stock">
+  <span id="banner-stock-txt"></span>
+  <button class="banner-stock-link" id="banner-stock-btn">Ver productos</button>
+  <button class="banner-stock-link" id="banner-pedido-btn">Ver pedido sugerido</button>
 </div>
 
 <div class="tabla-container">
@@ -280,7 +504,7 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
       <thead>
         <tr>
           <th>Código</th><th>Nombre</th><th>Proveedor</th><th>Marca</th>
-          <th>Rubro</th><th class="r" title="Click para editar">Stock ✎</th><th class="r">Mín.</th><th class="r">Precio</th>
+          <th>Rubro</th><th class="r" id="th-stock-label" title="Click para editar">Stock ✎</th><th class="r">Mín.</th><th class="r">Precio</th>
         </tr>
       </thead>
       <tbody id="tbody-stock">
@@ -344,22 +568,31 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
         </div>
         <div class="form-group">
           <label class="form-label">Proveedor</label>
-          <input type="text" id="e-proveedor" class="form-input" list="dl-proveedores" autocomplete="off">
-          <datalist id="dl-proveedores"></datalist>
+          <input type="text" id="e-proveedor" class="form-input" autocomplete="off">
         </div>
         <div class="form-group">
           <label class="form-label">Marca</label>
-          <input type="text" id="e-marca" class="form-input" list="dl-marcas" autocomplete="off">
-          <datalist id="dl-marcas"></datalist>
+          <input type="text" id="e-marca" class="form-input" autocomplete="off">
         </div>
         <div class="form-group">
           <label class="form-label">Rubro</label>
-          <input type="text" id="e-categoria" class="form-input" list="dl-categorias" autocomplete="off">
-          <datalist id="dl-categorias"></datalist>
+          <input type="text" id="e-categoria" class="form-input" autocomplete="off">
         </div>
         <div class="form-group">
           <label class="form-label">Subcategoría</label>
           <input type="text" id="e-subcategoria" class="form-input" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label class="form-label">IVA</label>
+          <select id="e-iva" class="form-input">
+            <option value="21">21%</option>
+            <option value="10.5">10,5%</option>
+            <option value="0">Exento (0%)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unidad de medida</label>
+          <input type="text" id="e-unidad" class="form-input" list="dl-unidades" autocomplete="off" placeholder="u, kg, litro…">
         </div>
         <div class="form-group fg-full">
           <label class="check-label">
@@ -388,6 +621,11 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
     </div>
     <div class="m-body">
       <div class="form-grid">
+
+        <div class="form-section fg-full">
+          <span class="form-section-label">Identificación</span>
+          <div class="form-section-line"></div>
+        </div>
         <div class="form-group fg-full">
           <label class="form-label">Nombre *</label>
           <input type="text" id="n-nombre" class="form-input" autocomplete="off">
@@ -398,28 +636,69 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
           <span id="n-codigo-error" style="font-size:11px;color:var(--rojo);display:none"></span>
         </div>
         <div class="form-group">
-          <label class="form-label">Precio venta</label>
-          <input type="number" id="n-precio" class="form-input" min="0" step="0.01" placeholder="0.00">
+          <label class="form-label">Unidad de medida</label>
+          <input type="text" id="n-unidad" class="form-input" list="dl-unidades" autocomplete="off" placeholder="u, kg, litro…">
+          <datalist id="dl-unidades">
+            <option value="u"><option value="kg"><option value="g">
+            <option value="litro"><option value="ml"><option value="metro">
+            <option value="cm"><option value="m²"><option value="caja">
+            <option value="pack"><option value="par"><option value="docena">
+          </datalist>
+        </div>
+
+        <div class="form-section fg-full">
+          <span class="form-section-label">Precios</span>
+          <div class="form-section-line"></div>
         </div>
         <div class="form-group">
-          <label class="form-label">Costo actual</label>
-          <input type="number" id="n-costo" class="form-input" min="0" step="0.01" placeholder="0.00">
+          <label class="form-label">Costo s/IVA</label>
+          <input type="number" id="n-costo-neto" class="form-input" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Costo c/IVA</label>
+          <input type="number" id="n-costo-bruto" class="form-input" min="0" step="0.01" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">IVA</label>
+          <select id="n-iva" class="form-input">
+            <option value="21">21%</option>
+            <option value="10.5">10,5%</option>
+            <option value="0">Exento (0%)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Margen (%)</label>
+          <input type="number" id="n-margen" class="form-input" min="-99" step="0.1" placeholder="0.0">
+        </div>
+        <div class="form-group fg-full">
+          <label class="form-label">Precio venta c/IVA</label>
+          <input type="number" id="n-precio" class="form-input destacado" min="0" step="0.01" placeholder="0.00">
+        </div>
+
+        <div class="form-section fg-full">
+          <span class="form-section-label">Clasificación</span>
+          <div class="form-section-line"></div>
         </div>
         <div class="form-group">
           <label class="form-label">Proveedor</label>
-          <input type="text" id="n-proveedor" class="form-input" list="dl-proveedores" autocomplete="off">
+          <input type="text" id="n-proveedor" class="form-input" autocomplete="off">
         </div>
         <div class="form-group">
           <label class="form-label">Marca</label>
-          <input type="text" id="n-marca" class="form-input" list="dl-marcas" autocomplete="off">
+          <input type="text" id="n-marca" class="form-input" autocomplete="off">
         </div>
         <div class="form-group">
           <label class="form-label">Rubro</label>
-          <input type="text" id="n-categoria" class="form-input" list="dl-categorias" autocomplete="off">
+          <input type="text" id="n-categoria" class="form-input" autocomplete="off">
         </div>
         <div class="form-group">
           <label class="form-label">Subcategoría</label>
           <input type="text" id="n-subcategoria" class="form-input" autocomplete="off">
+        </div>
+
+        <div class="form-section fg-full">
+          <span class="form-section-label">Stock</span>
+          <div class="form-section-line"></div>
         </div>
         <div class="form-group">
           <label class="form-label">Stock inicial</label>
@@ -429,11 +708,13 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
           <label class="form-label">Stock mínimo</label>
           <input type="number" id="n-stock-min" class="form-input" min="0" step="0.001" placeholder="0">
         </div>
-        <div class="form-group fg-full">
+
+        <div class="form-group fg-full" style="padding-top:4px">
           <label class="check-label">
             <input type="checkbox" id="n-activo" checked> Producto activo
           </label>
         </div>
+
       </div>
     </div>
     <div class="m-foot">
@@ -496,15 +777,76 @@ tr.row-saved { animation:rowFlash 1.5s ease-out forwards; }
 
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+<!-- Modal: Pedido sugerido por proveedor -->
+<div class="m-overlay" id="overlay-pedido">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pedido-titulo" style="width:700px;max-width:96vw">
+    <div class="m-head">
+      <div class="m-head-info">
+        <h3 id="pedido-titulo">Pedido sugerido de stock</h3>
+        <div class="m-head-sub">Editá las cantidades antes de exportar</div>
+      </div>
+      <button class="m-cerrar" onclick="cerrarPedido()" aria-label="Cerrar">×</button>
+    </div>
+    <div class="m-body" id="pedido-contenido" style="max-height:55vh;overflow-y:auto"></div>
+    <div class="m-foot" style="justify-content:space-between">
+      <div style="display:flex;gap:6px">
+        <button class="btn-sec" id="pedido-btn-copy" onclick="copiarPedido()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar texto
+        </button>
+        <button class="btn-sec" onclick="exportarExcelPedido()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Excel / CSV
+        </button>
+        <button class="btn-sec" id="pedido-btn-pdf" onclick="exportarPdfPedido()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><polyline points="9 9 9 9 9 9"/></svg>PDF
+        </button>
+      </div>
+      <button class="btn-sec" onclick="cerrarPedido()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Pedido modal table */
+.pedido-grupo        { margin-bottom: 20px; }
+.pedido-grupo:last-child { margin-bottom: 0; }
+.pedido-prov-title   { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+                        color: var(--neo-accent); padding: 6px 0 5px; border-bottom: 2px solid var(--neo-accent);
+                        margin-bottom: 0; }
+table.pedido-tbl     { width: 100%; border-collapse: collapse; }
+table.pedido-tbl th  { padding: 6px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+                        letter-spacing: .04em; color: var(--neo-text-3); background: var(--neo-bg-deep);
+                        border-bottom: 1px solid rgba(163,177,198,.35); text-align: left; white-space: nowrap; }
+table.pedido-tbl th.r { text-align: right; }
+table.pedido-tbl td  { padding: 6px 8px; font-size: 12px; border-bottom: 1px solid rgba(163,177,198,.15);
+                        color: var(--neo-text); vertical-align: middle; }
+table.pedido-tbl tr:last-child td { border-bottom: none; }
+table.pedido-tbl td.cod  { font-family: monospace; font-size: 11px; color: var(--neo-text-3); }
+table.pedido-tbl td.r    { text-align: right; font-variant-numeric: tabular-nums; }
+table.pedido-tbl td.stk  { color: var(--neo-danger); font-weight: 700; }
+.pedido-inp {
+  width: 64px; padding: 3px 6px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 13px; font-family: inherit; text-align: right; font-weight: 700;
+  background: var(--neo-bg); color: var(--neo-success); box-shadow: var(--neo-i1);
+  outline: none; font-variant-numeric: tabular-nums; -moz-appearance: textfield;
+}
+.pedido-inp:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.pedido-inp::-webkit-inner-spin-button,
+.pedido-inp::-webkit-outer-spin-button { -webkit-appearance: none; }
+.pedido-sin-prov { color: var(--neo-text-3); font-style: italic; font-size: 10px; }
+</style>
+
 <script>
 const API = '/Logos/api';
 const $   = id => document.getElementById(id);
-const esAdmin = window.LOGOS_SESION?.rol === 'admin';
+// "esAdmin" histórico: ahora significa "puede editar productos" (permiso granular)
+const esAdmin  = window.puede?.('productos_editar') ?? (window.LOGOS_SESION?.rol === 'admin');
+const veCostos = window.puede?.('costos') ?? (window.LOGOS_SESION?.rol === 'admin');
 
 // ── Estado compartido ────────────────────────────────────────
-let tabActivo  = 'datos';
-let busqTimer  = null;
-let toastTimer = null;
+let tabActivo   = 'datos';
+let busqTimer   = null;
+let toastTimer  = null;
+let alertasData = [];
 
 // ── Estado: tab Datos ────────────────────────────────────────
 let pagDatos           = 1;
@@ -567,6 +909,7 @@ function cambiarTab(tab) {
   $('tbl-stock').style.display    = esDatos ? 'none' : '';
   $('fil-orden').style.display    = esDatos ? '' : 'none';
   $('fil-stock').style.display    = esDatos ? 'none' : '';
+  if ($('fil-deposito')._inicializado) $('fil-deposito').style.display = esDatos ? 'none' : '';
   $('per-page-sel').style.display = esDatos ? '' : 'none';
   $('sep-perpage').style.display  = esDatos ? '' : 'none';
 
@@ -577,25 +920,104 @@ function cambiarTab(tab) {
   else         { pagStock = 1; cargarStock(); }
 }
 
+// ── Combo dropdown ───────────────────────────────────────────
+function crearCombo(input, lista) {
+  if (!input) return;
+
+  const dd = document.createElement('div');
+  dd.className = 'combo-dropdown';
+  document.body.appendChild(dd);
+
+  let idxActivo = -1;
+  function e2(s) { return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]); }
+
+  function posicionar() {
+    const r = input.getBoundingClientRect();
+    dd.style.left  = r.left + 'px';
+    dd.style.width = r.width + 'px';
+    const spaceBelow = window.innerHeight - r.bottom - 4;
+    const ddH = Math.min(200, dd.scrollHeight || 40);
+    dd.style.top = (spaceBelow >= ddH || spaceBelow >= r.top)
+      ? (r.bottom + 2) + 'px'
+      : Math.max(4, r.top - ddH - 2) + 'px';
+  }
+
+  function render(ops) {
+    idxActivo = -1;
+    dd.innerHTML = ops.length
+      ? ops.map(o => `<div class="combo-item" data-val="${e2(o)}">${e2(o)}</div>`).join('')
+      : '<div class="combo-vacio">Sin coincidencias</div>';
+    dd.querySelectorAll('.combo-item').forEach(item =>
+      item.addEventListener('mousedown', ev => {
+        ev.preventDefault();
+        input.value = item.dataset.val;
+        cerrar();
+      })
+    );
+    posicionar();
+  }
+
+  function filtrar() {
+    const q = input.value.trim().toLowerCase();
+    render(q ? lista.filter(o => o.toLowerCase().includes(q)) : lista);
+  }
+
+  function abrir() { filtrar(); dd.classList.add('abierto'); }
+  function cerrar() { dd.classList.remove('abierto'); idxActivo = -1; }
+
+  function setActivo(idx) {
+    const items = [...dd.querySelectorAll('.combo-item')];
+    if (!items.length) return;
+    items.forEach(i => i.classList.remove('activo'));
+    idxActivo = Math.max(0, Math.min(idx, items.length - 1));
+    items[idxActivo].classList.add('activo');
+    items[idxActivo].scrollIntoView({ block: 'nearest' });
+  }
+
+  input.addEventListener('focus',  abrir);
+  input.addEventListener('input',  () => { filtrar(); if (!dd.classList.contains('abierto')) dd.classList.add('abierto'); });
+  input.addEventListener('blur',   () => setTimeout(cerrar, 150));
+  input.addEventListener('keydown', e => {
+    const open = dd.classList.contains('abierto');
+    if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) { e.preventDefault(); abrir(); return; }
+    if (!open) return;
+    if (e.key === 'ArrowDown')  { e.preventDefault(); setActivo(idxActivo + 1); }
+    else if (e.key === 'ArrowUp')    { e.preventDefault(); setActivo(Math.max(0, idxActivo - 1)); }
+    else if (e.key === 'Enter' && idxActivo >= 0) {
+      const items = [...dd.querySelectorAll('.combo-item')];
+      if (items[idxActivo]) { e.preventDefault(); input.value = items[idxActivo].dataset.val; cerrar(); }
+    }
+    else if (e.key === 'Escape') cerrar();
+  });
+
+  const repos = () => { if (dd.classList.contains('abierto')) posicionar(); };
+  window.addEventListener('scroll', repos, true);
+  window.addEventListener('resize', repos);
+}
+
 // ── Filtros ──────────────────────────────────────────────────
 async function cargarFiltros() {
   try {
-    const d = await fetch(`${API}/filtros`).then(r => r.json());
-    const selProv = $('fil-proveedor'), selMarca = $('fil-marca'), selRubro = $('fil-rubro');
-    const dlProv  = $('dl-proveedores'), dlMarca  = $('dl-marcas'), dlCat    = $('dl-categorias');
-    for (const p of d.proveedores) {
-      selProv.appendChild(Object.assign(document.createElement('option'), { value:p, textContent:p }));
-      dlProv.appendChild(Object.assign(document.createElement('option'), { value:p }));
-    }
-    for (const m of d.marcas) {
-      selMarca.appendChild(Object.assign(document.createElement('option'), { value:m, textContent:m }));
-      dlMarca.appendChild(Object.assign(document.createElement('option'), { value:m }));
-    }
-    for (const c of d.categorias) {
-      selRubro.appendChild(Object.assign(document.createElement('option'), { value:c, textContent:c }));
-      dlCat.appendChild(Object.assign(document.createElement('option'), { value:c }));
-    }
-  } catch (e) { console.error('Filtros:', e); }
+    const d    = await fetch(`${API}/filtros`).then(r => r.json());
+    const prov = d.proveedores   || [];
+    const marc = d.marcas        || [];
+    const cats = d.categorias    || [];
+    const subs = d.subcategorias || [];
+
+    for (const p of prov) $('fil-proveedor').appendChild(Object.assign(document.createElement('option'), { value:p, textContent:p }));
+    for (const m of marc) $('fil-marca').appendChild(Object.assign(document.createElement('option'), { value:m, textContent:m }));
+    for (const c of cats) $('fil-rubro').appendChild(Object.assign(document.createElement('option'), { value:c, textContent:c }));
+
+    crearCombo($('n-proveedor'),    prov);
+    crearCombo($('n-marca'),        marc);
+    crearCombo($('n-categoria'),    cats);
+    crearCombo($('n-subcategoria'), subs);
+
+    crearCombo($('e-proveedor'),    prov);
+    crearCombo($('e-marca'),        marc);
+    crearCombo($('e-categoria'),    cats);
+    crearCombo($('e-subcategoria'), subs);
+  } catch (err) { console.error('Filtros:', err); }
 }
 
 function getFilters() {
@@ -618,7 +1040,7 @@ function actualizarLimpiar() {
 
 function limpiarFiltros() {
   $('busq').value = '';
-  ['fil-proveedor','fil-marca','fil-rubro','fil-stock'].forEach(id => $(id).value = '');
+  ['fil-proveedor','fil-marca','fil-rubro','fil-stock','fil-deposito'].forEach(id => $(id) && ($(id).value = ''));
   $('fil-orden').value = 'nombre_asc';
   if (tabActivo === 'datos') { pagDatos = 1; cargarDatos(); }
   else                       { pagStock = 1; cargarStock(); }
@@ -679,7 +1101,7 @@ function renderDatos(items) {
       <td class="col-sub">${esc(p.marca || '')}</td>
       <td class="col-sub">${esc(p.categoria || '')}</td>
       <td class="r col-precio">${fmt(p.precio_venta)}</td>
-      <td class="r col-costo">${fmt(p.costo_actual)}</td>
+      <td class="r col-costo">${veCostos && p.costo_actual != null ? fmt(p.costo_actual) : '—'}</td>
     </tr>`;
   }
   $('tbody-datos').innerHTML = html;
@@ -752,8 +1174,9 @@ function actualizarBulkBar() {
 
 // ── Modal nuevo producto ──────────────────────────────────────
 function abrirModalNuevo() {
-  ['n-nombre','n-codigo','n-precio','n-costo','n-proveedor',
-   'n-marca','n-categoria','n-subcategoria','n-stock-inicial','n-stock-min'].forEach(id => $(id).value = '');
+  ['n-nombre','n-codigo','n-costo-neto','n-costo-bruto','n-margen','n-precio',
+   'n-proveedor','n-marca','n-categoria','n-subcategoria','n-stock-inicial','n-stock-min','n-unidad'].forEach(id => $(id).value = '');
+  $('n-iva').value = '21';
   $('n-activo').checked = true;
   $('n-codigo-error').style.display = 'none';
   $('btn-guardar-nuevo').disabled = false;
@@ -762,6 +1185,50 @@ function abrirModalNuevo() {
   setTimeout(() => $('n-nombre').focus(), 50);
 }
 function cerrarModalNuevo() { $('overlay-nuevo').classList.remove('abierto'); }
+
+function recalcNuevoPrecios(origen) {
+  const iva  = parseFloat($('n-iva').value) || 0;
+  const mult = 1 + iva / 100;
+
+  if (origen === 'neto') {
+    const v = parseFloat($('n-costo-neto').value);
+    if (!isNaN(v) && v >= 0) {
+      const bruto = v * mult;
+      $('n-costo-bruto').value = bruto.toFixed(2);
+      const mg = parseFloat($('n-margen').value);
+      if (!isNaN(mg)) $('n-precio').value = (bruto * (1 + mg / 100)).toFixed(2);
+    } else { $('n-costo-bruto').value = ''; }
+
+  } else if (origen === 'bruto') {
+    const v = parseFloat($('n-costo-bruto').value);
+    if (!isNaN(v) && v >= 0) {
+      $('n-costo-neto').value = (mult > 0 ? v / mult : v).toFixed(2);
+      const mg = parseFloat($('n-margen').value);
+      if (!isNaN(mg)) $('n-precio').value = (v * (1 + mg / 100)).toFixed(2);
+    } else { $('n-costo-neto').value = ''; }
+
+  } else if (origen === 'iva') {
+    const neto = parseFloat($('n-costo-neto').value);
+    if (!isNaN(neto) && neto >= 0) {
+      const bruto = neto * mult;
+      $('n-costo-bruto').value = bruto.toFixed(2);
+      const mg = parseFloat($('n-margen').value);
+      if (!isNaN(mg)) $('n-precio').value = (bruto * (1 + mg / 100)).toFixed(2);
+    }
+
+  } else if (origen === 'margen') {
+    const bruto = parseFloat($('n-costo-bruto').value);
+    const mg    = parseFloat($('n-margen').value);
+    if (!isNaN(bruto) && !isNaN(mg)) $('n-precio').value = (bruto * (1 + mg / 100)).toFixed(2);
+
+  } else if (origen === 'precio') {
+    const precio = parseFloat($('n-precio').value);
+    const bruto  = parseFloat($('n-costo-bruto').value);
+    if (!isNaN(precio) && !isNaN(bruto) && bruto > 0) {
+      $('n-margen').value = ((precio / bruto - 1) * 100).toFixed(1);
+    }
+  }
+}
 
 async function guardarNuevoProducto() {
   const nombre = $('n-nombre').value.trim();
@@ -773,14 +1240,16 @@ async function guardarNuevoProducto() {
     nombre,
     codigo:        $('n-codigo').value.trim()        || null,
     precio_venta:  $('n-precio').value !== ''        ? parseFloat($('n-precio').value)        : null,
-    costo_actual:  $('n-costo').value  !== ''        ? parseFloat($('n-costo').value)         : null,
+    costo_actual:  $('n-costo-neto').value !== ''     ? parseFloat($('n-costo-neto').value)    : null,
     proveedor:     $('n-proveedor').value.trim()     || null,
     marca:         $('n-marca').value.trim()         || null,
     categoria:     $('n-categoria').value.trim()     || null,
     subcategoria:  $('n-subcategoria').value.trim()  || null,
-    stock_inicial: $('n-stock-inicial').value !== '' ? parseFloat($('n-stock-inicial').value) : null,
-    stock_minimo:  $('n-stock-min').value !== ''     ? parseFloat($('n-stock-min').value)     : null,
-    activo:        $('n-activo').checked,
+    stock_inicial:  $('n-stock-inicial').value !== '' ? parseFloat($('n-stock-inicial').value) : null,
+    stock_minimo:   $('n-stock-min').value !== ''     ? parseFloat($('n-stock-min').value)     : null,
+    iva_porcentaje: parseFloat($('n-iva').value),
+    unidad_medida:  $('n-unidad').value.trim() || null,
+    activo:         $('n-activo').checked,
   };
 
   const btn = $('btn-guardar-nuevo');
@@ -822,6 +1291,8 @@ function abrirModalEditar(p) {
   $('e-categoria').value    = p.categoria     || '';
   $('e-subcategoria').value = p.subcategoria  || '';
   $('e-stock-min').value    = p.stock_minimo != null ? p.stock_minimo : '';
+  $('e-iva').value          = p.iva_porcentaje != null ? String(p.iva_porcentaje) : '21';
+  $('e-unidad').value       = p.unidad_medida  || '';
   $('e-activo').checked     = p.activo !== false;
   $('btn-guardar-prod').disabled = false;
   $('btn-guardar-prod').textContent = 'Guardar cambios';
@@ -842,8 +1313,10 @@ async function guardarProducto() {
     proveedor:    $('e-proveedor').value.trim()    || null,
     categoria:    $('e-categoria').value.trim()    || null,
     subcategoria: $('e-subcategoria').value.trim() || null,
-    stock_minimo: $('e-stock-min').value !== '' ? parseFloat($('e-stock-min').value) : null,
-    activo:       $('e-activo').checked,
+    stock_minimo:   $('e-stock-min').value !== '' ? parseFloat($('e-stock-min').value) : null,
+    iva_porcentaje: parseFloat($('e-iva').value),
+    unidad_medida:  $('e-unidad').value.trim() || null,
+    activo:         $('e-activo').checked,
   };
   const btn = $('btn-guardar-prod');
   btn.disabled = true; btn.textContent = 'Guardando…';
@@ -918,7 +1391,10 @@ async function aplicarBulk() {
     cambios = { [bulkCampo]: val };
   }
   const n = todosLosFiltrados ? totalFiltradoDatos : seleccionados.size;
-  if (n > 1000 && !confirm(`Estás por modificar ${n.toLocaleString('es-AR')} productos. ¿Confirmar?`)) return;
+  if (n > 1000) {
+    const ok = await confirmarModal(`Estás por modificar ${n.toLocaleString('es-AR')} productos a la vez.`, { titulo: 'Cambio masivo', confirmLabel: 'Aplicar igual', danger: true });
+    if (!ok) return;
+  }
   const bodyReq = todosLosFiltrados
     ? { modo:'filtro', filtro:filtroCurrent, cambios }
     : { modo:'ids',    ids:[...seleccionados], cambios };
@@ -1002,6 +1478,36 @@ async function confirmarEliminar() {
 async function cargarStock() {
   const f = getFilters();
   actualizarLimpiar();
+  const depositoId = $('fil-deposito').value || '';
+  $('tbody-stock').innerHTML = '<tr><td colspan="8" class="estado-vacio">Cargando…</td></tr>';
+  $('btn-prev').disabled = true; $('btn-next').disabled = true;
+
+  if (depositoId) {
+    // Vista por depósito: endpoint sin paginación, aplica filtros de texto en cliente
+    $('th-stock-label').textContent = 'Stock depósito ✎';
+    try {
+      const r = await fetch(`${API}/sucursales/stock-deposito?deposito_id=${depositoId}`);
+      let items = await r.json();
+      if (!r.ok) throw new Error(items.error ?? 'Error al cargar');
+      // filtros de texto en cliente
+      const q = f.q?.toLowerCase() || '';
+      if (q) items = items.filter(p => (p.nombre||'').toLowerCase().includes(q) || (p.codigo||'').toLowerCase().includes(q));
+      if (f.proveedor) items = items.filter(p => (p.proveedor||'').toLowerCase().includes(f.proveedor.toLowerCase()));
+      if (f.marca)     items = items.filter(p => (p.marca||'').toLowerCase().includes(f.marca.toLowerCase()));
+      if (f.categoria) items = items.filter(p => (p.categoria||'').toLowerCase().includes(f.categoria.toLowerCase()));
+      $('info-total').textContent = `${items.length.toLocaleString('es-AR')} productos`;
+      $('pag-info') && ($('pag-info').style.display = 'none');
+      renderStockDeposito(items);
+    } catch (e) {
+      $('tbody-stock').innerHTML = `<tr><td colspan="8" class="estado-vacio">${esc(e.message)}</td></tr>`;
+      toast(e.message, 'err');
+    }
+    return;
+  }
+
+  // Vista global (comportamiento original)
+  $('th-stock-label').textContent = 'Stock ✎';
+  $('pag-info') && ($('pag-info').style.display = '');
   const params = new URLSearchParams({ page:pagStock, per_page:100 });
   if (f.q)         params.set('q',            f.q);
   if (f.proveedor) params.set('proveedor',    f.proveedor);
@@ -1010,8 +1516,6 @@ async function cargarStock() {
   const sf = $('fil-stock').value;
   if (sf) params.set('stock_filter', sf);
 
-  $('tbody-stock').innerHTML = '<tr><td colspan="8" class="estado-vacio">Cargando…</td></tr>';
-  $('btn-prev').disabled = true; $('btn-next').disabled = true;
   try {
     const r = await fetch(`${API}/stock?${params}`);
     const d = await r.json();
@@ -1060,6 +1564,37 @@ function renderStock(items) {
     tr.addEventListener('dblclick', e => {
       if (e.target.closest('.col-stock')) return;
       e.preventDefault();
+      abrirHistorial(id, tr.querySelector('.col-nombre').textContent, parseFloat(stockTd.dataset.stock), minimo);
+    });
+  });
+}
+
+function renderStockDeposito(items) {
+  editando = null;
+  if (!items.length) {
+    $('tbody-stock').innerHTML = '<tr><td colspan="8" class="estado-vacio">Sin productos en este depósito.</td></tr>';
+    return;
+  }
+  $('tbody-stock').innerHTML = items.map(p => {
+    const sc = stockClass(p.stock_deposito, p.stock_minimo);
+    return `<tr class="fila-prod" data-id="${p.id}" data-minimo="${p.stock_minimo}">
+      <td class="col-codigo">${esc(p.codigo ?? '')}</td>
+      <td class="col-nombre">${esc(p.nombre)}</td>
+      <td class="col-sub"></td>
+      <td class="col-sub">${esc(p.marca ?? '')}</td>
+      <td class="col-sub">${esc(p.categoria ?? '')}</td>
+      <td class="col-stock" data-stock="${p.stock_deposito}" title="Stock en este depósito / Total: ${fmtN(p.stock_total)}">
+        <span class="${sc}">${fmtN(p.stock_deposito)}</span>
+        ${p.stock_total !== p.stock_deposito ? `<small style="color:var(--neo-text-3);font-size:10px;margin-left:4px">/${fmtN(p.stock_total)}</small>` : ''}
+      </td>
+      <td class="r col-sub">${fmtN(p.stock_minimo)}</td>
+      <td class="r col-sub">${fmt(p.precio_venta ?? 0)}</td>
+    </tr>`;
+  }).join('');
+  $('tbody-stock').querySelectorAll('.fila-prod').forEach(tr => {
+    const id = parseInt(tr.dataset.id), minimo = parseFloat(tr.dataset.minimo) || 0;
+    tr.addEventListener('dblclick', e => {
+      const stockTd = tr.querySelector('.col-stock');
       abrirHistorial(id, tr.querySelector('.col-nombre').textContent, parseFloat(stockTd.dataset.stock), minimo);
     });
   });
@@ -1145,7 +1680,8 @@ async function abrirHistorial(id, nombre, stockActual, minimo) {
     $('hist-body').innerHTML = `<table class="hist-tabla">
       <thead><tr><th>Fecha</th><th>Tipo</th><th class="r">Cantidad</th></tr></thead>
       <tbody>${d.map(m => {
-        const cant = parseFloat(m.cantidad);
+        const raw  = parseFloat(m.cantidad);
+        const cant = m.tipo === 'venta' ? -Math.abs(raw) : raw;
         const fecha = String(m.fecha).replace('T',' ').slice(0,16);
         return `<tr>
           <td>${esc(fecha)}</td>
@@ -1160,11 +1696,139 @@ async function abrirHistorial(id, nombre, stockActual, minimo) {
 function cerrarHistorial() { $('overlay-hist').classList.remove('abierto'); }
 $('hist-cerrar').addEventListener('click', cerrarHistorial);
 
+function abrirPedido() {
+  const cont = $('pedido-contenido');
+  if (!alertasData.length) {
+    cont.innerHTML = '<p style="color:var(--neo-text-3);font-size:13px;padding:16px 0">Sin productos con stock bajo.</p>';
+  } else {
+    cont.innerHTML = alertasData.map((g, gi) => `
+      <div class="pedido-grupo">
+        <div class="pedido-prov-title">${g.proveedor ? esc(g.proveedor) : '<span class="pedido-sin-prov">Sin proveedor asignado</span>'}</div>
+        <table class="pedido-tbl">
+          <thead><tr>
+            <th style="width:80px">Código</th>
+            <th>Nombre</th>
+            <th class="r" style="width:64px">Stock</th>
+            <th class="r" style="width:54px">Mín.</th>
+            <th class="r" style="width:80px">A pedir</th>
+          </tr></thead>
+          <tbody>
+            ${g.items.map((item, ii) => `<tr>
+              <td class="cod">${esc(item.codigo ?? '—')}</td>
+              <td>${esc(item.nombre)}</td>
+              <td class="r stk">${fmtN(item.stock_actual)}</td>
+              <td class="r">${fmtN(item.stock_minimo)}</td>
+              <td class="r"><input class="pedido-inp" type="number" min="0" step="any"
+                  data-gi="${gi}" data-ii="${ii}" value="${fmtN(item.faltante)}"></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`).join('');
+  }
+  $('overlay-pedido').classList.add('abierto');
+}
+
+function cerrarPedido() { $('overlay-pedido').classList.remove('abierto'); }
+
+function getPedidoData() {
+  return alertasData.map((g, gi) => ({
+    proveedor: g.proveedor || 'Sin proveedor asignado',
+    items: g.items.map((item, ii) => {
+      const inp = $('pedido-contenido').querySelector(`input[data-gi="${gi}"][data-ii="${ii}"]`);
+      return {
+        codigo:       item.codigo ?? '—',
+        nombre:       item.nombre,
+        stock_actual: item.stock_actual,
+        stock_minimo: item.stock_minimo,
+        a_pedir:      parseFloat(inp?.value) || 0,
+      };
+    }),
+  }));
+}
+
+async function copiarPedido() {
+  const grupos = getPedidoData();
+  const lines  = ['Pedido Automatico:'];
+  grupos.forEach(g => g.items.forEach(i => lines.push(`${i.codigo} - ${i.nombre} - ${i.a_pedir}`)));
+  try {
+    await navigator.clipboard.writeText(lines.join('\n'));
+    const btn = $('pedido-btn-copy');
+    const orig = btn.innerHTML;
+    btn.textContent = '¡Copiado!';
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  } catch { toast('No se pudo copiar al portapapeles', 'err'); }
+}
+
+function exportarExcelPedido() {
+  const grupos = getPedidoData();
+  const filas  = [['Proveedor', 'Código', 'Nombre', 'A pedir']];
+  grupos.forEach(g => g.items.forEach(i =>
+    filas.push([g.proveedor, i.codigo, i.nombre, i.a_pedir])
+  ));
+  const xlsEsc = v => String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const rows = filas.map(r =>
+    `<Row>${r.map(v => `<Cell><Data ss:Type="${typeof v === 'number' ? 'Number' : 'String'}">${xlsEsc(v)}</Data></Cell>`).join('')}</Row>`
+  ).join('');
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <Styles>
+  <Style ss:ID="h"><Font ss:Bold="1"/></Style>
+ </Styles>
+ <Worksheet ss:Name="Pedido Stock">
+  <Table>${rows.replace('<Row>', '<Row ss:StyleID="h">')}</Table>
+ </Worksheet>
+</Workbook>`;
+  const blob = new Blob([xml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = Object.assign(document.createElement('a'), {
+    href: url, download: `pedido-stock-${new Date().toISOString().slice(0,10)}.xls`,
+  });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+async function exportarPdfPedido() {
+  const btn = $('pedido-btn-pdf');
+  btn.disabled = true; btn.textContent = 'Generando…';
+  try {
+    const r = await fetch(`${API}/pedido/pdf`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ grupos: getPedidoData() }),
+    });
+    if (!r.ok) { toast('Error al generar PDF', 'err'); return; }
+    abrirPdfModal(await r.blob());
+  } catch { toast('Error de conexión', 'err'); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF';
+  }
+}
+
 // ── Init ─────────────────────────────────────────────────────
 (async function init() {
   actualizarFecha();
   setInterval(actualizarFecha, 60000);
   if (esAdmin) $('grupo-admin').style.display = '';
+
+  // Alerta de stock mínimo
+  fetch(`${API}/stock/alertas`).then(r => r.json()).then(d => {
+    if (d.count > 0) {
+      alertasData = d.por_proveedor || [];
+      $('banner-stock-txt').textContent = `${d.count} producto${d.count !== 1 ? 's' : ''} con stock por debajo del mínimo.`;
+      $('banner-stock').classList.add('visible');
+      $('banner-stock-btn').addEventListener('click', () => {
+        cambiarTab('stock');
+        $('fil-stock').value = 'stock_bajo';
+        pagStock = 1;
+        cargarStock();
+      });
+      $('banner-pedido-btn').addEventListener('click', abrirPedido);
+    }
+  }).catch(() => {});
+
   await cargarFiltros();
   cargarDatos();
 
@@ -1186,6 +1850,24 @@ $('hist-cerrar').addEventListener('click', cerrarHistorial);
   });
   $('fil-orden').addEventListener('change', () => { pagDatos = 1; cargarDatos(); });
   $('fil-stock').addEventListener('change', () => { pagStock = 1; cargarStock(); });
+
+  // Selector de depósito: solo aparece cuando hay multi-sucursal
+  (async function initFiltroDeposito() {
+    try {
+      const s = JSON.parse(localStorage.getItem('logos_sesion') || '{}');
+      if (!Array.isArray(s.sucursales) || s.sucursales.length <= 1) return;
+      if (!esAdmin && !s.permisos?.costos) return;
+      const deps = await fetch(`${API}/sucursales/depositos`).then(r => r.json());
+      if (!Array.isArray(deps) || !deps.length) return;
+      const sel = $('fil-deposito');
+      sel.innerHTML = '<option value="">Todos los depósitos</option>' +
+        deps.map(d => `<option value="${d.id}">${esc(d.sucursal_nombre)} — ${esc(d.nombre)}</option>`).join('');
+      sel._inicializado = true;
+      sel.addEventListener('change', () => { pagStock = 1; cargarStock(); });
+      // Solo mostrarlo si el tab stock está activo
+      if (tabActivo === 'stock') sel.style.display = '';
+    } catch(e) {}
+  })();
   $('per-page-sel').addEventListener('change', () => { perPage = parseInt($('per-page-sel').value); pagDatos = 1; cargarDatos(); });
   $('btn-limpiar').addEventListener('click', limpiarFiltros);
   $('chk-todos').addEventListener('change', toggleTodosVisible);
@@ -1223,21 +1905,162 @@ $('hist-cerrar').addEventListener('click', cerrarHistorial);
     if (e.key !== 'Escape') return;
     if ($('overlay-eliminar-prod').classList.contains('abierto')) { cerrarModalEliminar(); return; }
     if ($('overlay-hist').classList.contains('abierto'))   { cerrarHistorial(); return; }
+    if ($('overlay-pedido').classList.contains('abierto')) { cerrarPedido(); return; }
     if ($('overlay-bulk').classList.contains('abierto'))   { cerrarModalBulk(); return; }
     if ($('overlay-nuevo').classList.contains('abierto'))  { cerrarModalNuevo(); return; }
     if ($('overlay-editar').classList.contains('abierto')) { cerrarModalEditar(); return; }
     if (editando) cancelarEditar();
   });
 
-  $('overlay-nuevo').addEventListener('click',          e => { if (e.target === $('overlay-nuevo'))          cerrarModalNuevo(); });
-  $('overlay-editar').addEventListener('click',        e => { if (e.target === $('overlay-editar'))        cerrarModalEditar(); });
-  $('overlay-bulk').addEventListener('click',          e => { if (e.target === $('overlay-bulk'))          cerrarModalBulk(); });
-  $('overlay-eliminar-prod').addEventListener('click', e => { if (e.target === $('overlay-eliminar-prod')) cerrarModalEliminar(); });
-  $('overlay-hist').addEventListener('click',          e => { if (e.target === $('overlay-hist'))          cerrarHistorial(); });
+  $('n-costo-neto').addEventListener('input',  () => recalcNuevoPrecios('neto'));
+  $('n-costo-bruto').addEventListener('input', () => recalcNuevoPrecios('bruto'));
+  $('n-iva').addEventListener('change',        () => recalcNuevoPrecios('iva'));
+  $('n-margen').addEventListener('input',      () => recalcNuevoPrecios('margen'));
+  $('n-precio').addEventListener('input',      () => recalcNuevoPrecios('precio'));
+
+  overlayAutoClose($('overlay-nuevo'),          cerrarModalNuevo);
+  overlayAutoClose($('overlay-editar'),         cerrarModalEditar);
+  overlayAutoClose($('overlay-bulk'),           cerrarModalBulk);
+  overlayAutoClose($('overlay-eliminar-prod'),  cerrarModalEliminar);
+  overlayAutoClose($('overlay-hist'),           cerrarHistorial);
+  overlayAutoClose($('overlay-pedido'),         cerrarPedido);
 
   if (!esAdmin) {
     const th = document.querySelector('th[title="Click para editar"]');
     if (th) { th.removeAttribute('title'); th.textContent = 'Stock'; }
+  }
+})();
+</script>
+
+<script>
+(function () {
+  const TOTAL = 29; // pasos globales: 11 productos + 14 importar + 4 stock
+
+  /* ── Parte 1: lista de productos → nuevo → importar (pasos 1-11) ─ */
+  const STEPS_LISTA = [
+
+    /* 1 — Intro */
+    { el: null,
+      title: 'Módulo de Productos',
+      body: 'Acá gestionás el catálogo completo: precios, costos, stock, proveedores, marcas y rubros. Dos vistas: datos del producto y stock.' },
+
+    /* 2 — Buscador */
+    { el: '#busq',
+      title: 'Búsqueda',
+      body: 'Buscá por nombre o código de barra. Los resultados se actualizan automáticamente mientras escribís.' },
+
+    /* 3 — Filtros */
+    { el: '#fil-proveedor',
+      title: 'Filtros',
+      body: 'Filtrá por proveedor, marca o rubro con los desplegables. Podés combinar filtros y ordenar por nombre, precio o costo. El botón "Limpiar" aparece cuando hay algún filtro activo.' },
+
+    /* 4 — Tabla datos */
+    { el: '#tbl-datos',
+      title: 'Catálogo de productos',
+      body: 'Muestra código, nombre, proveedor, marca, rubro, precio de venta y costo. Hacé doble-click en una fila para editarla (requiere rol admin).' },
+
+    /* 5 — Checkbox selección masiva */
+    { el: '#chk-todos',
+      title: 'Selección masiva',
+      body: 'Marcá el checkbox general para seleccionar todos los productos de la página, o usá los individuales para elegir cuáles querés. Aparece la barra de acciones masivas.',
+      onEnter: async ({ delay }) => {
+        const chks = document.querySelectorAll('#tbody-datos .chk-row');
+        for (let i = 0; i < Math.min(3, chks.length); i++) {
+          if (!chks[i].checked) chks[i].click();
+          await delay(80);
+        }
+      } },
+
+    /* 6 — Bulk bar */
+    { el: '#bulk-bar',
+      title: 'Acciones masivas',
+      body: 'Con productos seleccionados podés cambiar proveedor, marca o rubro a todos a la vez, aplicar un porcentaje de aumento de precio, o eliminarlos en bloque.' },
+
+    /* 7 — Paginación */
+    { el: '.pag-bar',
+      title: 'Paginación',
+      body: 'Los productos se cargan de a 100 por página (ajustable hasta 1000). Navegá entre páginas o escribí el número directamente.',
+      onEnter: async ({ delay }) => {
+        if (typeof deseleccionarTodo === 'function') deseleccionarTodo();
+        await delay(100);
+      } },
+
+    /* 8 — Botón nuevo producto (hover, sin abrir modal) */
+    { el: '#btn-nuevo-prod',
+      title: 'Nuevo producto',
+      body: 'Abre un formulario para cargar un producto desde cero. Solo el nombre es obligatorio; el resto (código, precio, costo, proveedor, marca, rubro y stock) se puede completar ahora o después.' },
+
+    /* 9 — Modal nuevo producto */
+    { el: '#overlay-nuevo .modal',
+      pad: 0,
+      title: 'Formulario de producto',
+      body: 'Completá el código, nombre, precio de venta, costo, proveedor, marca, rubro y stock inicial. Cada campo tiene su tooltip de ayuda.',
+      onEnter: async ({ delay }) => {
+        if (window.LOGOS_SESION?.rol === 'admin' && typeof abrirModalNuevo === 'function') abrirModalNuevo();
+        await delay(350);
+      } },
+
+    /* 10 — Botón importar (hover, cierra modal) */
+    { el: '#btn-importar',
+      title: 'Importar lista de precios',
+      body: 'Importá productos en masa desde un Excel o CSV de tu proveedor. El asistente detecta las columnas automáticamente y te muestra una vista previa antes de aplicar cambios.',
+      onEnter: async ({ delay }) => {
+        if (typeof cerrarModalNuevo === 'function') cerrarModalNuevo();
+        await delay(200);
+      } },
+
+    /* 11 — Navegar a importar.html */
+    { el: null,
+      title: 'Asistente de importación',
+      body: 'Vamos a explorar el asistente de importación paso a paso. Hacé click en <strong>Finalizar</strong> para continuar.',
+      onEnter: async ({ delay }) => {
+        await delay(400);
+        sessionStorage.setItem('tour_resume_productos', 'stock');
+        sessionStorage.setItem('tour_force_importar', '1');
+        window.location.href = '/Logos/pos/importar.html';
+      } },
+  ];
+
+  /* ── Parte 2: Stock (pasos 26-29, arranca al volver de importar.html) */
+  const STEPS_STOCK = [
+
+    /* 26 — Tab Stock */
+    { el: 'button[data-tab="stock"]',
+      title: 'De vuelta en Productos — Stock',
+      body: 'Ya de vuelta en Productos, cambiamos a la solapa <strong>Stock</strong> para ver el inventario actual de cada producto.',
+      onEnter: async ({ delay }) => {
+        if (typeof cambiarTab === 'function') cambiarTab('stock');
+        await delay(900);
+      } },
+
+    /* 27 — Edición inline de stock actual */
+    { el: '#tbl-stock .col-stock',
+      title: 'Editar stock actual',
+      body: 'Hacé click en cualquier número de la columna <strong>Stock ✎</strong> para editarlo directamente, sin abrir ningún modal. Confirmás con ✓ o cancelás con ✕. Los cambios quedan en el historial.' },
+
+    /* 28 — Stock mínimo */
+    { el: '#tbl-stock thead tr th:nth-child(7)',
+      title: 'Cantidad mínima',
+      body: 'La columna <strong>Mín.</strong> muestra el stock mínimo de alerta. Si el stock actual cae por debajo, el sistema lo marca en rojo. Para editarlo, abrí la ficha del producto con doble-click en la vista Datos.' },
+
+    /* 29 — Fin: highlight Compras en nav */
+    { el: 'a[href="/Logos/pos/compras.html"]',
+      title: '¡Eso es todo para Productos!',
+      body: 'Ya conocés el catálogo, la importación masiva y el control de stock. El próximo módulo es <strong>Compras</strong>, donde registrás las compras a proveedores y el stock se actualiza automáticamente.' },
+  ];
+
+  if (sessionStorage.getItem('tour_resume_productos') === 'stock') {
+    sessionStorage.removeItem('tour_resume_productos');
+    localStorage.removeItem('tour_seen_productos_stock'); // siempre re-arranca al volver de importar
+    window.TOUR_PAGE_KEY    = 'productos_stock';
+    window.TOUR_STEP_OFFSET = 25;
+    window.TOUR_TOTAL_STEPS = TOTAL;
+    window.TOUR_STEPS = STEPS_STOCK;
+  } else {
+    window.TOUR_PAGE_KEY    = 'productos';
+    window.TOUR_STEP_OFFSET = 0;
+    window.TOUR_TOTAL_STEPS = TOTAL;
+    window.TOUR_STEPS = STEPS_LISTA;
   }
 })();
 </script>

@@ -1,71 +1,103 @@
-/* Logos POS — shared base styles */
+/* Logos POS — Loader de estilos globales
+   Orden: core primero, neo encima (override neomórfico)
+*/
+@import url('./pos-base-core.css');
+@import url('./neo.css');
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ════════════════════════════════════════════════════════════════════
+   Modales planos — override global
+   Todos los modales de la app usan el lenguaje plano y recto de
+   contacto-modal: caja blanca, borde #D5D0CA, sin radios ni sombras,
+   header gris con título uppercase. Cada página define sus modales en
+   su <style> propio (que gana por orden de carga), por eso esta capa
+   usa !important: es deliberado, es la única forma de pisar 7 páginas
+   sin editarlas una por una.
+   Cubre las variantes de nomenclatura: .modal / .cmodal-box /
+   .cierre-modal (contenedores), .modal-head(er) / .m-head /
+   .cierre-head (headers), .modal-close / -cerrar / -cierre (cierres).
+   ════════════════════════════════════════════════════════════════════ */
 
-:root {
-  --azul:  #2563eb; --azul-h: #1d4ed8;
-  --verde: #16a34a; --rojo:   #B91C1C;
-  --gris1: #F0EEEB; --gris2: #E2DDD8; --gris3: #9B9590;
-  --texto: #111111; --borde: #D5D0CA;
-  --bajo:  #B45309;
-  --fs-xs:11px; --fs-sm:12px; --fs-md:14px; --fs-lg:16px;
+/* Overlays: oscurecido simple, sin blur */
+.overlay, .modal-overlay, .cmodal-overlay, .cierre-overlay {
+  background: rgba(0, 0, 0, .45) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
-body { font-family: system-ui,-apple-system,sans-serif; font-size:14px; background:var(--gris1); color:var(--texto); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
-
-/* ── App nav ── */
-.app-nav { background:#1A1A1A; display:flex; align-items:center; padding:0 16px; height:44px; gap:2px; flex-shrink:0; }
-.nav-brand { display:flex; align-items:center; text-decoration:none; margin-right:14px; }
-.nav-brand img { height:28px; width:auto; display:block; }
-.nav-link { color:rgba(255,255,255,.55); text-decoration:none; padding:5px 12px; border-radius:6px; font-size:var(--fs-sm); font-weight:500; transition:background .12s, color .12s; }
-.nav-link:hover { background:rgba(255,255,255,.1); color:white; }
-.nav-link.activo { background:var(--azul); color:white; font-weight:600; }
-.nav-drop { position:relative; }
-.nav-drop-toggle { display:inline-flex; align-items:center; }
-.nav-drop-menu {
-  position:absolute; top:100%; left:0; margin-top:2px; background:#1A1A1A;
-  border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:6px; min-width:180px;
-  box-shadow:0 8px 24px rgba(0,0,0,.35); opacity:0; visibility:hidden;
-  transform:translateY(-4px) scale(.97); transform-origin:top left;
-  transition:opacity 160ms cubic-bezier(0.23,1,0.32,1), transform 160ms cubic-bezier(0.23,1,0.32,1);
-  z-index:50;
+/* Contenedor del modal */
+.modal, .cmodal-box, .cierre-modal, #logos-device-modal > div {
+  background: #fff !important;
+  border: 1px solid #D5D0CA !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  animation: none !important;
 }
-.nav-drop:hover .nav-drop-menu, .nav-drop:focus-within .nav-drop-menu {
-  opacity:1; visibility:visible; transform:translateY(0) scale(1);
-}
-.nav-drop-menu a { display:block; padding:7px 10px; border-radius:6px; color:rgba(255,255,255,.75); text-decoration:none; font-size:var(--fs-sm); font-weight:500; white-space:nowrap; transition:background .12s, color .12s; }
-.nav-drop-menu a:hover { background:rgba(255,255,255,.1); color:white; }
-.nav-drop-menu a.activo { background:var(--azul); color:white; font-weight:600; }
-.nav-spacer { flex:1; }
-.nav-caja-select { background:#1A1A1A; color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.18); border-radius:6px; padding:5px 8px; font-size:var(--fs-sm); font-weight:600; font-family:inherit; margin-right:8px; outline:none; transition:border-color 140ms ease-out; }
-.nav-caja-select:hover, .nav-caja-select:focus { border-color:rgba(255,255,255,.4); }
-.nav-config { display:flex; align-items:center; padding:6px; margin-left:8px; }
-.nav-fecha { color:rgba(255,255,255,.5); font-size:12px; }
-.nav-sep { width:1px; height:20px; background:rgba(255,255,255,.15); margin:0 6px; flex-shrink:0; }
-.nav-usuario { color:rgba(255,255,255,.75); font-size:12px; font-weight:600; white-space:nowrap; }
-.nav-usuario span { color:rgba(255,255,255,.45); font-weight:500; }
-#nav-logout { display:flex; align-items:center; padding:6px; margin-left:4px; }
 
-/* ── Focus visible ── */
-button:focus-visible,
-a:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
-.nav-link:focus-visible, .nav-brand:focus-visible { outline: 2px solid rgba(255,255,255,.7); outline-offset: 2px; }
-
-/* ── Toast ── */
-.toast {
-  position: fixed; bottom: 20px; left: 50%;
-  transform: translateX(-50%) translateY(80px);
-  background: var(--texto); color: white;
-  padding: 12px 24px; border-radius: 8px;
-  font-weight: 600; font-size: 14px; white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(0,0,0,.2);
-  transition: transform 280ms cubic-bezier(0.23,1,0.32,1), opacity 200ms ease-out;
-  opacity: 0; z-index: 2000;
+/* Header */
+.modal-head, .modal-header, .m-head, .cierre-head, .modal-head-top {
+  background: #F0EEEB !important;
+  border-bottom: 1px solid #D5D0CA !important;
+  padding: 12px 20px !important;
+  border-radius: 0 !important;
 }
-.toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
-.toast.err { background: var(--rojo); }
-.toast.ok  { background: var(--verde); }
-
-@media (prefers-reduced-motion: reduce) {
-  .toast { transition: none; }
+.modal-head h2, .modal-head h3,
+.modal-header h2, .modal-header h3,
+.m-head h2, .m-head-info h2,
+.cierre-head h3,
+.modal-titulo, .cmodal-titulo {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .8px !important;
+  color: #9B9590 !important;
+  margin: 0 !important;
 }
+
+/* Botón de cierre (✕) */
+.modal-close, .modal-cerrar, .modal-cierre, .cierre-cerrar, .cmodal-close {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  color: #9B9590 !important;
+  width: auto !important;
+  height: auto !important;
+  padding: 2px 6px !important;
+}
+.modal-close:hover, .modal-cerrar:hover, .modal-cierre:hover, .cierre-cerrar:hover { color: #111 !important; }
+
+/* Footer */
+.modal-footer, .cmodal-btns, .cierre-footer {
+  background: #fff !important;
+  border-top: 1px solid #D5D0CA !important;
+  padding: 12px 20px !important;
+  border-radius: 0 !important;
+}
+
+/* Botones dentro de modales: rectos y sin relieve (conservan su color) */
+.modal button, .cmodal-box button, .cierre-modal button, #logos-device-modal button {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Campos de formulario dentro de modales: borde fino, rectos, fondo blanco */
+.modal input:not([type=checkbox]):not([type=radio]):not([type=range]),
+.modal select, .modal textarea,
+.cierre-modal input:not([type=checkbox]):not([type=radio]) {
+  background: #fff !important;
+  border: 1px solid #D5D0CA !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+.modal input:focus, .modal select:focus, .modal textarea:focus,
+.cierre-modal input:focus {
+  border-color: #111 !important;
+  outline: none !important;
+}
+#logos-device-modal input {
+  background: #fff !important;
+  border: 1px solid #D5D0CA !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+#pdf-modal-close { border-radius: 0 !important; }

@@ -9,7 +9,8 @@ class SystemPaths {
     public static function findMysqlBin(): string {
         // 1. Intentar con which (Linux/Mac) o where (Windows)
         $comandoFind = PHP_OS_FAMILY === 'Windows' ? 'where' : 'which';
-        $output = trim(shell_exec("$comandoFind mysql 2>/dev/null") ?: '');
+        $descarte    = PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
+        $output = trim(shell_exec("$comandoFind mysql 2>$descarte") ?: '');
         if ($output && file_exists($output)) {
             return $output;
         }
@@ -53,7 +54,8 @@ class SystemPaths {
      */
     public static function findMysqldumpBin(): string {
         $comandoFind = PHP_OS_FAMILY === 'Windows' ? 'where' : 'which';
-        $output = trim(shell_exec("$comandoFind mysqldump 2>/dev/null") ?: '');
+        $descarte    = PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
+        $output = trim(shell_exec("$comandoFind mysqldump 2>$descarte") ?: '');
         if ($output && file_exists($output)) {
             return $output;
         }
@@ -136,18 +138,18 @@ class SystemPaths {
             '/var/www',
             '/var/log',
             '/var/backups',
-            'C:\',
-            'C:\Windows',
-            'C:\Program Files',
-            'C:\Program Files (x86)',
-            'C:\ProgramData',
-            'C:\Users',
+            'C:\\',
+            'C:\\Windows',
+            'C:\\Program Files',
+            'C:\\Program Files (x86)',
+            'C:\\ProgramData',
+            'C:\\Users',
         ];
-        
-        $carpeta_real = str_replace('\', '/', $carpeta_real);
-        
+
+        $carpeta_real = str_replace('\\', '/', $carpeta_real);
+
         foreach ($prohibidas as $prohibida) {
-            $prohibida = str_replace('\', '/', $prohibida);
+            $prohibida = str_replace('\\', '/', $prohibida);
             $prohibida = rtrim($prohibida, '/');
             
             if ($carpeta_real === $prohibida) {

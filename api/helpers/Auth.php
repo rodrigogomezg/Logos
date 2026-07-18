@@ -1,6 +1,24 @@
 <?php
 
 class Auth {
+    /**
+     * Whitelist de claves de permiso granular. Los admin bypasean todo
+     * (puede() devuelve true); a los rol 'user' se les evalúa el JSON de
+     * usuarios.permisos. Clave ausente = false (default seguro).
+     */
+    public const PERMISOS = [
+        'compras',          // módulo compras completo
+        'importar',         // importador de productos / clientes / proveedores
+        'productos_editar', // crear/editar productos, ajustar stock, listas de precio
+        'costos',           // ver costo, margen, ganancia y rentabilidad
+        'reportes',         // dashboard de ventas y libro IVA
+        'cc_ver',           // cuentas corrientes y vencimientos
+        'cc_cobrar',        // registrar cobros/pagos de CC
+        'anular',           // anular ventas y movimientos de caja sin clave
+        'log',              // bitácora de acciones
+        'cajas_todas',      // operar/filtrar cualquier caja
+    ];
+
     private static ?array $usuario = null;
     private static bool $cargado = false;
     private static ?bool $modoInstalacion = null;
@@ -18,7 +36,7 @@ class Auth {
 
         $hash = hash('sha256', $token);
         $stmt = DB::get()->prepare("
-            SELECT u.id, u.nombre, u.rol, s.id AS sesion_id,
+            SELECT u.id, u.nombre, u.rol, u.permisos, u.sucursal_ids, s.id AS sesion_id,
                    (s.ultimo_uso < DATE_SUB(NOW(), INTERVAL 10 MINUTE)) AS refrescar
             FROM sesiones s
             JOIN usuarios u ON u.id = s.usuario_id
@@ -35,7 +53,30 @@ class Auth {
                      ->execute([(int)$fila['sesion_id']]);
         }
 
-        return self::$usuario = ['id' => (int)$fila['id'], 'nombre' => $fila['nombre'], 'rol' => $fila['rol']];
+        return self::$usuario = [
+            'id'           => (int)$fila['id'],
+            'nombre'       => $fila['nombre'],
+            'rol'          => $fila['rol'],
+            'permisos'     => json_decode((string)($fila['permisos'] ?? ''), true) ?: [],
+            'sucursal_ids' => json_decode((string)($fila['sucursal_ids'] ?? ''), true),
+        ];
+    }
+
+    /**
+     * ¿El usuario actual tiene este permiso granular?
+     * Admin (o modo instalación) → siempre sí. Los permisos se leen de la
+     * base en cada request, así un cambio aplica al instante sin re-login.
+     */
+    public static function puede(string $permiso): bool {
+        if (self::esAdmin()) return true;
+        $u = self::usuarioActual();
+        return $u !== null && !empty($u['permisos'][$permiso]);
+    }
+
+    public static function requirePermiso(string $permiso): void {
+        if (!self::puede($permiso)) {
+            json(403, ['error' => "No tenés permiso para esta acción ($permiso). Pedile acceso a un administrador."]);
+        }
     }
 
     /**
@@ -78,5 +119,18 @@ class Auth {
         $token = (string)($_SERVER['HTTP_X_AUTH_TOKEN'] ?? '');
         if ($token === '') return;
         DB::get()->prepare("DELETE FROM sesiones WHERE token_hash = ?")->execute([hash('sha256', $token)]);
+    }
+
+    /**
+     * ¿El usuario actual tiene acceso a esta sucursal?
+     * Admin → siempre sí. User con sucursal_ids=null → sí (todas).
+     * User con sucursal_ids=[X,Y] → solo esas.
+     */
+    public static function sucursalPermitida(int $sucursal_id): bool {
+        $u = self::usuarioActual();
+        if ($u === null) return false;
+        if ($u['rol'] === 'admin') return true;
+        $ids = $u['sucursal_ids'] ?? null;
+        return $ids === null || in_array($sucursal_id, (array)$ids, true);
     }
 }

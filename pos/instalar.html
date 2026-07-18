@@ -8,83 +8,93 @@
 <script src="helpers.js"></script>
 <link rel="stylesheet" href="pos-base.css">
 <style>
-  body { background:#1A1A1A; align-items:center; justify-content:center; padding:24px; }
-  .install-box { width:560px; max-width:100%; display:flex; flex-direction:column; align-items:center; gap:24px; }
-  .install-box > img { height:44px; }
+  body { background: var(--neo-bg); align-items: center; justify-content: center; padding: 24px; }
+  .install-box { width: 560px; max-width: 100%; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  .install-box > img { height: 44px; }
 
-  .pasos-ind { display:flex; gap:6px; width:100%; }
-  .paso-pill { flex:1; height:4px; border-radius:3px; background:rgba(255,255,255,.12); }
-  .paso-pill.activo { background:var(--azul); }
-  .paso-pill.hecho  { background:rgba(255,255,255,.4); }
+  .pasos-ind { display: flex; gap: 6px; width: 100%; }
+  .paso-pill { flex: 1; height: 4px; border-radius: var(--neo-r-xs); background: var(--neo-bg-deep); box-shadow: var(--neo-i1); }
+  .paso-pill.activo { background: var(--neo-accent); box-shadow: 0 0 0 2px var(--neo-accent-glow); }
+  .paso-pill.hecho  { background: var(--neo-sd); }
 
-  .panel { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:14px; padding:28px; display:none; flex-direction:column; gap:16px; }
-  .panel.activo { display:flex; }
+  .panel { width: 100%; background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e3); padding: 28px; display: none; flex-direction: column; gap: 16px; border: none; }
+  .panel.activo { display: flex; }
 
-  .titulo { color:rgba(255,255,255,.92); font-size:20px; font-weight:700; letter-spacing:-.2px; }
-  .sub { color:rgba(255,255,255,.5); font-size:14px; line-height:1.5; margin-top:-8px; }
-  .badge-opcional { display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; background:rgba(255,255,255,.1); color:rgba(255,255,255,.5); border-radius:4px; padding:2px 7px; margin-left:8px; vertical-align:middle; }
+  .titulo { color: var(--neo-text); font-size: 20px; font-weight: 700; letter-spacing: -.2px; }
+  .sub { color: var(--neo-text-2); font-size: 13px; line-height: 1.5; margin-top: -8px; }
+  .badge-opcional { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; background: rgba(163,177,198,.2); color: var(--neo-text-3); border-radius: var(--neo-r-xs); padding: 2px 7px; margin-left: 8px; vertical-align: middle; }
 
-  .modo-row { display:flex; gap:10px; }
-  .modo-btn { flex:1; padding:14px; background:rgba(255,255,255,.05); border:1.5px solid rgba(255,255,255,.15); border-radius:10px; color:rgba(255,255,255,.8); font-size:14px; font-weight:600; cursor:pointer; text-align:left; line-height:1.4; }
-  .modo-btn.activo { border-color:var(--azul); background:rgba(37,99,235,.15); color:white; }
+  .modo-row { display: flex; gap: 10px; }
+  .modo-btn {
+    flex: 1; padding: 14px; border: none; border-radius: var(--neo-r-md);
+    background: var(--neo-bg); color: var(--neo-text); font-size: 13px; font-weight: 600;
+    cursor: pointer; text-align: left; line-height: 1.4;
+    box-shadow: var(--neo-e2); transition: box-shadow var(--neo-t-fast);
+  }
+  .modo-btn.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
 
-  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .fg-full { grid-column:1/-1; }
-  .form-group { display:flex; flex-direction:column; gap:5px; }
-  .form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:rgba(255,255,255,.45); }
-  .form-input { padding:10px 12px; border:1.5px solid rgba(255,255,255,.15); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:rgba(255,255,255,.06); color:white; }
-  .form-input:focus { border-color:var(--azul); }
-  .form-input::placeholder { color:rgba(255,255,255,.3); }
-  select.form-input option { background:#1e1e1e; color:white; }
-  .form-hint { font-size:11px; color:rgba(255,255,255,.35); line-height:1.4; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .fg-full { grid-column: 1/-1; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+  .form-input {
+    padding: 10px 12px; border: none; border-radius: var(--neo-r-sm);
+    font-size: 13px; font-family: inherit; outline: none;
+    background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-i1);
+    transition: box-shadow var(--neo-t-fast);
+  }
+  .form-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+  .form-input::placeholder { color: var(--neo-text-3); }
+  select.form-input option { background: var(--neo-bg); color: var(--neo-text); }
+  .form-hint { font-size: 11px; color: var(--neo-text-3); line-height: 1.4; }
 
-  .btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:4px; }
-  .btn-pri { padding:11px 22px; background:var(--azul); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
-  .btn-pri:hover:not(:disabled) { background:var(--azul-h); }
-  .btn-pri:disabled { opacity:.45; cursor:not-allowed; }
-  .btn-sec { padding:11px 22px; background:rgba(255,255,255,.08); color:rgba(255,255,255,.8); border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
-  .btn-sec:hover { background:rgba(255,255,255,.15); }
+  .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+  .btn-pri { padding: 11px 22px; background: var(--neo-accent); color: white; border: none; border-radius: var(--neo-r-sm); font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 4px 4px 10px var(--neo-accent-glow); }
+  .btn-pri:hover:not(:disabled) { background: var(--neo-accent-h); }
+  .btn-pri:disabled { background: var(--neo-bg-deep); color: var(--neo-text-3); cursor: not-allowed; box-shadow: var(--neo-i1); }
+  .btn-sec { padding: 11px 22px; border: none; border-radius: var(--neo-r-sm); background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); font-size: 13px; font-weight: 600; cursor: pointer; transition: box-shadow var(--neo-t-fast); }
+  .btn-sec:hover { box-shadow: var(--neo-e3); }
 
-  .aviso { font-size:14px; border-radius:8px; padding:11px 13px; line-height:1.5; }
-  .aviso.ok   { background:rgba(22,163,74,.15);  color:#86EFAC; border:1px solid rgba(22,163,74,.3); }
-  .aviso.err  { background:rgba(185,28,28,.15);  color:#FCA5A5; border:1px solid rgba(185,28,28,.3); }
-  .aviso.info { background:rgba(59,130,246,.12); color:#93C5FD; border:1px solid rgba(59,130,246,.25); }
+  .aviso { font-size: 13px; border-radius: var(--neo-r-sm); padding: 11px 13px; line-height: 1.5; border: none; box-shadow: var(--neo-e1); }
+  .aviso.ok   { background: rgba(39,174,96,.08);  color: var(--neo-success);  box-shadow: var(--neo-e1), 0 0 0 1px rgba(39,174,96,.25); }
+  .aviso.err  { background: rgba(231,76,60,.08);  color: var(--neo-danger);   box-shadow: var(--neo-e1), 0 0 0 1px rgba(231,76,60,.25); }
+  .aviso.info { background: rgba(79,142,247,.08); color: var(--neo-accent);   box-shadow: var(--neo-e1), 0 0 0 1px rgba(79,142,247,.25); }
 
-  .credenciales { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.15); border-radius:8px; padding:14px; font-size:14px; color:white; line-height:1.7; }
-  .credenciales b { color:#FCD34D; }
+  .credenciales { background: var(--neo-bg-deep); border-radius: var(--neo-r-sm); box-shadow: var(--neo-i1); padding: 14px; font-size: 13px; color: var(--neo-text); line-height: 1.7; border: none; }
+  .credenciales b { color: var(--neo-warning); }
 
-  .lista-creados { display:flex; flex-direction:column; gap:8px; }
-  .item-row { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.05); border-radius:8px; padding:9px 12px; font-size:14px; color:white; }
-  .item-row .meta { color:rgba(255,255,255,.4); font-size:11px; text-transform:uppercase; margin-left:auto; }
-  .item-row .del { background:none; border:none; color:rgba(255,255,255,.3); cursor:pointer; font-size:15px; padding:0 2px; margin-left:6px; }
-  .item-row .del:hover { color:#FCA5A5; }
+  .lista-creados { display: flex; flex-direction: column; gap: 8px; }
+  .item-row { display: flex; align-items: center; gap: 10px; background: var(--neo-bg); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); padding: 9px 12px; font-size: 13px; color: var(--neo-text); border: none; }
+  .item-row .meta { color: var(--neo-text-3); font-size: 10px; text-transform: uppercase; margin-left: auto; }
+  .item-row .del { background: none; border: none; color: var(--neo-text-3); cursor: pointer; font-size: 15px; padding: 0 2px; margin-left: 6px; }
+  .item-row .del:hover { color: var(--neo-danger); }
 
-  .sep { border:none; border-top:1px solid rgba(255,255,255,.08); margin:2px 0; }
+  .sep { border: none; border-top: 1px solid rgba(163,177,198,.2); margin: 2px 0; }
 
-  .afip-pasos { display:flex; flex-direction:column; gap:10px; }
-  .afip-paso { display:flex; gap:12px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:12px 14px; }
-  .afip-paso-num { width:22px; height:22px; border-radius:50%; background:rgba(37,99,235,.3); color:#93C5FD; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; }
-  .afip-paso-body { font-size:13px; color:rgba(255,255,255,.65); line-height:1.55; }
-  .afip-paso-body strong { color:rgba(255,255,255,.9); font-weight:700; display:block; margin-bottom:2px; }
-  .afip-paso-body code { background:rgba(255,255,255,.08); border-radius:4px; padding:1px 5px; font-size:12px; color:#FCD34D; font-family:monospace; }
-  .afip-sep { border:none; border-top:1px solid rgba(255,255,255,.08); margin:2px 0; }
+  .afip-pasos { display: flex; flex-direction: column; gap: 10px; }
+  .afip-paso { display: flex; gap: 12px; background: var(--neo-bg); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); padding: 12px 14px; border: none; }
+  .afip-paso-num { width: 22px; height: 22px; border-radius: 50%; background: rgba(79,142,247,.15); color: var(--neo-accent); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .afip-paso-body { font-size: 12px; color: var(--neo-text-2); line-height: 1.55; }
+  .afip-paso-body strong { color: var(--neo-text); font-weight: 700; display: block; margin-bottom: 2px; }
+  .afip-paso-body code { font-weight: 700; font-size: inherit; font-family: inherit; color: var(--neo-text); }
+  .afip-sep { border: none; border-top: 1px solid rgba(163,177,198,.2); margin: 2px 0; }
 
   /* Progreso del commit */
-  .prog-lista { display:flex; flex-direction:column; gap:4px; }
-  .prog-item { display:flex; align-items:center; gap:12px; font-size:14px; color:rgba(255,255,255,.7); padding:5px 0; }
-  .prog-icono { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; flex-shrink:0; font-weight:700; }
-  .prog-item.esperando .prog-icono { background:rgba(255,255,255,.06); color:rgba(255,255,255,.25); }
-  .prog-item.ejecutando .prog-icono { background:rgba(59,130,246,.2); color:#93C5FD; animation:giro .9s linear infinite; }
-  .prog-item.ok  .prog-icono { background:rgba(22,163,74,.2); color:#86EFAC; }
-  .prog-item.err .prog-icono { background:rgba(185,28,28,.2); color:#FCA5A5; }
-  @keyframes giro { to { transform:rotate(360deg); } }
+  .prog-lista { display: flex; flex-direction: column; gap: 4px; }
+  .prog-item { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--neo-text-2); padding: 5px 0; }
+  .prog-icono { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; font-weight: 700; }
+  .prog-item.esperando .prog-icono { background: var(--neo-bg-deep); color: var(--neo-text-3); box-shadow: var(--neo-i1); }
+  .prog-item.ejecutando .prog-icono { background: rgba(79,142,247,.15); color: var(--neo-accent); box-shadow: var(--neo-e1); animation: giro .9s linear infinite; }
+  .prog-item.ok  .prog-icono { background: rgba(39,174,96,.12); color: var(--neo-success); box-shadow: var(--neo-e1); }
+  .prog-item.err .prog-icono { background: rgba(231,76,60,.12); color: var(--neo-danger);  box-shadow: var(--neo-e1); }
+  @keyframes giro { to { transform: rotate(360deg); } }
 
   /* Resumen */
-  .resumen-fila { display:flex; align-items:flex-start; gap:8px; font-size:14px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,.06); }
-  .resumen-fila:last-child { border:none; }
-  .resumen-lbl { color:rgba(255,255,255,.4); min-width:130px; flex-shrink:0; }
-  .resumen-val { color:rgba(255,255,255,.85); }
-  .resumen-val.dim { color:rgba(255,255,255,.25); font-style:italic; }
+  .resumen-fila { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid rgba(163,177,198,.2); }
+  .resumen-fila:last-child { border: none; }
+  .resumen-lbl { color: var(--neo-text-3); min-width: 130px; flex-shrink: 0; }
+  .resumen-val { color: var(--neo-text); }
+  .resumen-val.dim { color: var(--neo-text-3); font-style: italic; }
 </style>
 </head>
 <body>
@@ -729,6 +739,21 @@ async function ejecutarCommit() {
       if (!rLg.ok) { const d = await rLg.json(); throw new Error('Al subir el logo: ' + (d.error || '')); }
       progEstado(pLg, 'ok', '✓');
     }
+
+    // 4.5. Sucursal y depósito principal
+    const pSuc = progAgregar('Configurando sucursal principal…');
+    progEstado(pSuc, 'ejecutando', '↻');
+    const rSuc = await fetch(`${API}/sucursales`, {
+      method: 'POST', headers: jh,
+      body: JSON.stringify({
+        nombre:          wiz.negocio.razon_social,
+        nombre_fantasia: wiz.negocio.nombre_fantasia || null,
+        domicilio:       wiz.negocio.domicilio || null,
+        telefono:        wiz.negocio.telefono  || null,
+      }),
+    });
+    if (!rSuc.ok) { const d = await rSuc.json(); throw new Error('Al crear sucursal: ' + (d.error || '')); }
+    progEstado(pSuc, 'ok', '✓');
 
     // 5. Usuarios adicionales
     for (const u of wiz.usuarios) {

@@ -63,7 +63,7 @@ class CajaMovimientosController {
         $mov = $stmt->fetch();
         if (!$mov) json(404, ['error' => 'Movimiento no encontrado']);
 
-        if (!Auth::esAdmin()) {
+        if (!Auth::puede('cajas_todas')) {
             $caja_id = isset($_GET['caja_id']) && is_numeric($_GET['caja_id']) ? (int)$_GET['caja_id'] : null;
             if (!$caja_id || $caja_id !== (int)$mov['caja_id']) {
                 json(403, ['error' => 'Solo podés eliminar movimientos de la caja que estás operando']);
@@ -80,8 +80,18 @@ class CajaMovimientosController {
 
     public function listar(): void {
         $caja_id = isset($_GET['caja_id']) && is_numeric($_GET['caja_id']) ? (int)$_GET['caja_id'] : null;
-        if (!Auth::esAdmin() && !$caja_id) {
+        if (!Auth::puede('cajas_todas') && !$caja_id) {
             json(400, ['error' => 'caja_id requerido']);
+        }
+
+        // Sin 'cajas_todas' solo se ven movimientos de cajas de tipo 'venta'
+        if ($caja_id && !Auth::puede('cajas_todas')) {
+            $chk = DB::get()->prepare("SELECT tipo FROM cajas WHERE id = ? AND activo = 1");
+            $chk->execute([$caja_id]);
+            $caja = $chk->fetch();
+            if (!$caja || $caja['tipo'] !== 'venta') {
+                json(403, ['error' => 'Acceso denegado']);
+            }
         }
 
         $where  = [];
@@ -89,6 +99,7 @@ class CajaMovimientosController {
         if ($caja_id)               { $where[] = 't.caja_id = ?';     $params[] = $caja_id; }
         if (!empty($_GET['desde'])) { $where[] = 'm.creado_en >= ?';  $params[] = $_GET['desde'] . ' 00:00:00'; }
         if (!empty($_GET['hasta'])) { $where[] = 'm.creado_en <= ?';  $params[] = $_GET['hasta'] . ' 23:59:59'; }
+        if (!empty($_GET['sucursal_id']) && is_numeric($_GET['sucursal_id'])) { $where[] = 'c.sucursal_id = ?'; $params[] = (int)$_GET['sucursal_id']; }
         $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
         $stmt = DB::get()->prepare("

@@ -9,7 +9,11 @@ class AfipQr {
 
     private const TIPO_CMP = [
         'FC A-ELECT' => 1,
+        'NC A-ELECT' => 3,
         'FC B-ELECT' => 6,
+        'NC B-ELECT' => 8,
+        'FC C-ELECT' => 11,
+        'NC C-ELECT' => 13,
     ];
 
     public static function generar(array $venta, array $config): ?string {

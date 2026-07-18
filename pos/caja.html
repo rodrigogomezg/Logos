@@ -9,209 +9,417 @@
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
-/* ── layout ──────────────────────────────────────────────── */
+/* ── layout ── */
 .page-header {
-  background:#fff; border-bottom:1px solid var(--borde); padding:14px clamp(20px,4vw,48px);
-  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-shrink:0;
+  background: var(--neo-bg);
+  box-shadow: 0 3px 8px var(--neo-sd), 0 -1px 4px var(--neo-sl);
+  padding: 14px clamp(20px,4vw,48px);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0;
+  position: relative; z-index: 10;
 }
-.page-header h1 { font-size:14px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; }
-.page-header p   { font-size:11px; color:var(--gris3); margin-top:2px; }
-.page-header-meta { display:flex; align-items:center; gap:10px; }
+.page-header h1 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text); }
+.page-header p   { font-size: 11px; color: var(--neo-text-3); margin-top: 2px; }
+.page-header-meta { display: flex; align-items: center; gap: 10px; }
 
-.contenido { flex:1; min-height:0; overflow-y:auto; padding:20px clamp(16px,3vw,40px); background:var(--gris1); }
-.contenido-inner { max-width:1560px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
-.contenido-inner.solo { max-width:980px; }
+.contenido { flex: 1; min-height: 0; overflow-y: auto; padding: 20px clamp(16px,3vw,40px); background: var(--neo-bg-deep); }
+.contenido-inner { max-width: 1560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.contenido-inner.solo { max-width: 980px; }
 
-/* ── layout turno abierto: cifras izquierda / gráficos derecha ── */
-.layout-turno { display:grid; grid-template-columns:minmax(400px,470px) minmax(0,1fr); gap:14px; align-items:start; }
-.layout-col { display:flex; flex-direction:column; gap:14px; min-width:0; }
-.layout-full { grid-column:1 / -1; }
-@media (max-width:1080px) { .layout-turno { grid-template-columns:1fr; } }
+.layout-turno { display: grid; grid-template-columns: minmax(400px,470px) minmax(0,1fr); gap: 14px; align-items: start; }
+.layout-col   { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.layout-full  { grid-column: 1 / -1; }
+@media (max-width:1080px) { .layout-turno { grid-template-columns: 1fr; } }
 
-/* ── card ─────────────────────────────────────────────────── */
-.card { background:#fff; border:1px solid var(--borde); border-radius:0; }
+/* ── card ── */
+.card {
+  background: var(--neo-bg);
+  box-shadow: var(--neo-e2);
+  border-radius: var(--neo-r-lg);
+  border: none !important;
+}
 .card-header {
-  display:flex; align-items:center; justify-content:space-between; gap:10px;
-  padding:11px 18px; border-bottom:1px solid var(--borde); background:var(--gris1);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 11px 18px; border-bottom: 1px solid rgba(163,177,198,.25);
+  border-radius: var(--neo-r-lg) var(--neo-r-lg) 0 0;
 }
-.card-header h2 { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--gris3); }
-.card-body { padding:18px; }
+.card-header h2 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); }
+.card-body { padding: 18px; }
 
-/* ── pill estado ──────────────────────────────────────────── */
-.estado-pill { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
-.estado-pill.abierto { background:#DCFCE7; color:#15803D; }
-.estado-pill.cerrado { background:var(--gris2); color:var(--gris3); }
-.estado-pill .dot { width:6px; height:6px; border-radius:50%; background:currentColor; }
+/* ── pill estado ── */
+.estado-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--neo-r-pill); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; box-shadow: var(--neo-e1); }
+.estado-pill.abierto { background: rgba(39,174,96,.12); color: var(--neo-success); }
+.estado-pill.cerrado { background: rgba(163,177,198,.18); color: var(--neo-text-3); }
+.estado-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-/* ── ledger (lista contable de totales) ───────────────────── */
-.ledger { display:table; width:100%; border-collapse:collapse; }
-.ledger-row { display:table-row; }
-.ledger-row.sep > * { border-top:1px solid var(--borde); padding-top:9px; margin-top:5px; }
-.ledger-lbl { display:table-cell; padding:5px 0; font-size:12px; color:var(--gris3); white-space:nowrap; }
-.ledger-fill { display:table-cell; width:100%; padding:5px 10px; vertical-align:bottom; }
-.ledger-fill::after { content:''; display:block; border-bottom:1px dotted #ccc; margin-bottom:3px; }
-.ledger-val  { display:table-cell; padding:5px 0 5px 16px; text-align:right; font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
-.ledger-row.bold .ledger-lbl { font-weight:700; color:var(--texto); font-size:13px; }
-.ledger-row.bold .ledger-val { font-size:14px; font-weight:700; }
-.ledger-row.accent .ledger-val { color:var(--azul); }
-.ledger-row.positivo .ledger-val { color:#15803D; }
-.ledger-row.negativo .ledger-val { color:var(--rojo); }
+/* ── ledger ── */
+.ledger      { display: table; width: 100%; border-collapse: collapse; }
+.ledger-row  { display: table-row; }
+.ledger-row.sep > * { border-top: 1px solid rgba(163,177,198,.3); padding-top: 9px; margin-top: 5px; }
+.ledger-lbl  { display: table-cell; padding: 5px 0; font-size: 12px; color: var(--neo-text-2); white-space: nowrap; }
+.ledger-fill { display: table-cell; width: 100%; padding: 5px 10px; vertical-align: bottom; }
+.ledger-fill::after { content: ''; display: block; border-bottom: 1px dotted rgba(163,177,198,.5); margin-bottom: 3px; }
+.ledger-val  { display: table-cell; padding: 5px 0 5px 16px; text-align: right; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--neo-text); }
+.ledger-row.bold .ledger-lbl { font-weight: 700; color: var(--neo-text); font-size: 13px; }
+.ledger-row.bold .ledger-val { font-size: 14px; font-weight: 700; }
+.ledger-row.accent   .ledger-val { color: var(--neo-accent); }
+.ledger-row.positivo .ledger-val { color: var(--neo-success); }
+.ledger-row.negativo .ledger-val { color: var(--neo-danger); }
 
-/* ── apertura ─────────────────────────────────────────────── */
-.form-group { display:flex; flex-direction:column; gap:5px; max-width:280px; }
-.form-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.form-input { padding:8px 11px; border:1px solid var(--borde); border-radius:0; font-size:14px; font-family:inherit; outline:none; background:#fff; font-variant-numeric:tabular-nums; }
-.form-input:focus { border-color:var(--texto); }
-.form-hint { font-size:11px; color:var(--gris3); line-height:1.4; }
+/* ── apertura ── */
+.form-group { display: flex; flex-direction: column; gap: 5px; max-width: 280px; }
+.form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.form-input {
+  padding: 9px 12px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 14px; font-family: inherit; outline: none;
+  background: var(--neo-bg); box-shadow: var(--neo-i1);
+  color: var(--neo-text); font-variant-numeric: tabular-nums;
+  transition: box-shadow var(--neo-t-fast);
+}
+.form-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+#ap-fondo::placeholder { opacity: .3; }
+.form-hint { font-size: 11px; color: var(--neo-text-3); line-height: 1.4; }
 
-/* ── botones ──────────────────────────────────────────────── */
-.btn { padding:9px 18px; border:1.5px solid transparent; border-radius:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; cursor:pointer; font-family:inherit; }
-.btn:disabled { opacity:.45; cursor:default; }
-.btn-ok      { background:var(--azul); color:#fff; border-color:var(--azul); }
-.btn-ok:hover:not(:disabled) { background:var(--azul-h); }
-.btn-sec     { background:#fff; color:var(--texto); border-color:#888; }
-.btn-sec:hover { border-color:var(--texto); }
-.btn-danger  { background:#fff; color:var(--rojo); border-color:var(--rojo); }
-.btn-danger:hover { background:#FEF2F2; }
+/* ── botones ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  cursor: pointer; font-family: inherit;
+  transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
+}
+.btn:disabled { opacity: .45; cursor: default; }
+.btn:active:not(:disabled) { transform: scale(.97); }
+.btn-ok {
+  background: var(--neo-accent); color: #fff;
+  box-shadow: 4px 4px 10px var(--neo-accent-glow), -2px -2px 5px rgba(255,255,255,.15);
+}
+.btn-ok:hover:not(:disabled) { background: var(--neo-accent-h); box-shadow: 6px 6px 14px var(--neo-accent-glow); }
+.btn-sec { background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); }
+.btn-sec:hover { box-shadow: var(--neo-e3); }
+.btn-danger {
+  background: var(--neo-danger); color: #fff;
+  box-shadow: 4px 4px 10px var(--neo-danger-glow), -2px -2px 5px rgba(255,255,255,.15);
+}
+.btn-danger:hover { background: var(--neo-danger-h); }
 
-/* ── acciones turno ───────────────────────────────────────── */
-.acciones { display:flex; flex-direction:column; gap:10px; }
+/* ── acciones turno ── */
+.acciones { display: flex; flex-direction: column; gap: 10px; }
 .accion-btn {
-  display:flex; align-items:center; gap:10px; padding:10px 18px; width:100%; text-align:left;
-  background:#fff; border:1px solid var(--borde); cursor:pointer; font-family:inherit;
-  transition:border-color 120ms;
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px; width: 100%; text-align: left;
+  background: var(--neo-bg); border: none; border-radius: var(--neo-r-md);
+  cursor: pointer; font-family: inherit; box-shadow: var(--neo-e1);
+  transition: box-shadow var(--neo-t-fast);
 }
-.accion-btn:hover { border-color:var(--texto); }
-.accion-btn.danger:hover { border-color:var(--rojo); color:var(--rojo); }
+.accion-btn:hover { box-shadow: var(--neo-e2); }
+.accion-btn.danger:hover { color: var(--neo-danger); }
 .accion-btn .kbd {
-  display:inline-flex; align-items:center; justify-content:center;
-  width:26px; height:26px; border:1px solid var(--borde); background:var(--gris1);
-  font-size:12px; font-weight:800; color:var(--texto); flex-shrink:0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: var(--neo-r-xs);
+  box-shadow: var(--neo-i1); background: var(--neo-bg);
+  font-size: 12px; font-weight: 800; color: var(--neo-text); flex-shrink: 0;
 }
-.accion-btn.danger .kbd { border-color:#fca5a5; background:#fef2f2; color:var(--rojo); }
-.accion-lbl strong { font-size:12px; font-weight:700; display:block; }
-.accion-lbl span   { font-size:10px; color:var(--gris3); display:block; margin-top:1px; }
-.accion-btn.danger:hover .accion-lbl span { color:inherit; }
+.accion-btn.danger .kbd { color: var(--neo-danger); }
+.accion-lbl strong { font-size: 12px; font-weight: 700; display: block; color: var(--neo-text); }
+.accion-lbl span   { font-size: 10px; color: var(--neo-text-3); display: block; margin-top: 1px; }
 
-/* ── link-btn ─────────────────────────────────────────────── */
-.link-btn { background:none; border:none; cursor:pointer; font-family:inherit; font-size:11px; color:var(--azul); font-weight:600; text-decoration:underline; padding:0; }
-.link-btn:hover { color:var(--azul-h); }
+/* ── link-btn ── */
+.link-btn { background: none; border: none; cursor: pointer; font-family: inherit; font-size: 11px; color: var(--neo-accent); font-weight: 600; text-decoration: underline; padding: 0; }
+.link-btn:hover { color: var(--neo-accent-h); }
 
-/* ── franja de indicadores del turno ──────────────────────── */
-.stats-strip { display:grid; grid-template-columns:repeat(4,1fr); background:#fff; border:1px solid var(--borde); }
-.stat { padding:11px 16px; min-width:0; }
-.stat + .stat { border-left:1px solid var(--borde); }
-.stat-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); white-space:nowrap; }
-.stat-val { font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; margin-top:3px; white-space:nowrap; }
-.stat-sub { font-size:10px; color:var(--gris3); margin-top:1px; white-space:nowrap; }
-@media (max-width:1400px) { .stats-strip { grid-template-columns:repeat(2,1fr); } .stat:nth-child(3) { border-left:none; } .stat:nth-child(n+3) { border-top:1px solid var(--borde); } }
+/* ── stats strip ── */
+.stats-strip {
+  display: grid; grid-template-columns: repeat(4,1fr);
+  background: var(--neo-bg); box-shadow: var(--neo-e2); border-radius: var(--neo-r-lg);
+}
+.stat { padding: 14px 16px; min-width: 0; }
+.stat + .stat { border-left: 1px solid rgba(163,177,198,.25); }
+.stat-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); white-space: nowrap; }
+.stat-val { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 3px; white-space: nowrap; color: var(--neo-text); }
+.stat-sub { font-size: 10px; color: var(--neo-text-3); margin-top: 1px; white-space: nowrap; }
+@media (max-width:1400px) { .stats-strip { grid-template-columns: repeat(2,1fr); } .stat:nth-child(3) { border-left: none; } .stat:nth-child(n+3) { border-top: 1px solid rgba(163,177,198,.25); } }
 
-/* ── donut medios de cobro ────────────────────────────────── */
-.mix-grid { display:grid; grid-template-columns:auto minmax(0,1fr); gap:10px 28px; align-items:center; }
-@media (max-width:1300px) { .mix-grid { grid-template-columns:1fr; justify-items:center; } }
-.mix-leyenda { width:100%; }
-.leyenda-row { display:table-row; }
-.mix-leyenda .ledger-lbl { display:table-cell; }
-.swatch { display:inline-block; width:10px; height:10px; margin-right:7px; vertical-align:baseline; }
-.leyenda-pct { display:table-cell; padding:5px 0 5px 14px; text-align:right; font-size:11px; color:var(--gris3); font-variant-numeric:tabular-nums; white-space:nowrap; }
+/* ── donut medios de cobro ── */
+.mix-grid { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px 28px; align-items: center; }
+@media (max-width:1300px) { .mix-grid { grid-template-columns: 1fr; justify-items: center; } }
+.mix-leyenda { width: 100%; }
+.leyenda-row { display: table-row; }
+.mix-leyenda .ledger-lbl { display: table-cell; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 7px; vertical-align: baseline; box-shadow: var(--neo-e1); }
+.leyenda-pct { display: table-cell; padding: 5px 0 5px 14px; text-align: right; font-size: 11px; color: var(--neo-text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-/* ── barras ventas por hora ───────────────────────────────── */
-.horas-chart { display:flex; align-items:flex-end; gap:5px; height:150px; padding-top:14px; }
-.hora-col { flex:1; min-width:0; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:0; height:100%; }
-.hora-val { font-size:9px; color:var(--gris3); font-variant-numeric:tabular-nums; white-space:nowrap; margin-bottom:3px; }
-.hora-bar { width:100%; max-width:44px; background:var(--azul); }
-.hora-bar.vacia { background:var(--gris2); height:2px !important; }
-.hora-lbl { font-size:10px; color:var(--gris3); margin-top:5px; font-variant-numeric:tabular-nums; }
-.chart-vacio { padding:36px 20px; text-align:center; color:var(--gris3); font-size:12px; }
+/* ── barras ventas por hora ── */
+.horas-chart { display: flex; align-items: flex-end; gap: 5px; height: 150px; padding-top: 14px; }
+.hora-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 0; height: 100%; }
+.hora-val { font-size: 9px; color: var(--neo-text-3); font-variant-numeric: tabular-nums; white-space: nowrap; margin-bottom: 3px; }
+.hora-bar { width: 100%; max-width: 44px; background: var(--neo-accent); border-radius: var(--neo-r-xs) var(--neo-r-xs) 0 0; }
+.hora-bar.vacia { background: rgba(163,177,198,.3); height: 2px !important; }
+.hora-lbl { font-size: 10px; color: var(--neo-text-3); margin-top: 5px; font-variant-numeric: tabular-nums; }
+.chart-vacio { padding: 36px 20px; text-align: center; color: var(--neo-text-3); font-size: 12px; }
 
-/* ── cierres parciales tabla ──────────────────────────────── */
-.hist-tabla { width:100%; border-collapse:collapse; font-size:12px; }
-.hist-tabla th { text-align:left; padding:7px 12px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); border-bottom:1px solid var(--borde); white-space:nowrap; }
-.hist-tabla th.r, .hist-tabla td.r { text-align:right; }
-.hist-tabla td { padding:8px 12px; border-bottom:1px solid var(--borde); font-variant-numeric:tabular-nums; }
-.hist-tabla tbody tr:last-child td { border-bottom:none; }
-.hist-tabla tbody tr:hover { background:var(--gris1); }
-.badge-parcial { display:inline-block; padding:1px 7px; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; background:#FEF9C3; color:#854D0E; }
-.no-aplica { text-align:center; padding:40px 20px; color:var(--gris3); font-size:13px; }
+/* ── cierres parciales tabla ── */
+.hist-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+.hist-tabla th { text-align: left; padding: 7px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.3); white-space: nowrap; }
+.hist-tabla th.r, .hist-tabla td.r { text-align: right; }
+.hist-tabla td { padding: 8px 12px; border-bottom: 1px solid rgba(163,177,198,.18); font-variant-numeric: tabular-nums; color: var(--neo-text); }
+.hist-tabla tbody tr:last-child td { border-bottom: none; }
+.hist-tabla tbody tr:hover { background: rgba(255,255,255,.45); }
+.badge-parcial { display: inline-block; padding: 1px 7px; border-radius: var(--neo-r-pill); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; background: rgba(243,156,18,.12); color: var(--neo-warning); box-shadow: var(--neo-e1); }
+.no-aplica { text-align: center; padding: 40px 20px; color: var(--neo-text-3); font-size: 13px; }
 
-/* ══════════════════════════════════════════════════════════
-   MODAL DE CIERRE — ancho, 2 columnas
-   ══════════════════════════════════════════════════════════ */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; opacity:0; pointer-events:none; transition:opacity 160ms; }
-.modal-overlay.visible { opacity:1; pointer-events:auto; }
+/* ── Modal de cierre ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(49,52,75,.48);
+  z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px;
+  opacity: 0; pointer-events: none; transition: opacity 180ms;
+}
+.modal-overlay.visible {
+  opacity: 1; visibility: visible; pointer-events: auto;
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
 
 .modal-cierre {
-  background:#fff; border:1px solid var(--borde); border-radius:0;
-  width:min(96vw, 920px); max-height:90vh;
-  display:flex; flex-direction:column;
-  transform:translateY(10px); transition:transform 180ms cubic-bezier(.23,1,.32,1);
+  background: var(--neo-bg);
+  border-radius: var(--neo-r-xl); box-shadow: var(--neo-e4);
+  width: min(96vw, 700px); max-height: 92vh;
+  display: flex; flex-direction: column;
 }
-.modal-overlay.visible .modal-cierre { transform:none; }
 
 .modal-header {
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  padding:12px 20px; border-bottom:1px solid var(--borde); background:var(--gris1); flex-shrink:0;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 22px; border-bottom: 1px solid rgba(163,177,198,.3);
+  border-radius: var(--neo-r-xl) var(--neo-r-xl) 0 0; flex-shrink: 0;
 }
-.modal-header-txt h2 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; }
-.modal-header-txt p  { font-size:11px; color:var(--gris3); margin-top:2px; }
-.modal-close { background:none; border:none; cursor:pointer; font-size:18px; color:var(--gris3); line-height:1; padding:2px 6px; }
-.modal-close:hover { color:var(--texto); }
+.modal-header-txt h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); }
+.modal-header-txt p  { font-size: 11px; color: var(--neo-text-3); margin-top: 2px; }
+.modal-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--neo-text-3); font-size: 18px; line-height: 1; padding: 2px 6px;
+  border-radius: var(--neo-r-xs);
+}
+.modal-close:hover { background: rgba(163,177,198,.2); color: var(--neo-text); }
 
-/* dos columnas en el body */
-.modal-body {
-  flex:1; overflow:hidden; min-height:0;
-  display:grid; grid-template-columns:1fr 1px 340px;
-}
-.modal-col { padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:16px; }
-.modal-divider { background:var(--borde); }
+.modal-body { flex: 1; overflow-y: auto; min-height: 0; padding: 22px; display: flex; flex-direction: column; gap: 20px; }
 
 .modal-footer {
-  padding:12px 20px; border-top:1px solid var(--borde);
-  display:flex; gap:10px; justify-content:flex-end; flex-shrink:0;
+  padding: 12px 22px; border-top: 1px solid rgba(163,177,198,.3);
+  display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-shrink: 0;
+  border-radius: 0 0 var(--neo-r-xl) var(--neo-r-xl);
 }
 
-/* títulos de sección dentro del modal */
-.ms-titulo {
-  font-size:10px; font-weight:700; text-transform:uppercase;
-  letter-spacing:.8px; color:var(--gris3); padding-bottom:6px; border-bottom:1px solid var(--borde);
+/* Stepper */
+.stepper {
+  display: flex; align-items: center; padding: 12px 22px;
+  border-bottom: 1px solid rgba(163,177,198,.3); flex-shrink: 0;
 }
+.step { display: flex; align-items: center; gap: 8px; }
+.step-circle {
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 2px solid rgba(163,177,198,.4); background: var(--neo-bg);
+  box-shadow: var(--neo-e1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--neo-text-3); flex-shrink: 0;
+  transition: border-color 180ms, background 180ms, color 180ms, box-shadow 180ms;
+}
+.step.active .step-circle { border-color: var(--neo-accent); background: var(--neo-accent); color: #fff; box-shadow: 3px 3px 7px var(--neo-accent-glow); }
+.step.done   .step-circle { border-color: var(--neo-success); background: var(--neo-success); color: #fff; box-shadow: 3px 3px 7px var(--neo-success-glow); }
+.step-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); white-space: nowrap; }
+.step.active .step-lbl { color: var(--neo-text); }
+.step.done   .step-lbl { color: var(--neo-success); }
+.step-line { flex: 1; height: 1px; background: rgba(163,177,198,.35); margin: 0 10px; }
 
-/* ledger compacto para el modal */
-.ml-row { display:flex; justify-content:space-between; align-items:baseline; padding:4px 0; gap:12px; }
-.ml-row + .ml-row { border-top:1px solid var(--gris1); }
-.ml-lbl { font-size:12px; color:var(--gris3); }
-.ml-val { font-size:13px; font-weight:600; font-variant-numeric:tabular-nums; text-align:right; }
-.ml-row.bold .ml-lbl { font-weight:700; color:var(--texto); }
-.ml-row.bold .ml-val { font-size:14px; font-weight:700; }
-.ml-row.sep-top { margin-top:4px; padding-top:8px; border-top:1px solid var(--borde) !important; }
-.ml-row.accent .ml-val { color:var(--azul); }
-.ml-row.verde .ml-val { color:#15803D; }
+/* Titulos de sección modal */
+.ms-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); padding-bottom: 6px; border-bottom: 1px solid rgba(163,177,198,.3); margin-bottom: 12px; }
 
-/* inputs en el modal */
-.mf-group { display:flex; flex-direction:column; gap:4px; }
-.mf-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.mf-input  { padding:8px 10px; border:1px solid var(--borde); border-radius:0; font-size:13px; font-family:inherit; outline:none; background:#fff; font-variant-numeric:tabular-nums; }
-.mf-input:focus { border-color:var(--texto); }
+/* Inputs del modal */
+.mf-group { display: flex; flex-direction: column; gap: 5px; }
+.mf-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.mf-input {
+  padding: 9px 11px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 13px; font-family: inherit; outline: none;
+  background: var(--neo-bg); box-shadow: var(--neo-i1);
+  color: var(--neo-text); font-variant-numeric: tabular-nums;
+  transition: box-shadow var(--neo-t-fast);
+}
+.mf-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.mf-hint { font-size: 11px; color: var(--neo-text-3); margin-top: 2px; }
 
-/* posnet */
-.posnet-row { display:flex; align-items:center; gap:8px; }
-.posnet-nombre { font-size:12px; font-weight:600; min-width:110px; flex-shrink:0; }
-.posnet-input { flex:1; padding:7px 9px; border:1px solid var(--borde); border-radius:0; font-size:13px; font-family:inherit; outline:none; font-variant-numeric:tabular-nums; background:#fff; }
-.posnet-input:focus { border-color:var(--texto); }
+.inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width:560px) { .inputs-grid { grid-template-columns: 1fr; } }
 
-/* diferencia */
-.dif-row { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; margin-top:4px; border:1px solid var(--borde); }
-.dif-row .lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.dif-row .val { font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; }
-.dif-row.ok     { background:#DCFCE7; border-color:#86efac; }
-.dif-row.ok .lbl     { color:#166534; }
-.dif-row.ok .val     { color:#15803D; }
-.dif-row.falta  { background:#FEF2F2; border-color:#fca5a5; }
-.dif-row.falta .lbl  { color:#991b1b; }
-.dif-row.falta .val  { color:var(--rojo); }
-.dif-row.sobra  { background:#FEF9C3; border-color:#fde047; }
-.dif-row.sobra .lbl  { color:#713f12; }
-.dif-row.sobra .val  { color:#854D0E; }
+/* Posnet */
+.posnet-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.posnet-nombre { font-size: 12px; font-weight: 600; min-width: 120px; flex-shrink: 0; color: var(--neo-text); }
+.posnet-input {
+  flex: 1; padding: 7px 10px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 13px; font-family: inherit; outline: none;
+  box-shadow: var(--neo-i1); background: var(--neo-bg);
+  color: var(--neo-text); font-variant-numeric: tabular-nums;
+  transition: box-shadow var(--neo-t-fast);
+}
+.posnet-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+
+/* Tabla comparacion */
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.cmp-table th { text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4); }
+.cmp-table th.r { text-align: right; }
+.cmp-table td { padding: 9px 10px; border-bottom: 1px solid rgba(163,177,198,.18); font-variant-numeric: tabular-nums; color: var(--neo-text); }
+.cmp-table td.r { text-align: right; font-weight: 600; }
+.cmp-table tbody tr:last-child td { border-bottom: none; }
+.cmp-ok    { color: var(--neo-success); }
+.cmp-falta { color: var(--neo-danger); }
+.cmp-sobra { color: var(--neo-warning); }
+
+/* Diferencia de efectivo */
+.dif-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-radius: var(--neo-r-sm); }
+.dif-row .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.dif-row .val { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dif-row.ok    { background: rgba(39,174,96,.1); box-shadow: var(--neo-i1); }
+.dif-row.ok    .lbl { color: var(--neo-success); } .dif-row.ok    .val { color: var(--neo-success); }
+.dif-row.falta { background: rgba(231,76,60,.1); box-shadow: var(--neo-i1); }
+.dif-row.falta .lbl { color: var(--neo-danger); }  .dif-row.falta .val { color: var(--neo-danger); }
+.dif-row.sobra { background: rgba(243,156,18,.1); box-shadow: var(--neo-i1); }
+.dif-row.sobra .lbl { color: var(--neo-warning); } .dif-row.sobra .val { color: var(--neo-warning); }
+
+/* Fondo siguiente destacado (paso 3) */
+.fondo-sig-card {
+  display: flex; justify-content: space-between; align-items: center; padding: 16px 20px;
+  background: var(--neo-accent); color: #fff; border-radius: var(--neo-r-md);
+  box-shadow: 4px 4px 12px var(--neo-accent-glow), -2px -2px 6px rgba(255,255,255,.15);
+}
+.fondo-sig-card .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; opacity: .85; }
+.fondo-sig-card .val { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Filas de reporte (paso 3) */
+.rep-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-bottom: 1px solid rgba(163,177,198,.2); }
+.rep-row:last-child { border-bottom: none; }
+.rep-lbl { font-size: 12px; color: var(--neo-text-2); }
+.rep-val { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--neo-text); }
+.rep-row.bold .rep-lbl { font-weight: 700; color: var(--neo-text); }
+.rep-row.bold .rep-val { font-size: 14px; font-weight: 700; }
+
+/* Bloque diferencia total */
+.dif-total { display: flex; justify-content: space-between; align-items: center; padding: 13px 16px; border-radius: var(--neo-r-sm); }
+.dif-total .dt-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.dif-total .dt-val { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dif-total.ok    { background: rgba(39,174,96,.1); box-shadow: var(--neo-i1); }
+.dif-total.ok    .dt-lbl { color: var(--neo-success); } .dif-total.ok    .dt-val { color: var(--neo-success); }
+.dif-total.falta { background: rgba(231,76,60,.1); box-shadow: var(--neo-i1); }
+.dif-total.falta .dt-lbl { color: var(--neo-danger); } .dif-total.falta .dt-val { color: var(--neo-danger); }
+
+/* Tabla de arqueo */
+.arqueo-table { width: 100%; border-collapse: collapse; border-radius: var(--neo-r-md); overflow: hidden; box-shadow: var(--neo-i1); }
+.arqueo-table thead th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); padding: 10px 16px; border-bottom: 1px solid rgba(163,177,198,.35); background: var(--neo-bg-deep); white-space: nowrap; }
+.arqueo-table thead th.r { text-align: right; }
+.arqueo-table tbody tr { border-bottom: 1px solid rgba(163,177,198,.2); }
+.arqueo-table tbody tr:last-child { border-bottom: none; }
+.arqueo-table tbody tr:not(.arqueo-group):hover { background: rgba(255,255,255,.45); }
+.arqueo-table td { padding: 12px 16px; vertical-align: middle; }
+.arqueo-table td.r { text-align: right; }
+.arqueo-group { background: var(--neo-bg-deep) !important; }
+.arqueo-group td { padding: 7px 16px !important; }
+.am-lbl  { font-size: 13px; font-weight: 600; color: var(--neo-text); }
+.am-sub  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.am-hint { font-size: 11px; color: var(--neo-text-3); margin-top: 2px; line-height: 1.4; }
+.am-sis  { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--neo-text-2); white-space: nowrap; min-width: 110px; }
+.arqueo-input {
+  width: 160px; padding: 9px 12px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 15px; font-weight: 700; font-family: inherit; outline: none;
+  text-align: right; font-variant-numeric: tabular-nums;
+  background: var(--neo-bg); box-shadow: var(--neo-i1);
+  color: var(--neo-text); display: block; box-sizing: border-box;
+  transition: box-shadow var(--neo-t-fast);
+}
+.arqueo-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.fondo-wrap {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 14px 16px; border-radius: var(--neo-r-md); box-shadow: var(--neo-e1);
+  background: var(--neo-bg);
+}
+.fondo-wrap-lbl strong { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; display: block; color: var(--neo-text); }
+
+/* ── Flat modal — igual a contacto-modal ── */
+.modal-cierre {
+  background: #fff;
+  border: 1px solid #D5D0CA;
+  border-radius: 0;
+  box-shadow: 0 4px 28px rgba(0,0,0,.14);
+}
+.modal-header {
+  background: #F0EEEB;
+  border-bottom-color: #D5D0CA;
+  border-radius: 0;
+}
+.modal-footer {
+  border-top-color: #D5D0CA;
+  border-radius: 0;
+}
+.stepper {
+  background: #F0EEEB;
+  border-bottom-color: #D5D0CA;
+}
+.step-circle {
+  background: #fff;
+  border-color: #D5D0CA;
+  box-shadow: none;
+}
+.step.active .step-circle { box-shadow: none; }
+.step.done   .step-circle { box-shadow: none; }
+.ms-titulo { border-bottom-color: #D5D0CA; }
+.modal-cierre .arqueo-input,
+.modal-cierre .mf-input,
+.modal-cierre .posnet-input,
+.modal-cierre textarea {
+  box-shadow: none;
+  border: 1px solid #D5D0CA;
+  border-radius: 0;
+  background: #fff;
+}
+.modal-cierre .arqueo-input:focus,
+.modal-cierre .mf-input:focus,
+.modal-cierre .posnet-input:focus,
+.modal-cierre textarea:focus {
+  box-shadow: none;
+  border-color: #111;
+  outline: none;
+}
+.arqueo-table {
+  box-shadow: none;
+  border: 1px solid #D5D0CA;
+  border-radius: 0;
+  overflow: visible;
+}
+.arqueo-table thead th {
+  background: #F0EEEB;
+  border-bottom-color: #D5D0CA;
+}
+.arqueo-table tbody tr { border-bottom-color: #E8E4E0; }
+.arqueo-group { background: #F8F7F5 !important; }
+.fondo-wrap {
+  box-shadow: none;
+  border: 1px solid #D5D0CA;
+  border-radius: 0;
+  background: #fff;
+}
+.dif-row, .dif-total { box-shadow: none; border-radius: 0; }
+.fondo-sig-card { box-shadow: none; border-radius: 0; }
+.modal-footer .btn-ok { box-shadow: none; border-radius: 0; }
+.modal-footer .btn-ok:hover:not(:disabled) { box-shadow: none; }
+.modal-footer .btn-sec {
+  background: #fff;
+  color: #111;
+  border: 1.5px solid #888;
+  box-shadow: none;
+  border-radius: 0;
+}
+.modal-footer .btn-sec:hover { box-shadow: none; }
+.modal-footer .btn-danger {
+  background: #fff;
+  color: #B91C1C;
+  border: 1.5px solid #B91C1C;
+  box-shadow: none;
+  border-radius: 0;
+}
+.modal-footer .btn-danger:hover { background: #fff; }
 
 </style>
 </head>
@@ -222,11 +430,11 @@
 <div class="page-header">
   <div>
     <h1>Caja</h1>
-    <p>Apertura, movimientos y cierre del turno</p>
+    <p id="ph-caja-sub">Apertura, movimientos y cierre del turno</p>
   </div>
   <div class="page-header-meta">
-    <a href="/Logos/pos/operaciones.html" target="_blank" class="btn btn-sec" style="text-decoration:none;font-size:10px">
-      Ver operaciones ↗
+    <a href="/Logos/pos/operaciones.html" class="btn btn-sec" style="text-decoration:none;font-size:10px">
+      Ver operaciones
     </a>
     <span style="font-size:11px;color:var(--gris3)">
       <kbd style="font-size:10px;padding:1px 5px;border:1px solid #ccc;background:#f5f5f5;">X</kbd> Cierre parcial
@@ -242,7 +450,7 @@
   </div>
 </div>
 
-<!-- ═══ Modal de cierre (X y Z) ═════════════════════════════ -->
+<!-- Modal de cierre (X y Z) — wizard 3 pasos -->
 <div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
   <div class="modal-cierre">
     <div class="modal-header">
@@ -252,18 +460,30 @@
       </div>
       <button class="modal-close" id="modal-close" aria-label="Cerrar">×</button>
     </div>
-    <div class="modal-body" id="modal-body">
-      <!-- columna izquierda: totales del sistema -->
-      <div class="modal-col" id="modal-col-izq">
-        <p class="form-hint">Cargando…</p>
+    <div class="stepper" id="modal-stepper">
+      <div class="step" data-step="1">
+        <div class="step-circle">1</div>
+        <span class="step-lbl">Ingresar valores</span>
       </div>
-      <div class="modal-divider"></div>
-      <!-- columna derecha: arqueo -->
-      <div class="modal-col" id="modal-col-der"></div>
+      <div class="step-line"></div>
+      <div class="step" data-step="2">
+        <div class="step-circle">2</div>
+        <span class="step-lbl">Comparar</span>
+      </div>
+      <div class="step-line"></div>
+      <div class="step" data-step="3">
+        <div class="step-circle">3</div>
+        <span class="step-lbl">Reporte</span>
+      </div>
+    </div>
+    <div class="modal-body" id="modal-body">
+      <p class="form-hint">Cargando&hellip;</p>
     </div>
     <div class="modal-footer">
       <button class="btn btn-sec" id="modal-btn-cancelar">Cancelar</button>
-      <button class="btn btn-ok" id="modal-btn-confirmar" disabled>Confirmar</button>
+      <button class="btn btn-sec" id="modal-btn-atras" style="display:none">&#8592; Atr&#225;s</button>
+      <button class="btn btn-ok"  id="modal-btn-siguiente">Siguiente &#8594;</button>
+      <button class="btn btn-ok"  id="modal-btn-confirmar" style="display:none">Confirmar cierre</button>
     </div>
   </div>
 </div>
@@ -295,7 +515,26 @@ function esc(s) {
     ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 }
 
-const cajaId = window.LOGOS_SESION?.caja_id ?? null;
+let cajaId     = null;
+let cajaNombre = '';
+
+// Lee la caja actualmente seleccionada. Si el select ya está poblado usa su valor
+// directamente (correcto incluso si sessionStorage no se actualizó todavía).
+// Si el select aún no está poblado (carga inicial) cae a cajaOperativaId() / sesión.
+function getCajaActual() {
+  const sel = document.getElementById('nav-caja-op');
+  if (sel && sel.options.length > 0) {
+    const id   = parseInt(sel.value) || null;
+    const opt  = sel.options[sel.selectedIndex];
+    const nombre = (opt?.text || '').replace(' (mi caja)', '');
+    return { id, nombre };
+  }
+  const id = typeof window.cajaOperativaId === 'function'
+    ? window.cajaOperativaId()
+    : (window.LOGOS_SESION?.caja_id ?? null);
+  return { id, nombre: window.LOGOS_SESION?.caja_nombre || '' };
+}
+
 let turnoActualId    = null;
 let modalTipo        = null;
 let periodoData      = null;
@@ -303,6 +542,13 @@ let terminalesPostnet = [];
 
 // ── Carga inicial ──────────────────────────────────────────
 async function cargar() {
+  const op = getCajaActual();
+  cajaId     = op.id;
+  cajaNombre = op.nombre;
+
+  const phSub = $('ph-caja-sub');
+  if (phSub) phSub.textContent = cajaNombre || 'Apertura, movimientos y cierre del turno';
+
   if (!cajaId) {
     $('contenido-inner').innerHTML = '<div class="card"><div class="card-body"><p class="form-hint">No hay una caja activa en la sesión.</p></div></div>';
     return;
@@ -325,7 +571,7 @@ function renderNoAplica() {
   $('contenido-inner').className = 'contenido-inner solo';
   $('contenido-inner').innerHTML = `
     <div class="card"><div class="card-body">
-      <p class="no-aplica">Esta caja (<strong>${esc(window.LOGOS_SESION?.caja_nombre || '')}</strong>) no maneja apertura ni cierre de turno.</p>
+      <p class="no-aplica">Esta caja (<strong>${esc(cajaNombre)}</strong>) no maneja apertura ni cierre de turno.</p>
     </div></div>`;
 }
 
@@ -335,14 +581,14 @@ function renderApertura(fondoSugerido) {
   $('contenido-inner').innerHTML = `
     <div class="card">
       <div class="card-header">
-        <h2>Apertura de caja — ${esc(window.LOGOS_SESION?.caja_nombre || '')}</h2>
+        <h2>Apertura de caja — ${esc(cajaNombre)}</h2>
         <span class="estado-pill cerrado"><span class="dot"></span>Sin turno abierto</span>
       </div>
       <div class="card-body">
         <div class="form-group">
           <label class="form-label">Fondo inicial</label>
-          <input class="form-input" id="ap-fondo" type="number" min="0" step="0.01" value="${Number(fondoSugerido).toFixed(2)}" style="width:200px">
-          <span class="form-hint" style="margin-top:4px">Sugerido a partir del efectivo contado en el último cierre.</span>
+          <input class="form-input" id="ap-fondo" type="number" min="0" step="0.01" placeholder="0.00" style="width:200px" autocomplete="off">
+          <span class="form-hint" style="margin-top:4px">${fondoSugerido > 0.009 ? `Sugerido del último cierre: <strong>${fmt(fondoSugerido)}</strong>` : 'Dejá en blanco para abrir sin fondo.'}</span>
         </div>
         <div style="margin-top:16px">
           <button class="btn btn-ok" id="ap-btn">Abrir caja</button>
@@ -353,8 +599,8 @@ function renderApertura(fondoSugerido) {
 }
 
 async function abrirCaja() {
-  const fondo_inicial = parseFloat($('ap-fondo').value);
-  if (isNaN(fondo_inicial) || fondo_inicial < 0) { toast('Fondo inicial inválido', 'err'); return; }
+  const fondo_inicial = parseFloat($('ap-fondo').value) || 0;
+  if (fondo_inicial < 0) { toast('Fondo inicial inválido', 'err'); return; }
   $('ap-btn').disabled = true;
   const res = await fetch(`${API}/caja-turnos`, {
     method: 'POST',
@@ -565,7 +811,7 @@ function renderTurnoAbierto(data) {
     <div class="layout-col">
     <div class="card">
       <div class="card-header">
-        <h2>Turno actual — ${esc(window.LOGOS_SESION?.caja_nombre || '')}</h2>
+        <h2>Turno actual — ${esc(cajaNombre)}</h2>
         <span class="estado-pill abierto"><span class="dot"></span>Abierto</span>
       </div>
       <div class="card-body">
@@ -681,19 +927,22 @@ function renderTurnoAbierto(data) {
 }
 
 // ── Modal de cierre ────────────────────────────────────────
+let pasoActual = 1;
+let datosIngresados = {};
+
 async function abrirModal(tipo) {
-  modalTipo   = tipo;
-  periodoData = null;
+  modalTipo       = tipo;
+  periodoData     = null;
+  pasoActual      = 1;
+  datosIngresados = {};
 
   $('modal-titulo').textContent = tipo === 'parcial' ? 'Cierre Parcial (X)' : 'Cierre Diario (Z)';
   $('modal-subtitulo').textContent = tipo === 'parcial'
-    ? 'Corte de turno. La caja continúa abierta.'
-    : 'Cierre definitivo del turno. No se podrán registrar ventas hasta nueva apertura.';
-  $('modal-col-izq').innerHTML = '<p class="form-hint">Cargando…</p>';
-  $('modal-col-der').innerHTML = '';
-  $('modal-btn-confirmar').disabled = true;
-  $('modal-btn-confirmar').textContent = tipo === 'parcial' ? 'Confirmar cierre parcial' : 'Confirmar cierre diario';
+    ? 'Corte de turno — la caja continua abierta.'
+    : 'Cierre definitivo del turno.';
+  $('modal-body').innerHTML = '<p class="form-hint">Cargando&hellip;</p>';
   $('modal-overlay').classList.add('visible');
+  actualizarStepper();
 
   const url = tipo === 'parcial'
     ? `${API}/caja-turnos/${turnoActualId}/periodo`
@@ -709,15 +958,16 @@ async function abrirModal(tipo) {
         turno_id:            t.id,
         periodo_desde:       t.abierto_en,
         fondo_periodo:       Number(t.fondo_inicial),
-        efectivo_esperado:   Number(t.fondo_inicial) + Number(data.total_efectivo),
-        total_efectivo:      data.total_efectivo,
-        total_tarjeta:       data.total_tarjeta,
-        total_transferencia: data.total_transferencia,
-        total_cheque:        data.total_cheque,
-        total_mercado_pago:  data.total_mercado_pago,
-        total_cc:            data.total_cc,
-        total_ingresos:      data.total_ingresos,
-        total_retiros:       data.total_retiros,
+        efectivo_esperado:   Number(t.fondo_inicial) + Number(data.total_efectivo || 0),
+        total_efectivo:      Number(data.total_efectivo      || 0),
+        total_tarjeta:       Number(data.total_tarjeta       || 0),
+        total_transferencia: Number(data.total_transferencia || 0),
+        total_cheque:        Number(data.total_cheque        || 0),
+        total_mercado_pago:  Number(data.total_mercado_pago  || 0),
+        total_cc:            Number(data.total_cc            || 0),
+        total_ingresos:      Number(data.total_ingresos      || 0),
+        total_retiros:       Number(data.total_retiros       || 0),
+        total_devoluciones:  Number(data.total_devoluciones  || 0),
         count_efectivo:      data.count_efectivo,
         count_tarjeta:       data.count_tarjeta,
         count_transferencia: data.count_transferencia,
@@ -727,201 +977,352 @@ async function abrirModal(tipo) {
         count_mixto:         data.count_mixto,
         count_total:         data.count_total,
         count_devoluciones:  data.count_devoluciones,
-        total_devoluciones:  data.total_devoluciones,
       };
     } else {
-      periodoData = data;
+      periodoData = {
+        ...data,
+        total_efectivo:      Number(data.total_efectivo      || 0),
+        total_tarjeta:       Number(data.total_tarjeta       || 0),
+        total_transferencia: Number(data.total_transferencia || 0),
+        total_cheque:        Number(data.total_cheque        || 0),
+        total_mercado_pago:  Number(data.total_mercado_pago  || 0),
+        total_cc:            Number(data.total_cc            || 0),
+        total_ingresos:      Number(data.total_ingresos      || 0),
+        total_retiros:       Number(data.total_retiros       || 0),
+        total_devoluciones:  Number(data.total_devoluciones  || 0),
+      };
     }
 
-    renderModalCols();
-    $('modal-btn-confirmar').disabled = false;
+    renderPaso1();
   } catch (_) {
-    $('modal-col-izq').innerHTML = '<p class="form-hint" style="color:var(--rojo)">Error al cargar los totales. Intentá de nuevo.</p>';
+    $('modal-body').innerHTML = '<p class="form-hint" style="color:var(--rojo)">Error al cargar los totales. Intent&aacute; de nuevo.</p>';
   }
 }
 
-function mlRow(lbl, val, cls = '') {
-  return `<div class="ml-row ${cls}"><span class="ml-lbl">${lbl}</span><span class="ml-val">${val}</span></div>`;
+function actualizarStepper() {
+  document.querySelectorAll('#modal-stepper .step').forEach(el => {
+    const n = parseInt(el.dataset.step);
+    el.classList.remove('active', 'done');
+    if (n === pasoActual) el.classList.add('active');
+    else if (n < pasoActual) el.classList.add('done');
+  });
+  $('modal-btn-atras').style.display     = pasoActual > 1 ? '' : 'none';
+  $('modal-btn-siguiente').style.display = pasoActual < 3 ? '' : 'none';
+  $('modal-btn-confirmar').style.display = pasoActual === 3 ? '' : 'none';
 }
-function mlCnt(n) { return n > 0 ? ` <span style="font-size:10px;color:var(--gris3);font-weight:400">(${n})</span>` : ''; }
 
-function renderModalCols() {
+// ── Paso 1: tabla de arqueo ───────────────────────────────
+function renderPaso1() {
   const d = periodoData;
-  const totalRecaudado = Number(d.total_efectivo) + Number(d.total_tarjeta) +
-    Number(d.total_transferencia) + Number(d.total_cheque) + Number(d.total_mercado_pago) +
-    Number(d.total_cc || 0);
 
-  const movHtml = [
-    Number(d.total_ingresos) > 0
-      ? `<div class="ml-row" style="color:#15803D"><span class="ml-lbl" style="color:#15803D">+ Ingresos de caja</span><span class="ml-val" style="color:#15803D">+${fmt(d.total_ingresos)}</span></div>`
-      : '',
-    Number(d.total_retiros) > 0
-      ? `<div class="ml-row" style="color:var(--rojo)"><span class="ml-lbl" style="color:var(--rojo)">− Retiros de caja</span><span class="ml-val" style="color:var(--rojo)">-${fmt(d.total_retiros)}</span></div>`
-      : '',
-    Number(d.count_devoluciones) > 0
-      ? `<div class="ml-row" style="color:var(--rojo)"><span class="ml-lbl" style="color:var(--rojo)">Devoluciones${mlCnt(d.count_devoluciones)}</span><span class="ml-val" style="color:var(--rojo)">-${fmt(d.total_devoluciones)}</span></div>`
-      : '',
-  ].join('');
+  // Filas de posnet/tarjeta
+  const tarjetaFilas = terminalesPostnet.length
+    ? `<tr class="arqueo-group">
+        <td colspan="3">
+          <span class="am-sub">Posnet / Tarjeta</span>
+          <span class="am-hint">&nbsp;&mdash;&nbsp;Sistema registra <strong>${fmt(d.total_tarjeta)}</strong> en total entre todas las terminales</span>
+        </td>
+      </tr>
+      ${terminalesPostnet.map((t, i) => `
+      <tr>
+        <td style="padding-left:28px"><div class="am-lbl">${esc(t.nombre || t)}</div></td>
+        <td class="r am-sis">—</td>
+        <td><input class="arqueo-input" id="posnet-${i}" type="number" min="0" step="0.01" placeholder="0,00"></td>
+      </tr>`).join('')}`
+    : `<tr>
+        <td><div class="am-lbl">Tarjeta</div></td>
+        <td class="r am-sis">${fmt(d.total_tarjeta)}</td>
+        <td><input class="arqueo-input" id="tarjeta-contado" type="number" min="0" step="0.01" placeholder="0,00"></td>
+      </tr>`;
 
-  // ── Columna izquierda: totales del sistema ──
-  $('modal-col-izq').innerHTML = `
-    <div>
-      <div class="ms-titulo">Ventas del período</div>
-      <div style="margin-top:10px">
-        ${mlRow('Efectivo' + mlCnt(d.count_efectivo), fmt(d.total_efectivo))}
-        ${mlRow('Tarjeta' + mlCnt(d.count_tarjeta), fmt(d.total_tarjeta))}
-        ${mlRow('Transferencia' + mlCnt(d.count_transferencia), fmt(d.total_transferencia))}
-        ${mlRow('Cheque' + mlCnt(d.count_cheque), fmt(d.total_cheque))}
-        ${mlRow('Mercado Pago' + mlCnt(d.count_mercado_pago), fmt(d.total_mercado_pago))}
-        ${Number(d.total_cc) > 0 ? mlRow('Cta. Cte.' + mlCnt(d.count_cc), fmt(d.total_cc)) : ''}
-        ${Number(d.count_mixto) > 0 ? `<div class="ml-row"><span class="ml-lbl">Pago mixto${mlCnt(d.count_mixto)}</span><span class="ml-val" style="font-size:11px;color:var(--gris3)">desglosado arriba</span></div>` : ''}
-        ${movHtml}
-        ${mlRow('Total recaudado', fmt(totalRecaudado), 'bold sep-top')}
-        <div style="margin-top:4px;padding-top:2px;font-size:10px;color:var(--gris3)">
-          ${Number(d.count_total||0)} operaciones totales
-        </div>
-      </div>
-    </div>
-    <div>
-      <div class="ms-titulo">Efectivo en caja</div>
-      <div style="margin-top:10px">
-        ${mlRow('Fondo del período', fmt(d.fondo_periodo))}
-        ${mlRow('Ventas en efectivo', fmt(d.total_efectivo))}
-        ${Number(d.total_ingresos) > 0 ? `<div class="ml-row" style="color:#15803D"><span class="ml-lbl" style="color:#15803D">+ Ingresos</span><span class="ml-val" style="color:#15803D">+${fmt(d.total_ingresos)}</span></div>` : ''}
-        ${Number(d.total_retiros) > 0 ? `<div class="ml-row" style="color:var(--rojo)"><span class="ml-lbl" style="color:var(--rojo)">− Retiros</span><span class="ml-val" style="color:var(--rojo)">-${fmt(d.total_retiros)}</span></div>` : ''}
-        ${mlRow('Efectivo esperado', fmt(d.efectivo_esperado), 'bold sep-top verde')}
-      </div>
-    </div>
-    ${d.periodo_desde ? `<p class="form-hint" style="margin-top:auto">Período desde: ${fmtDt(d.periodo_desde)}</p>` : ''}`;
+  $('modal-body').innerHTML = `
+    <table class="arqueo-table">
+      <thead>
+        <tr>
+          <th>Medio de pago</th>
+          <th class="r">Sistema</th>
+          <th class="r">Contado hoy</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="am-lbl">Efectivo</div>
+            <div class="am-hint">Esperado en caja: <strong>${fmt(d.efectivo_esperado)}</strong></div>
+          </td>
+          <td class="r am-sis">${fmt(d.total_efectivo)}</td>
+          <td><input class="arqueo-input" id="ef-contado" type="number" min="0" step="0.01" placeholder="0,00" autocomplete="off"></td>
+        </tr>
+        ${tarjetaFilas}
+        <tr>
+          <td><div class="am-lbl">Transferencia</div></td>
+          <td class="r am-sis">${fmt(d.total_transferencia)}</td>
+          <td><input class="arqueo-input" id="transf-contado" type="number" min="0" step="0.01" placeholder="0,00"></td>
+        </tr>
+        <tr>
+          <td><div class="am-lbl">QR Mercado Pago</div></td>
+          <td class="r am-sis">${fmt(d.total_mercado_pago)}</td>
+          <td><input class="arqueo-input" id="mp-contado" type="number" min="0" step="0.01" placeholder="0,00"></td>
+        </tr>
+        <tr>
+          <td><div class="am-lbl">Cheques</div></td>
+          <td class="r am-sis">${fmt(d.total_cheque)}</td>
+          <td><input class="arqueo-input" id="cheques-rec" type="number" min="0" step="0.01" placeholder="0,00"></td>
+        </tr>
+      </tbody>
+    </table>
 
-  // ── Columna derecha: arqueo ──
-  const posnetHtml = terminalesPostnet.length
-    ? terminalesPostnet.map((t, i) => `
-        <div class="posnet-row">
-          <span class="posnet-nombre">${esc(t.nombre || t)}</span>
-          <input class="posnet-input" type="number" min="0" step="0.01" placeholder="0,00"
-            id="posnet-${i}" data-terminal="${esc(t.nombre || t)}" data-idx="${i}">
-        </div>`).join('')
-    : '<p class="form-hint" style="color:var(--gris3)">Sin terminales configuradas.</p>';
-
-  $('modal-col-der').innerHTML = `
-    <div>
-      <div class="ms-titulo">Arqueo de efectivo</div>
-      <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px">
-        <div class="mf-group">
-          <label class="mf-label">Efectivo contado *</label>
-          <input class="mf-input" id="ef-contado" type="number" min="0" step="0.01" placeholder="0,00">
-        </div>
-        <div class="dif-row" id="dif-row" style="display:none">
-          <span class="lbl">Diferencia vs. esperado</span>
-          <span class="val" id="dif-val"></span>
-        </div>
-        <div class="mf-group">
-          <label class="mf-label">Efectivo a dejar en caja (fondo siguiente)</label>
-          <input class="mf-input" id="fondo-sig" type="number" min="0" step="0.01" placeholder="0,00">
-          <span style="font-size:10px;color:var(--gris3);margin-top:3px">Se pre-completa con el total contado. Reducilo si retirás efectivo.</span>
-        </div>
-      </div>
-    </div>
-    <div>
-      <div class="ms-titulo">Cierre Mercado Pago</div>
-      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-        <div class="mf-group">
-          <label class="mf-label">Monto liquidado (del resumen MP)</label>
-          <input class="mf-input" id="mp-contado" type="number" min="0" step="0.01" placeholder="0,00">
-        </div>
-        ${Number(d.total_mercado_pago) > 0 ? `<div style="font-size:11px;color:var(--gris3)">Sistema registra: <strong>${fmt(d.total_mercado_pago)}</strong></div>` : ''}
-      </div>
-    </div>
-    <div>
-      <div class="ms-titulo">Cierre Posnet</div>
-      <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
-        ${posnetHtml}
-      </div>
-    </div>
-    <div>
-      <div class="ms-titulo">Otros cobros recibidos</div>
-      <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px">
-        <div class="mf-group">
-          <label class="mf-label">Cheques recibidos</label>
-          <input class="mf-input" id="cheques-rec" type="number" min="0" step="0.01" placeholder="0,00">
-        </div>
-        <div class="mf-group">
-          <label class="mf-label">Depósitos recibidos</label>
-          <input class="mf-input" id="depositos-rec" type="number" min="0" step="0.01" placeholder="0,00">
-        </div>
-      </div>
-    </div>
     <div>
       <div class="ms-titulo">Observaciones</div>
-      <div style="margin-top:10px">
-        <textarea id="obs-cierre" rows="3"
-          style="width:100%;padding:8px 10px;border:1px solid var(--borde);border-radius:0;font-size:12px;font-family:inherit;resize:vertical;outline:none;box-sizing:border-box"
-          placeholder="Notas del cajero, incidentes, diferencias…"></textarea>
+      <textarea id="obs-cierre" rows="3"
+        style="width:100%;padding:8px 10px;font-size:12px;font-family:inherit;resize:vertical;box-sizing:border-box;color:var(--neo-text)"
+        placeholder="Notas del cajero, incidentes, diferencias&hellip;">${esc(datosIngresados.observaciones || '')}</textarea>
+    </div>
+    ${modalTipo !== 'parcial' ? `
+    <div style="margin-top:14px;padding:12px 14px;border:1px solid #D5D0CA;border-radius:0;background:#fff">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--neo-text-3);margin-bottom:8px">Fondo para próximo turno</div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <input class="arqueo-input" id="fondo-siguiente-input" type="number" min="0" step="0.01"
+               style="max-width:140px"
+               value="${(datosIngresados.fondo_siguiente ?? periodoData.fondo_periodo).toFixed(2)}">
+        <span style="font-size:11px;color:var(--gris3)">¿Cuánto dejás en el cajón? (default: ${fmt(periodoData.fondo_periodo)})</span>
       </div>
-    </div>`;
+    </div>` : ''}`;
 
-  $('ef-contado').addEventListener('input', actualizarDiferencia);
-  setTimeout(() => $('ef-contado').focus(), 60);
+  // Pre-fill si vuelve del paso 2
+  if (datosIngresados.efectivo_contado !== undefined) {
+    $('ef-contado').value = datosIngresados.efectivo_contado.toFixed(2);
+    if ($('transf-contado'))  $('transf-contado').value  = (datosIngresados.transf_contado  || 0).toFixed(2);
+    if ($('mp-contado'))      $('mp-contado').value      = (datosIngresados.mp_contado      || 0).toFixed(2);
+    if ($('cheques-rec'))     $('cheques-rec').value     = (datosIngresados.cheques         || 0).toFixed(2);
+    if ($('tarjeta-contado')) $('tarjeta-contado').value = (datosIngresados.tarjeta_contado || 0).toFixed(2);
+    terminalesPostnet.forEach((_, i) => {
+      const el = $(`posnet-${i}`);
+      if (el && datosIngresados.posnet_cierres?.[i]) el.value = datosIngresados.posnet_cierres[i].monto.toFixed(2);
+    });
+  }
+
+  // Enter avanza al siguiente input
+  const efEl     = $('ef-contado');
+  const allInputs = $('modal-body').querySelectorAll('.arqueo-input');
+  allInputs.forEach((inp, idx) => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); allInputs[idx + 1]?.focus(); }
+    });
+  });
+
+  setTimeout(() => efEl.focus(), 60);
 }
 
-function actualizarDiferencia() {
-  const contado = parseFloat($('ef-contado').value);
-  const row = $('dif-row');
-  if (isNaN(contado) || !periodoData) { row.style.display = 'none'; return; }
-  const dif = contado - periodoData.efectivo_esperado;
-  row.style.display = 'flex';
-  row.className = 'dif-row ' + (Math.abs(dif) < 0.01 ? 'ok' : dif < 0 ? 'falta' : 'sobra');
-  $('dif-val').textContent = (dif >= 0 ? '+' : '') + fmt(dif) +
-    (Math.abs(dif) < 0.01 ? '' : dif < 0 ? ' (falta)' : ' (sobra)');
-  // Auto-completar fondo siguiente solo si el campo está vacío o igual al valor anterior
-  const fondoEl = $('fondo-sig');
-  if (fondoEl && (fondoEl.value === '' || fondoEl.dataset.autoSet === 'true')) {
-    fondoEl.value = contado.toFixed(2);
-    fondoEl.dataset.autoSet = 'true';
-  }
-}
-
-// Si el usuario edita manualmente el fondo, desactivar el auto-complete
-document.addEventListener('input', e => {
-  if (e.target?.id === 'fondo-sig') {
-    e.target.dataset.autoSet = 'false';
-  }
-});
-
-async function confirmarCierre() {
+function irPaso2() {
   const ef = parseFloat($('ef-contado').value);
-  if (isNaN(ef) || ef < 0) { toast('Ingresá el efectivo contado', 'err'); return; }
+  if (isNaN(ef) || ef < 0) { toast('Ingresá el efectivo contado', 'err'); return false; }
 
-  const cheques         = parseFloat($('cheques-rec').value)  || 0;
-  const depositos       = parseFloat($('depositos-rec').value) || 0;
-  const mp_contado      = parseFloat($('mp-contado')?.value)  || null;
-  const fondo_sig_raw   = parseFloat($('fondo-sig')?.value);
-  const fondo_siguiente = !isNaN(fondo_sig_raw) ? fondo_sig_raw : ef;
-  const observaciones   = $('obs-cierre')?.value?.trim() || null;
+  const tarjetaContado = terminalesPostnet.length
+    ? terminalesPostnet.reduce((s, _, i) => s + (parseFloat($(`posnet-${i}`)?.value) || 0), 0)
+    : (parseFloat($('tarjeta-contado')?.value) || 0);
 
   const posnet_cierres = terminalesPostnet.map((t, i) => ({
     nombre: t.nombre || t,
-    monto: parseFloat($(`posnet-${i}`)?.value) || 0,
-  })).filter(p => p.monto > 0);
+    monto:  parseFloat($(`posnet-${i}`)?.value) || 0,
+  }));
 
-  const body = {
-    efectivo_contado:     ef,
-    cheques_recibidos:    cheques   || null,
-    depositos_recibidos:  depositos || null,
-    posnet_cierres:       posnet_cierres.length ? posnet_cierres : null,
-    mercado_pago_contado: mp_contado,
+  let fondo_siguiente;
+  if (modalTipo === 'parcial') {
+    fondo_siguiente = ef;  // parcial: el cajón queda con todo (cambia el cajero, no se retira nada)
+  } else {
+    const fondoRaw = parseFloat($('fondo-siguiente-input')?.value);
+    fondo_siguiente = isNaN(fondoRaw) ? periodoData.fondo_periodo : Math.max(0, fondoRaw);
+    if (fondo_siguiente > ef + 0.01) {
+      toast('El fondo no puede ser mayor al efectivo contado', 'err');
+      return false;
+    }
+  }
+
+  datosIngresados = {
+    efectivo_contado:  ef,
     fondo_siguiente,
-    observaciones,
+    tarjeta_contado:   tarjetaContado,
+    transf_contado:    parseFloat($('transf-contado')?.value) || 0,
+    mp_contado:        parseFloat($('mp-contado')?.value)     || 0,
+    cheques:           parseFloat($('cheques-rec')?.value)    || 0,
+    depositos:         parseFloat($('depositos-rec')?.value)  || 0,
+    posnet_cierres,
+    observaciones:     $('obs-cierre')?.value?.trim() || null,
   };
 
-  $('modal-btn-confirmar').disabled = true;
+  pasoActual = 2;
+  actualizarStepper();
+  renderPaso2();
+  return true;
+}
+
+// ── Paso 2: comparacion sistema vs contado ────────────────
+function renderPaso2() {
+  const d  = periodoData;
+  const di = datosIngresados;
+
+  // Para efectivo usa esperado (fondo + ventas) no solo ventas
+  const filasCmp = [
+    { lbl: 'Efectivo',        sis: d.efectivo_esperado,   cnt: di.efectivo_contado },
+    { lbl: 'Tarjeta',         sis: d.total_tarjeta,       cnt: di.tarjeta_contado  },
+    { lbl: 'Transferencia',   sis: d.total_transferencia, cnt: di.transf_contado   },
+    { lbl: 'QR Mercado Pago', sis: d.total_mercado_pago,  cnt: di.mp_contado       },
+    { lbl: 'Cheques',         sis: d.total_cheque,        cnt: di.cheques          },
+  ].filter(f => f.sis > 0.009 || f.cnt > 0.009);
+
+  const totalEsp = filasCmp.reduce((s, f) => s + f.sis, 0);
+  const totalCnt = filasCmp.reduce((s, f) => s + f.cnt, 0);
+  const totalDif = totalCnt - totalEsp;
+  const hasDifTotal  = Math.abs(totalDif) >= 0.01;
+  const fondoLabel   = modalTipo === 'parcial' ? 'El siguiente cajero recibe en caja' : 'Fondo para próximo turno';
+  const fondoVal     = di.fondo_siguiente;
+  const retiro       = modalTipo !== 'parcial' ? Math.max(0, di.efectivo_contado - di.fondo_siguiente) : 0;
+
+  const rowsCmpHtml = filasCmp.map(f => {
+    const dif    = f.cnt - f.sis;
+    const hasDif = Math.abs(dif) >= 0.01;
+    const difCls = hasDif ? (dif < 0 ? 'cmp-falta' : 'cmp-ok') : '';
+    const difTxt = hasDif
+      ? `<span class="${difCls}" style="font-size:14px;font-weight:700">${(dif > 0 ? '+' : '') + fmt(dif)}</span>`
+      : `<span style="color:var(--gris2);font-size:12px">&mdash;</span>`;
+    return `<tr>
+      <td style="padding:9px 10px;font-size:13px;font-weight:600">${f.lbl}</td>
+      <td class="r" style="padding:9px 10px;font-size:13px;color:var(--gris3);font-variant-numeric:tabular-nums">${fmt(f.sis)}</td>
+      <td class="r" style="padding:9px 10px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums">${fmt(f.cnt)}</td>
+      <td class="r" style="padding:9px 10px">${difTxt}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--gris3);padding:16px">Sin movimientos en este per&iacute;odo.</td></tr>';
+
+  $('modal-body').innerHTML = `
+    <table class="cmp-table">
+      <thead><tr>
+        <th>Medio de pago</th>
+        <th class="r">Esperado</th>
+        <th class="r">Contado</th>
+        <th class="r">Diferencia</th>
+      </tr></thead>
+      <tbody>${rowsCmpHtml}</tbody>
+      <tfoot>
+        <tr style="border-top:2px solid var(--borde);background:var(--gris1)">
+          <td style="padding:9px 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris3)">Total</td>
+          <td class="r" style="padding:9px 10px;font-size:13px;color:var(--gris3);font-variant-numeric:tabular-nums">${fmt(totalEsp)}</td>
+          <td class="r" style="padding:9px 10px;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums">${fmt(totalCnt)}</td>
+          <td class="r" style="padding:9px 10px">
+            ${hasDifTotal
+              ? `<span class="${totalDif < 0 ? 'cmp-falta' : 'cmp-ok'}" style="font-size:15px;font-weight:700">${(totalDif > 0 ? '+' : '') + fmt(totalDif)}</span>`
+              : `<span style="color:var(--gris3);font-size:12px">Sin diferencias</span>`}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    ${hasDifTotal ? `
+    <div class="dif-total ${totalDif < 0 ? 'falta' : 'ok'}">
+      <span class="dt-lbl">${totalDif < 0 ? 'Falta en el arqueo' : 'Sobra en el arqueo'}</span>
+      <span class="dt-val">${(totalDif > 0 ? '+' : '') + fmt(totalDif)}</span>
+    </div>` : ''}
+    <div class="rep-row" style="padding-top:10px">
+      <span class="rep-lbl">${fondoLabel}</span>
+      <span class="rep-val ${fondoVal > 0.009 ? 'cmp-ok' : ''}">${fmt(fondoVal)}</span>
+    </div>
+    ${retiro > 0.009 ? `<div class="rep-row">
+      <span class="rep-lbl" style="color:var(--gris3)">Sale del cajón</span>
+      <span class="rep-val" style="color:var(--gris3)">${fmt(retiro)}</span>
+    </div>` : ''}`;
+}
+
+// ── Paso 3: reporte final ─────────────────────────────────
+function renderPaso3() {
+  const d  = periodoData;
+  const di = datosIngresados;
+
+  // Reutiliza la misma lógica de totales del paso 2
+  const filasCmp = [
+    { sis: d.efectivo_esperado,   cnt: di.efectivo_contado },
+    { sis: d.total_tarjeta,       cnt: di.tarjeta_contado  },
+    { sis: d.total_transferencia, cnt: di.transf_contado   },
+    { sis: d.total_mercado_pago,  cnt: di.mp_contado       },
+    { sis: d.total_cheque,        cnt: di.cheques          },
+  ].filter(f => f.sis > 0.009 || f.cnt > 0.009);
+
+  const totalEsp    = filasCmp.reduce((s, f) => s + f.sis, 0);
+  const totalCnt    = filasCmp.reduce((s, f) => s + f.cnt, 0);
+  const totalDif    = totalCnt - totalEsp;
+  const hasDifTotal = Math.abs(totalDif) >= 0.01;
+  const fondoLabel  = modalTipo === 'parcial' ? 'El siguiente cajero recibe en caja' : 'Fondo para próximo turno';
+  const fondoVal    = di.fondo_siguiente;
+  const retiro      = modalTipo !== 'parcial' ? Math.max(0, di.efectivo_contado - di.fondo_siguiente) : 0;
+
+  $('modal-body').innerHTML = `
+    <div>
+      <div class="ms-titulo">Resumen del turno</div>
+      <div style="display:flex;flex-direction:column">
+        <div class="rep-row"><span class="rep-lbl">Caja</span><span class="rep-val">${esc(cajaNombre)}</span></div>
+        <div class="rep-row"><span class="rep-lbl">Per&iacute;odo desde</span><span class="rep-val">${fmtDt(d.periodo_desde)}</span></div>
+        <div class="rep-row"><span class="rep-lbl">Total operaciones</span><span class="rep-val">${Number(d.count_total || 0)}</span></div>
+        <div class="rep-row"><span class="rep-lbl">Total recaudado</span><span class="rep-val" style="font-size:14px;font-weight:700">${fmt(totalCnt)}</span></div>
+      </div>
+    </div>
+    ${hasDifTotal ? `
+    <div class="dif-total ${totalDif < 0 ? 'falta' : 'ok'}">
+      <span class="dt-lbl">${totalDif < 0 ? 'Falta en el arqueo' : 'Sobra en el arqueo'}</span>
+      <span class="dt-val">${(totalDif > 0 ? '+' : '') + fmt(totalDif)}</span>
+    </div>` : `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border:1.5px solid var(--borde);border-radius:6px;background:var(--gris1)">
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--gris3)">Arqueo</span>
+      <span style="font-size:13px;color:var(--gris3)">Sin diferencias</span>
+    </div>`}
+    <div style="display:flex;flex-direction:column">
+      <div class="rep-row bold" style="padding-top:10px">
+        <span class="rep-lbl">${fondoLabel}</span>
+        <span class="rep-val ${fondoVal > 0.009 ? 'cmp-ok' : ''}">${fmt(fondoVal)}</span>
+      </div>
+      ${retiro > 0.009 ? `<div class="rep-row">
+        <span class="rep-lbl" style="color:var(--gris3)">Sale del cajón</span>
+        <span class="rep-val" style="color:var(--gris3)">${fmt(retiro)}</span>
+      </div>` : ''}
+    </div>
+    ${di.observaciones ? `<div>
+      <div class="ms-titulo">Observaciones</div>
+      <p style="font-size:13px;color:var(--gris3);line-height:1.6;white-space:pre-wrap">${esc(di.observaciones)}</p>
+    </div>` : ''}`;
+}
+
+function avanzarPaso() {
+  if (pasoActual === 1) { irPaso2(); }
+  else if (pasoActual === 2) { pasoActual = 3; actualizarStepper(); renderPaso3(); }
+}
+
+function retrocederPaso() {
+  if (pasoActual === 2) { pasoActual = 1; actualizarStepper(); renderPaso1(); }
+  else if (pasoActual === 3) { pasoActual = 2; actualizarStepper(); renderPaso2(); }
+}
+
+async function confirmarCierre() {
+  const di  = datosIngresados;
+  const btn = $('modal-btn-confirmar');
+  btn.disabled    = true;
+  btn.textContent = 'Cerrando…';
+
+  const posnet_cierres = di.posnet_cierres?.filter(p => p.monto > 0);
+
+  const body = {
+    efectivo_contado:     di.efectivo_contado,
+    cheques_recibidos:    di.cheques    || null,
+    depositos_recibidos:  di.depositos  || null,
+    posnet_cierres:       posnet_cierres?.length
+      ? posnet_cierres
+      : (di.tarjeta_contado > 0 ? [{ nombre: 'Tarjeta', monto: di.tarjeta_contado }] : null),
+    mercado_pago_contado: di.mp_contado || null,
+    fondo_siguiente:      di.fondo_siguiente,
+    observaciones:        di.observaciones,
+  };
 
   const url = modalTipo === 'parcial'
     ? `${API}/caja-turnos/${turnoActualId}/cierre-parcial`
     : `${API}/caja-turnos/${turnoActualId}/cerrar`;
 
-  const res = await fetch(url, {
+  const res  = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -930,7 +1331,8 @@ async function confirmarCierre() {
 
   if (!res.ok) {
     toast(data.error || 'Error al registrar el cierre', 'err');
-    $('modal-btn-confirmar').disabled = false;
+    btn.disabled    = false;
+    btn.textContent = 'Confirmar cierre';
     return;
   }
 
@@ -941,15 +1343,19 @@ async function confirmarCierre() {
 
 function cerrarModal() {
   $('modal-overlay').classList.remove('visible');
-  modalTipo   = null;
-  periodoData = null;
+  modalTipo       = null;
+  periodoData     = null;
+  pasoActual      = 1;
+  datosIngresados = {};
 }
 
 // ── Eventos ──────────────────────────────────────────────
 $('modal-close').addEventListener('click',         cerrarModal);
 $('modal-btn-cancelar').addEventListener('click',  cerrarModal);
+$('modal-btn-siguiente').addEventListener('click', avanzarPaso);
+$('modal-btn-atras').addEventListener('click',     retrocederPaso);
 $('modal-btn-confirmar').addEventListener('click', confirmarCierre);
-$('modal-overlay').addEventListener('click', e => { if (e.target === $('modal-overlay')) cerrarModal(); });
+overlayAutoClose($('modal-overlay'), cerrarModal);
 
 document.addEventListener('keydown', e => {
   const tag          = document.activeElement?.tagName;
@@ -961,6 +1367,21 @@ document.addEventListener('keydown', e => {
 });
 
 cargar();
+
+// Cuando el admin cambia la caja en el nav, recargamos la vista
+const _navCajaOp = document.getElementById('nav-caja-op');
+if (_navCajaOp) {
+  _navCajaOp.addEventListener('change', cargar);
+  // Cuando auth.js puebla el select (fetch asíncrono), corregir subtítulo y nombre
+  new MutationObserver(() => {
+    if (_navCajaOp.options.length > 0) {
+      const opt = _navCajaOp.options[_navCajaOp.selectedIndex];
+      cajaNombre = (opt?.text || '').replace(' (mi caja)', '');
+      const phSub = $('ph-caja-sub');
+      if (phSub && cajaNombre) phSub.textContent = cajaNombre;
+    }
+  }).observe(_navCajaOp, { childList: true });
+}
 
 // Refresco periódico del tablero (solo con turno abierto y sin el modal en uso)
 setInterval(() => {

@@ -10,44 +10,83 @@
 <style>
 
 .filtros-bar {
-  background:white; border-bottom:1px solid var(--borde); box-shadow:0 1px 0 var(--borde);
-  padding:10px 16px; display:flex; gap:10px; align-items:flex-end; flex-shrink:0; flex-wrap:wrap;
+  background: var(--neo-bg);
+  box-shadow: 0 3px 8px var(--neo-sd), 0 -1px 4px var(--neo-sl);
+  padding: 10px 16px; display: flex; gap: 10px; align-items: flex-end;
+  flex-shrink: 0; flex-wrap: wrap; position: relative; z-index: 10;
 }
-.filtros-bar label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:4px; }
+.filtros-bar label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 4px; }
 .filtros-bar input, .filtros-bar select {
-  padding:7px 10px; border:1px solid var(--borde); border-radius:6px;
-  font-size:var(--fs-sm); font-family:inherit; background:white; outline:none;
+  padding: 7px 10px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; font-family: inherit;
+  background: var(--neo-bg); color: var(--neo-text); outline: none;
+  box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast);
 }
-.filtros-bar input:focus, .filtros-bar select:focus { border-color:var(--azul); }
-.filtros-bar input[type=date] { width:130px; }
-.filtros-bar input[type=text] { width:200px; }
+.filtros-bar input:focus, .filtros-bar select:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.filtros-bar input[type=date] { width: 130px; }
+.filtros-bar input[type=text] { width: 200px; }
 
 .btn-buscar {
-  padding:7px 18px; background:var(--azul); color:white; border:none;
-  border-radius:6px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; height:34px;
+  padding: 7px 18px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; font-weight: 700; cursor: pointer; height: 34px; font-family: inherit;
+  background: var(--neo-accent); color: white;
+  box-shadow: 3px 3px 7px var(--neo-accent-glow), -1px -1px 4px rgba(255,255,255,.2);
+  transition: box-shadow var(--neo-t-fast);
 }
-.btn-buscar:hover { background:var(--azul-h); }
+.btn-buscar:hover { background: var(--neo-accent-h); }
 
 .btn-nueva {
-  padding:7px 18px; background:var(--gris1); color:var(--texto); border:1px solid var(--borde);
-  border-radius:6px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; height:34px;
-  margin-left:auto; text-decoration:none; display:inline-flex; align-items:center;
+  padding: 7px 18px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; font-weight: 700; cursor: pointer; height: 34px;
+  margin-left: auto; text-decoration: none; display: inline-flex; align-items: center;
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2);
+  transition: box-shadow var(--neo-t-fast);
 }
-.btn-nueva:hover { background:var(--gris2); }
+.btn-nueva:hover { box-shadow: var(--neo-e3); }
 
-.contenido { flex:1; min-height:0; overflow-y:auto; padding:16px; background:var(--gris1); }
-.table-wrap { background:white; border:1px solid var(--borde); border-radius:10px; overflow:hidden; }
-table.compras { width:100%; border-collapse:collapse; }
+.contenido { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; background: var(--neo-bg-deep); }
+.table-wrap { background: var(--neo-bg-deep); border-radius: var(--neo-r-lg); box-shadow: var(--neo-i2); overflow: hidden; border: none !important; }
+table.compras { width: 100%; border-collapse: collapse; }
 table.compras th {
-  text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px;
-  color:var(--gris3); padding:11px 14px; border-bottom:2px solid var(--texto); white-space:nowrap;
+  text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--neo-text-3); padding: 11px 14px; border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap;
+  background: var(--neo-bg-deep);
 }
-table.compras td { padding:10px 14px; font-size:var(--fs-md); border-bottom:1px solid var(--gris2); }
-table.compras tbody tr:hover { background:var(--gris1); }
-table.compras .num { font-family:monospace; color:var(--gris3); }
-table.compras .total { font-weight:700; text-align:right; }
-.tipo-pill { display:inline-block; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:600; background:var(--gris2); color:var(--texto); }
-.vacio { padding:40px; text-align:center; color:var(--gris3); }
+table.compras td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); color: var(--neo-text); }
+table.compras tbody tr:hover { background: rgba(255,255,255,.45); }
+table.compras tbody tr.anulada { opacity: .55; }
+table.compras .num { font-family: monospace; color: var(--neo-text-3); }
+table.compras .total { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; color: var(--neo-accent); }
+.tipo-pill { display: inline-block; padding: 2px 8px; border-radius: var(--neo-r-pill); font-size: 11px; font-weight: 600; background: rgba(163,177,198,.15); color: var(--neo-text-2); box-shadow: var(--neo-e1); }
+.pill-anulada { background: rgba(231,76,60,.1); color: var(--neo-danger); }
+.vacio { padding: 40px; text-align: center; color: var(--neo-text-3); }
+.btn-editar {
+  padding: 4px 12px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-bg); box-shadow: var(--neo-e1);
+  font-size: 12px; font-weight: 600; cursor: pointer; color: var(--neo-text-2);
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
+}
+.btn-editar:hover { box-shadow: var(--neo-e2); color: var(--neo-accent); }
+.btn-ver { color: var(--neo-text-3); }
+.btn-anular-fila {
+  padding: 4px 12px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-bg); box-shadow: var(--neo-e1);
+  font-size: 12px; font-weight: 600; cursor: pointer; color: var(--neo-danger);
+  transition: box-shadow var(--neo-t-fast);
+}
+.btn-anular-fila:hover { box-shadow: var(--neo-e2); }
+.confirm-anular { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+.confirm-anular span { font-size: 12px; font-weight: 600; color: var(--neo-danger); }
+.btn-conf-si {
+  padding: 3px 10px; border: none; border-radius: var(--neo-r-xs); cursor: pointer;
+  background: var(--neo-danger); color: white; font-size: 12px; font-weight: 700;
+  box-shadow: 3px 3px 6px var(--neo-danger-glow);
+}
+.btn-conf-no {
+  padding: 3px 10px; border: none; border-radius: var(--neo-r-xs); cursor: pointer;
+  background: var(--neo-bg); color: var(--neo-text); font-size: 12px; font-weight: 600;
+  box-shadow: var(--neo-e1);
+}
 </style>
 </head>
 <body>
@@ -67,6 +106,10 @@ table.compras .total { font-weight:700; text-align:right; }
     <label>Proveedor</label>
     <input type="text" id="f-proveedor" placeholder="Nombre del proveedor..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
   </div>
+  <div id="wrap-suc-compras" style="display:none;">
+    <label>Sucursal</label>
+    <select id="f-sucursal"></select>
+  </div>
   <button class="btn-buscar" id="btn-filtrar">Buscar</button>
   <a class="btn-nueva" href="compras-nueva.html">+ Nueva compra</a>
 </div>
@@ -76,7 +119,7 @@ table.compras .total { font-weight:700; text-align:right; }
     <table class="compras">
       <thead>
         <tr>
-          <th>N°</th><th>Fecha</th><th>Proveedor</th><th>Comprobante</th><th>Pago</th><th style="text-align:right">Total</th>
+          <th>N°</th><th>Fecha</th><th>Proveedor</th><th>Comprobante</th><th>N° comprobante</th><th>Pago</th><th style="text-align:right">Total</th><th>Estado</th><th></th>
         </tr>
       </thead>
       <tbody id="tbody-compras"></tbody>
@@ -99,6 +142,8 @@ async function cargarCompras() {
   if ($('f-desde').value) params.set('fecha_desde', $('f-desde').value);
   if ($('f-hasta').value) params.set('fecha_hasta', $('f-hasta').value);
   params.set('limit', '200');
+  const sucFiltro = $('f-sucursal') && $('f-sucursal').value;
+  if (sucFiltro) params.set('sucursal_id', sucFiltro);
 
   const res = await fetch(`${API}/compras?${params.toString()}`);
   let compras = await res.json();
@@ -116,18 +161,73 @@ async function cargarCompras() {
   $('vacio').style.display = 'none';
 
   $('tbody-compras').innerHTML = compras.map(c => `
-    <tr>
+    <tr class="${c.estado === 'anulado' ? 'anulada' : ''}">
       <td class="num">#${esc(c.numero)}</td>
       <td>${esc(c.fecha)}</td>
       <td>${esc(c.proveedor_nombre || '—')}</td>
       <td><span class="tipo-pill">${esc(TIPO_COMPROBANTE_LBL[c.tipo_comprobante] || c.tipo_comprobante || '—')}</span></td>
+      <td class="num">${esc(c.numero_comprobante || '—')}</td>
       <td>${esc(TIPO_PAGO_LBL[c.tipo_pago] || c.tipo_pago || '—')}</td>
       <td class="total">${fmt(c.total)}</td>
+      <td>${c.estado === 'anulado' ? '<span class="tipo-pill pill-anulada">Anulada</span>' : ''}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-editar${c.estado === 'anulado' ? ' btn-ver' : ''}" data-id="${c.id}">${c.estado === 'anulado' ? 'Ver' : 'Editar'}</button>
+        ${c.estado !== 'anulado' ? `<button class="btn-anular-fila" data-id="${c.id}" style="margin-left:6px">Anular</button>` : ''}
+      </td>
     </tr>
   `).join('');
+
+  $('tbody-compras').querySelectorAll('.btn-editar').forEach(btn =>
+    btn.addEventListener('click', () => location.href = `compras-nueva.html?id=${btn.dataset.id}`)
+  );
+
+  $('tbody-compras').querySelectorAll('.btn-anular-fila').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id  = btn.dataset.id;
+      const td  = btn.closest('td');
+      const orig = td.innerHTML;
+      td.innerHTML = `
+        <div class="confirm-anular">
+          <span>¿Anular?</span>
+          <button class="btn-conf-si" data-id="${id}">Sí</button>
+          <button class="btn-conf-no">No</button>
+        </div>`;
+      td.querySelector('.btn-conf-no').addEventListener('click', () => { td.innerHTML = orig; });
+      td.querySelector('.btn-conf-si').addEventListener('click', async () => {
+        td.querySelector('.btn-conf-si').disabled = true;
+        td.querySelector('.btn-conf-si').textContent = '…';
+        try {
+          const res  = await fetch(`${API}/compras/${id}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Error al anular');
+          cargarCompras();
+        } catch (e) {
+          toast_(e.message, 'err');
+          td.innerHTML = orig;
+        }
+      });
+    });
+  });
 }
 
 $('btn-filtrar').addEventListener('click', cargarCompras);
+
+(async function initSucursalFiltro() {
+  try {
+    const s   = JSON.parse(localStorage.getItem('logos_sesion') || '{}');
+    let suc;
+    if (s.rol === 'admin') {
+      const r = await fetch(`${API}/sucursales`);
+      suc = await r.json();
+    } else {
+      suc = s.sucursales || [];
+    }
+    if (!Array.isArray(suc) || suc.length <= 1) return;
+    const sel = $('f-sucursal');
+    sel.innerHTML = '<option value="">Todas</option>' + suc.map(x => `<option value="${x.id}">${x.nombre}</option>`).join('');
+    $('wrap-suc-compras').style.display = '';
+  } catch(e) {}
+})();
 
 (function initFechas() {
   const hoy = new Date();
@@ -138,5 +238,70 @@ $('btn-filtrar').addEventListener('click', cargarCompras);
 
 cargarCompras();
 </script>
+
+<script>
+window.TOUR_PAGE_KEY = 'compras';
+window.TOUR_STEPS = [
+
+  /* 1 — Intro */
+  { el: null,
+    title: 'Módulo de Compras',
+    body: 'Acá registrás las facturas y remitos de compra a proveedores. El stock se actualiza automáticamente al confirmar cada compra.',
+    onEnter: async ({ waitFor }) => {
+      await waitFor('#tbody-compras tr', 5000).catch(() => {});
+    } },
+
+  /* 2 — Filtros */
+  { el: '.filtros-bar',
+    title: 'Filtros de búsqueda',
+    body: 'Filtrá las compras por rango de fechas y nombre de proveedor. Por defecto muestra los últimos 30 días.' },
+
+  /* 3 — Fechas */
+  { el: '#f-desde',
+    title: 'Rango de fechas',
+    body: 'Modificá el período para ver compras de cualquier intervalo. Los campos <strong>Desde</strong> y <strong>Hasta</strong> se inicializan con los últimos 30 días.' },
+
+  /* 4 — Proveedor */
+  { el: '#f-proveedor',
+    title: 'Filtro por proveedor',
+    body: 'Escribí parte del nombre para acotar los resultados a un proveedor específico.' },
+
+  /* 5 — Buscar */
+  { el: '#btn-filtrar',
+    title: 'Buscar',
+    body: 'Aplicá los filtros para actualizar la lista.' },
+
+  /* 6 — Tabla */
+  { el: 'table.compras',
+    title: 'Lista de compras',
+    body: 'Cada fila muestra el número, fecha, proveedor, tipo de comprobante, medio de pago y total. Las filas anuladas aparecen en gris.' },
+
+  /* 7 — Primera fila */
+  { el: '#tbody-compras tr:first-child',
+    title: 'Detalle de una compra',
+    body: 'Esta es una compra de ejemplo del <strong>PROVEEDOR DEMO</strong>: Factura A pagada por transferencia por <strong>$&nbsp;19.360</strong>. Podés ver el tipo de comprobante, el número, el medio de pago y el total de cada compra.' },
+
+  /* 8 — Botón editar */
+  { el: '#tbody-compras tr:first-child .btn-editar',
+    title: 'Editar / Ver detalle',
+    body: 'Abre el formulario completo con todos los datos: proveedor, comprobante, ítems y medio de pago. Podés modificarlos o solo consultarlos.' },
+
+  /* 9 — Nueva compra (último paso visible) */
+  { el: 'a.btn-nueva',
+    title: 'Registrar nueva compra',
+    body: 'Para cargar una nueva factura o remito usás este formulario de 3 pasos. Vamos a recorrerlo ahora.' },
+
+  /* 10 — Phantom: navega a compras-nueva.html */
+  { el: null,
+    title: 'Abriendo formulario...',
+    body: 'Vamos al formulario de nueva compra.',
+    onEnter: async ({ delay }) => {
+      sessionStorage.setItem('tour_force_compras_nueva', '1');
+      await delay(200);
+      window.location.href = '/Logos/pos/compras-nueva.html';
+    } },
+];
+</script>
+
 </body>
 </html>

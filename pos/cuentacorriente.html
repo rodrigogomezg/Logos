@@ -10,238 +10,387 @@
 <style>
 
 /* ── Layout ── */
-.cc-main { flex:1; min-height:0; display:grid; grid-template-columns:370px 1fr; gap:12px; padding:12px; overflow:hidden; }
+.cc-main { flex: 1; min-height: 0; display: grid; grid-template-columns: 370px 1fr; gap: 12px; padding: 12px; overflow: hidden; background: var(--neo-bg-deep); }
 
 /* ── Panel izquierdo ── */
-.cc-left { display:flex; flex-direction:column; gap:10px; overflow-y:auto; padding-right:2px; }
+.cc-left { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; padding-right: 2px; }
+.cc-left::-webkit-scrollbar { width: 4px; }
+.cc-left::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 2px; }
 
 /* Buscador */
-.busq-row { display:flex; align-items:stretch; gap:8px; flex-shrink:0; }
-.busq-row .busq-wrap { flex:1; }
-.busq-wrap { position:relative; }
+.busq-row { display: flex; align-items: stretch; gap: 8px; flex-shrink: 0; }
+.busq-row .busq-wrap { flex: 1; }
+.busq-wrap { position: relative; }
 .busq-wrap input {
-  width:100%; padding:10px 14px; font-size:var(--fs-lg);
-  border:2px solid var(--borde); border-radius:8px; outline:none; background:white;
-  font-family:inherit;
+  width: 100%; padding: 10px 14px; font-size: 14px; border: none;
+  border-radius: var(--neo-r-sm); outline: none;
+  background: var(--neo-bg); color: var(--neo-text); font-family: inherit;
+  box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast);
 }
-.busq-wrap input:focus { border-color:var(--azul); }
-.btn-nuevo-entidad { white-space:nowrap; padding:0 16px; font-size:13px; border-radius:8px; }
-.busq-dd { position:absolute; top:calc(100% + 4px); left:0; right:0; background:white; border:1px solid var(--borde); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:200; max-height:260px; overflow-y:auto; display:none; }
-.busq-dd.visible { display:block; }
-.dd-item { padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--gris2); }
-.dd-item:last-child { border-bottom:none; }
-.dd-item:hover,.dd-item.activo { background:#FEF2F2; }
-.dd-nom { font-weight:600; font-size:14px; }
-.dd-det { font-size:11px; color:var(--gris3); margin-top:2px; }
+.busq-wrap input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.btn-nuevo-entidad {
+  white-space: nowrap; padding: 0 16px; font-size: 13px; border: none;
+  border-radius: var(--neo-r-sm); background: var(--neo-accent); color: white;
+  cursor: pointer; font-family: inherit; font-weight: 600;
+  box-shadow: 3px 3px 7px var(--neo-accent-glow);
+}
+.busq-dd {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--neo-bg); border-radius: var(--neo-r-md); box-shadow: var(--neo-e4);
+  z-index: 200; max-height: 260px; overflow-y: auto; display: none; border: none;
+}
+.busq-dd.visible { display: block; }
+.dd-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid rgba(163,177,198,.18); color: var(--neo-text); }
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover, .dd-item.activo { background: rgba(79,142,247,.08); }
+.dd-nom { font-weight: 600; font-size: 14px; }
+.dd-det { font-size: 11px; color: var(--neo-text-3); margin-top: 2px; }
 
 /* Card cliente */
-.cli-card { background:white; border-radius:10px; border:1px solid var(--borde); overflow:hidden; flex-shrink:0; }
-.cli-card-top { padding:16px 16px 14px; border-bottom:1px solid var(--gris2); }
-.cli-nombre { font-size:18px; font-weight:800; line-height:1.2; margin-bottom:10px; }
-.cli-saldo-block { background:var(--gris1); border-radius:8px; padding:10px 14px; display:flex; align-items:center; justify-content:space-between; }
-.cli-saldo-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.cli-saldo-val { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
-.cli-saldo-val.deuda { color:var(--rojo); }
-.cli-saldo-val.saldo-ok { color:var(--verde); }
-.cli-saldo-val.saldo-cero { color:var(--gris3); }
+.cli-card { background: var(--neo-bg); border-radius: var(--neo-r-lg); box-shadow: var(--neo-e2); overflow: hidden; flex-shrink: 0; border: none !important; }
+.cli-card-top { padding: 16px 16px 14px; border-bottom: 1px solid rgba(163,177,198,.25); }
+.cli-nombre { font-size: 18px; font-weight: 800; line-height: 1.2; margin-bottom: 10px; color: var(--neo-text); }
+.cli-saldo-block { background: var(--neo-bg-deep); border-radius: var(--neo-r-md); box-shadow: var(--neo-i1); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; }
+.cli-saldo-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.cli-saldo-val { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--neo-text); }
+.cli-saldo-val.deuda    { color: var(--neo-danger); }
+.cli-saldo-val.saldo-ok { color: var(--neo-success); }
+.cli-saldo-val.saldo-cero { color: var(--neo-text-3); }
 
-.cli-datos { padding:0 16px; }
-.cli-dato { display:flex; align-items:flex-start; gap:8px; padding:6px 0; border-bottom:1px solid var(--gris2); font-size:var(--fs-sm); }
-.cli-dato:last-child { border-bottom:none; }
-.cli-dato-k { flex-shrink:0; width:88px; color:var(--gris3); font-size:12px; padding-top:1px; }
-.cli-dato-v { flex:1; font-weight:500; word-break:break-word; }
+.cli-datos { padding: 0 16px; }
+.cli-dato { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(163,177,198,.2); font-size: 12px; color: var(--neo-text); }
+.cli-dato:last-child { border-bottom: none; }
+.cli-dato-k { flex-shrink: 0; width: 88px; color: var(--neo-text-3); font-size: 11px; padding-top: 1px; }
+.cli-dato-v { flex: 1; font-weight: 500; word-break: break-word; }
 
-.cli-obs-block { padding:10px 16px 14px; border-top:1px solid var(--gris2); }
-.cli-obs-titulo { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:6px; }
-.cli-obs-texto { font-size:var(--fs-sm); color:var(--texto); white-space:pre-wrap; line-height:1.5; }
+.cli-obs-block { padding: 10px 16px 14px; border-top: 1px solid rgba(163,177,198,.2); }
+.cli-obs-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 6px; }
+.cli-obs-texto { font-size: 12px; color: var(--neo-text); white-space: pre-wrap; line-height: 1.5; }
 
-.cli-card-footer { padding:10px 16px; background:var(--gris1); border-top:1px solid var(--gris2); display:flex; justify-content:flex-end; }
-.btn-edit-ficha { padding:6px 14px; background:white; border:1px solid var(--borde); border-radius:6px; font-size:var(--fs-sm); font-weight:600; color:var(--texto); cursor:pointer; display:flex; align-items:center; gap:6px; transition:background .12s,border-color .12s; }
-.btn-edit-ficha:hover { background:var(--gris2); border-color:var(--gris3); }
+.cli-card-footer { padding: 10px 16px; background: var(--neo-bg-deep); border-top: 1px solid rgba(163,177,198,.2); display: flex; justify-content: flex-end; }
+.btn-edit-ficha {
+  padding: 6px 14px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-bg); box-shadow: var(--neo-e1);
+  font-size: 12px; font-weight: 600; color: var(--neo-text-2);
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
+}
+.btn-edit-ficha:hover { box-shadow: var(--neo-e2); color: var(--neo-accent); }
 
 /* Deuda pendiente */
-.pend-card { background:white; border-radius:10px; border:1px solid var(--borde); overflow:hidden; flex-shrink:0; }
-.pend-header { padding:10px 16px; border-bottom:1px solid var(--gris2); display:flex; align-items:center; justify-content:space-between; }
-.pend-titulo { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.pend-sin-deuda { padding:12px 16px; font-size:var(--fs-sm); color:var(--verde); font-weight:600; display:flex; align-items:center; gap:6px; }
-.pend-tabla { width:100%; border-collapse:collapse; font-size:12px; }
-.pend-tabla th { padding:6px 10px; text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); background:var(--gris1); border-bottom:1px solid var(--gris2); }
-.pend-tabla th.r { text-align:right; }
-.pend-tabla td { padding:6px 10px; border-bottom:1px solid var(--gris2); vertical-align:middle; }
-.pend-tabla td.r { text-align:right; font-variant-numeric:tabular-nums; }
-.pend-tabla tr:last-child td { border-bottom:none; }
-.pend-tabla .saldo-pend { font-weight:700; color:var(--rojo); }
-.tipo-badge { display:inline-block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; background:var(--gris2); color:var(--gris3); padding:2px 5px; border-radius:3px; margin-right:4px; vertical-align:middle; }
-.pend-num { font-size:11px; font-variant-numeric:tabular-nums; color:var(--gris3); }
-.pend-total-row { padding:8px 16px; background:var(--gris1); border-top:1px solid var(--gris2); display:flex; justify-content:space-between; align-items:center; }
-.pend-total-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.pend-total-val { font-size:var(--fs-lg); font-weight:800; color:var(--rojo); font-variant-numeric:tabular-nums; }
+.pend-card { background: var(--neo-bg); border-radius: var(--neo-r-lg); box-shadow: var(--neo-e2); overflow: hidden; flex-shrink: 0; border: none !important; }
+.pend-header { padding: 10px 16px; border-bottom: 1px solid rgba(163,177,198,.25); display: flex; align-items: center; justify-content: space-between; }
+.pend-titulo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.pend-sin-deuda { padding: 12px 16px; font-size: 12px; color: var(--neo-success); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.pend-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+.pend-tabla th { padding: 6px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); background: var(--neo-bg-deep); border-bottom: 1px solid rgba(163,177,198,.3); }
+.pend-tabla th.r { text-align: right; }
+.pend-tabla td { padding: 6px 10px; border-bottom: 1px solid rgba(163,177,198,.18); vertical-align: middle; color: var(--neo-text); }
+.pend-tabla td.r { text-align: right; font-variant-numeric: tabular-nums; }
+.pend-tabla tr:last-child td { border-bottom: none; }
+.pend-tabla .saldo-pend { font-weight: 700; color: var(--neo-danger); }
+.tipo-badge { display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; background: rgba(163,177,198,.2); color: var(--neo-text-3); padding: 2px 5px; border-radius: var(--neo-r-xs); margin-right: 4px; vertical-align: middle; }
+.pend-num { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--neo-text-3); }
+.pend-total-row { padding: 8px 16px; background: var(--neo-bg-deep); border-top: 1px solid rgba(163,177,198,.25); display: flex; justify-content: space-between; align-items: center; }
+.pend-total-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.pend-total-val { font-size: 14px; font-weight: 800; color: var(--neo-danger); font-variant-numeric: tabular-nums; }
 
 /* Placeholder */
-.cc-empty { background:white; border-radius:10px; border:1px solid var(--borde); padding:40px 20px; text-align:center; color:var(--gris3); font-size:14px; flex-shrink:0; }
+.cc-empty { background: var(--neo-bg); border-radius: var(--neo-r-lg); box-shadow: var(--neo-e2); padding: 40px 20px; text-align: center; color: var(--neo-text-3); font-size: 14px; flex-shrink: 0; border: none !important; }
 
 /* ── Panel derecho ── */
-.cc-right { display:flex; flex-direction:column; min-height:0; }
-.libro-header { background:white; border:1px solid var(--borde); border-radius:10px 10px 0 0; padding:10px 16px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; border-bottom:2px solid var(--gris2); }
-.libro-titulo { font-size:var(--fs-sm); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.btn-reg-pago { padding:7px 16px; background:var(--azul); color:white; border:none; border-radius:7px; font-size:var(--fs-sm); font-weight:700; cursor:pointer; display:none; transition:background .12s; }
-.btn-reg-pago:hover { background:var(--azul-h); }
-
-.libro-tabla-wrap { flex:1; min-height:0; overflow-y:auto; background:white; border:1px solid var(--borde); border-top:none; border-radius:0 0 10px 10px; }
-.libro-empty { padding:60px 20px; text-align:center; color:var(--gris3); font-size:14px; }
-
-.libro-tabla { width:100%; border-collapse:collapse; }
-.libro-tabla thead th {
-  position:sticky; top:0; background:white; z-index:10;
-  padding:9px 12px; text-align:left; font-size:var(--fs-xs); font-weight:700;
-  text-transform:uppercase; letter-spacing:.4px; color:var(--gris3);
-  border-bottom:2px solid var(--gris2);
+.cc-right { display: flex; flex-direction: column; min-height: 0; border-radius: var(--neo-r-lg); overflow: hidden; box-shadow: var(--neo-e2); }
+.libro-header {
+  background: var(--neo-bg); border-bottom: 1px solid rgba(163,177,198,.3);
+  padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
 }
-.libro-tabla thead th.r { text-align:right; }
-.libro-tabla tbody td { border-bottom:1px solid var(--gris2); }
-.libro-tabla tbody tr:last-child td { border-bottom:none; }
-.libro-tabla td { padding:9px 12px; font-size:var(--fs-md); vertical-align:top; }
-.libro-tabla td.r { text-align:right; font-variant-numeric:tabular-nums; }
-.libro-tabla .col-fecha { width:88px; color:var(--gris3); font-size:12px; white-space:nowrap; }
-.libro-tabla .col-concepto { }
-.libro-tabla .col-debito  { width:110px; text-align:right; font-variant-numeric:tabular-nums; color:var(--rojo); font-weight:600; }
-.libro-tabla .col-asig    { width:110px; text-align:right; font-variant-numeric:tabular-nums; color:var(--verde); font-size:12px; }
-.libro-tabla .col-credito { width:110px; text-align:right; font-variant-numeric:tabular-nums; color:var(--verde); font-weight:600; }
-.libro-tabla .col-saldo   { width:120px; text-align:right; font-variant-numeric:tabular-nums; font-weight:700; }
-.concepto-obs { font-size:11px; color:var(--gris3); margin-top:2px; font-style:italic; }
+.libro-titulo { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.btn-reg-pago {
+  padding: 7px 16px; border: none; border-radius: var(--neo-r-sm);
+  background: var(--neo-accent); color: white; box-shadow: 3px 3px 7px var(--neo-accent-glow);
+  font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit; display: none;
+}
+.btn-reg-pago:hover { background: var(--neo-accent-h); }
+
+/* ── Vencimientos (aging) ── */
+.btn-aging {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border-radius: 8px; border: 1.5px solid rgba(163,177,198,.5);
+  background: transparent; color: var(--neo-text-2); font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit; transition: border-color .15s, color .15s;
+}
+.btn-aging:hover { border-color: var(--neo-accent); color: var(--neo-accent); }
+.aging-badge {
+  background: var(--neo-danger); color: #fff; font-size: 11px; font-weight: 800;
+  border-radius: 10px; padding: 1px 7px; line-height: 1.5;
+}
+/* Modal de vencimientos: estilo plano y recto de los modales de la app
+   (mismo lenguaje que contacto-modal: blanco, borde #D5D0CA, sin radios) */
+.aging-overlay { background: rgba(0,0,0,.45); backdrop-filter: none; -webkit-backdrop-filter: none; }
+.aging-modal {
+  background: #fff; border: 1px solid #D5D0CA; border-radius: 0; box-shadow: none;
+  width: min(96vw, 980px); max-height: 88vh;
+  display: flex; flex-direction: column;
+}
+.aging-mheader {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; border-bottom: 1px solid #D5D0CA; background: #F0EEEB; flex-shrink: 0;
+}
+.aging-mheader h2 {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+  color: #9B9590; margin: 0;
+}
+.aging-mcerrar { background: none; border: none; cursor: pointer; color: #9B9590; font-size: 16px; line-height: 1; padding: 2px 6px; }
+.aging-mcerrar:hover { color: #111; }
+.aging-mbody { flex: 1; overflow-y: auto; min-height: 0; }
+
+.aging-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+.aging-tabla thead th {
+  position: sticky; top: 0; padding: 8px 12px; text-align: left; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  color: #9B9590; background: #F0EEEB;
+  border-bottom: 1px solid #D5D0CA; white-space: nowrap;
+}
+.aging-tabla thead th.r { text-align: right; }
+.aging-tabla tbody td { padding: 8px 12px; border-bottom: 1px solid #EDEAE6; color: #111; vertical-align: middle; }
+.aging-tabla tbody td.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.aging-tabla tbody tr { cursor: pointer; }
+.aging-tabla tbody tr:hover td { background: #FAFAF9; }
+.aging-tabla td.celda-cero { color: #B5B0A9; }
+.aging-tabla td.celda-venc { color: #B91C1C; font-weight: 700; }
+.aging-tabla tfoot td { padding: 9px 12px; font-weight: 800; border-top: 2px solid #D5D0CA; color: #111; font-variant-numeric: tabular-nums; }
+.aging-tabla tfoot td.r { text-align: right; }
+.venc-chip {
+  display: inline-block; font-size: 10.5px; font-weight: 800; border-radius: 0;
+  padding: 2px 7px; white-space: nowrap;
+}
+.venc-chip.rojo    { background: #FEE2E2; color: #B91C1C; }
+.venc-chip.ambar   { background: #FEF3C7; color: #B7791F; }
+.venc-chip.gris    { background: #F0EEEB; color: #9B9590; }
+.pend-tabla tr.fila-vencida td { background: rgba(231,76,60,.05); }
+
+/* ── Mini-dashboard de vencimientos en la ficha ── */
+.cli-aging { margin: 10px 16px 0; padding: 10px 12px; border-radius: 10px; background: var(--neo-bg-deep); }
+.ca-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.ca-titulo { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.ca-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; background: rgba(163,177,198,.25); margin-bottom: 8px; }
+.ca-seg { height: 100%; }
+.ca-seg.ok  { background: var(--neo-success); }
+.ca-seg.v30 { background: #F39C12; }
+.ca-seg.v60 { background: #E67E22; }
+.ca-seg.v90 { background: var(--neo-danger); }
+.ca-seg.vmax{ background: #922B21; }
+.ca-row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--neo-text-2); }
+.ca-row b { font-variant-numeric: tabular-nums; }
+.ca-row .ca-venc { color: var(--neo-danger); font-weight: 700; }
+.ca-detalle { margin-top: 6px; font-size: 11px; color: var(--neo-text-3); font-variant-numeric: tabular-nums; }
+.btn-wa {
+  display: inline-flex; align-items: center; gap: 6px; margin-top: 9px;
+  padding: 6px 12px; border-radius: 0; border: none; cursor: pointer;
+  background: #25D366; color: #fff; font-size: 12px; font-weight: 700; font-family: inherit;
+  transition: opacity .15s;
+}
+.btn-wa:hover { opacity: .85; }
+.btn-wa-mini { padding: 4px 9px; font-size: 11px; margin-top: 0; }
+
+.libro-tabla-wrap { flex: 1; min-height: 0; overflow-y: auto; background: var(--neo-bg); }
+.libro-tabla-wrap::-webkit-scrollbar { width: 5px; }
+.libro-tabla-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
+.libro-empty { padding: 60px 20px; text-align: center; color: var(--neo-text-3); font-size: 14px; }
+
+.libro-tabla { width: 100%; border-collapse: collapse; }
+.libro-tabla thead th {
+  position: sticky; top: 0; background: var(--neo-bg); z-index: 10;
+  padding: 9px 12px; text-align: left; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3);
+  border-bottom: 1px solid rgba(163,177,198,.35);
+}
+.libro-tabla thead th.r { text-align: right; }
+.libro-tabla tbody td { border-bottom: 1px solid rgba(163,177,198,.18); color: var(--neo-text); }
+.libro-tabla tbody tr:last-child td { border-bottom: none; }
+.libro-tabla td { padding: 9px 12px; font-size: 13px; vertical-align: top; }
+.libro-tabla td.r { text-align: right; font-variant-numeric: tabular-nums; }
+.libro-tabla .col-fecha   { width: 88px; color: var(--neo-text-3); font-size: 12px; white-space: nowrap; }
+.libro-tabla .col-debito  { width: 110px; text-align: right; font-variant-numeric: tabular-nums; color: var(--neo-danger); font-weight: 600; white-space: nowrap; }
+.libro-tabla .col-asig    { width: 110px; text-align: right; font-variant-numeric: tabular-nums; color: var(--neo-success); font-size: 12px; white-space: nowrap; }
+.libro-tabla .col-credito { width: 110px; text-align: right; font-variant-numeric: tabular-nums; color: var(--neo-success); font-weight: 600; white-space: nowrap; }
+.libro-tabla .col-saldo   { width: 120px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.concepto-obs { font-size: 11px; color: var(--neo-text-3); margin-top: 2px; font-style: italic; }
 
 /* Fila cargo cliqueable */
-.libro-tabla tr.row-cargo { cursor:pointer; }
-.libro-tabla tr.row-cargo:hover td { background:#FEF9F9; }
+.libro-tabla tr.row-cargo { cursor: pointer; }
+.libro-tabla tr.row-cargo:hover td { background: rgba(231,76,60,.04); }
 
 /* Modal remito */
-.remito-seccion { margin-bottom:20px; }
-.remito-seccion:last-child { margin-bottom:0; }
-.remito-sec-titulo { font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:8px; }
-.remito-tabla { width:100%; border-collapse:collapse; font-size:var(--fs-md); }
-.remito-tabla thead th { padding:7px 10px; text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); background:var(--gris1); border-bottom:1px solid var(--gris2); white-space:nowrap; }
-.remito-tabla thead th.r { text-align:right; }
-.remito-tabla tbody td { padding:7px 10px; border-bottom:1px solid var(--gris2); vertical-align:middle; }
-.remito-tabla tbody td.r { text-align:right; font-variant-numeric:tabular-nums; }
-.remito-tabla tbody tr:last-child td { border-bottom:none; }
-.remito-cod { font-family:monospace; font-size:11px; color:var(--gris3); }
-.remito-totales { display:flex; flex-direction:column; align-items:flex-end; gap:4px; padding:10px 10px 0; font-size:var(--fs-sm); }
-.remito-totales .tot-row { display:flex; gap:16px; }
-.remito-totales .tot-label { color:var(--gris3); }
-.remito-totales .tot-val { font-variant-numeric:tabular-nums; font-weight:600; min-width:100px; text-align:right; }
-.remito-totales .tot-total { font-size:var(--fs-lg); font-weight:800; }
-.remito-totales .tot-pend-rojo { color:var(--rojo); }
-.remito-totales .tot-pend-ok   { color:var(--verde); }
-.remito-sin-pagos { font-size:var(--fs-sm); color:var(--gris3); padding:8px 0; }
-.btn-print { padding:6px 14px; background:white; border:1.5px solid var(--borde); border-radius:7px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; color:var(--texto); display:flex; align-items:center; gap:6px; transition:background .12s; }
-.btn-print:hover { background:var(--gris2); }
+.remito-seccion { margin-bottom: 20px; }
+.remito-seccion:last-child { margin-bottom: 0; }
+.remito-sec-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 8px; }
+.remito-tabla { width: 100%; border-collapse: collapse; font-size: 13px; }
+.remito-tabla thead th { padding: 7px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); background: var(--neo-bg-deep); border-bottom: 1px solid rgba(163,177,198,.3); white-space: nowrap; }
+.remito-tabla thead th.r { text-align: right; }
+.remito-tabla tbody td { padding: 7px 10px; border-bottom: 1px solid rgba(163,177,198,.18); vertical-align: middle; color: var(--neo-text); }
+.remito-tabla tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
+.remito-tabla tbody tr:last-child td { border-bottom: none; }
+.remito-cod { font-family: monospace; font-size: 11px; color: var(--neo-text-3); }
+.remito-totales { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding: 10px 10px 0; font-size: 12px; }
+.remito-totales .tot-row { display: flex; gap: 16px; }
+.remito-totales .tot-label { color: var(--neo-text-3); }
+.remito-totales .tot-val { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 100px; text-align: right; color: var(--neo-text); }
+.remito-totales .tot-total { font-size: 14px; font-weight: 800; }
+.remito-totales .tot-pend-rojo { color: var(--neo-danger); }
+.remito-totales .tot-pend-ok   { color: var(--neo-success); }
+.remito-sin-pagos { font-size: 12px; color: var(--neo-text-3); padding: 8px 0; }
+.btn-print {
+  padding: 6px 14px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-bg); box-shadow: var(--neo-e1); font-size: 12px; font-weight: 600;
+  cursor: pointer; color: var(--neo-text-2); display: flex; align-items: center; gap: 6px;
+  transition: box-shadow var(--neo-t-fast);
+}
+.btn-print:hover { box-shadow: var(--neo-e2); }
 
 /* ── Modales ── */
-.overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:none; align-items:center; justify-content:center; z-index:1000; padding:20px; }
-.overlay.abierto { display:flex; }
-.modal { background:white; border-radius:12px; box-shadow:0 24px 60px rgba(0,0,0,.2); display:flex; flex-direction:column; max-height:90vh; }
-.modal-sm { width:480px; }
-.modal-lg { width:660px; }
+.overlay {
+  position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+  z-index: 1000; padding: 20px;
+  background: rgba(49,52,75,.48); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+.overlay.abierto { display: flex; }
+.modal { background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e4); display: flex; flex-direction: column; max-height: 90vh; border: none !important; }
+.modal-sm { width: 480px; }
+.modal-lg { width: 660px; }
 
-.modal-header { padding:16px 20px 14px; border-bottom:1px solid var(--gris2); display:flex; align-items:center; gap:10px; flex-shrink:0; }
-.modal-titulo { font-size:16px; font-weight:800; flex:1; }
-.modal-subtitulo { font-size:var(--fs-sm); color:var(--gris3); font-weight:500; }
-.modal-cerrar { width:28px; height:28px; background:var(--gris2); border:none; border-radius:50%; font-size:16px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; color:var(--gris3); transition:background .1s; flex-shrink:0; }
-.modal-cerrar:hover { background:var(--gris3); color:white; }
-.modal-body { padding:20px; overflow-y:auto; flex:1; }
-.modal-footer { padding:14px 20px; border-top:1px solid var(--gris2); display:flex; align-items:center; justify-content:flex-end; gap:8px; flex-shrink:0; }
+.modal-header { padding: 16px 20px 14px; border-bottom: 1px solid rgba(163,177,198,.3); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.modal-titulo { font-size: 16px; font-weight: 800; flex: 1; color: var(--neo-text); }
+.modal-subtitulo { font-size: 12px; color: var(--neo-text-3); font-weight: 500; }
+.modal-cerrar {
+  width: 28px; height: 28px; background: var(--neo-bg); border: none; border-radius: var(--neo-r-xs);
+  box-shadow: var(--neo-e1); font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: var(--neo-text-2); flex-shrink: 0;
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
+}
+.modal-cerrar:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+.modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid rgba(163,177,198,.3); display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
 
 /* Form fields */
-.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.form-campo { display:flex; flex-direction:column; gap:5px; }
-.form-campo.span2 { grid-column:span 2; }
-.form-campo label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-campo { display: flex; flex-direction: column; gap: 5px; }
+.form-campo.span2 { grid-column: span 2; }
+.form-campo label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
 .form-campo input, .form-campo select, .form-campo textarea {
-  padding:9px 11px; border:1px solid var(--borde); border-radius:7px;
-  font-size:14px; font-family:inherit; outline:none; background:white;
-  transition:border-color .12s;
+  padding: 9px 11px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 13px; font-family: inherit; outline: none;
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-i1);
+  transition: box-shadow var(--neo-t-fast);
 }
-.form-campo input:focus, .form-campo select:focus, .form-campo textarea:focus { border-color:var(--azul); }
-.form-campo textarea { resize:vertical; min-height:72px; }
+.form-campo input:focus, .form-campo select:focus, .form-campo textarea:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.form-campo textarea { resize: vertical; min-height: 72px; }
 
 /* Botones */
-.btn-prim { padding:9px 18px; background:var(--azul); color:white; border:none; border-radius:7px; font-size:14px; font-weight:700; cursor:pointer; transition:background .12s; }
-.btn-prim:hover { background:var(--azul-h); }
-.btn-prim:disabled { background:var(--gris3); cursor:not-allowed; }
-.btn-sec { padding:9px 18px; background:var(--gris2); color:var(--texto); border:none; border-radius:7px; font-size:14px; font-weight:600; cursor:pointer; transition:background .12s; }
-.btn-sec:hover { background:var(--borde); }
+.btn-prim {
+  padding: 9px 18px; border: none; border-radius: var(--neo-r-sm);
+  background: var(--neo-accent); color: white; box-shadow: 4px 4px 10px var(--neo-accent-glow), -2px -2px 5px rgba(255,255,255,.15);
+  font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.btn-prim:hover { background: var(--neo-accent-h); }
+.btn-prim:disabled { opacity: .5; cursor: not-allowed; }
+.btn-sec {
+  padding: 9px 18px; border: none; border-radius: var(--neo-r-sm);
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: box-shadow var(--neo-t-fast);
+}
+.btn-sec:hover { box-shadow: var(--neo-e3); }
 
 /* Badges de medio de pago */
-.medio-badge { display:inline-block; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.3px; padding:2px 6px; border-radius:3px; vertical-align:middle; margin-left:4px; }
-.medio-efectivo      { background:#D1FAE5; color:#065F46; }
-.medio-transferencia { background:#DBEAFE; color:#1E40AF; }
-.medio-cheque        { background:#FEF3C7; color:#92400E; }
+.medio-badge { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; padding: 2px 6px; border-radius: var(--neo-r-xs); vertical-align: middle; margin-left: 4px; box-shadow: var(--neo-e1); }
+.medio-efectivo      { background: rgba(39,174,96,.1);  color: var(--neo-success); }
+.medio-transferencia { background: rgba(79,142,247,.1); color: var(--neo-accent);  }
+.medio-cheque        { background: rgba(243,156,18,.1); color: var(--neo-warning); }
 
 /* Modal pago — sección asignaciones */
-.pago-form-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
-/* Sección extra medio de pago */
-.medio-extra { background:var(--gris1); border:1px solid var(--gris2); border-radius:8px; padding:14px; margin-bottom:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-.medio-extra.tres-col { grid-template-columns:1fr 1fr 1fr; }
-.medio-extra .span2 { grid-column:span 2; }
-.medio-extra .span3 { grid-column:span 3; }
-.file-drop { position:relative; border:1.5px dashed var(--borde); border-radius:7px; padding:10px 14px; text-align:center; cursor:pointer; background:white; transition:border-color .12s; }
-.file-drop:hover { border-color:var(--azul); }
-.file-drop input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
-.file-drop-txt { font-size:12px; color:var(--gris3); pointer-events:none; }
-.file-drop-nom { font-size:12px; font-weight:600; color:var(--azul); pointer-events:none; }
-.pago-obs-row { margin-bottom:14px; }
-.comprobante-link { font-size:12px; color:#1E40AF; text-decoration:none; display:inline-flex; align-items:center; gap:4px; }
-.comprobante-link:hover { text-decoration:underline; }
+.pago-form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.medio-extra {
+  background: var(--neo-bg-deep); border-radius: var(--neo-r-md); box-shadow: var(--neo-i1);
+  padding: 14px; margin-bottom: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border: none;
+}
+.medio-extra.tres-col { grid-template-columns: 1fr 1fr 1fr; }
+.medio-extra .span2 { grid-column: span 2; }
+.medio-extra .span3 { grid-column: span 3; }
+.file-drop {
+  position: relative; border: 2px dashed rgba(163,177,198,.4); border-radius: var(--neo-r-sm);
+  padding: 10px 14px; text-align: center; cursor: pointer;
+  background: var(--neo-bg); box-shadow: var(--neo-i1); transition: border-color var(--neo-t-fast);
+}
+.file-drop:hover { border-color: var(--neo-accent); }
+.file-drop input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.file-drop-txt { font-size: 12px; color: var(--neo-text-3); pointer-events: none; }
+.file-drop-nom { font-size: 12px; font-weight: 600; color: var(--neo-accent); pointer-events: none; }
+.pago-obs-row { margin-bottom: 14px; }
+.comprobante-link { font-size: 12px; color: var(--neo-accent); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+.comprobante-link:hover { text-decoration: underline; }
 
-.asig-section { border-top:1px solid var(--gris2); padding-top:16px; margin-top:4px; }
-.asig-section-titulo { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:10px; }
-.asig-lista { display:flex; flex-direction:column; gap:8px; max-height:240px; overflow-y:auto; margin-bottom:10px; }
-.asig-fila { background:var(--gris1); border:1px solid var(--gris2); border-radius:7px; padding:8px 12px; display:flex; align-items:center; gap:12px; }
-.asig-info { flex:1; min-width:0; }
-.asig-tipo-num { font-size:var(--fs-sm); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.asig-meta { font-size:11px; color:var(--gris3); margin-top:2px; }
-.asig-input-wrap { display:flex; align-items:center; gap:4px; flex-shrink:0; }
-.asig-peso { font-size:var(--fs-sm); color:var(--gris3); font-weight:600; }
-.asig-input { width:100px; padding:6px 8px; border:1px solid var(--borde); border-radius:6px; font-size:14px; font-family:inherit; outline:none; text-align:right; font-variant-numeric:tabular-nums; }
-.asig-input:focus { border-color:var(--azul); }
-.asig-footer { display:flex; align-items:center; justify-content:space-between; margin-top:6px; }
-.btn-auto-dist { padding:5px 12px; background:white; border:1px solid var(--borde); border-radius:6px; font-size:12px; font-weight:600; cursor:pointer; color:var(--texto); transition:background .1s; }
-.btn-auto-dist:hover { background:var(--gris2); }
-.asig-total { font-size:12px; font-weight:600; }
-.asig-total.asig-ok { color:var(--verde); }
-.asig-total.asig-excede { color:var(--rojo); }
-.sin-pendientes-info { font-size:var(--fs-sm); color:var(--gris3); text-align:center; padding:12px 0; }
+.asig-section { border-top: 1px solid rgba(163,177,198,.3); padding-top: 16px; margin-top: 4px; }
+.asig-section-titulo { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 10px; }
+.asig-lista { display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; margin-bottom: 10px; }
+.asig-fila { background: var(--neo-bg-deep); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); padding: 8px 12px; display: flex; align-items: center; gap: 12px; border: none; }
+.asig-info { flex: 1; min-width: 0; }
+.asig-tipo-num { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--neo-text); }
+.asig-meta { font-size: 11px; color: var(--neo-text-3); margin-top: 2px; }
+.asig-input-wrap { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.asig-peso { font-size: 12px; color: var(--neo-text-3); font-weight: 600; }
+.asig-input {
+  width: 100px; padding: 6px 8px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 13px; font-family: inherit; outline: none; text-align: right;
+  font-variant-numeric: tabular-nums; background: var(--neo-bg); color: var(--neo-text);
+  box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast);
+}
+.asig-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.asig-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+.btn-auto-dist {
+  padding: 5px 12px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-bg); box-shadow: var(--neo-e1); font-size: 12px; font-weight: 600;
+  cursor: pointer; color: var(--neo-text-2); transition: box-shadow var(--neo-t-fast);
+}
+.btn-auto-dist:hover { box-shadow: var(--neo-e2); color: var(--neo-accent); }
+.asig-total { font-size: 12px; font-weight: 600; }
+.asig-total.asig-ok     { color: var(--neo-success); }
+.asig-total.asig-excede { color: var(--neo-danger); }
+.sin-pendientes-info { font-size: 12px; color: var(--neo-text-3); text-align: center; padding: 12px 0; }
 
 /* Delete button on libro rows */
-.col-acciones { width:34px; }
-.btn-del-mov { width:26px; height:26px; background:none; border:none; border-radius:5px; color:var(--gris3); cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .12s,background .12s,color .12s; padding:0; }
+.col-acciones { width: 34px; }
+.btn-del-mov { width: 26px; height: 26px; background: none; border: none; border-radius: var(--neo-r-xs); color: var(--neo-text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .12s, background .12s, color .12s; padding: 0; }
 .row-cargo:hover .btn-del-mov,
-.row-pago:hover .btn-del-mov { opacity:1; }
-.btn-del-mov:hover { background:#FEE2E2; color:var(--rojo); }
+.row-pago:hover .btn-del-mov { opacity: 1; }
+.btn-del-mov:hover { background: rgba(231,76,60,.1); color: var(--neo-danger); }
 
 /* Danger button */
-.btn-danger { padding:9px 18px; background:var(--rojo); color:white; border:none; border-radius:7px; font-size:14px; font-weight:700; cursor:pointer; transition:background .12s; }
-.btn-danger:hover { background:#991B1B; }
-.btn-danger:disabled { background:var(--gris3); cursor:not-allowed; }
+.btn-danger {
+  padding: 9px 18px; border: none; border-radius: var(--neo-r-sm);
+  background: var(--neo-danger); color: white; box-shadow: 4px 4px 10px var(--neo-danger-glow), -2px -2px 5px rgba(255,255,255,.15);
+  font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+}
+.btn-danger:hover { background: var(--neo-danger-h); }
+.btn-danger:disabled { opacity: .5; cursor: not-allowed; }
 
 /* Modal eliminar body */
-.elim-info { font-size:14px; line-height:1.6; margin-bottom:10px; }
-.elim-warning { font-size:var(--fs-sm); color:#92400E; background:#FEF3C7; border:1px solid #FCD34D; border-radius:6px; padding:8px 10px; margin-bottom:8px; }
-.elim-aviso { font-size:12px; color:var(--gris3); }
-
+.elim-info { font-size: 13px; line-height: 1.6; margin-bottom: 10px; color: var(--neo-text); }
+.elim-warning { font-size: 12px; color: var(--neo-warning); background: rgba(243,156,18,.1); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); padding: 8px 10px; margin-bottom: 8px; border: none; }
+.elim-aviso { font-size: 12px; color: var(--neo-text-3); }
 
 /* ── Credit limit warnings ── */
 .cc-limite-warn {
-  background:#FEF2F2; border:1px solid #FECACA; border-radius:6px;
-  padding:7px 12px; margin-top:8px;
-  display:flex; align-items:center; gap:6px;
-  font-size:12px; font-weight:600; color:var(--rojo);
+  background: rgba(231,76,60,.08); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1);
+  padding: 7px 12px; margin-top: 8px; border: none;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: var(--neo-danger);
 }
 .pago-limit-banner {
-  background:#FEF2F2; border:1px solid #FECACA; border-radius:7px;
-  padding:10px 14px; margin-bottom:12px;
-  display:flex; align-items:center; gap:8px;
-  font-size:var(--fs-sm); font-weight:600; color:var(--rojo);
+  background: rgba(231,76,60,.08); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1);
+  padding: 10px 14px; margin-bottom: 12px; border: none;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; color: var(--neo-danger);
 }
 </style>
 </head>
@@ -273,6 +422,9 @@
         </div>
       </div>
 
+      <!-- Mini-dashboard de vencimientos del cliente -->
+      <div class="cli-aging" id="cli-aging" style="display:none"></div>
+
       <div class="cli-datos" id="cli-datos">
         <div class="cli-dato" id="dato-cuit">
           <span class="cli-dato-k">CUIT</span>
@@ -285,6 +437,10 @@
         <div class="cli-dato" id="dato-limite">
           <span class="cli-dato-k">Límite CC</span>
           <span class="cli-dato-v" id="cli-limite">—</span>
+        </div>
+        <div class="cli-dato" id="dato-plazo">
+          <span class="cli-dato-k">Plazo de pago</span>
+          <span class="cli-dato-v" id="cli-plazo">—</span>
         </div>
         <div class="cli-dato" id="dato-email" style="display:none">
           <span class="cli-dato-k">Email</span>
@@ -340,7 +496,10 @@
   <div class="cc-right">
     <div class="libro-header">
       <span class="libro-titulo">Libro de movimientos</span>
-      <button class="btn-reg-pago" id="btn-reg-pago">+ Registrar pago</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-aging" id="btn-aging">Vencimientos<span class="aging-badge" id="aging-badge" style="display:none"></span></button>
+        <button class="btn-reg-pago" id="btn-reg-pago">+ Registrar pago</button>
+      </div>
     </div>
     <div class="libro-tabla-wrap" id="libro-tabla-wrap">
       <div class="libro-empty" id="libro-empty">Seleccioná un cliente para ver sus movimientos</div>
@@ -366,6 +525,19 @@
 <?php include __DIR__ . '/contacto-modal.php'; ?>
 
 <!-- ── Modal: Registrar pago ── -->
+<!-- ═══ Modal vencimientos (aging) — estilo plano de la app ══ -->
+<div class="overlay aging-overlay" id="overlay-aging">
+  <div class="aging-modal" role="dialog" aria-modal="true" aria-labelledby="aging-modal-h">
+    <div class="aging-mheader">
+      <h2 id="aging-modal-h">Vencimientos de cuenta corriente</h2>
+      <button class="aging-mcerrar" id="aging-cerrar" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="aging-mbody">
+      <div id="aging-contenido" style="padding:20px;color:#9B9590">Cargando…</div>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="overlay-pago">
   <div class="modal modal-lg" id="modal-pago" role="dialog" aria-modal="true" aria-labelledby="pago-modal-h">
     <div class="modal-header">
@@ -562,6 +734,40 @@ function fmtFechaCorta(s) {
   return `${d}/${m}`;
 }
 
+// Días corridos desde una fecha YYYY-MM-DD hasta hoy (ambas a las 00:00)
+function diasDesde(fechaStr) {
+  const f = new Date(fechaStr + 'T00:00:00');
+  return Math.floor((new Date().setHours(0, 0, 0, 0) - f.getTime()) / 86400000);
+}
+
+// ── Reclamo por WhatsApp (link wa.me: no requiere API ni plantillas) ──
+// Normaliza un teléfono argentino a formato internacional para wa.me.
+function telWa(t) {
+  let d = String(t ?? '').replace(/\D/g, '');
+  if (!d) return null;
+  if (!d.startsWith('54')) d = '549' + d.replace(/^0/, '');
+  return d;
+}
+
+function abrirReclamoWa(f) {
+  const tel = telWa(f.telefono);
+  if (!tel) { toast_('El cliente no tiene teléfono cargado en la ficha', 'err'); return; }
+  const empresa = window.LOGOS_EMPRESA ? ` de ${window.LOGOS_EMPRESA}` : '';
+  const dias    = f.max_dias_vencido > 0 ? ` (el más antiguo venció hace ${f.max_dias_vencido} días)` : '';
+  const msg = `Hola ${f.nombre}! Te escribimos${empresa}. ` +
+    `Registrás un saldo vencido de ${fmt(f.vencido)} en tu cuenta corriente${dias}. ` +
+    `Saldo total: ${fmt(f.saldo)}. ¿Podés regularizarlo? ¡Muchas gracias!`;
+  window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+async function verComprobantePago(url) {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) { toast_(r.status === 404 ? 'Comprobante no encontrado' : 'Error al abrir comprobante', 'err'); return; }
+    abrirPdfModal(await r.blob());
+  } catch { toast_('Error de conexión', 'err'); }
+}
+
 let toastTimer = null;
 function toast_(msg, tipo = 'ok') {
   const el = $('toast');
@@ -666,7 +872,12 @@ async function cargarCC(entidad_id) {
     renderVentasPendientes(ventasPendientes);
     renderLibro(d.movimientos);
 
-    $('btn-reg-pago').style.display = 'block';
+    // Registrar cobros/pagos requiere su permiso propio (el server re-valida)
+    $('btn-reg-pago').style.display =
+      (window.puede?.('cc_cobrar') ?? (window.LOGOS_SESION?.rol === 'admin')) ? 'block' : 'none';
+
+    // Mini-dashboard de vencimientos (en segundo plano, no bloquea la carga)
+    cargarMiniAging(entidad_id);
   } catch (e) {
     $('libro-empty').textContent = e.message;
     $('libro-empty').style.display = '';
@@ -690,6 +901,8 @@ function renderClienteCard(c) {
 
   $('dato-limite').style.display = modoEntidad === 'proveedor' ? 'none' : '';
   $('cli-limite').textContent = c.limite_credito ? fmt(c.limite_credito) : '—';
+
+  $('cli-plazo').textContent = c.plazo_pago_dias ? c.plazo_pago_dias + ' días' : 'Sin plazo';
 
   const limite = c.limite_credito;
   if (modoEntidad !== 'proveedor' && limite && limite > 0 && saldo > limite + 0.001) {
@@ -734,13 +947,25 @@ function renderVentasPendientes(ventas) {
   }
 
   const totalDeuda = ventas.reduce((s, v) => s + v.saldo_pendiente, 0);
+  const plazo      = clienteActual?.plazo_pago_dias ?? null;
 
   const filas = ventas.map(v => {
     const badge = (v.tipo_comprobante ?? 'VTA').substring(0, 6).toUpperCase();
-    return `<tr>
+    // Alerta de vencimiento personalizada: el comprobante vence a los
+    // plazo_pago_dias de su fecha. Sin plazo configurado no hay alerta.
+    let venceTd = '<td><span class="venc-chip gris">—</span></td>';
+    let claseFila = '';
+    if (plazo !== null) {
+      const diasVenc = diasDesde(v.fecha) - plazo;
+      if (diasVenc > 0)        { venceTd = `<td><span class="venc-chip rojo">venció hace ${diasVenc}d</span></td>`; claseFila = 'fila-vencida'; }
+      else if (diasVenc === 0) { venceTd = '<td><span class="venc-chip ambar">vence hoy</span></td>'; }
+      else if (diasVenc >= -3) { venceTd = `<td><span class="venc-chip ambar">vence en ${-diasVenc}d</span></td>`; }
+      else                     { venceTd = `<td><span class="venc-chip gris">en ${-diasVenc}d</span></td>`; }
+    }
+    return `<tr class="${claseFila}">
       <td><span class="tipo-badge">${esc(badge)}</span><span class="pend-num">N°${pad(v.id)}</span></td>
       <td>${fmtFechaCorta(v.fecha)}</td>
-      <td class="r">${fmt(v.total)}</td>
+      ${venceTd}
       <td class="r saldo-pend">${fmt(v.saldo_pendiente)}</td>
     </tr>`;
   }).join('');
@@ -750,7 +975,7 @@ function renderVentasPendientes(ventas) {
       <thead><tr>
         <th>Comprobante</th>
         <th>Fecha</th>
-        <th class="r">Total</th>
+        <th>Vence</th>
         <th class="r">Saldo</th>
       </tr></thead>
       <tbody>${filas}</tbody>
@@ -799,7 +1024,7 @@ function renderLibro(movs) {
 
     if (m.tipo === 'cargo') {
       if (m.referencia_id) {
-        const tipo = m.ref_tipo || 'Venta';
+        const tipo = m.ref_tipo || (modoEntidad === 'proveedor' ? 'Compra' : 'Venta');
         concepto = `${esc(tipo)} N°${pad(m.referencia_id)}`;
       } else {
         concepto = 'Cargo manual';
@@ -897,7 +1122,9 @@ async function subirArchivo(fileInput) {
 // Un admin puede estar operando desde una caja de compras (sin turno de
 // venta); el cobro tiene que poder registrarse en la caja de venta que
 // corresponda, o en ninguna (ej. pagos históricos que no tocan el arqueo).
-const esAdminCC = window.LOGOS_SESION?.rol === 'admin';
+// Elegir en qué caja entra el cobro (o ninguna) requiere poder operar
+// cualquier caja; el cajero común registra en la suya.
+const esAdminCC = window.puede?.('cajas_todas') ?? (window.LOGOS_SESION?.rol === 'admin');
 let cajasVentaCache = null;
 
 async function poblarSelectorCajaPago() {
@@ -1284,7 +1511,7 @@ function renderRemitoPagos(pagos, totalVenta) {
             ${p.medio_pago ? `<span class="medio-badge medio-${esc(p.medio_pago)}">${esc(p.medio_pago)}</span>` : ''}
             ${p.obs ? `<span style="font-size:12px;color:var(--gris3);margin-left:4px">${esc(p.obs)}</span>` : ''}
             ${extraPago(p)}
-            ${p.comprobante ? `<div style="margin-top:3px"><a href="${esc(p.comprobante)}" target="_blank" class="comprobante-link">📄 Ver comprobante</a></div>` : ''}
+            ${p.comprobante ? `<div style="margin-top:3px"><button class="comprobante-link" onclick="verComprobantePago('${esc(p.comprobante)}')">📄 Ver comprobante</button></div>` : ''}
           </td>
           <td class="r" style="color:var(--verde);font-weight:600">${fmt(p.monto)}</td>
         </tr>`).join('')}
@@ -1365,12 +1592,187 @@ $('eliminar-confirmar').addEventListener('click', confirmarEliminar);
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if ($('overlay-eliminar').classList.contains('abierto')) { cerrarModalEliminar(); return; }
+  if ($('overlay-aging').classList.contains('abierto'))    { cerrarModalAging();    return; }
   if ($('overlay-remito').classList.contains('abierto'))   { cerrarModalRemito();   return; }
   if (!$('cm-overlay').classList.contains('cm-oculto'))    { $('cm-cerrar').click(); return; }
   if ($('overlay-pago').classList.contains('abierto'))     { cerrarModalPago();     return; }
 });
 
 // ── Init ─────────────────────────────────────────────────────
+// ── Mini-dashboard de vencimientos en la ficha ──────────────
+async function cargarMiniAging(entidad_id) {
+  const cont = $('cli-aging');
+  cont.style.display = 'none';
+  try {
+    const r = await fetch(`${API}/cc/aging?entidad_tipo=${modoEntidad}&entidad_id=${entidad_id}`);
+    const d = await r.json();
+    if (!r.ok) return;
+    renderMiniAging(d.filas?.[0] ?? null);
+  } catch { /* la ficha funciona igual sin el resumen */ }
+}
+
+function renderMiniAging(f) {
+  const cont = $('cli-aging');
+  if (!f || f.saldo < 0.001) { cont.style.display = 'none'; return; }
+
+  const segs = [
+    { v: f.a_vencer, cls: 'ok'   },
+    { v: f.v1_30,    cls: 'v30'  },
+    { v: f.v31_60,   cls: 'v60'  },
+    { v: f.v61_90,   cls: 'v90'  },
+    { v: f.v90,      cls: 'vmax' },
+  ].filter(s => s.v > 0.001);
+  const suma = segs.reduce((a, s) => a + s.v, 0) || 1;
+  const barra = segs.map(s => `<div class="ca-seg ${s.cls}" style="width:${(s.v / suma * 100).toFixed(1)}%"></div>`).join('');
+
+  const detalle = [
+    f.v1_30  > 0.001 ? `1–30d: ${fmt(f.v1_30)}`  : null,
+    f.v31_60 > 0.001 ? `31–60d: ${fmt(f.v31_60)}` : null,
+    f.v61_90 > 0.001 ? `61–90d: ${fmt(f.v61_90)}` : null,
+    f.v90    > 0.001 ? `+90d: ${fmt(f.v90)}`      : null,
+  ].filter(Boolean).join(' · ');
+
+  const chipEstado = f.vencido > 0.001
+    ? `<span class="venc-chip rojo">hasta ${f.max_dias_vencido}d vencido</span>`
+    : (f.plazo_pago_dias === null
+        ? '<span class="venc-chip gris">sin plazo configurado</span>'
+        : '<span class="venc-chip gris">al día</span>');
+
+  const btnWa = (f.vencido > 0.001 && modoEntidad !== 'proveedor')
+    ? `<button class="btn-wa" id="ca-btn-wa">Reclamar por WhatsApp</button>` : '';
+
+  cont.innerHTML = `
+    <div class="ca-head"><span class="ca-titulo">Vencimientos</span>${chipEstado}</div>
+    <div class="ca-bar">${barra}</div>
+    <div class="ca-row">
+      <span>A vencer <b>${fmt(f.a_vencer)}</b></span>
+      <span class="${f.vencido > 0.001 ? 'ca-venc' : ''}">Vencido <b>${fmt(f.vencido)}</b></span>
+    </div>
+    ${detalle ? `<div class="ca-detalle">${detalle}</div>` : ''}
+    ${btnWa}`;
+  cont.style.display = '';
+
+  const btn = $('ca-btn-wa');
+  if (btn) btn.addEventListener('click', () => abrirReclamoWa({ ...f, telefono: f.telefono ?? clienteActual?.telefono }));
+}
+
+// ── Vencimientos (aging) ────────────────────────────────────
+async function cargarAging() {
+  const r = await fetch(`${API}/cc/aging?entidad_tipo=${modoEntidad}`);
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error ?? 'Error al cargar vencimientos');
+  return d;
+}
+
+function renderAging(d) {
+  const cont = $('aging-contenido');
+  if (!d.filas.length) {
+    cont.innerHTML = `<div style="padding:24px;text-align:center;color:#9B9590">
+      Sin ${modoEntidad === 'proveedor' ? 'deudas a proveedores' : 'deudores'} en cuenta corriente.
+    </div>`;
+    return;
+  }
+
+  const celda = (v, venc = false) =>
+    `<td class="r ${v > 0.001 ? (venc ? 'celda-venc' : '') : 'celda-cero'}">${v > 0.001 ? fmt(v) : '—'}</td>`;
+
+  const filas = d.filas.map((f, i) => {
+    const chip = f.max_dias_vencido > 0
+      ? `<span class="venc-chip rojo">hasta ${f.max_dias_vencido}d vencido</span>`
+      : (f.plazo_pago_dias === null ? '<span class="venc-chip gris">sin plazo</span>' : '<span class="venc-chip gris">al día</span>');
+    const btnWa = (f.vencido > 0.001 && f.telefono && modoEntidad !== 'proveedor')
+      ? `<button class="btn-wa btn-wa-mini" data-aging-idx="${i}" title="Reclamar por WhatsApp">WA</button>` : '';
+    return `<tr data-id="${Number(f.id)}" data-nombre="${esc(f.nombre)}">
+      <td><strong>${esc(f.nombre)}</strong><div style="font-size:11px;color:#9B9590">${esc(f.telefono ?? '')}</div></td>
+      <td>${f.plazo_pago_dias ? f.plazo_pago_dias + 'd' : '—'}</td>
+      <td>${chip}</td>
+      ${celda(f.a_vencer)}
+      ${celda(f.v1_30, true)}
+      ${celda(f.v31_60, true)}
+      ${celda(f.v61_90, true)}
+      ${celda(f.v90, true)}
+      <td class="r ${f.vencido > 0.001 ? 'celda-venc' : 'celda-cero'}">${fmt(f.vencido)}</td>
+      <td class="r"><strong>${fmt(f.saldo)}</strong></td>
+      <td>${btnWa}</td>
+    </tr>`;
+  }).join('');
+
+  const t = d.totales;
+  cont.style.padding = '0';
+  cont.innerHTML = `
+    <table class="aging-tabla">
+      <thead><tr>
+        <th>${modoEntidad === 'proveedor' ? 'Proveedor' : 'Cliente'}</th>
+        <th>Plazo</th>
+        <th>Estado</th>
+        <th class="r">A vencer</th>
+        <th class="r">1–30d</th>
+        <th class="r">31–60d</th>
+        <th class="r">61–90d</th>
+        <th class="r">+90d</th>
+        <th class="r">Vencido</th>
+        <th class="r">Saldo</th>
+        <th></th>
+      </tr></thead>
+      <tbody>${filas}</tbody>
+      <tfoot><tr>
+        <td colspan="3">TOTALES</td>
+        <td class="r">${fmt(t.a_vencer)}</td>
+        <td class="r">${fmt(t.v1_30)}</td>
+        <td class="r">${fmt(t.v31_60)}</td>
+        <td class="r">${fmt(t.v61_90)}</td>
+        <td class="r">${fmt(t.v90)}</td>
+        <td class="r ${t.vencido > 0.001 ? 'celda-venc' : ''}">${fmt(t.vencido)}</td>
+        <td class="r">${fmt(t.saldo)}</td>
+        <td></td>
+      </tr></tfoot>
+    </table>`;
+
+  // Click en una fila → abrir esa cuenta corriente
+  cont.querySelectorAll('tbody tr').forEach(tr => {
+    tr.addEventListener('click', () => {
+      cerrarModalAging();
+      seleccionarCliente({ id: parseInt(tr.dataset.id), nombre: tr.dataset.nombre });
+    });
+  });
+
+  // Botones de reclamo por WhatsApp (sin disparar el click de la fila)
+  cont.querySelectorAll('[data-aging-idx]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      abrirReclamoWa(d.filas[parseInt(btn.dataset.agingIdx)]);
+    });
+  });
+}
+
+async function abrirModalAging() {
+  $('aging-contenido').style.padding = '20px';
+  $('aging-contenido').innerHTML = 'Cargando…';
+  $('overlay-aging').classList.add('abierto');
+  try {
+    renderAging(await cargarAging());
+  } catch (e) {
+    $('aging-contenido').innerHTML = `<div style="color:var(--neo-danger)">${esc(e.message)}</div>`;
+  }
+}
+
+function cerrarModalAging() { $('overlay-aging').classList.remove('abierto'); }
+
+$('btn-aging').addEventListener('click', abrirModalAging);
+$('aging-cerrar').addEventListener('click', cerrarModalAging);
+overlayAutoClose($('overlay-aging'), cerrarModalAging);
+
+// Badge con la cantidad de deudores vencidos, al cargar la página
+async function actualizarBadgeAging() {
+  try {
+    const d = await cargarAging();
+    const n = d.filas.filter(f => f.vencido > 0.001).length;
+    const badge = $('aging-badge');
+    badge.textContent = n;
+    badge.style.display = n > 0 ? '' : 'none';
+  } catch { /* sin badge si falla; el botón sigue funcionando */ }
+}
+
 (function initEntidad() {
   if (modoEntidad === 'proveedor') {
     $('input-busq').placeholder = 'Buscar proveedor por nombre o CUIT…';
@@ -1379,7 +1781,112 @@ document.addEventListener('keydown', e => {
   }
   const idParam = parseInt(params.get('id'));
   if (idParam) cargarCC(idParam);
+  // ?vencimientos=1 (desde la tarjeta del dashboard): abrir el reporte directo
+  if (params.get('vencimientos')) abrirModalAging();
+  actualizarBadgeAging();
 })();
+</script>
+
+<script>
+window.TOUR_PAGE_KEY = 'cuentacorriente';
+window.TOUR_STEPS = [
+
+  /* 1 — Intro: carga CLIENTE DEMO automáticamente */
+  { el: null,
+    title: 'Módulo de Cuenta Corriente',
+    body: 'Acá gestionás los saldos, deudas y pagos de clientes y proveedores que operan en cuenta corriente. Vamos a recorrerlo con un cliente de demo.',
+    onEnter: async ({ delay, waitFor }) => {
+      const inp = document.getElementById('input-busq');
+      if (!inp) return;
+      inp.value = 'CLIENTE DEMO';
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      await delay(700);
+      const item = document.querySelector('#busq-dd .dd-item');
+      if (item) item.click();
+      await waitFor(() => document.getElementById('cli-card')?.style.display !== 'none', 3000);
+    } },
+
+  /* 2 — Búsqueda */
+  { el: '#input-busq',
+    title: 'Búsqueda de entidad',
+    body: 'Escribí el nombre o CUIT del cliente (o proveedor) y el sistema autocompleta en tiempo real. El demo ya cargó <strong>CLIENTE DEMO</strong> para mostrarte las funciones.' },
+
+  /* 3 — Card del cliente */
+  { el: '#cli-card',
+    title: 'Ficha del cliente',
+    body: 'Muestra el nombre, saldo actual y datos de la ficha. El saldo en rojo indica que el cliente tiene deuda; en verde significa que tiene saldo a favor.' },
+
+  /* 4 — Saldo */
+  { el: '#cli-saldo',
+    title: 'Saldo actual',
+    body: 'El saldo se actualiza automáticamente cada vez que se registra una venta o un pago en cuenta corriente. CLIENTE DEMO debe $15.000 de una venta de demo.' },
+
+  /* 5 — Deuda pendiente */
+  { el: '#pend-card',
+    title: 'Deuda por comprobante',
+    body: 'Desglosa cuánto debe el cliente comprobante por comprobante: tipo, número, total original y saldo pendiente. Muy útil para saber qué facturas o remitos están impagos.' },
+
+  /* 6 — Libro de movimientos */
+  { el: '#libro-tabla-wrap',
+    title: 'Libro de movimientos',
+    body: 'Historial completo de la cuenta: <strong>Débito</strong> (cargos por ventas), <strong>Crédito</strong> (pagos recibidos) y <strong>Saldo</strong> acumulado en cada movimiento. Hacé click en una fila de cargo para ver el comprobante.' },
+
+  /* 7 — Modal detalle comprobante (abre al click en cargo) */
+  { el: '#overlay-remito .modal',
+    pad: 0,
+    title: 'Detalle del comprobante',
+    body: 'Al hacer click en una fila de cargo se abre el comprobante completo: productos, cantidades, precios y total. También muestra los pagos ya asignados a ese comprobante.',
+    onEnter: async ({ delay }) => {
+      const tr = document.querySelector('#libro-body .row-cargo');
+      if (tr) tr.click();
+      await delay(600);
+    } },
+
+  /* 8 — Items del remito */
+  { el: '#remito-items-body',
+    title: 'Productos del comprobante',
+    body: 'Listado de todos los ítems con código, nombre, cantidad, precio unitario y subtotal. En la parte inferior aparece el total y cuánto ya fue pagado.' },
+
+  /* 9 — Modal registrar pago (cierra remito, abre pago) */
+  { el: '#modal-pago',
+    title: 'Registrar pago',
+    body: 'Ingresá el monto, la fecha y el medio de pago (efectivo, transferencia o cheque). Para transferencias podés adjuntar el comprobante bancario como imagen o PDF.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('remito-cerrar')?.click();
+      await delay(300);
+      if (typeof abrirModalPago === 'function') abrirModalPago();
+      await delay(400);
+    } },
+
+  /* 10 — Asignaciones */
+  { el: '#asig-section',
+    title: 'Asignar a comprobantes',
+    body: 'Podés asignar el pago a comprobantes específicos para reducir su saldo pendiente. Si no asignás nada, el pago queda como crédito disponible para imputar después.' },
+
+  /* 11 — Distribuir automáticamente */
+  { el: '#btn-auto-dist',
+    title: 'Distribución automática',
+    body: 'Distribuye el monto ingresado entre los comprobantes en orden cronológico, cubriendo las deudas más antiguas primero. Una sola acción salda múltiples comprobantes.' },
+
+  /* 12 — Editar ficha (cierra modal pago) */
+  { el: '#btn-edit-ficha',
+    title: 'Editar ficha del cliente',
+    body: 'Abrí la ficha para editar datos de contacto (email, teléfono, domicilio), límite de crédito y condición de IVA. Los cambios se reflejan en todos los módulos.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('pago-cancelar')?.click();
+      await delay(300);
+    } },
+
+  /* 13 — Modo proveedor */
+  { el: 'a[href="/Logos/pos/cuentacorriente.html"]',
+    title: 'Modo proveedor',
+    body: 'El mismo módulo funciona para proveedores. Desplegá el menú <strong>Cta. Cte.</strong> en la barra de navegación y seleccioná <strong>Proveedores</strong> para ver lo que le debés a tus proveedores.' },
+
+  /* 14 — Fin: siguiente módulo */
+  { el: 'a[href="/Logos/pos/contactos.html"]',
+    title: 'Contactos',
+    body: 'El próximo módulo es <strong>Contactos</strong>, donde gestionás toda la base de clientes y proveedores con sus datos completos. ¡Eso es todo para Cta. Cte.!' },
+];
 </script>
 </body>
 </html>

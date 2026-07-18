@@ -9,102 +9,104 @@
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
-.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; }
-.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
-.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+.page-header { background: var(--neo-bg); box-shadow: 0 3px 8px var(--neo-sd); padding: 16px clamp(16px,4vw,48px); flex-shrink: 0; }
+.page-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; color: var(--neo-text); }
+.page-header p  { font-size: 12px; color: var(--neo-text-3); margin-top: 3px; }
 
-.tab-bar { background:white; border-bottom:2px solid var(--gris2); display:flex; padding:0 clamp(20px, 4vw, 48px); flex-shrink:0; }
-.tab-btn { padding:9px 20px; font-size:var(--fs-sm); font-weight:600; border:none; background:none; cursor:pointer; color:var(--gris3); border-bottom:2px solid transparent; margin-bottom:-2px; transition:color .12s,border-color .12s; }
-.tab-btn:hover { color:var(--texto); }
-.tab-btn.activo { color:var(--azul); border-bottom-color:var(--azul); }
+.tab-bar { background: var(--neo-bg); border-bottom: 1px solid rgba(163,177,198,.3); display: flex; padding: 0 clamp(16px,4vw,48px); flex-shrink: 0; }
+.tab-btn { padding: 9px 20px; font-size: 12px; font-weight: 600; border: none; background: none; cursor: pointer; color: var(--neo-text-3); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color var(--neo-t-fast), border-color var(--neo-t-fast); }
+.tab-btn:hover { color: var(--neo-text); }
+.tab-btn.activo { color: var(--neo-accent); border-bottom-color: var(--neo-accent); }
 
-.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
-.contenido-inner { max-width:1200px; margin:0 auto; }
+.contenido { flex: 1; min-height: 0; overflow-y: auto; padding: clamp(16px,3vw,32px) clamp(16px,4vw,48px); background: var(--neo-bg-deep); }
+.contenido-inner { max-width: 1200px; margin: 0 auto; }
 
-.pasos { display:flex; gap:6px; margin-bottom:18px; }
-.paso-pill { flex:1; padding:9px 14px; background:white; border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-weight:700; color:var(--gris3); text-align:center; }
-.paso-pill.activo { border-color:var(--azul); color:var(--azul); background:#FEF2F2; }
-.paso-pill.hecho  { border-color:var(--verde); color:#15803D; background:#F0FDF4; }
+.pasos { display: flex; gap: 6px; margin-bottom: 18px; }
+.paso-pill { flex: 1; padding: 9px 14px; border: none; border-radius: var(--neo-r-md); font-size: 12px; font-weight: 700; color: var(--neo-text-3); text-align: center; background: var(--neo-bg); box-shadow: var(--neo-e2); }
+.paso-pill.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
+.paso-pill.hecho  { box-shadow: var(--neo-e1), 0 0 0 1px var(--neo-success); color: var(--neo-success); }
 
-.card { background:white; border:1px solid var(--borde); border-radius:12px; padding:22px; margin-bottom:16px; }
-.card h2 { font-size:16px; font-weight:800; margin-bottom:4px; }
-.card .sub { font-size:var(--fs-sm); color:var(--gris3); margin-bottom:16px; }
+.card { background: var(--neo-bg); border: none; border-radius: var(--neo-r-lg); box-shadow: var(--neo-e2); padding: 22px; margin-bottom: 16px; }
+.card h2 { font-size: 16px; font-weight: 800; margin-bottom: 4px; color: var(--neo-text); }
+.card .sub { font-size: 12px; color: var(--neo-text-3); margin-bottom: 16px; }
 
-.form-row { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px; }
-.form-group { display:flex; flex-direction:column; gap:5px; }
-.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.form-input { padding:9px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); min-width:220px; }
-.form-input:focus { border-color:var(--azul); background:white; }
-.form-hint { font-size:12px; color:var(--gris3); margin-top:4px; }
+.form-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.form-input { padding: 9px 11px; border: none; border-radius: var(--neo-r-sm); font-size: 13px; font-family: inherit; outline: none; background: var(--neo-bg); color: var(--neo-text); min-width: 220px; box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast); }
+.form-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.form-hint { font-size: 11px; color: var(--neo-text-3); margin-top: 4px; }
 
-.btn-pri { padding:10px 20px; background:var(--azul); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
-.btn-pri:hover:not(:disabled) { background:var(--azul-h); }
-.btn-pri:disabled { opacity:.5; cursor:not-allowed; }
-.btn-sec { padding:10px 20px; background:var(--gris2); color:var(--texto); border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
-.btn-sec:hover { background:var(--borde); }
-.btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+.btn-pri { padding: 10px 20px; background: var(--neo-accent); color: white; border: none; border-radius: var(--neo-r-sm); font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 4px 4px 10px var(--neo-accent-glow); }
+.btn-pri:hover:not(:disabled) { background: var(--neo-accent-h); }
+.btn-pri:disabled { background: var(--neo-bg-deep); color: var(--neo-text-3); cursor: not-allowed; box-shadow: var(--neo-i1); }
+.btn-sec { padding: 10px 20px; border: none; border-radius: var(--neo-r-sm); background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); font-size: 13px; font-weight: 600; cursor: pointer; transition: box-shadow var(--neo-t-fast); }
+.btn-sec:hover { box-shadow: var(--neo-e3); }
+.btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
 
-.aviso-plantilla { background:#EFF6FF; border:1px solid #BFDBFE; color:#1D4ED8; border-radius:8px; padding:10px 14px; font-size:13px; margin-bottom:16px; }
+.aviso-plantilla { background: rgba(79,142,247,.08); border: none; box-shadow: var(--neo-e1), 0 0 0 1px rgba(79,142,247,.2); color: var(--neo-accent); border-radius: var(--neo-r-sm); padding: 10px 14px; font-size: 12px; margin-bottom: 16px; }
 
-.map-grid { display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; margin-bottom:18px; }
-.map-col { flex:0 0 170px; border:1.5px solid var(--borde); border-radius:8px; padding:10px; background:var(--gris1); }
-.map-col-letra { font-size:11px; font-weight:700; color:var(--gris3); margin-bottom:6px; }
-.map-col-sel { width:100%; padding:6px 8px; border:1.5px solid var(--borde); border-radius:6px; font-size:13px; font-family:inherit; background:white; margin-bottom:8px; }
-.map-col-sel.mapeada { border-color:var(--azul); background:#FEF2F2; }
-.map-col-muestra { font-size:12px; color:var(--gris3); line-height:1.6; }
-.map-col-muestra div { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.map-col-muestra .header { font-weight:700; color:var(--texto); }
+.map-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 18px; }
+.map-col { flex: 0 0 170px; border: none; border-radius: var(--neo-r-md); padding: 10px; background: var(--neo-bg); box-shadow: var(--neo-e1); }
+.map-col-letra { font-size: 10px; font-weight: 700; color: var(--neo-text-3); margin-bottom: 6px; }
+.map-col-sel { width: 100%; padding: 6px 8px; border: none; border-radius: var(--neo-r-xs); font-size: 12px; font-family: inherit; background: var(--neo-bg); color: var(--neo-text); margin-bottom: 8px; box-shadow: var(--neo-i1); outline: none; }
+.map-col-sel.mapeada { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.map-col-muestra { font-size: 11px; color: var(--neo-text-3); line-height: 1.6; }
+.map-col-muestra div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.map-col-muestra .header { font-weight: 700; color: var(--neo-text); }
 
-.opciones-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:18px; margin-bottom:14px; }
-.radio-row { display:flex; flex-direction:column; gap:6px; }
-.radio-item { display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer; }
-.radio-item input { accent-color:var(--azul); cursor:pointer; }
-.chk-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; }
-.chk-item { display:flex; align-items:center; gap:7px; font-size:13px; cursor:pointer; }
-.chk-item input { accent-color:var(--azul); cursor:pointer; width:15px; height:15px; }
+.opciones-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 14px; }
+.radio-row { display: flex; flex-direction: column; gap: 6px; }
+.radio-item { display: flex; align-items: center; gap: 7px; font-size: 12px; cursor: pointer; color: var(--neo-text); }
+.radio-item input { accent-color: var(--neo-accent); cursor: pointer; }
+.chk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.chk-item { display: flex; align-items: center; gap: 7px; font-size: 12px; cursor: pointer; color: var(--neo-text); }
+.chk-item input { accent-color: var(--neo-accent); cursor: pointer; width: 15px; height: 15px; }
 
-.totales-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:14px; margin-bottom:18px; }
-.total-box { background:var(--gris1); border-radius:10px; padding:14px 16px; }
-.total-box .lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); margin-bottom:4px; }
-.total-box .val { font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
-.total-box.crear .val      { color:#15803D; }
-.total-box.actualizar .val { color:var(--azul); }
-.total-box.error .val      { color:var(--rojo); }
-.total-box.discontinuado .val { color:var(--bajo); }
+.totales-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.total-box { background: var(--neo-bg); border-radius: var(--neo-r-md); box-shadow: var(--neo-e1); padding: 14px 16px; }
+.total-box .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); margin-bottom: 4px; }
+.total-box .val { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--neo-text); }
+.total-box.crear .val       { color: var(--neo-success); }
+.total-box.actualizar .val  { color: var(--neo-accent);  }
+.total-box.error .val       { color: var(--neo-danger);  }
+.total-box.discontinuado .val { color: var(--neo-warning); }
 
-details.seccion { border:1px solid var(--borde); border-radius:8px; margin-bottom:10px; overflow:hidden; }
-details.seccion summary { padding:11px 14px; font-weight:700; font-size:13px; cursor:pointer; background:var(--gris1); list-style:none; display:flex; align-items:center; gap:8px; }
-details.seccion summary::-webkit-details-marker { display:none; }
-details.seccion summary .car { margin-left:auto; font-weight:800; }
-.table-wrap { overflow-x:auto; }
-table.tbl-prev { width:100%; border-collapse:collapse; }
-table.tbl-prev th { text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); padding:8px 14px; border-bottom:2px solid var(--gris2); white-space:nowrap; }
-table.tbl-prev td { padding:8px 14px; font-size:13px; border-bottom:1px solid var(--gris2); vertical-align:top; }
-table.tbl-prev tr:last-child td { border-bottom:none; }
-.diff-line { white-space:nowrap; }
-.diff-campo { color:var(--gris3); font-weight:600; }
-.diff-antes { color:var(--rojo); text-decoration:line-through; }
-.diff-despues { color:#15803D; font-weight:700; }
-.badge-reactiva { display:inline-block; background:#EFF6FF; color:#1D4ED8; font-size:10px; font-weight:700; text-transform:uppercase; padding:2px 7px; border-radius:5px; margin-left:6px; }
-.vacio-mini { padding:14px; text-align:center; color:var(--gris3); font-size:13px; }
+details.seccion { border: none; border-radius: var(--neo-r-md); margin-bottom: 10px; overflow: hidden; box-shadow: var(--neo-e1); }
+details.seccion summary { padding: 11px 14px; font-weight: 700; font-size: 12px; cursor: pointer; background: var(--neo-bg); list-style: none; display: flex; align-items: center; gap: 8px; color: var(--neo-text); }
+details.seccion summary::-webkit-details-marker { display: none; }
+details.seccion summary .car { margin-left: auto; font-weight: 800; }
+.table-wrap { overflow-x: auto; }
+.table-wrap::-webkit-scrollbar { height: 5px; }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
+table.tbl-prev { width: 100%; border-collapse: collapse; }
+table.tbl-prev th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); padding: 8px 14px; border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap; background: var(--neo-bg-deep); }
+table.tbl-prev td { padding: 8px 14px; font-size: 12px; border-bottom: 1px solid rgba(163,177,198,.18); vertical-align: top; color: var(--neo-text); }
+table.tbl-prev tr:last-child td { border-bottom: none; }
+.diff-line { white-space: nowrap; }
+.diff-campo { color: var(--neo-text-3); font-weight: 600; }
+.diff-antes { color: var(--neo-danger); text-decoration: line-through; }
+.diff-despues { color: var(--neo-success); font-weight: 700; }
+.badge-reactiva { display: inline-block; background: rgba(79,142,247,.1); color: var(--neo-accent); font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: var(--neo-r-xs); margin-left: 6px; }
+.vacio-mini { padding: 14px; text-align: center; color: var(--neo-text-3); font-size: 12px; }
 
-.pag-bar { padding:10px 0; display:flex; align-items:center; justify-content:center; gap:12px; }
-.btn-pag { padding:5px 14px; background:white; border:1.5px solid var(--borde); border-radius:7px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; color:var(--texto); }
-.btn-pag:hover:not(:disabled) { background:var(--gris2); }
-.btn-pag:disabled { color:var(--gris3); cursor:not-allowed; }
-.pag-info { font-size:var(--fs-sm); color:var(--gris3); }
+.pag-bar { padding: 10px 0; display: flex; align-items: center; justify-content: center; gap: 12px; }
+.btn-pag { padding: 5px 14px; border: none; border-radius: var(--neo-r-xs); font-size: 12px; font-weight: 600; cursor: pointer; color: var(--neo-text); background: var(--neo-bg); box-shadow: var(--neo-e1); transition: box-shadow var(--neo-t-fast); }
+.btn-pag:hover:not(:disabled) { box-shadow: var(--neo-e2); }
+.btn-pag:disabled { color: var(--neo-text-3); cursor: not-allowed; box-shadow: none; }
+.pag-info { font-size: 12px; color: var(--neo-text-3); }
 
-.m-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1000; display:none; align-items:center; justify-content:center; }
-.m-overlay.abierto { display:flex; }
-.modal { background:white; border-radius:12px; box-shadow:0 24px 60px rgba(0,0,0,.25); max-height:85vh; width:min(720px,95vw); display:flex; flex-direction:column; overflow:hidden; }
-.m-head { padding:16px 20px; border-bottom:1.5px solid var(--gris2); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-shrink:0; }
-.m-head h3 { font-size:var(--fs-lg); font-weight:800; }
-.m-head .sub { font-size:12px; color:var(--gris3); margin-top:2px; }
-.m-cerrar { width:28px; height:28px; background:var(--gris2); border:none; border-radius:50%; font-size:16px; cursor:pointer; flex-shrink:0; }
-.m-cerrar:hover { background:var(--gris3); color:white; }
-.m-body { padding:0; overflow-y:auto; flex:1; }
+.m-overlay { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; background: rgba(49,52,75,.48); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+.m-overlay.abierto { display: flex; }
+.modal { background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e4); max-height: 85vh; width: min(720px,95vw); display: flex; flex-direction: column; overflow: hidden; }
+.m-head { padding: 16px 20px; border-bottom: 1px solid rgba(163,177,198,.3); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+.m-head h3 { font-size: 15px; font-weight: 800; color: var(--neo-text); }
+.m-head .sub { font-size: 12px; color: var(--neo-text-3); margin-top: 2px; }
+.m-cerrar { width: 28px; height: 28px; border: none; border-radius: var(--neo-r-xs); background: var(--neo-bg); box-shadow: var(--neo-e1); font-size: 16px; cursor: pointer; flex-shrink: 0; color: var(--neo-text-2); transition: box-shadow var(--neo-t-fast); }
+.m-cerrar:hover { box-shadow: var(--neo-e2); }
+.m-body { padding: 0; overflow-y: auto; flex: 1; }
 
-.estado-vacio { padding:50px 20px; text-align:center; color:var(--gris3); font-size:14px; }
+.estado-vacio { padding: 50px 20px; text-align: center; color: var(--neo-text-3); font-size: 13px; }
 
 </style>
 </head>
@@ -178,6 +180,15 @@ table.tbl-prev tr:last-child td { border-bottom:none; }
           <label class="form-label">Margen sobre el costo (%)</label>
           <input type="number" id="p2-margen" class="form-input" step="0.1" placeholder="ej: 35" style="min-width:100px">
           <span class="form-hint" id="p2-margen-hint">Se usa para calcular el precio de venta solo si no mapeaste una columna de Precio venta.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">IVA por defecto</label>
+          <select id="p2-iva-defecto" class="form-input" style="min-width:100px">
+            <option value="21">21%</option>
+            <option value="10.5">10,5%</option>
+            <option value="0">Exento (0%)</option>
+          </select>
+          <span class="form-hint" id="p2-iva-defecto-hint">Se aplica a productos sin columna de IVA % mapeada.</span>
         </div>
       </div>
 
@@ -320,10 +331,11 @@ function esc(s) {
 
 const CAMPO_LABEL = {
   codigo:'Código', nombre:'Nombre', marca:'Marca', categoria:'Categoría', subcategoria:'Subcategoría',
-  proveedor:'Proveedor', costo_actual:'Costo', precio_venta:'Precio venta', stock_minimo:'Stock mínimo', activo:'Activo',
+  proveedor:'Proveedor', costo_actual:'Costo', precio_venta:'Precio venta', stock_minimo:'Stock mínimo',
+  iva_porcentaje:'IVA %', unidad_medida:'Unidad', activo:'Activo',
 };
-const CAMPOS_MAPEABLES = ['codigo','nombre','marca','categoria','subcategoria','costo_actual','precio_venta','stock_minimo'];
-const CAMPOS_ACTUALIZABLES = ['nombre','marca','categoria','subcategoria','proveedor','costo_actual','precio_venta','stock_minimo'];
+const CAMPOS_MAPEABLES = ['codigo','nombre','marca','categoria','subcategoria','costo_actual','precio_venta','stock_minimo','iva_porcentaje','unidad_medida'];
+const CAMPOS_ACTUALIZABLES = ['nombre','marca','categoria','subcategoria','proveedor','costo_actual','precio_venta','stock_minimo','iva_porcentaje','unidad_medida'];
 
 // ── Estado del wizard ──────────────────────────────────────────
 let estado = {
@@ -434,6 +446,7 @@ function renderMapeo(mapeoSugerido, opcionesSugeridas) {
   const ivaSugerido = (opcionesSugeridas && opcionesSugeridas.iva) || 'no_aplica';
   document.querySelectorAll('input[name="p2-iva"]').forEach(r => r.checked = r.value === ivaSugerido);
   $('p2-margen').value = (opcionesSugeridas && opcionesSugeridas.margen_pct) ?? '';
+  $('p2-iva-defecto').value = String((opcionesSugeridas && opcionesSugeridas.iva_defecto) ?? 21);
 
   const camposSugeridos = (opcionesSugeridas && opcionesSugeridas.campos_actualizar) || CAMPOS_ACTUALIZABLES;
   $('p2-campos-grid').innerHTML = CAMPOS_ACTUALIZABLES.map(c =>
@@ -454,6 +467,11 @@ function actualizarHintMargen() {
   $('p2-margen-hint').textContent = tienePrecio
     ? 'No se usa: ya mapeaste una columna de Precio venta, se va a tomar tal cual.'
     : 'Se usa para calcular el precio de venta solo si no mapeaste una columna de Precio venta.';
+  const tieneIva = colMapeadaA('iva_porcentaje') !== null;
+  $('p2-iva-defecto').disabled = tieneIva;
+  $('p2-iva-defecto-hint').textContent = tieneIva
+    ? 'No se usa: ya mapeaste una columna de IVA %.'
+    : 'Se aplica a productos sin columna de IVA % mapeada.';
 }
 
 function recolectarMapeoYOpciones() {
@@ -463,8 +481,9 @@ function recolectarMapeoYOpciones() {
 
   const iva = document.querySelector('input[name="p2-iva"]:checked')?.value || 'no_aplica';
   const margenVal = $('p2-margen').value.trim();
+  const ivaDefecto = parseFloat($('p2-iva-defecto').value) || 21;
   const campos_actualizar = [...document.querySelectorAll('#p2-campos-grid input:checked')].map(c => c.value);
-  const opciones = { iva, margen_pct: margenVal !== '' ? parseFloat(margenVal) : null, campos_actualizar };
+  const opciones = { iva, margen_pct: margenVal !== '' ? parseFloat(margenVal) : null, iva_defecto: ivaDefecto, campos_actualizar };
 
   return { mapeo, opciones };
 }
@@ -666,9 +685,161 @@ function cerrarDetalle() { $('overlay-detalle').classList.remove('abierto'); }
   $('h-next').addEventListener('click', () => { if (histPagina < histTotalPags) cargarHistorial(histPagina + 1); });
 
   $('det-cerrar').addEventListener('click', cerrarDetalle);
-  $('overlay-detalle').addEventListener('click', e => { if (e.target.id === 'overlay-detalle') cerrarDetalle(); });
+  overlayAutoClose($('overlay-detalle'), cerrarDetalle);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('overlay-detalle').classList.contains('abierto')) cerrarDetalle(); });
 })();
+</script>
+
+<script>
+if (sessionStorage.getItem('tour_force_importar')) {
+  sessionStorage.removeItem('tour_force_importar');
+  localStorage.removeItem('tour_seen_importar');
+}
+
+window.TOUR_PAGE_KEY    = 'importar';
+window.TOUR_STEP_OFFSET = 11;   // pasos 12-25 en el conteo global de 29
+window.TOUR_TOTAL_STEPS = 29;
+
+window.TOUR_STEPS = [
+
+  /* idx 0 — global 12: tab Nueva importación */
+  { el: 'button[data-tab="nueva"]',
+    title: 'Nueva importación',
+    body: 'El asistente de importación tiene <strong>4 pasos</strong>: subís el archivo, mapeás las columnas, revisás la vista previa y confirmás. Empezamos en el Paso 1.',
+    onEnter: async ({ delay }) => {
+      if (typeof irPaso === 'function') irPaso(1);
+      if (typeof cambiarTab === 'function') cambiarTab('nueva');
+      await delay(200);
+    } },
+
+  /* idx 1 — global 13: nombre proveedor */
+  { el: '#p1-proveedor',
+    title: 'Nombre del proveedor',
+    body: 'Escribís el nombre del proveedor al que pertenece la lista. El sistema guarda el mapeo de columnas por proveedor: la próxima vez que importés, lo detecta automáticamente.',
+    onEnter: async ({ delay }) => {
+      if (typeof irPaso === 'function') irPaso(1);
+      document.getElementById('p1-proveedor').value = 'PROVEEDOR DEMO';
+      await delay(150);
+    } },
+
+  /* idx 2 — global 14: seleccionar archivo */
+  { el: '#p1-archivo',
+    title: 'Seleccionar archivo',
+    body: 'Subís el archivo Excel (.xlsx / .xls) o CSV del proveedor. Acá cargamos la lista de demo con 5 productos.',
+    onEnter: async ({ delay }) => {
+      if (typeof irPaso === 'function') irPaso(1);
+      try {
+        const resp = await fetch('/Logos/pos/tour_demo_import.csv');
+        const blob = await resp.blob();
+        const file = new File([blob], 'lista_PROVEEDOR_DEMO.csv', { type: 'text/csv' });
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById('p1-archivo').files = dt.files;
+      } catch (e) { /* best-effort */ }
+      await delay(200);
+    } },
+
+  /* idx 3 — global 15: leer archivo */
+  { el: '#p1-btn-leer',
+    title: 'Leer archivo',
+    body: 'El botón <strong>Leer archivo</strong> envía el archivo al servidor. El sistema detecta las columnas, lee una muestra de filas y sugiere el mapeo. Pasamos al Paso 2.' },
+
+  /* idx 4 — global 16: mapeo de columnas */
+  { el: '#p2-map-grid',
+    title: 'Mapeo de columnas',
+    body: 'Por cada columna del archivo elegís a qué campo del sistema corresponde: Código, Nombre, Marca, Costo, etc. Las columnas que no necesitás se dejan en "Ignorar".',
+    onEnter: async ({ delay, waitFor }) => {
+      // Leer el archivo si todavía no estamos en paso-2
+      const paso2 = document.getElementById('paso-2');
+      if (!paso2 || paso2.offsetParent === null) {
+        document.getElementById('p1-btn-leer').click();
+        await waitFor('#paso-2');
+      }
+      await delay(300);
+      // Mapear columnas del CSV de demo: ITEM→codigo, DESCRIPCION→nombre, MARCA→marca, COSTO NETO→costo_actual
+      const mapping = { 0: 'codigo', 1: 'nombre', 2: 'marca', 3: 'costo_actual' };
+      document.querySelectorAll('.map-col-sel').forEach(sel => {
+        const idx = parseInt(sel.dataset.idx);
+        if (mapping[idx] !== undefined) {
+          sel.value = mapping[idx];
+          sel.classList.toggle('mapeada', true);
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      });
+      await delay(200);
+    } },
+
+  /* idx 5 — global 17: fila de inicio de datos */
+  { el: '#p2-fila-inicio',
+    title: 'Fila donde empiezan los datos',
+    body: 'Indicás desde qué fila están los datos (normalmente la 2, porque la fila 1 es el encabezado). El sistema lo detecta solo pero podés ajustarlo si tu archivo tiene filas de título adicionales.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('p2-fila-inicio').value = '2';
+      await delay(100);
+    } },
+
+  /* idx 6 — global 18: IVA */
+  { el: '.radio-row',
+    title: 'Tratamiento de IVA',
+    body: 'Indicás si los precios de la lista ya incluyen IVA o son netos. Si son netos, el sistema suma el IVA al calcular el precio de venta. En este caso la lista trae precios sin IVA.',
+    onEnter: async ({ delay }) => {
+      const r = document.querySelector('input[name="p2-iva"][value="sin_iva"]');
+      if (r) r.checked = true;
+      await delay(100);
+    } },
+
+  /* idx 7 — global 19: margen de ganancia */
+  { el: '#p2-margen',
+    title: 'Margen de ganancia sobre el costo',
+    body: 'Si no mapeaste una columna de precio de venta, el sistema calcula el precio sumando este porcentaje al costo. Con 30% y un costo de $850, el precio de venta sería $1.105.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('p2-margen').value = '30';
+      // Forzar hint update
+      if (typeof actualizarHintMargen === 'function') actualizarHintMargen();
+      await delay(100);
+    } },
+
+  /* idx 8 — global 20: campos a actualizar */
+  { el: '#p2-campos-grid',
+    title: 'Campos a actualizar',
+    body: 'Para productos que <strong>ya existen</strong> en el catálogo, elegís qué campos se actualizan: nombre, marca, costo, precio, etc. Los campos sin tildar se dejan como están.' },
+
+  /* idx 9 — global 21: generar vista previa */
+  { el: '#p2-btn-preview',
+    title: 'Generar vista previa',
+    body: 'Antes de aplicar cualquier cambio, el sistema procesa el archivo con el mapeo configurado y genera una vista previa completa: qué productos se van a crear, actualizar o marcar como discontinuados.' },
+
+  /* idx 10 — global 22: vista previa */
+  { el: '#paso-3',
+    pad: 0,
+    title: 'Vista previa completa',
+    body: 'Acá ves el resumen de cambios agrupado en: <strong>Crear</strong> (productos nuevos), <strong>Actualizar</strong> (ya existentes con cambios), <strong>Errores</strong> (filas con problemas) y <strong>Discontinuados</strong> (productos del proveedor que no aparecen en la lista nueva). Nada se modifica hasta que confirmés.',
+    onEnter: async ({ delay, waitFor }) => {
+      document.getElementById('p2-btn-preview').click();
+      await waitFor('#paso-3');
+      await delay(400);
+    } },
+
+  /* idx 11 — global 23: confirmar importación */
+  { el: '#p3-btn-confirmar',
+    title: 'Confirmar importación',
+    body: 'Una vez que revisaste la vista previa y todo está bien, este botón aplica todos los cambios a la base de datos. La operación es definitiva. En esta demo no lo vamos a presionar para no cargar datos de prueba.' },
+
+  /* idx 12 — global 24: botón historial */
+  { el: 'button[data-tab="historial"]',
+    title: 'Ver historial',
+    body: 'Al confirmar la importación, aparece un botón directo al <strong>Historial</strong> donde quedá registrado todo: proveedor, archivo, usuario, fecha y el detalle línea a línea de cada producto.' },
+
+  /* idx 13 — global 25: navegar a productos.html (stock) */
+  { el: null,
+    title: 'De vuelta a Productos — Stock',
+    body: 'Terminamos el asistente de importación. Volvemos a Productos para ver el control de <strong>Stock</strong>. Hacé click en <strong>Finalizar</strong> para continuar.',
+    onEnter: async ({ delay }) => {
+      sessionStorage.setItem('tour_resume_productos', 'stock');
+      await delay(400);
+      window.location.href = '/Logos/pos/productos.html';
+    } },
+];
 </script>
 </body>
 </html>

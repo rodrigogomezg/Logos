@@ -13,7 +13,7 @@ class ClientesController {
         $db   = DB::get();
         $like = '%' . $q . '%';
         $stmt = $db->prepare("
-            SELECT id, nombre, cuit, condicion_iva, limite_credito, saldo_cuenta_corriente,
+            SELECT id, nombre, cuit, condicion_iva, limite_credito, plazo_pago_dias, saldo_cuenta_corriente,
                    cc_habilitada, descuento_extra, solo_remito, lista_precio_id, domicilios_envio
             FROM clientes
             WHERE activo = 1 AND (nombre LIKE ? OR cuit LIKE ?)
@@ -23,6 +23,7 @@ class ClientesController {
         $rows = $stmt->fetchAll();
         foreach ($rows as &$r) {
             $r['limite_credito']         = (float)$r['limite_credito'];
+            $r['plazo_pago_dias']        = $r['plazo_pago_dias'] ? (int)$r['plazo_pago_dias'] : null;
             $r['saldo_cuenta_corriente'] = (float)$r['saldo_cuenta_corriente'];
             $r['cc_habilitada']          = (bool)$r['cc_habilitada'];
             $r['descuento_extra']        = (float)$r['descuento_extra'];
@@ -67,7 +68,7 @@ class ClientesController {
             SELECT c.id, c.nombre, c.cuit, c.condicion_iva, c.email, c.telefono,
                    c.domicilio, c.localidad, c.provincia, c.observaciones,
                    c.domicilios_envio,
-                   c.activo, c.cc_habilitada, c.limite_credito, c.saldo_cuenta_corriente,
+                   c.activo, c.cc_habilitada, c.limite_credito, c.plazo_pago_dias, c.saldo_cuenta_corriente,
                    c.descuento_extra, c.solo_remito, c.lista_precio_id, c.creado_en,
                    lp.nombre AS lista_precio_nombre
             FROM clientes c
@@ -84,6 +85,7 @@ class ClientesController {
             $r['cc_habilitada']          = (bool)$r['cc_habilitada'];
             $r['solo_remito']            = (bool)$r['solo_remito'];
             $r['limite_credito']         = (float)$r['limite_credito'];
+            $r['plazo_pago_dias']        = $r['plazo_pago_dias'] ? (int)$r['plazo_pago_dias'] : null;
             $r['saldo_cuenta_corriente'] = (float)$r['saldo_cuenta_corriente'];
             $r['descuento_extra']        = (float)$r['descuento_extra'];
             $r['lista_precio_id']        = $r['lista_precio_id'] ? (int)$r['lista_precio_id'] : null;
@@ -104,7 +106,7 @@ class ClientesController {
             SELECT c.id, c.nombre, c.cuit, c.condicion_iva, c.email, c.telefono,
                    c.domicilio, c.localidad, c.provincia, c.observaciones,
                    c.domicilios_envio,
-                   c.activo, c.cc_habilitada, c.limite_credito, c.saldo_cuenta_corriente,
+                   c.activo, c.cc_habilitada, c.limite_credito, c.plazo_pago_dias, c.saldo_cuenta_corriente,
                    c.descuento_extra, c.solo_remito, c.lista_precio_id, c.creado_en,
                    lp.nombre AS lista_precio_nombre
             FROM clientes c
@@ -119,6 +121,7 @@ class ClientesController {
         $r['cc_habilitada']          = (bool)$r['cc_habilitada'];
         $r['solo_remito']            = (bool)$r['solo_remito'];
         $r['limite_credito']         = (float)$r['limite_credito'];
+        $r['plazo_pago_dias']        = $r['plazo_pago_dias'] ? (int)$r['plazo_pago_dias'] : null;
         $r['saldo_cuenta_corriente'] = (float)$r['saldo_cuenta_corriente'];
         $r['descuento_extra']        = (float)$r['descuento_extra'];
         $r['lista_precio_id']        = $r['lista_precio_id'] ? (int)$r['lista_precio_id'] : null;
@@ -136,8 +139,8 @@ class ClientesController {
         $db->prepare("
             INSERT INTO clientes
                 (nombre, cuit, condicion_iva, email, telefono, domicilio, localidad, provincia,
-                 observaciones, domicilios_envio, activo, cc_habilitada, limite_credito, descuento_extra, solo_remito, lista_precio_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 observaciones, domicilios_envio, activo, cc_habilitada, limite_credito, plazo_pago_dias, descuento_extra, solo_remito, lista_precio_id)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ")->execute($this->params($body, $nombre));
 
         $this->get((int)$db->lastInsertId());
@@ -158,7 +161,7 @@ class ClientesController {
             UPDATE clientes SET
                 nombre=?, cuit=?, condicion_iva=?, email=?, telefono=?, domicilio=?,
                 localidad=?, provincia=?, observaciones=?, domicilios_envio=?, activo=?, cc_habilitada=?,
-                limite_credito=?, descuento_extra=?, solo_remito=?, lista_precio_id=?
+                limite_credito=?, plazo_pago_dias=?, descuento_extra=?, solo_remito=?, lista_precio_id=?
             WHERE id=?
         ")->execute([...$this->params($body, $nombre), $id]);
 
@@ -186,6 +189,8 @@ class ClientesController {
             isset($body['activo'])        ? (int)(bool)$body['activo']        : 1,
             isset($body['cc_habilitada']) ? (int)(bool)$body['cc_habilitada'] : 0,
             (float)($body['limite_credito']  ?? 0),
+            isset($body['plazo_pago_dias']) && $body['plazo_pago_dias'] !== '' && $body['plazo_pago_dias'] !== null
+                ? max(0, (int)$body['plazo_pago_dias']) : null,
             (float)($body['descuento_extra'] ?? 0),
             isset($body['solo_remito'])   ? (int)(bool)$body['solo_remito']   : 0,
             isset($body['lista_precio_id']) && $body['lista_precio_id'] ? (int)$body['lista_precio_id'] : null,
@@ -245,6 +250,7 @@ class ClientesController {
             $localidad = trim($data['localidad'] ?? '')     ?: null;
             $provincia = trim($data['provincia'] ?? '')     ?: null;
             $limite    = (float)str_replace(',', '.', trim($data['limite_credito'] ?? '0') ?: '0');
+            $plazo     = trim($data['plazo_pago_dias'] ?? '') !== '' ? (int)$data['plazo_pago_dias'] : null;
             $ccHab     = in_array(strtolower(trim($data['cc_habilitada'] ?? '')), ['1','si','sí','yes','true'], true) ? 1 : 0;
             $descuento = (float)str_replace(',', '.', trim($data['descuento_extra'] ?? '0') ?: '0');
             $obs       = trim($data['observaciones'] ?? '') ?: null;
@@ -261,20 +267,20 @@ class ClientesController {
                     $db->prepare("
                         UPDATE clientes SET
                             nombre=?, condicion_iva=?, email=?, telefono=?, domicilio=?,
-                            localidad=?, provincia=?, limite_credito=?, cc_habilitada=?,
+                            localidad=?, provincia=?, limite_credito=?, plazo_pago_dias=?, cc_habilitada=?,
                             descuento_extra=?, observaciones=?
                         WHERE id=?
                     ")->execute([$nombre, $condicion, $email, $telefono, $domicilio,
-                                 $localidad, $provincia, $limite, $ccHab, $descuento, $obs, $existe]);
+                                 $localidad, $provincia, $limite, $plazo, $ccHab, $descuento, $obs, $existe]);
                     $actualizados++;
                 } else {
                     $db->prepare("
                         INSERT INTO clientes
                             (nombre, cuit, condicion_iva, email, telefono, domicilio, localidad,
-                             provincia, limite_credito, cc_habilitada, descuento_extra, observaciones)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                             provincia, limite_credito, plazo_pago_dias, cc_habilitada, descuento_extra, observaciones)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
                     ")->execute([$nombre, $cuit, $condicion, $email, $telefono, $domicilio,
-                                 $localidad, $provincia, $limite, $ccHab, $descuento, $obs]);
+                                 $localidad, $provincia, $limite, $plazo, $ccHab, $descuento, $obs]);
                     $creados++;
                 }
             } catch (\Throwable $e) {
@@ -291,8 +297,8 @@ class ClientesController {
         header('Content-Disposition: attachment; filename="plantilla_clientes.csv"');
         $out = fopen('php://output', 'w');
         fwrite($out, "\xEF\xBB\xBF");
-        fputcsv($out, ['nombre','cuit','condicion_iva','email','telefono','domicilio','localidad','provincia','limite_credito','cc_habilitada','descuento_extra','observaciones']);
-        fputcsv($out, ['Empresa Ejemplo SA','20-12345678-9','Responsable Inscripto','contacto@empresa.com','11-4567-8901','Av. Corrientes 1234','Buenos Aires','Buenos Aires','50000','1','10','Cliente mayorista']);
+        fputcsv($out, ['nombre','cuit','condicion_iva','email','telefono','domicilio','localidad','provincia','limite_credito','plazo_pago_dias','cc_habilitada','descuento_extra','observaciones']);
+        fputcsv($out, ['Empresa Ejemplo SA','20-12345678-9','Responsable Inscripto','contacto@empresa.com','11-4567-8901','Av. Corrientes 1234','Buenos Aires','Buenos Aires','50000','30','1','10','Cliente mayorista']);
         fclose($out);
         exit;
     }

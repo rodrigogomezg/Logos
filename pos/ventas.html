@@ -9,411 +9,451 @@
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
-/* ── Filtros ── */
+/* ── Filtros bar ── */
 .filtros-bar {
-  background:white; border-bottom:1px solid var(--borde); box-shadow:0 1px 0 var(--borde);
-  padding:10px 16px; display:flex; gap:10px; align-items:flex-end; flex-shrink:0; flex-wrap:wrap;
+  background: var(--neo-bg);
+  box-shadow: 0 -1px 4px var(--neo-sl);
+  padding: 0 16px;
+  display: flex; gap: 6px; align-items: center;
+  flex-shrink: 0; min-height: 50px; flex-wrap: wrap;
+  position: relative; z-index: 10;
 }
-.filtros-bar label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:4px; }
-.filtros-bar input, .filtros-bar select {
-  padding:7px 10px; border:1px solid var(--borde); border-radius:6px;
-  font-size:var(--fs-sm); font-family:inherit; background:white; outline:none;
+.fbar-sep {
+  width: 1px; height: 18px; background: var(--neo-sd);
+  opacity: .35; flex-shrink: 0; margin: 0 4px;
 }
-.filtros-bar input:focus, .filtros-bar select:focus { border-color:var(--azul); }
-.filtros-bar input[type=date]   { width:130px; }
-.filtros-bar input[type=text]   { width:170px; }
-.filtros-bar input[type=number] { width:100px; }
-.filtros-bar select { width:145px; }
+.fbar-ctrl {
+  height: 32px; padding: 0 10px;
+  border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; font-family: inherit;
+  background: var(--neo-bg); color: var(--neo-text); outline: none;
+  box-shadow: var(--neo-i1);
+  transition: box-shadow var(--neo-t-fast);
+}
+.fbar-ctrl:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.fbar-ctrl::placeholder { color: var(--neo-text-3); }
+select.fbar-ctrl { cursor: pointer; }
+#pc-select   { width: 116px; }
+#f-desde, #f-hasta { width: 128px; }
+#f-tipo      { width: 96px; }
+#f-cli-input { width: 140px; }
+#f-monto-min, #f-monto-max { width: 72px; }
+#f-q         { flex: 1; min-width: 80px; }
+#f-grupo     { width: 106px; }
+.fbar-arrow  { font-size: 12px; color: var(--neo-text-3); flex-shrink: 0; font-weight: 600; }
+.fbar-btn {
+  height: 32px; width: 32px;
+  border-radius: var(--neo-r-xs); border: none;
+  background: var(--neo-bg); color: var(--neo-text-2);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: var(--neo-e1);
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
+}
+.fbar-btn:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+.fbar-btn-search {
+  background: var(--neo-accent); color: white;
+  box-shadow: 3px 3px 7px var(--neo-accent-glow), -1px -1px 4px rgba(255,255,255,.2);
+}
+.fbar-btn-search:hover { background: var(--neo-accent-h); }
+.fbar-btn-export {
+  background: var(--neo-success); color: white;
+  box-shadow: 3px 3px 7px var(--neo-success-glow), -1px -1px 4px rgba(255,255,255,.2);
+}
+.fbar-btn-export:hover { background: var(--neo-success-h); }
+.fbar-chk {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+  color: var(--neo-text-3); cursor: pointer; white-space: nowrap; user-select: none; flex-shrink: 0;
+}
+.fbar-chk input[type=checkbox] { accent-color: var(--neo-danger); cursor: pointer; width: 13px; height: 13px; }
+.resultados-count { margin-left: auto; font-size: 11px; color: var(--neo-text-3); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+
+.fbar-more-wrap { position: relative; flex-shrink: 0; }
+.fbar-btn-more  { background: var(--neo-bg); color: var(--neo-text-2); box-shadow: var(--neo-e1); }
+.fbar-btn-more:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+.fbar-btn-more.activo { box-shadow: var(--neo-e2), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
+
+.fbar-more-panel {
+  display: none;
+  position: absolute; top: calc(100% + 8px); right: 0;
+  background: var(--neo-bg); border-radius: var(--neo-r-md);
+  box-shadow: var(--neo-e3); min-width: 200px; z-index: 50;
+  padding: 10px 12px; flex-direction: column; gap: 8px;
+}
+.fbar-more-panel.visible { display: flex; }
+.fbar-more-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.fbar-more-ctrl {
+  height: 32px; padding: 0 10px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; font-family: inherit; background: var(--neo-bg); color: var(--neo-text);
+  box-shadow: var(--neo-i1); outline: none; cursor: pointer; width: 100%;
+}
+.fbar-more-ctrl:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.fbar-more-sep { height: 1px; background: var(--neo-sd); opacity: .3; margin: 2px 0; }
+.fbar-more-chk { font-size: 12px !important; text-transform: none !important; letter-spacing: 0 !important; }
+.fbar-more-export {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 10px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-success); color: #fff; font-size: 12px; font-weight: 600;
+  font-family: inherit; cursor: pointer; width: 100%;
+  box-shadow: 2px 2px 6px var(--neo-success-glow);
+}
+.fbar-more-export:hover { background: var(--neo-success-h); }
 
 /* dropdown cliente en filtro */
-.f-cli-wrap { position:relative; }
+.f-cli-wrap { position: relative; }
 .f-cli-tag {
-  display:none; align-items:center; gap:6px;
-  background:#FEF2F2; border:1px solid #FECACA; border-radius:6px;
-  padding:4px 8px 4px 10px; font-size:var(--fs-sm); font-weight:500; color:var(--azul);
-  height:34px;
+  display: none; align-items: center; gap: 6px;
+  background: rgba(231,76,60,.1); border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1);
+  padding: 0 8px 0 10px; font-size: 12px; font-weight: 500; color: var(--neo-text);
+  height: 32px;
 }
-.f-cli-tag.visible { display:flex; }
-.f-cli-clear { background:none; border:none; cursor:pointer; color:#FECACA; font-size:17px; line-height:1; padding:0 2px; }
-.f-cli-clear:hover { color:var(--rojo); }
+.f-cli-tag.visible { display: flex; }
+.f-cli-clear { background: none; border: none; cursor: pointer; color: var(--neo-danger); font-size: 17px; line-height: 1; padding: 0 2px; }
 .f-cli-dd {
-  position:absolute; top:calc(100% + 4px); left:0; min-width:260px;
-  background:white; border:1px solid var(--borde); border-radius:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:200;
-  max-height:220px; overflow-y:auto; display:none;
+  position: absolute; top: calc(100% + 6px); left: 0; min-width: 260px;
+  background: var(--neo-bg); border: none;
+  border-radius: var(--neo-r-md); box-shadow: var(--neo-e3);
+  z-index: 200; max-height: 220px; overflow-y: auto; display: none;
 }
-.f-cli-dd.visible { display:block; }
-.f-cli-dd-item { padding:9px 14px; cursor:pointer; border-bottom:1px solid var(--gris2); font-size:var(--fs-sm); }
-.f-cli-dd-item:last-child { border-bottom:none; }
-.f-cli-dd-item:hover, .f-cli-dd-item.activo { background:#FEF2F2; }
-.f-cli-dd-item .cn { font-weight:600; }
-.f-cli-dd-item .cd { font-size:11px; color:var(--gris3); margin-top:1px; }
+.f-cli-dd.visible { display: block; }
+.f-cli-dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid rgba(163,177,198,.2); font-size: 12px; }
+.f-cli-dd-item:last-child { border-bottom: none; }
+.f-cli-dd-item:hover, .f-cli-dd-item.activo { background: rgba(255,255,255,.5); }
+.f-cli-dd-item .cn { font-weight: 600; color: var(--neo-text); }
+.f-cli-dd-item .cd { font-size: 11px; color: var(--neo-text-3); margin-top: 1px; }
 
-.btn-buscar {
-  padding:7px 18px; background:var(--azul); color:white; border:none;
-  border-radius:6px; font-size:var(--fs-sm); font-weight:600; cursor:pointer; height:34px;
-  display:flex; align-items:center; gap:6px;
-  box-shadow:0 2px 6px rgba(102,11,11,.3); transition:background .12s, transform .08s;
-}
-.btn-buscar:hover { background:var(--azul-h); }
-.btn-buscar:active { transform:scale(.97); }
-.resultados-count { margin-left:auto; font-size:12px; color:var(--gris3); align-self:center; }
+.btn-buscar { display: none; }
 
-/* ── Selector de período ── */
-.periodo-chips { display:flex; flex-direction:column; gap:4px; }
-.periodo-row { display:flex; align-items:center; gap:7px; }
-.periodo-lbl { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); white-space:nowrap; }
-.periodo-select {
-  flex:1; border:1px solid var(--borde); border-radius:6px;
-  font-size:var(--fs-sm); font-family:inherit; background:white; outline:none; color:var(--texto);
-  cursor:pointer; transition:border-color .1s;
-}
-.periodo-select:focus { border-color:var(--azul); }
-/* fila 2: intervalo manual */
-.periodo-intervalo { display:flex; gap:4px; align-items:center; }
-.periodo-date {
-  flex:1; padding:4px 6px; border:1px solid var(--borde); border-radius:6px;
-  font-size:12px; font-family:inherit; background:white; outline:none; color:var(--texto);
-  transition:border-color .1s; min-width:0;
-}
-.periodo-date:focus { border-color:var(--azul); }
-.intervalo-sep { font-size:11px; color:var(--gris3); flex-shrink:0; }
-/* ── Tira de meses (breadcrumb año) ── */
-.meses-strip {
-  display:none; width:100%; padding:4px 0 0;
-  gap:3px; align-items:center; flex-wrap:wrap;
-}
-.meses-strip.visible { display:flex; }
-.mes-sep { font-size:12px; color:var(--gris3); font-weight:600; margin-right:3px; }
+/* Tira de meses */
+.meses-strip { display: none; width: 100%; padding: 4px 0 8px; gap: 3px; align-items: center; flex-wrap: wrap; }
+.meses-strip.visible { display: flex; }
+.mes-sep { font-size: 10px; color: var(--neo-text-3); font-weight: 700; margin-right: 2px; text-transform: uppercase; letter-spacing: .4px; }
 .mes-chip {
-  padding:3px 8px; border-radius:5px; border:1px solid transparent;
-  background:transparent; font-size:12px; font-weight:500; cursor:pointer; color:var(--gris3);
-  transition:background .1s, color .1s;
+  padding: 3px 9px; border-radius: var(--neo-r-xs); border: none;
+  background: var(--neo-bg); font-size: 11px; font-weight: 600; cursor: pointer;
+  color: var(--neo-text-2); box-shadow: var(--neo-e1);
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
+  text-transform: uppercase; letter-spacing: .3px; font-family: inherit;
 }
-.mes-chip:hover { background:var(--gris2); color:var(--texto); }
-.mes-chip.activo { background:var(--azul); color:white; }
+.mes-chip:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+.mes-chip.activo { box-shadow: var(--neo-i1); color: var(--neo-accent); }
 
-/* ── Barra de selección (siempre visible) ── */
+/* ── Barra de selección ── */
 .seleccion-bar {
-  display:flex; flex-shrink:0;
-  background:#1A1A1A; color:white;
-  padding:0 16px;
-  align-items:center; gap:0;
-  border-bottom:2px solid var(--azul);
+  display: flex; flex-shrink: 0;
+  background: var(--neo-text);
+  color: white;
+  padding: 0 16px;
+  align-items: center; gap: 0;
+  box-shadow: 0 3px 10px rgba(49,52,75,.35);
 }
-.selec-left { flex:1; min-width:0; overflow:hidden; }
+.selec-left { flex: 1; min-width: 0; overflow: hidden; }
 .selec-placeholder {
-  display:none; font-size:12px; color:rgba(255,255,255,.22);
-  padding:13px 0; font-style:italic;
+  display: none; font-size: 12px; color: rgba(255,255,255,.28);
+  padding: 13px 0; font-style: italic;
 }
-.seleccion-bar.sin-sel .selec-placeholder { display:block; }
-.seleccion-bar.sin-sel .selec-info { display:none; }
+.seleccion-bar.sin-sel .selec-placeholder { display: block; }
+.seleccion-bar.sin-sel .selec-info { display: none; }
 .seleccion-bar.sin-sel .selec-sep,
-.seleccion-bar.sin-sel .selec-cerrar { opacity:0; pointer-events:none; }
+.seleccion-bar.sin-sel .selec-cerrar { opacity: 0; pointer-events: none; }
 .seleccion-bar.sin-sel .selec-acciones .selec-btn,
 .seleccion-bar.sin-sel .selec-acciones .comp-dd-wrap .selec-btn
-  { opacity:0.2; pointer-events:none; cursor:default; }
+  { opacity: 0.2; pointer-events: none; cursor: default; }
 @keyframes selec-fill {
-  from { opacity:0; transform:translateY(3px); }
-  to   { opacity:1; transform:translateY(0); }
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.selec-info.pop > * { animation:selec-fill 180ms cubic-bezier(0.23,1,0.32,1) both; }
+.selec-info.pop > * { animation: selec-fill 180ms cubic-bezier(0.23,1,0.32,1) both; }
 .selec-info {
-  display:flex; align-items:center; gap:12px;
-  padding:8px 0; min-width:0;
-  overflow:hidden;
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 0; min-width: 0; overflow: hidden;
 }
-.selec-numero { font-family:monospace; font-size:var(--fs-sm); color:rgba(255,255,255,.5); flex-shrink:0; }
-.selec-badge  { flex-shrink:0; }
-.selec-cliente { font-size:var(--fs-sm); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.selec-monto  { font-size:var(--fs-lg); font-weight:800; color:white; flex-shrink:0; }
-.selec-fecha  { font-size:12px; color:rgba(255,255,255,.45); flex-shrink:0; }
-.selec-sep { width:1px; background:rgba(255,255,255,.1); height:32px; margin:0 12px; flex-shrink:0; }
-.selec-acciones { display:flex; align-items:center; gap:4px; flex-shrink:0; padding:6px 0; }
-
+.selec-numero  { font-family: monospace; font-size: 12px; color: rgba(255,255,255,.5); flex-shrink: 0; }
+.selec-badge   { flex-shrink: 0; }
+.selec-cliente { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.selec-monto   { font-size: 16px; font-weight: 800; color: white; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.selec-fecha   { font-size: 12px; color: rgba(255,255,255,.4); flex-shrink: 0; }
+.selec-sep     { width: 1px; background: rgba(255,255,255,.12); height: 32px; margin: 0 12px; flex-shrink: 0; }
+.selec-acciones { display: flex; align-items: center; gap: 4px; flex-shrink: 0; padding: 6px 0; }
 .selec-btn {
-  display:flex; align-items:center; gap:5px;
-  padding:6px 12px; border-radius:6px; border:none; cursor:pointer;
-  font-family:inherit; font-size:12px; font-weight:600;
-  transition:background .1s, transform .08s, opacity .15s ease-out;
-  white-space:nowrap;
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px; border-radius: var(--neo-r-xs); border: none; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 600;
+  transition: background var(--neo-t-fast), transform var(--neo-t-fast), opacity var(--neo-t-fast);
+  white-space: nowrap;
 }
-.selec-btn:active { transform:scale(.96); }
-.sbtn-ghost  { background:rgba(255,255,255,.08); color:rgba(255,255,255,.85); }
-.sbtn-ghost:hover  { background:rgba(255,255,255,.16); color:white; }
-.sbtn-warn   { background:rgba(251,191,36,.15); color:#FCD34D; }
-.sbtn-warn:hover   { background:rgba(251,191,36,.25); }
-.sbtn-danger { background:rgba(185,28,28,.3); color:#FCA5A5; }
-.sbtn-danger:hover { background:rgba(185,28,28,.5); color:white; }
+.selec-btn:active { transform: scale(.96); }
+.sbtn-ghost  { background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); }
+.sbtn-ghost:hover  { background: rgba(255,255,255,.16); color: white; }
+.sbtn-warn   { background: rgba(243,156,18,.18); color: #fcd34d; }
+.sbtn-warn:hover   { background: rgba(243,156,18,.3); }
+.sbtn-danger { background: rgba(231,76,60,.25); color: #fca5a5; }
+.sbtn-danger:hover { background: rgba(231,76,60,.45); color: white; }
 .selec-cerrar {
-  background:none; border:none; cursor:pointer;
-  color:rgba(255,255,255,.35); font-size:20px; line-height:1;
-  padding:4px 6px; margin-left:4px; border-radius:4px;
-  transition:color .1s, opacity .15s ease-out;
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,.3); font-size: 20px; line-height: 1;
+  padding: 4px 6px; margin-left: 4px; border-radius: var(--neo-r-xs);
+  transition: color var(--neo-t-fast);
 }
-.selec-cerrar:hover { color:white; }
+.selec-cerrar:hover { color: white; }
 
-/* ── Dropdown comprobante ── */
-.comp-dd-wrap { position:relative; }
+/* Dropdown comprobante (en la seleccion-bar oscura) */
+.comp-dd-wrap { position: relative; }
 .comp-dd {
-  position:absolute; top:calc(100% + 4px); left:0;
-  background:#222; border:1px solid rgba(255,255,255,.12); border-radius:8px;
-  box-shadow:0 8px 24px rgba(0,0,0,.4); min-width:175px; overflow:hidden;
-  pointer-events:none; visibility:hidden;
-  opacity:0; transform:scale(.96) translateY(-4px);
-  transform-origin:top left;
-  transition:opacity 150ms cubic-bezier(0.23,1,0.32,1),
-             transform 150ms cubic-bezier(0.23,1,0.32,1),
-             visibility 0ms 150ms;
-  z-index:300;
+  position: absolute; top: calc(100% + 4px); left: 0;
+  background: var(--neo-text); border-radius: var(--neo-r-md);
+  box-shadow: var(--neo-e4); min-width: 175px; overflow: hidden;
+  pointer-events: none; visibility: hidden;
+  opacity: 0; transform: scale(.96) translateY(-4px);
+  transform-origin: top left;
+  transition: opacity 150ms cubic-bezier(0.23,1,0.32,1), transform 150ms cubic-bezier(0.23,1,0.32,1), visibility 0ms 150ms;
+  z-index: 300;
 }
 .comp-dd.visible {
-  pointer-events:all; visibility:visible;
-  opacity:1; transform:scale(1) translateY(0);
-  transition:opacity 150ms cubic-bezier(0.23,1,0.32,1),
-             transform 150ms cubic-bezier(0.23,1,0.32,1),
-             visibility 0ms 0ms;
+  pointer-events: all; visibility: visible;
+  opacity: 1; transform: scale(1) translateY(0);
+  transition: opacity 150ms cubic-bezier(0.23,1,0.32,1), transform 150ms cubic-bezier(0.23,1,0.32,1), visibility 0ms 0ms;
 }
 .comp-dd-item {
-  display:flex; align-items:center; gap:9px; width:100%;
-  padding:9px 14px; border:none; background:none; cursor:pointer;
-  font-family:inherit; font-size:var(--fs-sm); font-weight:500;
-  color:rgba(255,255,255,.82); transition:background .1s; text-align:left;
+  display: flex; align-items: center; gap: 9px; width: 100%;
+  padding: 9px 14px; border: none; background: none; cursor: pointer;
+  font-family: inherit; font-size: 12px; font-weight: 500;
+  color: rgba(255,255,255,.82); transition: background var(--neo-t-fast); text-align: left;
 }
-.comp-dd-item + .comp-dd-item { border-top:1px solid rgba(255,255,255,.06); }
-.comp-dd-item:hover { background:rgba(255,255,255,.09); color:white; }
-.comp-dd-item:active { background:rgba(255,255,255,.16); }
+.comp-dd-item + .comp-dd-item { border-top: 1px solid rgba(255,255,255,.06); }
+.comp-dd-item:hover { background: rgba(255,255,255,.1); color: white; }
 
 /* ── Tabla ── */
-.tabla-wrap { flex:1; overflow-y:auto; }
-table { width:100%; border-collapse:collapse; }
+.tabla-wrap { flex: 1; overflow-y: auto; background: var(--neo-bg-deep); }
+.tabla-wrap::-webkit-scrollbar       { width: 6px; }
+.tabla-wrap::-webkit-scrollbar-track { background: var(--neo-bg-deep); }
+.tabla-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; }
 thead th {
-  position:sticky; top:0; background:white;
-  padding:10px 14px; text-align:left;
-  font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3);
-  border-bottom:2px solid var(--gris2);
+  position: sticky; top: 0; background: var(--neo-bg-deep);
+  padding: 10px 14px; text-align: left;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3);
+  border-bottom: 1px solid rgba(163,177,198,.4);
 }
-thead th.r { text-align:right; }
-tbody tr { cursor:pointer; transition:background 80ms ease-out; border-bottom:1px solid var(--gris2); }
-tbody tr:hover { background:#FEF2F2; }
-tbody tr.seleccionada { background:#FEF2F2 !important; outline:2px solid var(--azul); outline-offset:-1px; }
-tbody td { padding:9px 14px; }
-tbody td.r { text-align:right; }
-.fecha-cell { font-family:monospace; font-size:var(--fs-sm); white-space:nowrap; color:var(--texto); }
-.comp-cell { white-space:nowrap; }
-.comp-num { font-family:monospace; font-size:11px; color:var(--gris3); margin-left:7px; vertical-align:middle; }
-.obs-cell { font-size:12px; color:var(--gris3); max-width:180px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-.obs-vacia { color:var(--gris2); }
+thead th.r { text-align: right; }
+tbody tr { cursor: pointer; transition: background 80ms ease-out; border-bottom: 1px solid rgba(163,177,198,.18); }
+tbody tr:hover { background: rgba(255,255,255,.45); }
+tbody tr.seleccionada { background: rgba(79,142,247,.12) !important; outline: 2px solid var(--neo-accent); outline-offset: -1px; }
+tbody td { padding: 9px 14px; color: var(--neo-text); }
+tbody td.r { text-align: right; }
+.fecha-cell { font-family: monospace; font-size: 12px; white-space: nowrap; color: var(--neo-text); }
+.comp-cell  { white-space: nowrap; }
+.comp-num   { font-family: monospace; font-size: 11px; color: var(--neo-text-3); margin-left: 7px; vertical-align: middle; }
+.obs-cell   { font-size: 12px; color: var(--neo-text-2); max-width: 180px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.obs-vacia  { color: var(--neo-text-3); }
 .tipo-badge {
-  display:inline-block; padding:2px 8px; border-radius:4px;
-  font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.3px;
+  display: inline-block; padding: 2px 8px; border-radius: var(--neo-r-pill);
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; box-shadow: var(--neo-e1);
 }
-.tipo-REMITO { background:#fef3c7; color:#92400e; }
-.tipo-FC     { background:#FEF2F2; color:#7F1D1D; }
-.tipo-NC     { background:#fce7f3; color:#9d174d; }
-.tipo-PRES   { background:var(--gris1); color:var(--gris3); }
-.pago-badge  { font-size:11px; color:var(--gris3); }
-.total-cell  { font-weight:700; color:var(--azul); }
+.seleccion-bar .tipo-badge,
+.tabla-wrap .tipo-badge { box-shadow: none; }
+.tipo-REMITO { background: rgba(243,156,18,.12); color: var(--neo-warning); }
+.tipo-FC     { background: rgba(231,76,60,.1);  color: var(--neo-danger); }
+.tipo-NC     { background: rgba(236,72,153,.1); color: #ec4899; }
+.tipo-PRES   { background: rgba(163,177,198,.18); color: var(--neo-text-2); }
+.pago-badge  { font-size: 11px; color: var(--neo-text-3); }
+.total-cell  { font-weight: 700; color: var(--neo-accent); font-variant-numeric: tabular-nums; }
+.fila-anulada td { opacity: .5; }
+.fila-anulada .comp-num { text-decoration: line-through; }
+.badge-anulada { display: inline-block; padding: 1px 6px; border-radius: var(--neo-r-pill); font-size: 10px; font-weight: 700; text-transform: uppercase; background: rgba(231,76,60,.12); color: var(--neo-danger); margin-left: 5px; vertical-align: middle; }
+.cae-badge { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; font-size: 10px; font-weight: 800; margin-left: 5px; vertical-align: middle; flex-shrink: 0; }
+.cae-ok   { background: rgba(39,174,96,.15);  color: var(--neo-success); }
+.cae-err  { background: rgba(231,76,60,.15);  color: var(--neo-danger);  }
+.cae-pend { background: rgba(163,177,198,.2); color: var(--neo-text-3);  }
 
-/* ── Grupos ── */
-.grupo-sep td { height:8px; background:var(--gris1); border:none !important; padding:0; }
+/* Grupos */
+.grupo-sep td { height: 8px; background: var(--neo-bg-deep); border: none !important; padding: 0; }
 .grupo-header-row td {
-  padding:7px 14px; background:#f4f4f5; font-weight:700; font-size:12px;
-  text-transform:uppercase; letter-spacing:.4px; color:#3f3f46;
-  border-top:1px solid #d4d4d8; border-bottom:1px solid #d4d4d8;
-  position:sticky; top:38px;
+  padding: 7px 14px; background: var(--neo-bg); font-weight: 700; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-2);
+  border-top: 1px solid rgba(163,177,198,.3); border-bottom: 1px solid rgba(163,177,198,.3);
+  position: sticky; top: 38px;
 }
-.g-stats { margin-left:10px; font-size:11px; color:#a1a1aa; font-weight:500; text-transform:none; letter-spacing:0; }
-.g-total { float:right; color:#18181b; font-weight:700; text-transform:none; letter-spacing:0; }
-.grupo-header-row:first-child td { border-top:none; }
+.g-stats { margin-left: 10px; font-size: 11px; color: var(--neo-text-3); font-weight: 500; text-transform: none; letter-spacing: 0; }
+.g-total { float: right; color: var(--neo-text); font-weight: 700; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.grupo-header-row:first-child td { border-top: none; }
 
-/* Color de fila por tipo de comprobante */
-tr.comp-remito      td { background:#e0f2fe; }
-tr.comp-factura     td { background:#ffedd5; }
-tr.comp-presupuesto td { background:#f3f4f6; }
-tr.comp-nc          td { background:#fce7f3; }
-tr.comp-remito.seleccionada      { outline-color:#0ea5e9; }
-tr.comp-remito.seleccionada      td { background:#bae6fd; }
-tr.comp-factura.seleccionada     { outline-color:#f97316; }
-tr.comp-factura.seleccionada     td { background:#fed7aa; }
-tr.comp-presupuesto.seleccionada { outline-color:#71717a; }
-tr.comp-presupuesto.seleccionada td { background:#e5e7eb; }
-tr.comp-nc.seleccionada          { outline-color:#ec4899; }
-tr.comp-nc.seleccionada          td { background:#fbcfe8; }
-.estado-vacio { padding:60px 20px; text-align:center; color:var(--gris3); }
+/* Color de fila por comprobante (versiones neo suaves) */
+tr.comp-remito      td { background: rgba(243,156,18,.06); }
+tr.comp-factura     td { background: rgba(231,76,60,.05);  }
+tr.comp-presupuesto td { background: rgba(163,177,198,.08); }
+tr.comp-nc          td { background: rgba(236,72,153,.05); }
+tr.comp-remito.seleccionada      td { background: rgba(243,156,18,.14); }
+tr.comp-factura.seleccionada     td { background: rgba(231,76,60,.12); }
+tr.comp-presupuesto.seleccionada td { background: rgba(163,177,198,.18); }
+tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
+.estado-vacio { padding: 60px 20px; text-align: center; color: var(--neo-text-3); }
 
-/* ── Modal base ── */
+/* ── Modal ── (override local para tamaño/layout) */
 .overlay {
-  display:none; position:fixed; inset:0; background:rgba(0,0,0,0);
-  z-index:500; align-items:flex-start; justify-content:center; padding-top:40px;
-  transition:background 200ms ease-out;
+  display: none; position: fixed; inset: 0; background: transparent;
+  z-index: 500; align-items: flex-start; justify-content: center; padding-top: 40px;
+  transition: background 200ms ease-out;
 }
-.overlay.abierto { display:flex; background:rgba(0,0,0,.45); }
+.overlay.abierto {
+  display: flex;
+  background: rgba(49,52,75,.48);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
 .modal {
-  background:white; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.25);
-  width:min(720px,95vw); max-height:calc(100vh - 80px); display:flex;
-  flex-direction:column; overflow:hidden;
-  opacity:0; transform:scale(.97) translateY(-8px);
-  transition:opacity 200ms cubic-bezier(0.23,1,0.32,1), transform 200ms cubic-bezier(0.23,1,0.32,1);
+  background: var(--neo-bg);
+  border-radius: var(--neo-r-xl);
+  box-shadow: var(--neo-e4);
+  width: min(720px,95vw); max-height: calc(100vh - 80px); display: flex;
+  flex-direction: column; overflow: hidden;
+  opacity: 0; transform: scale(.97) translateY(-8px);
+  transition: opacity 200ms cubic-bezier(0.23,1,0.32,1), transform 200ms cubic-bezier(0.23,1,0.32,1);
 }
-.overlay.abierto .modal { opacity:1; transform:scale(1) translateY(0); }
-.modal-sm { width:min(480px,95vw); }
+.overlay.abierto .modal { opacity: 1; transform: scale(1) translateY(0); }
+.modal-sm { width: min(480px,95vw); }
 .modal-head {
-  padding:16px 20px; border-bottom:1px solid var(--gris2);
-  display:flex; align-items:center; gap:12px; flex-shrink:0;
+  padding: 16px 22px; border-bottom: 1px solid rgba(163,177,198,.3);
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
 }
-.modal-head h2 { flex:1; font-size:16px; font-weight:700; }
+.modal-head h2 { flex: 1; font-size: 15px; font-weight: 700; color: var(--neo-text); }
 .modal-close {
-  background:none; border:none; cursor:pointer; color:var(--gris3);
-  font-size:22px; line-height:1; padding:4px 8px; border-radius:6px;
+  width: 30px; height: 30px; border: none; cursor: pointer;
+  border-radius: var(--neo-r-xs);
+  background: var(--neo-bg); box-shadow: var(--neo-e1);
+  color: var(--neo-text-2); font-size: 18px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
 }
-.modal-close:hover { background:var(--gris1); }
-.modal-body { overflow-y:auto; padding:20px; flex:1; }
+.modal-close:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+.modal-body { overflow-y: auto; padding: 20px 22px; flex: 1; }
 
-/* ── Modal detalle venta ── */
-.comp-header { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px; }
-.comp-bloque label { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); display:block; margin-bottom:3px; }
-.comp-bloque .val { font-size:14px; font-weight:500; }
-.comp-items { width:100%; border-collapse:collapse; margin-bottom:20px; }
-.comp-items th { padding:8px 10px; text-align:left; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); border-bottom:2px solid var(--gris2); }
-.comp-items th.r { text-align:right; }
-.comp-items td { padding:9px 10px; border-bottom:1px solid var(--gris2); font-size:var(--fs-md); }
-.comp-items td.r { text-align:right; }
-.comp-items .cod { font-family:monospace; font-size:11px; color:var(--gris3); }
-.comp-total { display:flex; justify-content:flex-end; align-items:center; gap:16px; padding-top:12px; border-top:2px solid var(--gris2); }
-.comp-total .label { font-size:var(--fs-sm); color:var(--gris3); }
-.comp-total .monto { font-size:26px; font-weight:800; color:var(--azul); }
+/* Modal detalle venta */
+.comp-header { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+.comp-bloque label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); display: block; margin-bottom: 4px; }
+.comp-bloque .val { font-size: 14px; font-weight: 500; color: var(--neo-text); }
+.comp-items { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+.comp-items th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4); }
+.comp-items th.r { text-align: right; }
+.comp-items td { padding: 9px 10px; border-bottom: 1px solid rgba(163,177,198,.2); font-size: 13px; color: var(--neo-text); }
+.comp-items td.r { text-align: right; font-variant-numeric: tabular-nums; }
+.comp-items .cod { font-family: monospace; font-size: 11px; color: var(--neo-text-3); }
+.comp-total { display: flex; justify-content: flex-end; align-items: center; gap: 16px; padding-top: 14px; border-top: 1px solid rgba(163,177,198,.4); }
+.comp-total .label { font-size: 12px; color: var(--neo-text-3); }
+.comp-total .monto { font-size: 26px; font-weight: 800; color: var(--neo-accent); font-variant-numeric: tabular-nums; }
 
-/* ── Multi-selección / Unificar ── */
-.chk-col { width:32px; padding:0 4px !important; text-align:center; }
-.uni-chk { accent-color:var(--azul); width:14px; height:14px; cursor:pointer; display:block; margin:auto; }
-/* ── Modo multi-selección en seleccion-bar ── */
-.selec-multi-info { display:none; flex-direction:column; justify-content:center; gap:2px; padding:7px 0; }
-.seleccion-bar.modo-multi .selec-multi-info { display:flex; }
-.seleccion-bar.modo-multi .selec-info { display:none; }
-.seleccion-bar.modo-multi .selec-placeholder { display:none; }
-.selec-multi-count { font-size:var(--fs-sm); font-weight:700; color:white; }
-.selec-multi-warn  { font-size:12px; color:#FCD34D; }
-.selec-acciones-multi { display:none; align-items:center; gap:4px; flex-shrink:0; padding:6px 0; }
-.seleccion-bar.modo-multi .selec-acciones-multi { display:flex; }
-.seleccion-bar.modo-multi .selec-acciones-single { display:none; }
-.sbtn-primary { background:rgba(102,11,11,.5); color:white; }
-.sbtn-primary:hover { background:var(--azul); color:white; }
-.sbtn-primary:disabled { background:rgba(255,255,255,.06); color:rgba(255,255,255,.3); cursor:not-allowed; }
-.uni-lista { margin-bottom:16px; }
-.uni-fila  {
-  display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:6px;
-  background:var(--gris1); margin-bottom:6px; font-size:var(--fs-sm);
+/* Multi-selección */
+.chk-col { width: 32px; padding: 0 4px !important; text-align: center; }
+.uni-chk { accent-color: var(--neo-accent); width: 14px; height: 14px; cursor: pointer; display: block; margin: auto; }
+.selec-multi-info { display: none; flex-direction: column; justify-content: center; gap: 2px; padding: 7px 0; }
+.seleccion-bar.modo-multi .selec-multi-info { display: flex; }
+.seleccion-bar.modo-multi .selec-info { display: none; }
+.seleccion-bar.modo-multi .selec-placeholder { display: none; }
+.selec-multi-count { font-size: 12px; font-weight: 700; color: white; }
+.selec-multi-warn  { font-size: 12px; color: #fcd34d; }
+.selec-acciones-multi { display: none; align-items: center; gap: 4px; flex-shrink: 0; padding: 6px 0; }
+.seleccion-bar.modo-multi .selec-acciones-multi  { display: flex; }
+.seleccion-bar.modo-multi .selec-acciones-single { display: none; }
+.sbtn-primary { background: var(--neo-accent); color: white; }
+.sbtn-primary:hover { background: var(--neo-accent-h); }
+.sbtn-primary:disabled { background: rgba(255,255,255,.06); color: rgba(255,255,255,.3); cursor: not-allowed; }
+.uni-lista { margin-bottom: 16px; }
+.uni-fila {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border-radius: var(--neo-r-sm); background: var(--neo-bg);
+  box-shadow: var(--neo-e1); margin-bottom: 6px; font-size: 12px;
 }
-.uni-fila .uni-fecha { color:var(--gris3); font-size:12px; }
-.uni-fila .uni-cli   { flex:1; color:var(--gris3); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.uni-fila .r         { font-weight:700; margin-left:auto; flex-shrink:0; }
+.uni-fila .uni-fecha { color: var(--neo-text-3); font-size: 11px; }
+.uni-fila .uni-cli   { flex: 1; color: var(--neo-text-2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uni-fila .r         { font-weight: 700; margin-left: auto; flex-shrink: 0; color: var(--neo-text); font-variant-numeric: tabular-nums; }
 .uni-resumen {
-  background: #EFF6FF;
-  border: 1px solid #BFDBFE;
-  border-radius: 6px;
-  padding: 12px 14px;
-  margin-bottom: 14px;
+  background: rgba(79,142,247,.08); border-radius: var(--neo-r-md);
+  box-shadow: var(--neo-i1); padding: 12px 14px; margin-bottom: 14px;
 }
-.uni-resumen-titulo {
-  font-size: 13px;
-  font-weight: 700;
-  color: #1E40AF;
-  margin-bottom: 6px;
-}
-.uni-resumen-fila {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  font-size: 13px;
-  color: #374151;
-  padding: 2px 0;
-}
-.uni-resumen-fila .lbl { color: var(--gris3); font-size: 12px; }
-.uni-resumen-fila .val { font-weight: 600; }
-.uni-resumen-total {
-  border-top: 1px solid #BFDBFE;
-  margin-top: 8px;
-  padding-top: 8px;
-  display: flex;
-  justify-content: space-between;
-  font-size: 15px;
-  font-weight: 700;
-  color: #1E40AF;
-}
-.uni-pago-wrap { margin-top:14px; }
-.uni-pago-wrap label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:6px; }
-.uni-pago-wrap select { width:100%; padding:9px 10px; border:1px solid var(--borde); border-radius:6px; font-size:14px; font-family:inherit; outline:none; }
-.uni-pago-wrap select:focus { border-color:#1d4ed8; }
-.origen-tag { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:#1d4ed8; background:#eff6ff; border-radius:4px; padding:2px 6px; white-space:nowrap; }
+.uni-resumen-titulo { font-size: 13px; font-weight: 700; color: var(--neo-accent); margin-bottom: 6px; }
+.uni-resumen-fila   { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--neo-text-2); padding: 2px 0; }
+.uni-resumen-fila .lbl { color: var(--neo-text-3); font-size: 12px; }
+.uni-resumen-fila .val { font-weight: 600; color: var(--neo-text); }
+.uni-resumen-total  { border-top: 1px solid rgba(79,142,247,.25); margin-top: 8px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--neo-accent); font-variant-numeric: tabular-nums; }
+.uni-pago-wrap { margin-top: 14px; }
+.uni-pago-wrap label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 6px; }
+.uni-pago-wrap select { width: 100%; padding: 9px 10px; border: none; border-radius: var(--neo-r-sm); box-shadow: var(--neo-i1); font-size: 13px; font-family: inherit; outline: none; background: var(--neo-bg); color: var(--neo-text); }
+.origen-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--neo-accent); background: rgba(79,142,247,.1); border-radius: var(--neo-r-xs); padding: 2px 7px; white-space: nowrap; }
 
-/* ── Modal edición ── */
-.ef-row { margin-bottom:14px; }
-.ef-row label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); margin-bottom:5px; }
+/* Modal edición */
+.ef-row { margin-bottom: 14px; }
+.ef-row label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 5px; }
 .ef-row select, .ef-row input[type=text] {
-  width:100%; padding:9px 10px; border:1px solid var(--borde); border-radius:6px;
-  font-size:14px; font-family:inherit; outline:none;
+  width: 100%; padding: 9px 10px; border: none; border-radius: var(--neo-r-sm);
+  box-shadow: var(--neo-i1); font-size: 13px; font-family: inherit; outline: none;
+  background: var(--neo-bg); color: var(--neo-text);
 }
-.ef-row select:focus, .ef-row input:focus { border-color:var(--azul); }
-.ef-row select:disabled { background:var(--gris1); color:var(--gris3); cursor:not-allowed; }
+.ef-row select:focus, .ef-row input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.ef-row select:disabled { opacity: .45; cursor: not-allowed; }
 .ef-aviso {
-  background:#FEF2F2; border:1px solid #FECACA; border-radius:6px;
-  padding:10px 12px; font-size:12px; color:#7F1D1D;
-  display:none; margin-bottom:14px; line-height:1.5;
+  background: rgba(231,76,60,.1); border-radius: var(--neo-r-sm);
+  box-shadow: var(--neo-e1); padding: 10px 12px;
+  font-size: 12px; color: var(--neo-danger); display: none; margin-bottom: 14px; line-height: 1.5;
 }
-.ef-aviso.visible { display:block; }
+.ef-aviso.visible { display: block; }
 .modal-footer {
-  padding:12px 20px; border-top:1px solid var(--gris2);
-  display:flex; gap:8px; align-items:center; justify-content:flex-end; flex-shrink:0;
+  padding: 14px 22px; border-top: 1px solid rgba(163,177,198,.3);
+  display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-shrink: 0;
 }
 .btn-modal-link {
-  background:none; border:none; cursor:pointer; font-family:inherit;
-  font-size:13px; font-weight:600; color:var(--gris3); padding:9px 4px;
-  margin-right:auto; transition:color .12s;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+  font-size: 13px; font-weight: 600; color: var(--neo-text-3); padding: 9px 4px;
+  margin-right: auto; transition: color var(--neo-t-fast);
 }
-.btn-modal-link:hover { color:var(--azul); }
+.btn-modal-link:hover { color: var(--neo-accent); }
 .btn-modal {
-  padding:9px 20px; border:none; border-radius:7px; font-size:14px;
-  font-weight:600; cursor:pointer; font-family:inherit;
-  transition:background .12s, transform .08s;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 20px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 13px; font-weight: 700; font-family: inherit;
+  cursor: pointer; letter-spacing: .3px; text-transform: uppercase;
+  transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
 }
-.btn-modal:active { transform:scale(.97); }
-.btn-modal-primary { background:var(--azul); color:white; box-shadow:0 2px 6px rgba(102,11,11,.3); }
-.btn-modal-primary:hover { background:var(--azul-h); }
-.btn-modal-primary:disabled { background:var(--gris2); color:var(--gris3); cursor:not-allowed; box-shadow:none; }
-.btn-modal-ghost  { background:var(--gris1); color:var(--texto); }
-.btn-modal-ghost:hover  { background:var(--gris2); }
-.btn-modal-danger { background:#B91C1C; color:white; }
-.btn-modal-danger:hover { background:#991b1b; }
+.btn-modal:active { transform: scale(.97); }
+.btn-modal-primary {
+  background: var(--neo-accent); color: white;
+  box-shadow: 4px 4px 10px var(--neo-accent-glow), -2px -2px 5px rgba(255,255,255,.2);
+}
+.btn-modal-primary:hover { background: var(--neo-accent-h); box-shadow: 6px 6px 14px var(--neo-accent-glow); }
+.btn-modal-primary:disabled { opacity: .42; cursor: not-allowed; }
+.btn-modal-ghost { background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); }
+.btn-modal-ghost:hover { box-shadow: var(--neo-e3); }
+.btn-modal-danger {
+  background: var(--neo-danger); color: white;
+  box-shadow: 4px 4px 10px var(--neo-danger-glow), -2px -2px 5px rgba(255,255,255,.2);
+}
+.btn-modal-danger:hover { background: var(--neo-danger-h); }
 
-/* ── Confirm eliminación ── */
-.del-body { padding:20px; }
-.del-titulo { font-size:var(--fs-lg); font-weight:700; margin-bottom:8px; }
-.del-info { font-size:var(--fs-sm); color:var(--gris3); margin-bottom:16px; line-height:1.6; }
-.del-aviso {
-  background:#FEF2F2; border:1px solid #FECACA; border-radius:6px;
-  padding:10px 12px; font-size:12px; color:#7F1D1D; line-height:1.5; margin-bottom:4px;
-}
-.del-clave { margin-top:14px; display:none; }
-.del-clave.visible { display:block; }
-.del-clave label { display:block; font-size:var(--fs-sm); font-weight:600; margin-bottom:6px; }
+/* Confirm eliminación */
+.del-body   { padding: 20px 22px; }
+.del-titulo { font-size: 15px; font-weight: 700; margin-bottom: 8px; color: var(--neo-text); }
+.del-info   { font-size: 12px; color: var(--neo-text-2); margin-bottom: 16px; line-height: 1.6; }
+.del-aviso  { background: rgba(231,76,60,.1); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); padding: 10px 12px; font-size: 12px; color: var(--neo-danger); line-height: 1.5; margin-bottom: 4px; }
+.del-clave  { margin-top: 14px; display: none; }
+.del-clave.visible { display: block; }
+.del-clave label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--neo-text-2); }
 .del-clave input {
-  width:100%; padding:8px 10px; border:1.5px solid var(--borde); border-radius:7px;
-  font-size:14px; font-family:inherit; outline:none; box-sizing:border-box;
+  width: 100%; padding: 9px 12px; border: none; border-radius: var(--neo-r-sm);
+  box-shadow: var(--neo-i1); font-size: 14px; font-family: inherit; outline: none;
+  background: var(--neo-bg); color: var(--neo-text);
 }
-.del-clave input:focus { border-color:var(--azul); }
-.del-clave-error { color:var(--rojo); font-size:12px; font-weight:600; margin-top:6px; min-height:14px; }
-
+.del-clave input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-danger); }
+.del-clave-error { color: var(--neo-danger); font-size: 12px; font-weight: 600; margin-top: 6px; min-height: 14px; }
 
 /* ── Print ── */
 @media print {
   .app-nav, .filtros-bar, .seleccion-bar, .tabla-wrap, .toast,
-  #overlay-editar, #overlay-eliminar, .modal-close, .modal-footer { display:none !important; }
-  body { height:auto; overflow:visible; background:white; }
-  .overlay { display:flex !important; position:static !important; background:none !important; padding:0 !important; }
-  .overlay.abierto { display:flex !important; }
-  .modal { box-shadow:none !important; width:100% !important; max-height:none !important; border-radius:0 !important; }
-  .modal-head { border-bottom:2px solid #ccc; }
+  #overlay-editar, #overlay-eliminar, .modal-close, .modal-footer { display: none !important; }
+  body { height: auto; overflow: visible; background: white; }
+  .overlay { display: flex !important; position: static !important; background: none !important; padding: 0 !important; }
+  .overlay.abierto { display: flex !important; }
+  .modal { box-shadow: none !important; width: 100% !important; max-height: none !important; border-radius: 0 !important; }
+  .modal-head { border-bottom: 2px solid #ccc; }
 }
 </style>
 </head>
@@ -422,66 +462,82 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
 <?php $nav_activo = 'ventas'; include __DIR__ . '/nav.php'; ?>
 
 <div class="filtros-bar">
-  <div class="periodo-chips">
-    <div class="periodo-row">
-      <span class="periodo-lbl">Período</span>
-      <select id="pc-select" class="periodo-select">
-        <option value="hoy">Hoy</option>
-        <option value="semana">Esta semana</option>
-        <option value="mes">Este mes</option>
-        <option value="anio">Este año</option>
-      </select>
-    </div>
-    <div class="periodo-intervalo">
-      <input type="date" id="f-desde" class="periodo-date">
-      <span class="intervalo-sep">→</span>
-      <input type="date" id="f-hasta" class="periodo-date">
-    </div>
-  </div>
-  <div>
-    <label>Tipo</label>
-    <select id="f-tipo">
-      <option value="">Todos</option>
-      <option value="REMITO">Remito</option>
-      <option value="FC B-ELECT">Factura B</option>
-      <option value="FC A-ELECT">Factura A</option>
-      <option value="PRESUPUESTO">Presupuesto</option>
-    </select>
-  </div>
+  <!-- Búsqueda general (primero) -->
+  <input type="text" id="f-q" class="fbar-ctrl" placeholder="Nombre, N°…" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
+  <button class="fbar-btn fbar-btn-search" id="btn-buscar" title="Buscar">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+  </button>
+
+  <div class="fbar-sep"></div>
+
+  <!-- Sucursal (solo multi-sucursal) -->
+  <select id="f-sucursal" class="fbar-ctrl" style="display:none;" title="Sucursal"></select>
+
+  <div class="fbar-sep" id="fbar-sep-suc" style="display:none;"></div>
+
+  <!-- Período -->
+  <select id="pc-select" class="fbar-ctrl" title="Período rápido">
+    <option value="hoy">Hoy</option>
+    <option value="semana">Esta semana</option>
+    <option value="mes">Este mes</option>
+    <option value="anio">Este año</option>
+  </select>
+  <input type="date" id="f-desde" class="fbar-ctrl">
+  <span class="fbar-arrow">→</span>
+  <input type="date" id="f-hasta" class="fbar-ctrl">
+
+  <div class="fbar-sep"></div>
+
+  <!-- Tipo -->
+  <select id="f-tipo" class="fbar-ctrl" title="Tipo de comprobante">
+    <option value="">Tipo</option>
+    <option value="REMITO">Remito</option>
+    <option value="FC B-ELECT">Fc B</option>
+    <option value="FC A-ELECT">Fc A</option>
+    <option value="FC C-ELECT">Fc C</option>
+    <option value="PRESUPUESTO">Presup.</option>
+  </select>
+
+  <!-- Cliente -->
   <div class="f-cli-wrap">
-    <label>Cliente</label>
-    <input type="text" id="f-cli-input" placeholder="Todos los clientes..." autocomplete="off" spellcheck="false">
+    <input type="text" id="f-cli-input" class="fbar-ctrl" placeholder="Cliente…" autocomplete="off" spellcheck="false">
     <div class="f-cli-tag" id="f-cli-tag">
       <span id="f-cli-nombre"></span>
       <button class="f-cli-clear" id="f-cli-clear" title="Quitar filtro">×</button>
     </div>
     <div class="f-cli-dd" id="f-cli-dd"></div>
   </div>
-  <div>
-    <label>Monto min</label>
-    <input type="number" id="f-monto-min" placeholder="0" min="0" step="any">
-  </div>
-  <div>
-    <label>Monto max</label>
-    <input type="number" id="f-monto-max" placeholder="sin límite" min="0" step="any">
-  </div>
-  <div>
-    <label>Buscar</label>
-    <input type="text" id="f-q" placeholder="N°, cliente o monto..." autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
-  </div>
-  <button class="btn-buscar" id="btn-buscar">
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
-    Buscar
-  </button>
-  <div>
-    <label>Agrupar</label>
-    <select id="f-grupo">
-      <option value="">Sin agrupar</option>
-      <option value="cliente" selected>Por cliente</option>
-      <option value="tipo">Por tipo</option>
-    </select>
-  </div>
+
+  <!-- Montos -->
+  <input type="number" id="f-monto-min" class="fbar-ctrl" placeholder="$ mín" min="0" step="any">
+  <input type="number" id="f-monto-max" class="fbar-ctrl" placeholder="$ máx" min="0" step="any">
+
   <span class="resultados-count" id="count-label"></span>
+
+  <!-- Botón "más opciones" -->
+  <div class="fbar-more-wrap">
+    <button class="fbar-btn fbar-btn-more" id="btn-more" title="Más opciones">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+    </button>
+    <div class="fbar-more-panel" id="fbar-more-panel">
+      <label class="fbar-more-label">Agrupar</label>
+      <select id="f-grupo" class="fbar-more-ctrl">
+        <option value="">Sin agrupar</option>
+        <option value="cliente" selected>Por cliente</option>
+        <option value="tipo">Por tipo</option>
+      </select>
+      <div class="fbar-more-sep"></div>
+      <label class="fbar-chk fbar-more-chk" title="Mostrar ventas anuladas">
+        <input type="checkbox" id="f-mostrar-anuladas"> Mostrar anuladas
+      </label>
+      <div class="fbar-more-sep"></div>
+      <button class="fbar-more-export" id="btn-exportar">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Descargar Excel
+      </button>
+    </div>
+  </div>
+
   <div class="meses-strip" id="meses-strip"></div>
 </div>
 
@@ -507,6 +563,10 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>
       Ver
     </button>
+    <button class="selec-btn sbtn-primary" id="sac-reintentar-afip" style="display:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
+      Reintentar AFIP
+    </button>
     <div class="comp-dd-wrap">
       <button class="selec-btn sbtn-ghost" id="sac-comprobante">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -528,6 +588,14 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
         </button>
       </div>
     </div>
+    <button class="selec-btn sbtn-ghost" id="sac-mp-link" style="display:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Link MP
+    </button>
+    <button class="selec-btn sbtn-ghost" id="sac-whatsapp" style="display:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/></svg>
+      WhatsApp
+    </button>
     <button class="selec-btn sbtn-ghost" id="sac-nota-envio">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
       Nota de envío
@@ -535,6 +603,10 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
     <button class="selec-btn sbtn-ghost" id="sac-copiar">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
       Copiar al POS
+    </button>
+    <button class="selec-btn sbtn-primary" id="sac-confirmar" style="display:none">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+      Confirmar
     </button>
     <button class="selec-btn sbtn-ghost" id="sac-modificar">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -594,6 +666,7 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
           <option value="REMITO">Remito</option>
           <option value="FC B-ELECT">Factura B Electrónica</option>
           <option value="FC A-ELECT">Factura A Electrónica</option>
+          <option value="FC C-ELECT">Factura C Electrónica</option>
           <option value="PRESUPUESTO">Presupuesto</option>
         </select>
       </div>
@@ -623,20 +696,23 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
   </div>
 </div>
 
-<!-- Modal confirmar eliminación -->
+<!-- Modal confirmar anulación -->
 <div class="overlay" id="overlay-eliminar">
   <div class="modal modal-sm" role="dialog" aria-modal="true" aria-labelledby="del-modal-h">
     <div class="modal-head">
-      <h2 id="del-modal-h" style="color:var(--rojo)">Eliminar venta</h2>
+      <h2 id="del-modal-h" style="color:var(--rojo)">Anular venta</h2>
       <button class="modal-close" id="del-close" aria-label="Cerrar">×</button>
     </div>
     <div class="del-body">
       <div class="del-titulo" id="del-titulo"></div>
       <div class="del-info" id="del-info"></div>
       <div class="del-aviso">
-        Esta acción revertirá el stock de todos los productos.<br>
-        Si era una venta en cuenta corriente, el saldo del cliente se actualizará.<br>
-        <strong>No se puede deshacer.</strong>
+        La venta quedará marcada como <strong>ANULADA</strong> en el historial.<br>
+        El stock de los productos se revertirá.<br>
+        Si era en cuenta corriente, el saldo del cliente se actualizará.
+      </div>
+      <div id="del-cae-aviso" style="display:none;margin-top:10px;padding:8px 10px;background:#FEF9C3;border:1px solid #FDE047;border-radius:6px;font-size:12px;color:#78350F;">
+        Esta factura fue autorizada por ARCA (tiene CAE) y no se puede anular: quedaría fuera del Libro IVA pero seguiría existiendo ante el organismo. Usá <strong>Nota de Crédito</strong> para revertirla.
       </div>
       <div class="del-clave" id="del-clave-wrap">
         <label for="del-clave">Clave de autorización</label>
@@ -647,7 +723,7 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
     <div class="modal-footer">
       <button class="btn-modal btn-modal-ghost" id="del-cancelar">Cancelar</button>
       <button class="btn-modal btn-modal-danger" id="del-confirmar">
-        <span id="del-confirmar-txt">Sí, eliminar</span>
+        <span id="del-confirmar-txt">Sí, anular</span>
       </button>
     </div>
   </div>
@@ -714,6 +790,289 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
 
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+<!-- ══ Modal Link MercadoPago ══════════════════════════════════════════ -->
+<div class="overlay" id="overlay-mp-link">
+  <div class="modal modal-sm" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h2 class="modal-titulo">Link de pago MercadoPago</h2>
+      <button class="modal-close" id="mp-close">×</button>
+    </div>
+    <div class="modal-body" style="text-align:center;padding:24px 20px">
+      <div id="mp-qr-wrap" style="margin-bottom:16px">
+        <img id="mp-qr-img" src="" alt="QR MercadoPago" style="width:180px;height:180px;display:none">
+        <div id="mp-qr-loading" style="color:#888;font-size:13px">Generando QR...</div>
+      </div>
+      <div style="margin-bottom:12px;font-size:13px;color:#888">O compartí el link:</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input class="form-input" id="mp-link-input" readonly style="font-size:12px;flex:1">
+        <button class="btn btn-sec" id="mp-copiar-link" style="flex-shrink:0">Copiar</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" id="mp-cerrar-btn">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal WhatsApp ══════════════════════════════════════════════════ -->
+<div class="overlay" id="overlay-whatsapp">
+  <div class="modal modal-sm" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h2 class="modal-titulo">Enviar por WhatsApp</h2>
+      <button class="modal-close" id="wa-close">×</button>
+    </div>
+    <div class="modal-body" style="padding:20px">
+      <p id="wa-desc" style="margin:0 0 16px;font-size:14px;color:#555"></p>
+      <div class="form-group">
+        <label class="form-label">Número de WhatsApp</label>
+        <input class="form-input" type="tel" id="wa-telefono" placeholder="+54 9 11 1234-5678" inputmode="tel">
+        <div class="form-hint">Formato: código de país + número. Ej: +5491155556666</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" id="wa-cancelar">Cancelar</button>
+      <button class="btn btn-ok"  id="wa-confirmar">Enviar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal Nota de Envío ══════════════════════════════════════════ -->
+<style>
+/* overlay igual al cm-overlay de contacto-modal */
+#ne-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: flex; align-items: center; justify-content: center; z-index: 300;
+}
+#ne-overlay.ne-oculto { display: none; }
+
+#ne-overlay .ne-modal {
+  background: #fff; border: 1px solid #D5D0CA; border-radius: 0;
+  width: min(96vw, 700px); max-height: 90vh;
+  display: flex; flex-direction: column;
+}
+.ne-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; border-bottom: 1px solid #D5D0CA; background: #F0EEEB; flex-shrink: 0;
+}
+.ne-header h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #9B9590; margin: 0; }
+.ne-header-cerrar { background: none; border: none; cursor: pointer; color: #9B9590; font-size: 18px; line-height: 1; padding: 2px 6px; }
+.ne-header-cerrar:hover { color: #111; }
+.ne-body { padding: 18px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.ne-footer {
+  padding: 12px 20px; border-top: 1px solid #D5D0CA;
+  display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0;
+}
+
+.ne-section {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
+  color: #9B9590; padding-bottom: 6px; border-bottom: 1px solid #D5D0CA; display: block;
+}
+.ne-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ne-group { display: flex; flex-direction: column; gap: 4px; }
+.ne-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #9B9590; }
+.ne-input, .ne-textarea {
+  padding: 8px 10px; border: 1px solid #D5D0CA; border-radius: 0;
+  font-size: 13px; font-family: inherit; outline: none; background: #fff; width: 100%; box-sizing: border-box;
+}
+.ne-input:focus, .ne-textarea:focus { border-color: #111; }
+.ne-textarea { resize: vertical; min-height: 52px; }
+
+.ne-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
+.ne-tabla th {
+  padding: 6px 8px; background: #F0EEEB; border: 1px solid #D5D0CA;
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: #9B9590; text-align: left; white-space: nowrap;
+}
+.ne-tabla th.r, .ne-tabla td.r { text-align: right; }
+.ne-tabla td { padding: 7px 8px; border: 1px solid #D5D0CA; vertical-align: middle; font-size: 13px; color: #111; }
+.ne-tabla tbody tr:nth-child(even) td { background: #FAFAF9; }
+.ne-tabla td.ne-entregado { color: #9B9590; font-style: italic; }
+.ne-cant-input {
+  width: 74px; text-align: right; padding: 4px 7px;
+  border: 1px solid #D5D0CA; border-radius: 0;
+  font-size: 13px; font-family: inherit; background: #fff;
+}
+.ne-cant-input:focus { outline: none; border-color: #111; }
+
+.ne-previas-bloque {
+  border: 1px solid #D5D0CA; padding: 8px 12px; margin-bottom: 6px;
+  background: #FAFAF9; font-size: 12px;
+}
+.ne-previas-bloque strong { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #9B9590; }
+.ne-previas-items { margin: 5px 0 0 0; padding-left: 14px; color: #555; font-size: 12px; }
+
+.ne-btn { padding: 9px 18px; border: 1.5px solid transparent; border-radius: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; cursor: pointer; font-family: inherit; }
+.ne-btn-ok  { background: var(--azul, #2563eb); color: #fff; border-color: var(--azul, #2563eb); }
+.ne-btn-sec { background: #fff; color: #111; border-color: #888; }
+</style>
+
+<div id="ne-overlay" class="ne-oculto">
+  <div class="ne-modal" role="dialog" aria-modal="true" aria-labelledby="ne-h">
+    <div class="ne-header">
+      <h3 id="ne-h">Nota de envío</h3>
+      <button class="ne-header-cerrar" id="ne-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="ne-body">
+
+      <!-- Entregas anteriores -->
+      <div id="ne-previas-wrap" style="display:none">
+        <div>
+          <span class="ne-section">Entregas anteriores</span>
+          <div id="ne-previas-list" style="margin-top:10px"></div>
+        </div>
+      </div>
+
+      <!-- Datos de envío -->
+      <div>
+        <span class="ne-section">Datos de envío</span>
+        <div class="ne-row2" style="margin-top:10px">
+          <div class="ne-group">
+            <label class="ne-label">Transportista</label>
+            <input class="ne-input" type="text" id="ne-transportista" placeholder="Nombre del transportista o empresa">
+          </div>
+          <div class="ne-group">
+            <label class="ne-label">Fecha de entrega</label>
+            <input class="ne-input" type="date" id="ne-fecha-entrega">
+          </div>
+          <div class="ne-group">
+            <label class="ne-label">Costo de envío</label>
+            <input class="ne-input" type="number" id="ne-envio-precio" placeholder="$ 0,00" min="0" step="any">
+          </div>
+          <div class="ne-group">
+            <label class="ne-label">Dirección de entrega</label>
+            <input class="ne-input" type="text" id="ne-envio-dir" placeholder="Calle, número, piso...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Artículos -->
+      <div>
+        <span class="ne-section">Artículos a entregar</span>
+        <div style="margin-top:10px; overflow-x:auto">
+          <table class="ne-tabla">
+            <thead id="ne-thead"></thead>
+            <tbody id="ne-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="ne-group">
+        <label class="ne-label">Observaciones</label>
+        <textarea class="ne-textarea" id="ne-observaciones" rows="2" placeholder="Notas adicionales..."></textarea>
+      </div>
+
+    </div>
+    <div class="ne-footer">
+      <button class="ne-btn ne-btn-sec" id="ne-cancelar">Cancelar</button>
+      <button class="ne-btn ne-btn-ok" id="ne-generar">Generar nota</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal Confirmar Presupuesto ════════════════════════════════════ -->
+<style>
+.cp-section { margin-bottom: 18px; }
+.cp-section label.cp-lbl { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #9B9590; margin-bottom: 8px; }
+.cp-tipo-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+.cp-tipo-btn { flex: 1; min-width: 100px; padding: 8px 10px; border: 1px solid #D5D0CA; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; text-align: center; border-radius: 0; transition: border-color .15s, background .15s; }
+.cp-tipo-btn.activo { border-color: var(--neo-accent); background: color-mix(in srgb, var(--neo-accent) 8%, #fff); color: var(--neo-accent); }
+.cp-cli-row { display: flex; gap: 8px; align-items: center; }
+.cp-cli-nombre { flex: 1; padding: 7px 10px; border: 1px solid #D5D0CA; background: #F7F6F4; font-size: 13px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cp-cli-btn { padding: 7px 12px; border: 1px solid #D5D0CA; background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; border-radius: 0; white-space: nowrap; }
+.cp-cli-btn:hover { background: #F0EEEB; }
+.cp-cli-search-wrap { position: relative; margin-top: 8px; }
+.cp-cli-search-wrap input { width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #D5D0CA; font-size: 13px; font-family: inherit; outline: none; }
+.cp-cli-dd { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #D5D0CA; border-top: none; z-index: 10; max-height: 180px; overflow-y: auto; display: none; }
+.cp-cli-dd.visible { display: block; }
+.cp-cli-dd-item { padding: 7px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #F0EEEB; }
+.cp-cli-dd-item:hover { background: #F0EEEB; }
+.cp-pago-grid { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.cp-pago-btn { flex: 1; min-width: 90px; padding: 7px 8px; border: 1px solid #D5D0CA; background: #fff; cursor: pointer; font-size: 12px; font-family: inherit; border-radius: 0; }
+.cp-pago-btn.activo { border-color: var(--neo-accent); background: color-mix(in srgb, var(--neo-accent) 8%, #fff); color: var(--neo-accent); font-weight: 600; }
+.cp-mixto-wrap { display: none; }
+.cp-mixto-wrap.visible { display: block; }
+.cp-mixto-linea { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
+.cp-mixto-linea select, .cp-mixto-linea input { padding: 6px 8px; border: 1px solid #D5D0CA; font-size: 13px; font-family: inherit; outline: none; border-radius: 0; }
+.cp-mixto-linea select { flex: 1; }
+.cp-mixto-linea input { width: 110px; }
+.cp-mixto-linea button { padding: 6px 9px; border: 1px solid #D5D0CA; background: #fff; cursor: pointer; font-size: 14px; font-family: inherit; border-radius: 0; color: #9B9590; }
+.cp-mixto-linea button:hover { color: var(--rojo); }
+.cp-mixto-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #9B9590; margin-top: 4px; }
+.cp-mixto-footer button { background: none; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--neo-accent); padding: 0; font-family: inherit; }
+.cp-mixto-estado { font-weight: 700; }
+.cp-mixto-estado.ok { color: #166534; }
+.cp-mixto-estado.err { color: var(--rojo); }
+.cp-mixto-link { background: none; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--neo-accent); padding: 0; font-family: inherit; text-decoration: underline; text-underline-offset: 2px; }
+</style>
+
+<div class="overlay" id="overlay-cp" style="display:none">
+  <div class="modal" style="max-width:480px" role="dialog" aria-modal="true" aria-labelledby="cp-modal-h">
+    <div class="modal-head">
+      <h2 id="cp-modal-h">Confirmar presupuesto</h2>
+      <button class="modal-close" id="cp-close" aria-label="Cerrar">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Tipo destino -->
+      <div class="cp-section">
+        <label class="cp-lbl">Convertir en</label>
+        <div class="cp-tipo-grid">
+          <button class="cp-tipo-btn activo" data-tipo="REMITO">Remito</button>
+          <button class="cp-tipo-btn" data-tipo="FC B-ELECT">Factura B</button>
+          <button class="cp-tipo-btn" data-tipo="FC A-ELECT">Factura A</button>
+          <button class="cp-tipo-btn" data-tipo="FC C-ELECT">Factura C</button>
+        </div>
+      </div>
+
+      <!-- Cliente -->
+      <div class="cp-section">
+        <label class="cp-lbl">Cliente</label>
+        <div class="cp-cli-row">
+          <div class="cp-cli-nombre" id="cp-cli-nombre">— Consumidor final —</div>
+          <button class="cp-cli-btn" id="cp-cli-cambiar">Cambiar</button>
+          <button class="cp-cli-btn" id="cp-cli-nuevo">+ Nuevo</button>
+        </div>
+        <div class="cp-cli-search-wrap" id="cp-cli-search-wrap" style="display:none">
+          <input type="text" id="cp-cli-input" placeholder="Buscar cliente..." autocomplete="off" spellcheck="false">
+          <div class="cp-cli-dd" id="cp-cli-dd"></div>
+        </div>
+      </div>
+
+      <!-- Forma de pago -->
+      <div class="cp-section">
+        <label class="cp-lbl">Forma de pago</label>
+        <div class="cp-pago-grid" id="cp-pago-grid">
+          <button class="cp-pago-btn activo" data-pago="efectivo">Efectivo</button>
+          <button class="cp-pago-btn" data-pago="transferencia">Transferencia</button>
+          <button class="cp-pago-btn" data-pago="cc">Cta. Corriente</button>
+          <button class="cp-pago-btn" data-pago="tarjeta">Tarjeta</button>
+          <button class="cp-pago-btn" data-pago="cheque">Cheque</button>
+          <button class="cp-pago-btn" data-pago="mercado_pago">Mercado Pago</button>
+        </div>
+        <button class="cp-mixto-link" id="cp-mixto-link">+ Pago mixto</button>
+        <div class="cp-mixto-wrap" id="cp-mixto-wrap">
+          <div id="cp-mixto-lineas"></div>
+          <div class="cp-mixto-footer">
+            <button id="cp-mixto-agregar">+ Agregar forma de pago</button>
+            <span class="cp-mixto-estado" id="cp-mixto-estado"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="cp-aviso-fc" style="display:none;padding:8px 10px;background:#FEF9C3;border:1px solid #FDE047;font-size:12px;color:#78350F;margin-bottom:4px">
+        Se actualizará el comprobante y luego se solicitará el CAE a ARCA. Asegurate de tener conexión.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal btn-modal-ghost" id="cp-cancelar">Cancelar</button>
+      <button class="btn-modal btn-modal-primary" id="cp-guardar">
+        <span id="cp-guardar-txt">Confirmar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal unificar -->
 <div class="overlay" id="overlay-uni">
   <div class="modal" style="max-width:520px" role="dialog" aria-modal="true" aria-labelledby="uni-modal-h">
@@ -733,7 +1092,8 @@ tr.comp-nc.seleccionada          td { background:#fbcfe8; }
 'use strict';
 const API = '/Logos/api';
 const $ = id => document.getElementById(id);
-const esAdmin = window.LOGOS_SESION?.rol === 'admin';
+// "esAdmin" histórico: acá significa "puede anular sin clave" (permiso granular)
+const esAdmin = window.puede?.('anular') ?? (window.LOGOS_SESION?.rol === 'admin');
 
 // ── Utilidades ─────────────────────────────────────────
 function actualizarFecha() {
@@ -828,18 +1188,27 @@ function toast_(msg, tipo = 'ok') {
   toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
 }
 
+const TIPOS_ELECT = ['FC A-ELECT','FC B-ELECT','FC C-ELECT','NC A-ELECT','NC B-ELECT','NC C-ELECT'];
+
+function caeStatusBadge(v) {
+  if (!TIPOS_ELECT.includes(v.tipo_comprobante)) return '';
+  if (v.cae)        return `<span class="cae-badge cae-ok" title="CAE: ${esc(v.cae)}">✓</span>`;
+  if (v.afip_error) return `<span class="cae-badge cae-err" title="${esc(v.afip_error)}">!</span>`;
+  return '<span class="cae-badge cae-pend" title="Pendiente de autorización ARCA">…</span>';
+}
+
 function tipoBadgeClass(tipo) {
   if (!tipo) return 'tipo-PRES';
   if (tipo.includes('REMITO')) return 'tipo-REMITO';
-  if (tipo.includes('A') || tipo.includes('B')) return 'tipo-FC';
   if (tipo.includes('NC') || tipo.includes('NOTA')) return 'tipo-NC';
+  if (tipo.startsWith('FC')) return 'tipo-FC';
   return 'tipo-PRES';
 }
 function compRowClass(tipo) {
   if (!tipo) return 'comp-presupuesto';
   if (tipo.includes('REMITO')) return 'comp-remito';
-  if (tipo.includes('A') || tipo.includes('B')) return 'comp-factura';
   if (tipo.includes('NC') || tipo.includes('NOTA')) return 'comp-nc';
+  if (tipo.startsWith('FC')) return 'comp-factura';
   return 'comp-presupuesto';
 }
 
@@ -923,6 +1292,9 @@ async function buscar() {
   if (clienteFiltroId) params.set('cliente_id', clienteFiltroId);
   if (montoMin !== '') params.set('monto_min', montoMin);
   if (montoMax !== '') params.set('monto_max', montoMax);
+  if ($('f-mostrar-anuladas').checked) params.set('mostrar_anuladas', '1');
+  const sucFiltro = $('f-sucursal').value;
+  if (sucFiltro) params.set('sucursal_id', sucFiltro);
 
   $('tabla-wrap').innerHTML = '<div class="estado-vacio">Buscando...</div>';
   $('count-label').textContent = '';
@@ -952,12 +1324,13 @@ function filaVenta(v) {
   const fechaCell = v.origen_descripcion
     ? `<span class="origen-tag" title="${esc(v.origen_descripcion)}">⊕ Agrupado</span>`
     : fmtFecha(v.fecha);
+  const anulada = v.estado === 'anulado';
   return `
-    <tr data-id="${v.id}" data-json='${JSON.stringify(v).replace(/'/g,"&#39;")}' class="${compRowClass(v.tipo_comprobante)}">
+    <tr data-id="${v.id}" data-json='${JSON.stringify(v).replace(/'/g,"&#39;")}' class="${compRowClass(v.tipo_comprobante)}${anulada ? ' fila-anulada' : ''}">
       ${chkTd}
       <td class="fecha-cell">${fechaCell}</td>
       <td class="comp-cell">
-        <span class="tipo-badge ${tipoBadgeClass(v.tipo_comprobante)}">${esc(v.tipo_comprobante ?? '—')}</span><span class="comp-num">${esc(v.numero)}</span>
+        <span class="tipo-badge ${tipoBadgeClass(v.tipo_comprobante)}">${esc(v.tipo_comprobante ?? '—')}</span><span class="comp-num">${esc(v.numero)}</span>${anulada ? '<span class="badge-anulada">anulada</span>' : ''}${caeStatusBadge(v)}
       </td>
       <td>${esc(v.cliente_nombre ?? '— Consumidor final —')}</td>
       <td class="obs-cell" title="${esc(obs)}">${obs ? esc(obsCorta) : '<span class="obs-vacia">—</span>'}</td>
@@ -1045,10 +1418,17 @@ function seleccionar(v, tr) {
 
   const bar = $('seleccion-bar');
   bar.classList.remove('sin-sel');
-  // Animación de los datos al seleccionar
   const info = $('selec-info');
   info.classList.remove('pop');
   requestAnimationFrame(() => info.classList.add('pop'));
+
+  // Mostrar "Reintentar AFIP" solo en facturas electrónicas sin CAE
+  const necesitaReintento = TIPOS_ELECT.includes(v.tipo_comprobante) && !v.cae && v.estado !== 'anulado';
+  $('sac-reintentar-afip').style.display = necesitaReintento ? '' : 'none';
+
+  // Mostrar "Confirmar" solo en presupuestos activos
+  const esPresupuesto = v.tipo_comprobante === 'PRESUPUESTO' && v.estado !== 'anulado';
+  $('sac-confirmar').style.display = esPresupuesto ? '' : 'none';
 }
 
 function deseleccionar() {
@@ -1057,6 +1437,8 @@ function deseleccionar() {
   $('tabla-wrap').querySelectorAll('tr.seleccionada').forEach(r => r.classList.remove('seleccionada'));
   if (multiSel.size === 0) $('seleccion-bar').classList.add('sin-sel');
   cerrarCompDD();
+  $('sac-reintentar-afip').style.display = 'none';
+  $('sac-confirmar').style.display = 'none';
 }
 
 $('selec-cerrar').addEventListener('click', deseleccionar);
@@ -1134,7 +1516,7 @@ function renderDetalle(v) {
       ${v.origen_descripcion ? `<div class="comp-bloque" style="flex-basis:100%"><label>Origen</label><div class="val" style="font-size:12px;color:var(--gris3)">${esc(v.origen_descripcion)}</div></div>` : ''}
       ${v.cae ? `<div class="comp-bloque"><label>CAE</label><div class="val">${esc(v.cae)}${v.numero_afip ? ` <span style="font-size:11px;color:var(--gris3)">· N° AFIP ${esc(String(v.numero_afip).padStart(8, '0'))}</span>` : ''}</div></div>` : ''}
       ${!v.cae && v.afip_error ? `<div class="comp-bloque" style="flex-basis:100%"><label style="color:var(--rojo)">Factura sin autorizar por AFIP</label><div class="val" style="font-size:12px;color:var(--rojo)">${esc(v.afip_error)}</div>
-        <button id="btn-reintentar-afip" style="margin-top:6px;padding:6px 14px;border:1.5px solid var(--rojo);background:#fff;color:var(--rojo);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;font-family:inherit">Reintentar facturación</button></div>` : ''}
+        <button id="btn-reintentar-afip" style="margin-top:6px;padding:6px 14px;border:none;border-radius:6px;background:var(--neo-bg);color:var(--neo-danger);box-shadow:var(--neo-e1),0 0 0 1px var(--neo-danger);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;font-family:inherit">Reintentar facturación</button></div>` : ''}
     </div>
     <table class="comp-items">
       <thead>
@@ -1164,7 +1546,7 @@ function renderDetalle(v) {
 }
 
 $('ver-close').addEventListener('click', () => $('overlay-ver').classList.remove('abierto'));
-$('overlay-ver').addEventListener('click', e => { if (e.target === $('overlay-ver')) $('overlay-ver').classList.remove('abierto'); });
+overlayAutoClose($('overlay-ver'), () => $('overlay-ver').classList.remove('abierto'));
 
 // ── Acción: IMPRIMIR ───────────────────────────────────
 async function accionImprimir() {
@@ -1181,10 +1563,14 @@ async function accionImprimir() {
 }
 
 // ── Acción: DESCARGAR PDF ──────────────────────────────
-function accionPDF() {
+async function accionPDF() {
   cerrarCompDD();
   if (!ventaSeleccionada) return;
-  window.open(`${API}/ventas/${ventaSeleccionada.id}/comprobante`, '_blank');
+  try {
+    const r = await fetch(`${API}/ventas/${ventaSeleccionada.id}/comprobante`);
+    if (!r.ok) { const d = await r.json(); toast_(d.error || 'Error al generar PDF', 'err'); return; }
+    abrirPdfModal(await r.blob());
+  } catch { toast_('Error de conexión al generar PDF', 'err'); }
 }
 
 // ── Acción: ENVIAR POR MAIL ────────────────────────────
@@ -1201,7 +1587,7 @@ function accionMail() {
 
 $('mail-close').addEventListener('click',    () => $('overlay-mail').classList.remove('abierto'));
 $('mail-cancelar').addEventListener('click', () => $('overlay-mail').classList.remove('abierto'));
-$('overlay-mail').addEventListener('click',  e => { if (e.target === $('overlay-mail')) $('overlay-mail').classList.remove('abierto'); });
+overlayAutoClose($('overlay-mail'), () => $('overlay-mail').classList.remove('abierto'));
 
 $('mail-enviar').addEventListener('click', async () => {
   const emailInput = $('mail-email');
@@ -1240,46 +1626,208 @@ async function accionNotaEnvio() {
   if (!ventaSeleccionada) return;
   try {
     const v = await cargarDetalle(ventaSeleccionada.id);
-    if (v.envio_precio !== null && v.envio_precio !== undefined) {
-      // Envío ya incluido en el remito → imprimir directo
-      imprimirNotaEnvio(v, v.envio_precio, v.envio_direccion);
-    } else {
-      // Envío no incluido → mostrar aviso
-      $('warn-envio-precio').value = '';
-      $('warn-envio-dir').value    = '';
-      $('overlay-envio-warn').classList.add('abierto');
-      setTimeout(() => $('warn-envio-precio').focus(), 150);
-    }
+    abrirModalNotaEnvio(v);
   } catch (e) {
     toast_(e.message, 'err');
   }
 }
 
-function imprimirNotaEnvio(v, precio, direccion) {
-  // TODO: diseñar e implementar la nota de envío
-  toast_('Nota de envío — próximamente', 'ok');
+// ══ Modal Nota de Envío ═══════════════════════════════
+let neVenta      = null;
+let nePrevias    = [];
+let neVentaItems = [];  // items del remito con cantidades enviadas calculadas
+
+async function abrirModalNotaEnvio(v) {
+  neVenta = v;
+
+  // Cargar notas previas de esta venta
+  try {
+    const r = await fetch(`${API}/notas-envio?venta_id=${v.id}`);
+    nePrevias = r.ok ? await r.json() : [];
+  } catch { nePrevias = []; }
+
+  // Calcular cuánto se envió por venta_item_id en notas anteriores
+  const enviado = {};
+  nePrevias.forEach(nota => {
+    nota.items.forEach(it => {
+      enviado[it.venta_item_id] = (enviado[it.venta_item_id] || 0) + it.cantidad;
+    });
+  });
+
+  neVentaItems = (v.items || []).map(item => ({
+    ...item,
+    enviado:   enviado[item.id] || 0,
+    pendiente: Math.max(0, item.cantidad - (enviado[item.id] || 0)),
+  }));
+
+  // Pre-rellenar datos de envío con lo que ya tiene el remito
+  $('ne-envio-precio').value = v.envio_precio  != null ? v.envio_precio  : '';
+  $('ne-envio-dir').value    = v.envio_direccion || '';
+  $('ne-transportista').value = '';
+  $('ne-fecha-entrega').value = '';
+  $('ne-observaciones').value = '';
+
+  renderNePrevias();
+  renderNeTabla();
+  $('ne-overlay').classList.remove('ne-oculto');
 }
 
+function renderNePrevias() {
+  const wrap = $('ne-previas-wrap');
+  const list = $('ne-previas-list');
+  if (!nePrevias.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  list.innerHTML = nePrevias.map(nota => {
+    const fechaEm = nota.fecha_emision ? new Date(nota.fecha_emision + 'T00:00:00').toLocaleDateString('es-AR') : '—';
+    const fechaEnt = nota.fecha_entrega ? new Date(nota.fecha_entrega + 'T00:00:00').toLocaleDateString('es-AR') : null;
+    const itemsHtml = nota.items.map(it =>
+      `<li>${esc(it.nombre)}${it.codigo ? ` <small>(${esc(it.codigo)})</small>` : ''} — <strong>${fmtCant(it.cantidad)}</strong></li>`
+    ).join('');
+    return `<div class="ne-previas-bloque">
+      <strong>Entrega N° ${nota.numero} — ${fechaEm}${fechaEnt ? ' · entrega: ' + fechaEnt : ''}${nota.transportista ? ' · ' + esc(nota.transportista) : ''}</strong>
+      <ul class="ne-previas-items">${itemsHtml}</ul>
+    </div>`;
+  }).join('');
+}
+
+function renderNeTabla() {
+  const hayPendiente = neVentaItems.some(it => it.pendiente > 0);
+  const thead = $('ne-thead');
+  const tbody = $('ne-tbody');
+
+  thead.innerHTML = `<tr>
+    <th style="width:32px"></th>
+    <th>Producto</th>
+    <th class="r">Cant. remito</th>
+    <th class="r">Ya enviado</th>
+    <th class="r">Pendiente</th>
+    <th class="r">Esta entrega</th>
+  </tr>`;
+
+  tbody.innerHTML = '';
+  neVentaItems.forEach((item, idx) => {
+    const entregado = item.pendiente === 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="text-align:center">
+        <input type="checkbox" class="ne-chk" data-idx="${idx}" ${entregado ? '' : 'checked'} ${entregado ? 'disabled' : ''}>
+      </td>
+      <td class="${entregado ? 'ne-entregado' : ''}">${esc(item.nombre)}${item.codigo ? ` <small style="color:#9B9590">${esc(item.codigo)}</small>` : ''}</td>
+      <td class="r">${fmtCant(item.cantidad)}</td>
+      <td class="r">${item.enviado > 0 ? fmtCant(item.enviado) : '—'}</td>
+      <td class="r ${entregado ? 'ne-entregado' : ''}">${entregado ? '✓ Completo' : fmtCant(item.pendiente)}</td>
+      <td class="r">
+        <input class="ne-cant-input" type="number" min="0" max="${item.pendiente}" step="any"
+          value="${entregado ? 0 : fmtCant(item.pendiente)}"
+          data-idx="${idx}" ${entregado ? 'disabled style="opacity:.4"' : ''}>
+      </td>`;
+
+    if (!entregado) {
+      const chk  = tr.querySelector('.ne-chk');
+      const cant = tr.querySelector('.ne-cant-input');
+      chk.addEventListener('change', () => {
+        if (chk.checked) {
+          cant.value    = fmtCant(item.pendiente);
+          cant.disabled = false;
+          cant.style.opacity = '';
+        } else {
+          cant.value    = 0;
+          cant.disabled = true;
+          cant.style.opacity = '.4';
+        }
+      });
+    }
+
+    tbody.appendChild(tr);
+  });
+
+  if (!hayPendiente) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="6" style="text-align:center;color:#9B9590;padding:14px">Todos los artículos de este remito ya fueron entregados.</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
+function fmtCant(n) {
+  const f = parseFloat(n);
+  return Number.isInteger(f) ? String(f) : f.toFixed(2).replace('.', ',');
+}
+
+function cerrarModalNE() {
+  $('ne-overlay').classList.add('ne-oculto');
+}
+
+$('ne-close').addEventListener('click',    cerrarModalNE);
+$('ne-cancelar').addEventListener('click', cerrarModalNE);
+overlayAutoClose($('ne-overlay'), cerrarModalNE);
+
+$('ne-generar').addEventListener('click', async () => {
+  if (!neVenta) return;
+
+  const items = [];
+  $('ne-tbody').querySelectorAll('.ne-cant-input').forEach(inp => {
+    const idx  = parseInt(inp.dataset.idx);
+    const cant = parseFloat(inp.value) || 0;
+    if (cant <= 0) return;
+    const vi = neVentaItems[idx];
+    if (cant > vi.pendiente + 0.0001) {
+      toast_(`Cantidad mayor al pendiente para "${vi.nombre}"`, 'err');
+      throw new Error('cantidad_invalida');
+    }
+    items.push({
+      venta_item_id: vi.id,
+      producto_id:   vi.producto_id,
+      nombre:        vi.nombre,
+      codigo:        vi.codigo || '',
+      cantidad:      cant,
+    });
+  });
+
+  if (!items.length) { toast_('Seleccioná al menos un artículo con cantidad mayor a 0', 'err'); return; }
+
+  const body = {
+    venta_id:        neVenta.id,
+    transportista:   $('ne-transportista').value.trim() || null,
+    fecha_entrega:   $('ne-fecha-entrega').value || null,
+    envio_precio:    parseFloat($('ne-envio-precio').value) || null,
+    envio_direccion: $('ne-envio-dir').value.trim() || null,
+    observaciones:   $('ne-observaciones').value.trim() || null,
+    items,
+  };
+
+  const btn = $('ne-generar');
+  btn.disabled = true;
+  btn.textContent = 'Generando…';
+  try {
+    const rc = await fetch(`${API}/notas-envio`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const dc = await rc.json();
+    if (!rc.ok) { toast_(dc.error || 'Error al crear nota', 'err'); return; }
+
+    cerrarModalNE();
+    toast_(`Nota de envío N° ${dc.numero} creada`, 'ok');
+
+    // Abrir PDF en nueva pestaña
+    const rp = await fetch(`${API}/notas-envio/${dc.id}/pdf`);
+    if (!rp.ok) { toast_('La nota se guardó pero no se pudo generar el PDF', 'warn'); return; }
+    abrirPdfModal(await rp.blob());
+  } catch (e) {
+    if (e.message !== 'cantidad_invalida') toast_('Error de conexión', 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generar nota';
+  }
+});
+
+// El modal de aviso de envío ya no se necesita para notas (se unificó en el modal principal),
+// pero se mantiene por si alguna otra funcionalidad lo usa en el futuro.
 $('envio-warn-close').addEventListener('click',   () => $('overlay-envio-warn').classList.remove('abierto'));
-$('overlay-envio-warn').addEventListener('click', e  => { if (e.target === $('overlay-envio-warn')) $('overlay-envio-warn').classList.remove('abierto'); });
-
-$('envio-warn-sin').addEventListener('click', async () => {
-  $('overlay-envio-warn').classList.remove('abierto');
-  try {
-    const v = await cargarDetalle(ventaSeleccionada.id);
-    imprimirNotaEnvio(v, null, null);
-  } catch (e) { toast_(e.message, 'err'); }
-});
-
-$('envio-warn-con').addEventListener('click', async () => {
-  const precio = parseFloat($('warn-envio-precio').value) || null;
-  const dir    = $('warn-envio-dir').value.trim() || null;
-  $('overlay-envio-warn').classList.remove('abierto');
-  try {
-    const v = await cargarDetalle(ventaSeleccionada.id);
-    imprimirNotaEnvio(v, precio, dir);
-  } catch (e) { toast_(e.message, 'err'); }
-});
+overlayAutoClose($('overlay-envio-warn'), () => $('overlay-envio-warn').classList.remove('abierto'));
+$('envio-warn-sin').addEventListener('click', () => $('overlay-envio-warn').classList.remove('abierto'));
+$('envio-warn-con').addEventListener('click', () => $('overlay-envio-warn').classList.remove('abierto'));
 
 // ── Acción: COPIAR AL POS ──────────────────────────────
 async function accionCopiar() {
@@ -1348,7 +1896,7 @@ async function accionEditarItems() {
 
 $('edit-close').addEventListener('click',    () => $('overlay-editar').classList.remove('abierto'));
 $('edit-cancelar').addEventListener('click', () => $('overlay-editar').classList.remove('abierto'));
-$('overlay-editar').addEventListener('click', e => { if (e.target === $('overlay-editar')) $('overlay-editar').classList.remove('abierto'); });
+overlayAutoClose($('overlay-editar'), () => $('overlay-editar').classList.remove('abierto'));
 
 $('edit-guardar').addEventListener('click', async () => {
   if (!ventaSeleccionada) return;
@@ -1407,8 +1955,11 @@ function accionEliminar() {
     `Fecha: ${esc(v.fecha)}<br>` +
     `Cliente: ${esc(v.cliente_nombre ?? '— Consumidor final —')}<br>` +
     `Tipo: ${esc(v.tipo_comprobante ?? '—')}  ·  Pago: ${esc(v.tipo_pago ?? '—')}`;
-  $('del-confirmar-txt').textContent = 'Sí, eliminar';
-  $('del-confirmar').disabled = false;
+  $('del-confirmar-txt').textContent = 'Sí, anular';
+  // Con CAE la anulación está bloqueada (el server también la rechaza):
+  // el camino correcto es la Nota de Crédito.
+  $('del-confirmar').disabled = !!v.cae;
+  $('del-cae-aviso').style.display = v.cae ? '' : 'none';
   mostrarClaveEliminar();
   $('overlay-eliminar').classList.add('abierto');
 }
@@ -1421,7 +1972,7 @@ function mostrarClaveEliminar() {
 
 $('del-close').addEventListener('click',    () => $('overlay-eliminar').classList.remove('abierto'));
 $('del-cancelar').addEventListener('click', () => $('overlay-eliminar').classList.remove('abierto'));
-$('overlay-eliminar').addEventListener('click', e => { if (e.target === $('overlay-eliminar')) $('overlay-eliminar').classList.remove('abierto'); });
+overlayAutoClose($('overlay-eliminar'), () => $('overlay-eliminar').classList.remove('abierto'));
 
 $('del-confirmar').addEventListener('click', async () => {
   const btn = $('del-confirmar');
@@ -1451,7 +2002,7 @@ $('del-confirmar').addEventListener('click', async () => {
       actualizarMultiSel();
       $('overlay-eliminar').classList.remove('abierto');
       renderTabla(resultadosActuales);
-      toast_(`${ok} venta${ok !== 1 ? 's' : ''} eliminada${ok !== 1 ? 's' : ''} correctamente`, 'ok');
+      toast_(`${ok} venta${ok !== 1 ? 's' : ''} anulada${ok !== 1 ? 's' : ''} correctamente`, 'ok');
       modoDeleteBulk = false;
     } else {
       if (!ventaSeleccionada) return;
@@ -1463,11 +2014,17 @@ $('del-confirmar').addEventListener('click', async () => {
       }
 
       const id = ventaSeleccionada.id;
-      resultadosActuales = resultadosActuales.filter(v => v.id !== id);
+      if ($('f-mostrar-anuladas').checked) {
+        // Re-render con la venta marcada como anulada
+        const idx = resultadosActuales.findIndex(x => x.id === id);
+        if (idx !== -1) resultadosActuales[idx] = { ...resultadosActuales[idx], estado: 'anulado' };
+      } else {
+        resultadosActuales = resultadosActuales.filter(x => x.id !== id);
+      }
       $('overlay-eliminar').classList.remove('abierto');
       deseleccionar();
       renderTabla(resultadosActuales);
-      toast_('Venta eliminada correctamente', 'ok');
+      toast_('Venta anulada correctamente.', 'ok');
     }
   } catch (e) {
     toast_(e.message, 'err');
@@ -1479,6 +2036,27 @@ $('del-confirmar').addEventListener('click', async () => {
 
 // ── Botones de la barra de selección ──────────────────
 $('sac-ver').addEventListener('click',          accionVer);
+$('sac-reintentar-afip').addEventListener('click', async () => {
+  if (!ventaSeleccionada) return;
+  const btn = $('sac-reintentar-afip');
+  btn.disabled = true; btn.textContent = 'Facturando…';
+  try {
+    const r = await fetch(`${API}/ventas/${ventaSeleccionada.id}/facturar`, { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) { toast_(d.error ?? 'Error al facturar', 'err'); return; }
+    if (d.cae) {
+      toast_(`CAE obtenido: ${d.cae}`, 'ok');
+      // Actualizar en memoria y re-renderizar la fila
+      const idx = resultadosActuales.findIndex(v => v.id === d.id);
+      if (idx >= 0) { resultadosActuales[idx] = { ...resultadosActuales[idx], cae: d.cae, afip_error: null }; renderTabla(resultadosActuales); }
+      ventaSeleccionada = { ...ventaSeleccionada, cae: d.cae, afip_error: null };
+      btn.style.display = 'none';
+    } else {
+      toast_(d.afip_error ?? 'ARCA no autorizó el comprobante', 'err');
+    }
+  } catch { toast_('Error de conexión', 'err'); }
+  finally { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg> Reintentar AFIP'; }
+});
 $('dd-imprimir').addEventListener('click',      accionImprimir);
 $('dd-pdf').addEventListener('click',           accionPDF);
 $('dd-mail').addEventListener('click',          accionMail);
@@ -1527,8 +2105,56 @@ document.addEventListener('keydown', e => {
   if (e.key === 'F5' || (e.ctrlKey && e.key === 'p')) { e.preventDefault(); accionImprimir(); }
 });
 
+// ── Panel "más opciones" ────────────────────────────────
+const btnMore  = $('btn-more');
+const morePanel = $('fbar-more-panel');
+btnMore.addEventListener('click', e => {
+  e.stopPropagation();
+  const abierto = morePanel.classList.toggle('visible');
+  btnMore.classList.toggle('activo', abierto);
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.fbar-more-wrap')) {
+    morePanel.classList.remove('visible');
+    btnMore.classList.remove('activo');
+  }
+});
+
 // ── Botón buscar ───────────────────────────────────────
 $('btn-buscar').addEventListener('click', buscar);
+$('f-mostrar-anuladas').addEventListener('change', buscar);
+
+$('btn-exportar').addEventListener('click', async () => {
+  const params = new URLSearchParams();
+  const desde = $('f-desde').value, hasta = $('f-hasta').value;
+  const tipo  = $('f-tipo').value;
+  const montoMin = $('f-monto-min').value.trim(), montoMax = $('f-monto-max').value.trim();
+  if (desde)           params.set('fecha_desde', desde);
+  if (hasta)           params.set('fecha_hasta', hasta);
+  if (tipo)            params.set('tipo', tipo);
+  if (montoMin !== '') params.set('monto_min', montoMin);
+  if (montoMax !== '') params.set('monto_max', montoMax);
+  if (clienteFiltroId) params.set('cliente_id', clienteFiltroId);
+  if ($('f-mostrar-anuladas').checked) params.set('mostrar_anuladas', '1');
+
+  const btn = $('btn-exportar');
+  btn.disabled = true;
+  try {
+    const r = await fetch(`${API}/ventas/export?${params}`);
+    if (!r.ok) { const d = await r.json(); throw new Error(d.error ?? 'Error al exportar'); }
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `ventas_${desde || 'todo'}_${hasta || 'hoy'}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    toast(e.message, 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
 $('f-tipo').addEventListener('change', buscar);
 ['f-desde','f-hasta'].forEach(id => $(id).addEventListener('change', () => {
   $('pc-select').selectedIndex = -1;
@@ -1623,7 +2249,7 @@ function abrirModalUnificar() {
 
 $('uni-close').addEventListener('click',    () => $('overlay-uni').classList.remove('abierto'));
 $('uni-cancelar').addEventListener('click', () => $('overlay-uni').classList.remove('abierto'));
-$('overlay-uni').addEventListener('click',  e => { if (e.target === $('overlay-uni')) $('overlay-uni').classList.remove('abierto'); });
+overlayAutoClose($('overlay-uni'), () => $('overlay-uni').classList.remove('abierto'));
 
 $('uni-confirmar').addEventListener('click', async () => {
   const btn = $('uni-confirmar');
@@ -1653,8 +2279,617 @@ $('uni-confirmar').addEventListener('click', async () => {
   }
 });
 
+// ── Integraciones: config ──────────────────────────────
+let integConfig = { mp_configurado: false, wa_configurado: false };
+
+async function cargarIntegConfig() {
+  try {
+    const r = await fetch(`${API}/configuracion`);
+    if (!r.ok) return;
+    const d = await r.json();
+    integConfig = { mp_configurado: !!d.mp_configurado, wa_configurado: !!d.wa_configurado };
+  } catch {}
+}
+
+function actualizarBotonesInteg() {
+  const mpBtn = $('sac-mp-link');
+  const waBtn = $('sac-whatsapp');
+  if (mpBtn) mpBtn.style.display = integConfig.mp_configurado ? '' : 'none';
+  if (waBtn) waBtn.style.display = integConfig.wa_configurado ? '' : 'none';
+}
+
+// ── Modal MercadoPago ──────────────────────────────────
+$('sac-mp-link').addEventListener('click', async () => {
+  if (!ventaSeleccionada) return;
+  const overlay = $('overlay-mp-link');
+  $('mp-qr-img').style.display    = 'none';
+  $('mp-qr-loading').style.display = '';
+  $('mp-link-input').value        = '';
+  overlay.classList.add('abierto');
+
+  try {
+    const r = await fetch(`${API}/mercadopago/preferencia`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ venta_id: ventaSeleccionada.id }),
+    });
+    const d = await r.json();
+    if (!r.ok) { toast_(d.error || 'Error al generar link', 'err'); overlay.classList.remove('abierto'); return; }
+
+    $('mp-link-input').value = d.init_point || '';
+    if (d.qr_data_uri) {
+      $('mp-qr-img').src           = d.qr_data_uri;
+      $('mp-qr-img').style.display = '';
+    }
+    $('mp-qr-loading').style.display = 'none';
+  } catch {
+    toast_('Error de conexión con MercadoPago', 'err');
+    overlay.classList.remove('abierto');
+  }
+});
+
+$('mp-close').addEventListener('click',      () => $('overlay-mp-link').classList.remove('abierto'));
+$('mp-cerrar-btn').addEventListener('click', () => $('overlay-mp-link').classList.remove('abierto'));
+overlayAutoClose($('overlay-mp-link'), () => $('overlay-mp-link').classList.remove('abierto'));
+
+
+$('mp-copiar-link').addEventListener('click', () => {
+  const val = $('mp-link-input').value;
+  if (!val) return;
+  navigator.clipboard.writeText(val).then(() => toast_('Link copiado', 'ok')).catch(() => {
+    $('mp-link-input').select();
+    document.execCommand('copy');
+    toast_('Link copiado', 'ok');
+  });
+});
+
+// ── Modal WhatsApp ────────────────────────────────────
+$('sac-whatsapp').addEventListener('click', () => {
+  if (!ventaSeleccionada) return;
+  const v = ventaSeleccionada;
+  $('wa-desc').textContent = `Venta #${v.numero}  ·  ${fmt(v.total)}  ·  ${v.cliente_nombre ?? 'Consumidor final'}`;
+  const tel = ventaDetalleCache?.cliente_telefono || '';
+  $('wa-telefono').value = tel;
+  $('overlay-whatsapp').classList.add('abierto');
+  if (!tel) $('wa-telefono').focus();
+});
+
+$('wa-close').addEventListener('click',    () => $('overlay-whatsapp').classList.remove('abierto'));
+$('wa-cancelar').addEventListener('click', () => $('overlay-whatsapp').classList.remove('abierto'));
+overlayAutoClose($('overlay-whatsapp'), () => $('overlay-whatsapp').classList.remove('abierto'));
+
+$('wa-confirmar').addEventListener('click', async () => {
+  if (!ventaSeleccionada) return;
+  const btn      = $('wa-confirmar');
+  const telefono = $('wa-telefono').value.trim();
+  if (!telefono) { toast_('Ingresá un número de WhatsApp', 'err'); return; }
+
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const r = await fetch(`${API}/whatsapp/enviar`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ venta_id: ventaSeleccionada.id, telefono }),
+    });
+    const d = await r.json();
+    if (!r.ok) { toast_(d.error || 'Error al enviar', 'err'); return; }
+    $('overlay-whatsapp').classList.remove('abierto');
+    toast_('Comprobante enviado por WhatsApp', 'ok');
+  } catch {
+    toast_('Error de conexión', 'err');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Enviar PDF';
+  }
+});
+
 // ── Init ───────────────────────────────────────────────
+(async function initSucursalFiltro() {
+  try {
+    const s   = JSON.parse(localStorage.getItem('logos_sesion') || '{}');
+    let suc;
+    if (s.rol === 'admin') {
+      const r = await fetch(`${API}/sucursales`);
+      suc = await r.json();
+    } else {
+      suc = s.sucursales || [];
+    }
+    if (!Array.isArray(suc) || suc.length <= 1) return;
+    const sel = $('f-sucursal');
+    sel.innerHTML = '<option value="">Todas las sucursales</option>' + suc.map(x => `<option value="${x.id}">${x.nombre}</option>`).join('');
+    sel.style.display = '';
+    $('fbar-sep-suc').style.display = '';
+    sel.addEventListener('change', buscar);
+  } catch(e) {}
+})();
+cargarIntegConfig().then(actualizarBotonesInteg);
 setPeriodo('hoy');
+</script>
+
+<script>
+window.TOUR_PAGE_KEY = 'ventas';
+window.TOUR_STEPS = [
+
+  /* 1 — Intro */
+  { el: null,
+    title: 'Módulo de Ventas',
+    body: 'Acá aparece el historial completo de todas las ventas. Podés filtrar por nombre, número, fecha, tipo de comprobante, cliente, monto y más.',
+    onEnter: async ({ delay }) => {
+      if (typeof setPeriodo === 'function') setPeriodo('anio');
+      await delay(800);
+    } },
+
+  /* 2 — Búsqueda general (primero) */
+  { el: '#f-q',
+    title: 'Búsqueda general',
+    body: 'El campo principal de búsqueda: escribí el nombre del cliente, el número de comprobante o cualquier texto y presioná Enter o la lupa. Filtra en tiempo real sobre todos los resultados.' },
+
+  /* 3 — Período rápido */
+  { el: '#pc-select',
+    title: 'Período rápido',
+    body: 'Elegí Hoy, Esta semana, Este mes o Este año para filtrar rápidamente. Las fechas se actualizan solas.' },
+
+  /* 4 — Fechas manuales */
+  { el: '#f-desde',
+    title: 'Rango de fechas',
+    body: 'También podés ingresar las fechas a mano. Útil para consultas de períodos específicos como el mes pasado o un trimestre.' },
+
+  /* 5 — Tipo de comprobante */
+  { el: '#f-tipo',
+    title: 'Tipo de comprobante',
+    body: 'Filtrá por Remito, Factura B, Factura A, Presupuesto o Nota de Crédito para ver solo ese tipo en la lista.' },
+
+  /* 6 — Cliente */
+  { el: '.f-cli-wrap',
+    title: 'Filtro por cliente',
+    body: 'Buscá ventas de un cliente específico escribiendo su nombre. El campo muestra sugerencias a medida que escribís.' },
+
+  /* 7 — Monto */
+  { el: '#f-monto-min',
+    title: 'Rango de monto',
+    body: 'Filtrá por monto mínimo y máximo para encontrar ventas dentro de un rango de valor.' },
+
+  /* 8 — Menú ⋮ (abre panel) */
+  { el: '#btn-more',
+    title: 'Más opciones',
+    body: 'Este botón despliega opciones adicionales: agrupar resultados por cliente, mostrar ventas anuladas y exportar la lista a Excel.',
+    onEnter: async ({ delay }) => {
+      const panel = document.getElementById('fbar-more-panel');
+      if (panel && !panel.classList.contains('visible')) {
+        document.getElementById('btn-more')?.click();
+        await delay(200);
+      }
+    } },
+
+  /* 9 — Panel de opciones adicionales */
+  { el: '#fbar-more-panel',
+    title: 'Opciones del panel',
+    body: '<strong>Agrupar</strong>: agrupa las filas por cliente o tipo. <strong>Mostrar anuladas</strong>: incluye las ventas anuladas. <strong>Exportar Excel</strong>: descarga la búsqueda actual como archivo .xlsx.',
+    onEnter: async ({ delay }) => {
+      const panel = document.getElementById('fbar-more-panel');
+      if (panel && !panel.classList.contains('visible')) {
+        document.getElementById('btn-more')?.click();
+        await delay(200);
+      }
+    } },
+
+  /* 10 — Tabla de resultados */
+  { el: '#tabla-wrap',
+    title: 'Listado de ventas',
+    body: 'Cada fila es una venta: fecha, tipo de comprobante, cliente, observaciones, medio de pago y total. Hacé click en una fila para seleccionarla.',
+    onEnter: async ({ delay }) => {
+      const panel = document.getElementById('fbar-more-panel');
+      if (panel?.classList.contains('visible')) document.getElementById('btn-more')?.click();
+      await delay(300);
+    } },
+
+  /* 11 — Seleccionar primera venta */
+  { el: '#seleccion-bar',
+    title: 'Barra de selección',
+    body: 'Al hacer click en una fila, aparece esta barra con los datos de la venta y todas las acciones disponibles. Cada acción se explica a continuación.',
+    onEnter: async ({ delay }) => {
+      const tr = document.querySelector('#tabla-wrap tbody tr[data-id]');
+      if (tr) tr.click();
+      await delay(200);
+    } },
+
+  /* 12 — Info de la selección */
+  { el: '#selec-info',
+    title: 'Datos de la venta',
+    body: 'Muestra el número de comprobante, tipo, cliente, monto total y fecha de la venta seleccionada. Se actualiza instantáneamente al cambiar la selección.' },
+
+  /* 13 — Ver detalle (abre modal) */
+  { el: '#overlay-ver .modal',
+    pad: 0,
+    title: 'Ver detalle',
+    body: 'Abre el comprobante completo: datos del cliente, todos los ítems con cantidades, precios, descuentos y total. Si tiene CAE de AFIP también aparece acá.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('sac-ver')?.click();
+      await delay(400);
+    } },
+
+  /* 14 — Cuerpo del detalle */
+  { el: '#ver-body',
+    title: 'Contenido del comprobante',
+    body: 'Acá ves todos los productos vendidos con sus cantidades y precios. Podés hacer scroll para ver el detalle completo.' },
+
+  /* 15 — Dropdown comprobante */
+  { el: '#comp-dd',
+    title: 'Opciones de comprobante',
+    body: '<strong>Imprimir</strong>: manda el comprobante a la impresora. <strong>Descargar PDF</strong>: genera y descarga el PDF. <strong>Enviar por mail</strong>: envía el comprobante al email del cliente.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('ver-close')?.click();
+      await delay(300);
+      if (typeof abrirCompDD === 'function') abrirCompDD();
+      await delay(200);
+    } },
+
+  /* 16 — Nota de envío: botón */
+  { el: '#sac-nota-envio',
+    title: 'Nota de envío',
+    body: 'Genera una nota de envío para registrar la entrega total o parcial de los productos del remito, sin mostrar los precios.',
+    onEnter: async ({ delay }) => {
+      if (typeof cerrarCompDD === 'function') cerrarCompDD();
+      await delay(200);
+    } },
+
+  /* 17 — Modal nota de envío */
+  { el: '#ne-overlay .ne-modal',
+    pad: 0,
+    title: 'Modal de nota de envío',
+    body: 'Ingresás transportista, fecha de entrega y dirección. Los ítems se listan con su cantidad editable y un checkbox para excluir productos de esta entrega.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('sac-nota-envio')?.click();
+      await delay(500);
+    } },
+
+  /* 18 — Ítems de la nota de envío */
+  { el: '#ne-tbody',
+    title: 'Artículos a entregar',
+    body: 'Cada producto aparece con la cantidad pendiente de entregar. Podés ajustar la cantidad que sale en esta nota. Si hubo entregas anteriores, se muestra el historial encima.' },
+
+  /* 19 — Copiar al POS */
+  { el: '#sac-copiar',
+    title: 'Copiar al POS',
+    body: 'Copia todos los ítems de esta venta al POS para generar un nuevo comprobante basado en ella. Muy útil para repetir pedidos frecuentes o para hacer cambios y rehacer una venta.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('ne-close')?.click();
+      await delay(300);
+    } },
+
+  /* 20 — Editar venta */
+  { el: '#overlay-editar .modal',
+    pad: 0,
+    title: 'Editar venta',
+    body: 'Cambiá el tipo de comprobante, la forma de pago u observaciones sin tocar los ítems. Para cambiar productos, usá "Editar ítems" que abre el POS con la venta cargada.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('sac-modificar')?.click();
+      await delay(400);
+    } },
+
+  /* 21 — Anular venta */
+  { el: '#sac-eliminar',
+    title: 'Anular venta',
+    body: 'Marca la venta como anulada — no se borra, queda en el historial. Si tiene CAE de AFIP, el sistema te avisa. Los usuarios no-administradores necesitan una clave de autorización.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('edit-cancelar')?.click();
+      await delay(300);
+    } },
+
+  /* 22 — Multi-selección */
+  { el: '#seleccion-bar',
+    title: 'Selección múltiple',
+    body: 'Con los checkboxes a la izquierda de cada fila podés seleccionar varias ventas a la vez para operar en bloque: anular varias o unificarlas en un solo comprobante.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('selec-cerrar')?.click();
+      await delay(150);
+      const chks = Array.from(document.querySelectorAll('#tabla-wrap .uni-chk'));
+      for (let i = 0; i < Math.min(2, chks.length); i++) {
+        if (!chks[i].checked) chks[i].click();
+        await delay(100);
+      }
+    } },
+
+  /* 23 — Unificar */
+  { el: '#sac-unificar',
+    title: 'Unificar comprobantes',
+    body: 'Combina varias ventas del mismo cliente y tipo de comprobante en un único comprobante. Muy útil cuando se hicieron varios remitos para el mismo cliente y se quiere consolidarlos.' },
+
+  /* 24 — Fin */
+  { el: 'a[href="/Logos/pos/cuentacorriente.html"]',
+    title: 'Cuenta Corriente',
+    body: 'El próximo módulo es <strong>Cta. Cte.</strong>, donde gestionás los saldos pendientes de clientes y proveedores. ¡Eso es todo para Ventas!',
+    onEnter: async ({ delay }) => {
+      const chks = Array.from(document.querySelectorAll('#tabla-wrap .uni-chk'));
+      chks.forEach(c => { if (c.checked) c.click(); });
+      document.getElementById('selec-cerrar-multi')?.click();
+      await delay(100);
+    } },
+];
+</script>
+
+<?php include __DIR__ . '/contacto-modal.php'; ?>
+
+<script>
+// ══ Confirmar Presupuesto ════════════════════════════════════════════
+
+const CP_TIPOS_PAGO = [
+  { val: 'efectivo',     lbl: 'Efectivo' },
+  { val: 'transferencia',lbl: 'Transferencia' },
+  { val: 'cc',           lbl: 'Cta. Corriente' },
+  { val: 'tarjeta',      lbl: 'Tarjeta' },
+  { val: 'cheque',       lbl: 'Cheque' },
+  { val: 'mercado_pago', lbl: 'Mercado Pago' },
+];
+
+let cpTipoComp   = 'REMITO';
+let cpClienteId  = null;
+let cpClienteNom = '— Consumidor final —';
+let cpPago       = 'efectivo';
+let cpEsMixto    = false;
+let cpMixtoLineas = [];
+let cpTotal      = 0;
+
+function cpAbrirModal(v) {
+  cpTotal      = parseFloat(v.total) || 0;
+  cpTipoComp   = 'REMITO';
+  cpClienteId  = v.cliente_id ?? null;
+  cpClienteNom = v.cliente_nombre ?? '— Consumidor final —';
+  cpPago       = 'efectivo';
+  cpEsMixto    = false;
+  cpMixtoLineas = [];
+
+  // Tipo destino
+  document.querySelectorAll('.cp-tipo-btn').forEach(b => b.classList.toggle('activo', b.dataset.tipo === 'REMITO'));
+
+  // Cliente
+  $('cp-cli-nombre').textContent = cpClienteNom;
+  $('cp-cli-search-wrap').style.display = 'none';
+  $('cp-cli-input').value = '';
+  $('cp-cli-dd').innerHTML = '';
+  $('cp-cli-dd').classList.remove('visible');
+
+  // Pago
+  document.querySelectorAll('.cp-pago-btn').forEach(b => b.classList.toggle('activo', b.dataset.pago === 'efectivo'));
+  $('cp-mixto-wrap').classList.remove('visible');
+  $('cp-mixto-link').style.display = '';
+  $('cp-pago-grid').style.display = '';
+
+  $('cp-aviso-fc').style.display = 'none';
+  $('cp-guardar-txt').textContent = 'Confirmar';
+  $('cp-guardar').disabled = false;
+  $('cp-modal-h').textContent = `Confirmar presupuesto N° ${v.numero}`;
+
+  $('overlay-cp').style.display = '';
+  $('overlay-cp').classList.add('abierto');
+}
+
+function cpCerrarModal() {
+  $('overlay-cp').classList.remove('abierto');
+  setTimeout(() => { $('overlay-cp').style.display = 'none'; }, 200);
+}
+
+// Tipo destino
+document.querySelectorAll('.cp-tipo-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    cpTipoComp = btn.dataset.tipo;
+    document.querySelectorAll('.cp-tipo-btn').forEach(b => b.classList.toggle('activo', b === btn));
+    const esFC = cpTipoComp !== 'REMITO';
+    $('cp-aviso-fc').style.display = esFC ? '' : 'none';
+  });
+});
+
+// Cliente — cambiar
+$('cp-cli-cambiar').addEventListener('click', () => {
+  const wrap = $('cp-cli-search-wrap');
+  wrap.style.display = wrap.style.display === 'none' ? '' : 'none';
+  if (wrap.style.display !== 'none') $('cp-cli-input').focus();
+});
+
+// Cliente — buscar
+let cpCliTimer = null;
+$('cp-cli-input').addEventListener('input', () => {
+  clearTimeout(cpCliTimer);
+  const q = $('cp-cli-input').value.trim();
+  if (!q) { $('cp-cli-dd').innerHTML = ''; $('cp-cli-dd').classList.remove('visible'); return; }
+  cpCliTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`${API}/clientes?q=${encodeURIComponent(q)}&limit=15`);
+      const d = await r.json();
+      const lista = Array.isArray(d) ? d : (d.data ?? []);
+      $('cp-cli-dd').innerHTML = lista.map(c =>
+        `<div class="cp-cli-dd-item" data-id="${c.id}" data-nom="${esc(c.nombre)}">${esc(c.nombre)}</div>`
+      ).join('') || '<div class="cp-cli-dd-item" style="color:#9B9590">Sin resultados</div>';
+      $('cp-cli-dd').classList.add('visible');
+    } catch { /* silencio */ }
+  }, 280);
+});
+
+$('cp-cli-dd').addEventListener('click', e => {
+  const item = e.target.closest('.cp-cli-dd-item');
+  if (!item || !item.dataset.id) return;
+  cpClienteId  = parseInt(item.dataset.id);
+  cpClienteNom = item.dataset.nom;
+  $('cp-cli-nombre').textContent = cpClienteNom;
+  $('cp-cli-search-wrap').style.display = 'none';
+  $('cp-cli-input').value = '';
+  $('cp-cli-dd').innerHTML = '';
+  $('cp-cli-dd').classList.remove('visible');
+});
+
+// Cliente — nuevo (abre contacto-modal)
+$('cp-cli-nuevo').addEventListener('click', () => {
+  if (window.ContactoModal) {
+    window.ContactoModal.abrir(null, 'clientes', {
+      onGuardado: (cli) => {
+        cpClienteId  = cli.id;
+        cpClienteNom = cli.nombre;
+        $('cp-cli-nombre').textContent = cpClienteNom;
+        $('cp-cli-search-wrap').style.display = 'none';
+      },
+    });
+  }
+});
+
+// Pago — tiles
+document.querySelectorAll('.cp-pago-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    cpEsMixto = false;
+    cpPago    = btn.dataset.pago;
+    document.querySelectorAll('.cp-pago-btn').forEach(b => b.classList.toggle('activo', b === btn));
+    $('cp-mixto-wrap').classList.remove('visible');
+    $('cp-mixto-link').style.display = '';
+    $('cp-pago-grid').style.display = '';
+  });
+});
+
+// Pago mixto
+$('cp-mixto-link').addEventListener('click', () => {
+  cpEsMixto     = true;
+  cpMixtoLineas = [
+    { tipo: cpPago, monto: '' },
+    { tipo: CP_TIPOS_PAGO.find(t => t.val !== cpPago)?.val ?? 'transferencia', monto: '' },
+  ];
+  document.querySelectorAll('.cp-pago-btn').forEach(b => b.classList.remove('activo'));
+  $('cp-pago-grid').style.display = 'none';
+  $('cp-mixto-link').style.display = 'none';
+  $('cp-mixto-wrap').classList.add('visible');
+  cpRenderMixto();
+});
+
+function cpSumaLineas(excluir = -1) {
+  return cpMixtoLineas.reduce((s, l, i) => i === excluir ? s : s + (parseFloat(l.monto) || 0), 0);
+}
+
+function cpRenderMixto() {
+  const canDel = cpMixtoLineas.length > 1;
+  $('cp-mixto-lineas').innerHTML = cpMixtoLineas.map((l, i) => {
+    const opts = CP_TIPOS_PAGO.map(t =>
+      `<option value="${t.val}"${l.tipo === t.val ? ' selected' : ''}>${t.lbl}</option>`).join('');
+    return `<div class="cp-mixto-linea" data-idx="${i}">
+      <select class="cpm-tipo" data-idx="${i}">${opts}</select>
+      <input type="number" class="cpm-monto" data-idx="${i}" value="${l.monto}" placeholder="0,00" min="0" step="any">
+      <button class="cpm-auto" data-idx="${i}" title="Autocompletar">↑</button>
+      ${canDel ? `<button class="cpm-del" data-idx="${i}">×</button>` : ''}
+    </div>`;
+  }).join('');
+
+  $('cp-mixto-lineas').querySelectorAll('.cpm-tipo').forEach(el =>
+    el.addEventListener('change', () => { cpMixtoLineas[+el.dataset.idx].tipo = el.value; cpEstadoMixto(); }));
+  $('cp-mixto-lineas').querySelectorAll('.cpm-monto').forEach(el =>
+    el.addEventListener('input', () => { cpMixtoLineas[+el.dataset.idx].monto = el.value; cpEstadoMixto(); }));
+  $('cp-mixto-lineas').querySelectorAll('.cpm-auto').forEach(el =>
+    el.addEventListener('click', () => {
+      const idx = +el.dataset.idx;
+      const v = Math.max(0, cpTotal - cpSumaLineas(idx)).toFixed(2);
+      cpMixtoLineas[idx].monto = v;
+      el.closest('.cp-mixto-linea').querySelector('.cpm-monto').value = v;
+      cpEstadoMixto();
+    }));
+  $('cp-mixto-lineas').querySelectorAll('.cpm-del').forEach(el =>
+    el.addEventListener('click', () => {
+      cpMixtoLineas.splice(+el.dataset.idx, 1);
+      cpRenderMixto(); cpEstadoMixto();
+    }));
+
+  cpEstadoMixto();
+}
+
+function cpEstadoMixto() {
+  const suma     = cpSumaLineas();
+  const restante = cpTotal - suma;
+  const el       = $('cp-mixto-estado');
+  if (Math.abs(restante) < 0.005) {
+    el.textContent = `Total cubierto ✓`;
+    el.className   = 'cp-mixto-estado ok';
+  } else if (restante > 0) {
+    el.textContent = `Restante: ${fmt(restante)}`;
+    el.className   = 'cp-mixto-estado err';
+  } else {
+    el.textContent = `Excede por: ${fmt(-restante)}`;
+    el.className   = 'cp-mixto-estado err';
+  }
+}
+
+$('cp-mixto-agregar').addEventListener('click', () => {
+  if (cpMixtoLineas.length >= 5) return;
+  const usado = cpMixtoLineas.map(l => l.tipo);
+  const libre = CP_TIPOS_PAGO.find(t => !usado.includes(t.val))?.val ?? 'efectivo';
+  cpMixtoLineas.push({ tipo: libre, monto: '' });
+  cpRenderMixto();
+});
+
+// Cerrar modal
+$('cp-close').addEventListener('click', cpCerrarModal);
+$('cp-cancelar').addEventListener('click', cpCerrarModal);
+$('overlay-cp').addEventListener('click', e => { if (e.target === $('overlay-cp')) cpCerrarModal(); });
+
+// Guardar
+$('cp-guardar').addEventListener('click', async () => {
+  const btn = $('cp-guardar');
+  const txt = $('cp-guardar-txt');
+
+  // Validar mixto
+  if (cpEsMixto) {
+    const suma = cpSumaLineas();
+    if (Math.abs(suma - cpTotal) > 0.005) {
+      toast_(`La suma de los pagos (${fmt(suma)}) no coincide con el total (${fmt(cpTotal)})`, 'err');
+      return;
+    }
+  }
+
+  btn.disabled = true;
+  txt.textContent = 'Guardando...';
+
+  const body = {
+    tipo_comprobante: cpTipoComp,
+    cliente_id:       cpClienteId,
+    tipo_pago:        cpEsMixto ? 'mixto' : cpPago,
+  };
+  if (cpEsMixto) {
+    body.pagos = cpMixtoLineas.map(l => ({ tipo: l.tipo, monto: parseFloat(l.monto) }));
+  }
+
+  try {
+    const r = await fetch(`${API}/ventas/${ventaSeleccionada.id}/confirmar-presupuesto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const d = await r.json();
+    if (!r.ok) { toast_(d.error ?? 'Error al confirmar', 'err'); btn.disabled = false; txt.textContent = 'Confirmar'; return; }
+
+    // Si es factura electrónica, pedir CAE
+    const esFC = ['FC A-ELECT', 'FC B-ELECT', 'FC C-ELECT'].includes(cpTipoComp);
+    if (esFC) {
+      txt.textContent = 'Solicitando CAE...';
+      try {
+        const rf = await fetch(`${API}/ventas/${d.id}/facturar`, { method: 'POST' });
+        const df = await rf.json();
+        if (!rf.ok) {
+          toast_(`Comprobante confirmado pero ARCA rechazó el CAE: ${df.error ?? ''}`, 'err');
+        } else {
+          toast_(`Factura autorizada · CAE ${df.cae}`, 'ok');
+        }
+      } catch {
+        toast_('Comprobante confirmado. No se pudo conectar con ARCA para el CAE.', 'err');
+      }
+    } else {
+      toast_('Presupuesto confirmado como ' + cpTipoComp, 'ok');
+    }
+
+    cpCerrarModal();
+    buscar();
+  } catch {
+    toast_('Error de conexión', 'err');
+    btn.disabled = false;
+    txt.textContent = 'Confirmar';
+  }
+});
+
+$('sac-confirmar').addEventListener('click', () => {
+  if (!ventaSeleccionada) return;
+  cpAbrirModal(ventaSeleccionada);
+});
 </script>
 
 </body>

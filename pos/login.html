@@ -7,55 +7,135 @@
 <script src="helpers.js"></script>
 <link rel="stylesheet" href="pos-base.css">
 <style>
-  body { background:#1A1A1A; align-items:center; justify-content:center; }
-  .login-box { width:380px; display:flex; flex-direction:column; align-items:center; gap:28px; }
+  body { align-items:center; justify-content:center; }
+
+  .login-wrap {
+    background: var(--neo-bg);
+    border-radius: var(--neo-r-xl);
+    box-shadow: var(--neo-e4);
+    padding: 40px 36px 36px;
+    width: 380px;
+  }
+
+  .login-box { display:flex; flex-direction:column; align-items:center; gap:28px; }
   .login-box img { height:48px; }
 
   .paso { width:100%; display:none; flex-direction:column; align-items:center; gap:18px; }
   .paso.activo { display:flex; }
 
-  .titulo { color:rgba(255,255,255,.9); font-size:20px; font-weight:700; letter-spacing:-.2px; text-align:center; }
+  .titulo {
+    color: var(--neo-text);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -.2px;
+    text-align: center;
+  }
 
+  /* Botones de usuario */
   .usuarios-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; width:100%; }
   .usuario-btn {
-    background:rgba(255,255,255,.06); color:white; border:1px solid rgba(255,255,255,.15);
-    border-radius:10px; padding:16px 20px; font-size:14px; font-weight:600; cursor:pointer;
-    min-width:110px; transition:transform 140ms ease-out, background 140ms ease-out;
+    background: var(--neo-bg);
+    color: var(--neo-text);
+    border: none;
+    border-radius: var(--neo-r-md);
+    padding: 16px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    min-width: 110px;
+    box-shadow: var(--neo-e2);
+    transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
   }
-  .usuario-btn:hover { background:rgba(255,255,255,.12); }
-  .usuario-btn:active { transform:scale(0.96); }
+  .usuario-btn:hover  { box-shadow: var(--neo-e3); }
+  .usuario-btn:active { box-shadow: var(--neo-i2); transform: scale(0.97); }
 
-  .pin-dots { display:flex; gap:12px; height:16px; }
-  .pin-dot { width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,.4); transition:background 100ms ease-out, transform 100ms ease-out; }
-  .pin-dot.lleno { background:var(--azul); border-color:var(--azul); transform:scale(1.05); }
+  /* PIN dots */
+  .pin-dots { display:flex; gap:12px; height:20px; align-items:center; }
+  .pin-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--neo-bg);
+    box-shadow: var(--neo-i1);
+    transition: background var(--neo-t-fast), box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
+  }
+  .pin-dot.lleno {
+    background: var(--neo-accent);
+    box-shadow: 2px 2px 5px var(--neo-accent-glow), -1px -1px 3px rgba(255,255,255,0.3);
+    transform: scale(1.1);
+  }
 
-  .pin-pad { display:grid; grid-template-columns:repeat(3, 64px); gap:10px; }
+  /* PIN pad */
+  .pin-pad { display:grid; grid-template-columns:repeat(3, 72px); gap:12px; }
   .pin-tecla {
-    background:rgba(255,255,255,.06); color:white; border:1px solid rgba(255,255,255,.15);
-    border-radius:10px; height:56px; font-size:18px; font-weight:600; cursor:pointer;
-    transition:transform 120ms ease-out, background 120ms ease-out;
+    background: var(--neo-bg);
+    color: var(--neo-text);
+    border: none;
+    border-radius: var(--neo-r-md);
+    height: 64px;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    box-shadow: var(--neo-e2);
+    transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast), color var(--neo-t-fast);
   }
-  .pin-tecla:hover { background:rgba(255,255,255,.12); }
-  .pin-tecla:active { transform:scale(0.94); }
-  .pin-tecla.secundaria { font-size:12px; color:rgba(255,255,255,.6); }
+  .pin-tecla:hover  { box-shadow: var(--neo-e3); }
+  .pin-tecla:active { box-shadow: var(--neo-i2); transform: scale(0.96); }
+  .pin-tecla.secundaria { font-size: 13px; font-weight: 600; color: var(--neo-text-2); }
 
-  .volver { color:rgba(255,255,255,.45); font-size:12px; cursor:pointer; text-decoration:none; }
-  .volver:hover { color:rgba(255,255,255,.75); }
+  /* Volver */
+  .volver {
+    color: var(--neo-text-3);
+    font-size: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color var(--neo-t-fast);
+  }
+  .volver:hover { color: var(--neo-text-2); }
 
-  .error-msg { color:#F87171; font-size:12px; font-weight:600; min-height:16px; }
+  /* Error */
+  .error-msg {
+    color: var(--neo-danger);
+    font-size: 12px;
+    font-weight: 600;
+    min-height: 16px;
+    text-align: center;
+  }
 
+  /* Selector de caja */
   .caja-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; width:100%; }
   .caja-btn {
-    background:rgba(255,255,255,.06); color:white; border:1px solid rgba(255,255,255,.15);
-    border-radius:10px; padding:18px 24px; font-size:14px; font-weight:600; cursor:pointer;
-    min-width:140px; transition:transform 140ms ease-out, background 140ms ease-out;
+    background: var(--neo-bg);
+    color: var(--neo-text);
+    border: none;
+    border-radius: var(--neo-r-md);
+    padding: 18px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    min-width: 140px;
+    box-shadow: var(--neo-e2);
+    transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
   }
-  .caja-btn:hover { background:rgba(255,255,255,.12); }
-  .caja-btn:active { transform:scale(0.96); }
+  .caja-btn:hover  { box-shadow: var(--neo-e3); }
+  .caja-btn:active { box-shadow: var(--neo-i2); transform: scale(0.97); }
+
+  /* Sin conexión */
+  .sin-conexion-text {
+    font-size: 13px;
+    color: var(--neo-text-2);
+    line-height: 1.6;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
 
+<div class="login-wrap">
 <div class="login-box">
   <img src="/Logos/logo_background.png" alt="Logos" id="login-logo">
 
@@ -78,14 +158,14 @@
   </div>
 
   <div class="paso" id="paso-sin-conexion">
-    <div style="font-size:40px;">🔌</div>
-    <div class="titulo">No se pudo conectar a la base de datos</div>
-    <div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.5;text-align:center;">
-      El sistema ya está instalado, pero el servidor de base de datos no responde.<br>
-      Abrí el <b>Panel de Control de XAMPP</b> y presioná <b>Start</b> en <b>MySQL</b>.
-    </div>
+    <div class="titulo">Sin conexión a la base de datos</div>
+    <p class="sin-conexion-text">
+      El sistema está instalado, pero el servidor de base de datos no responde.<br>
+      Abrí el <strong>Panel de Control de XAMPP</strong> y presioná <strong>Start</strong> en <strong>MySQL</strong>.
+    </p>
     <button class="usuario-btn" onclick="location.reload()">Reintentar</button>
   </div>
+</div>
 </div>
 
 <script>
@@ -101,9 +181,10 @@
 })();
 
 const API = '/Logos/api';
-let usuarioActual = null;
-let pin = '';
-let tokenSesion = null;
+let usuarioActual  = null;
+let pin            = '';
+let tokenSesion    = null;
+let sucursalesData = [];
 
 const LOGOS_TEMAS_LOGIN = {
   azul:    ['#2563eb','#1d4ed8'], verde:   ['#16a34a','#15803d'],
@@ -190,9 +271,10 @@ async function intentarLogin() {
     document.getElementById('pin-error').textContent = 'PIN incompleto';
     return;
   }
+  const _devName = (() => { try { return localStorage.getItem('logos_device_name'); } catch(e) { return null; } })();
   const res = await fetch(`${API}/usuarios/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: Object.assign({ 'Content-Type': 'application/json' }, _devName ? { 'X-Device-Name': _devName } : {}),
     body: JSON.stringify({ usuario_id: usuarioActual.id, pin })
   });
   const data = await res.json();
@@ -203,7 +285,8 @@ async function intentarLogin() {
     return;
   }
 
-  tokenSesion = data.token;
+  tokenSesion    = data.token;
+  sucursalesData = data.sucursales || [];
 
   if (data.usuario.rol === 'admin' && data.caja_default) {
     iniciarSesion(data.usuario, data.caja_default);
@@ -230,13 +313,18 @@ function mostrarSelectorCaja(usuario, cajas) {
 }
 
 function iniciarSesion(usuario, caja) {
+  const sucursal = sucursalesData.find(s => s.id === (caja.sucursal_id || 1)) || sucursalesData[0] || null;
   localStorage.setItem('logos_sesion', JSON.stringify({
-    usuario_id: usuario.id,
-    nombre: usuario.nombre,
-    rol: usuario.rol,
-    caja_id: caja.id,
-    caja_nombre: caja.nombre,
-    token: tokenSesion
+    usuario_id:   usuario.id,
+    nombre:       usuario.nombre,
+    rol:          usuario.rol,
+    permisos:     usuario.permisos || {},
+    caja_id:      caja.id,
+    caja_nombre:  caja.nombre,
+    sucursales:   sucursalesData,
+    sucursal_id:  sucursal?.id ?? 1,
+    deposito_id:  sucursal?.deposito_principal_id ?? 1,
+    token:        tokenSesion,
   }));
   location.href = '/Logos/pos/';
 }

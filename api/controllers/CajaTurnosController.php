@@ -1,9 +1,12 @@
 <?php
 
+require_once __DIR__ . '/../helpers/Configuracion.php';
+require_once __DIR__ . '/../helpers/LogAcciones.php';
+
 class CajaTurnosController {
 
     private function caja(int $caja_id): array {
-        $stmt = DB::get()->prepare("SELECT id, nombre, tipo FROM cajas WHERE id = ?");
+        $stmt = DB::get()->prepare("SELECT id, nombre, tipo, sucursal_id FROM cajas WHERE id = ?");
         $stmt->execute([$caja_id]);
         $caja = $stmt->fetch();
         if (!$caja) json(404, ['error' => 'Caja no encontrada']);
@@ -258,18 +261,24 @@ class CajaTurnosController {
         $caja = $this->caja($caja_id);
         if ($caja['tipo'] !== 'venta') json(400, ['error' => 'Esta caja no requiere apertura de turno']);
 
-        $usuario = Auth::usuarioActual();
+        // Verificar que el usuario tiene acceso a la sucursal de esta caja
+        if (!empty($caja['sucursal_id']) && !Auth::sucursalPermitida((int)$caja['sucursal_id'])) {
+            json(403, ['error' => 'No tenés acceso a esta sucursal']);
+        }
+
+        $usuario     = Auth::usuarioActual();
         if (!$usuario) json(401, ['error' => 'Usuario no identificado']);
+        $device_name = trim($_SERVER['HTTP_X_DEVICE_NAME'] ?? '') ?: null;
 
         $stmt = DB::get()->prepare("SELECT id FROM caja_turnos WHERE caja_id = ? AND estado = 'abierto'");
         $stmt->execute([$caja_id]);
         if ($stmt->fetch()) json(409, ['error' => 'Ya hay un turno abierto en esta caja']);
 
         $stmt = DB::get()->prepare("
-            INSERT INTO caja_turnos (caja_id, usuario_id, fondo_inicial, abierto_en, estado)
-            VALUES (?, ?, ?, NOW(), 'abierto')
+            INSERT INTO caja_turnos (caja_id, usuario_id, device_name, fondo_inicial, abierto_en, estado)
+            VALUES (?, ?, ?, ?, NOW(), 'abierto')
         ");
-        $stmt->execute([$caja_id, $usuario['id'], $fondo_inicial]);
+        $stmt->execute([$caja_id, $usuario['id'], $device_name, $fondo_inicial]);
 
         $this->get((int)DB::get()->lastInsertId());
     }
@@ -335,6 +344,8 @@ class CajaTurnosController {
             $diferencia,
         ]);
 
+        LogAcciones::registrar('cierre_parcial', 'turno', $id, ['diferencia' => $diferencia, 'efectivo_contado' => $efectivo_contado]);
+
         json(200, ['ok' => true, 'diferencia' => $diferencia]);
     }
 
@@ -386,6 +397,14 @@ class CajaTurnosController {
             $id,
         ]);
 
+        LogAcciones::registrar('cierre_caja', 'turno', $id, ['diferencia' => $diferencia, 'efectivo_contado' => $efectivo_contado]);
+
+        // Backup automático si está configurado
+        $cfg = Configuracion::get();
+        if (!empty($cfg['backup_auto_cierre'])) {
+            try { Configuracion::ejecutarBackup(); } catch (\Throwable $e) { /* no bloquear el cierre si el backup falla */ }
+        }
+
         $this->get($id);
     }
 
@@ -430,21 +449,24 @@ class CajaTurnosController {
     }
 
     public function listar(): void {
-        $caja_id = isset($_GET['caja_id']) && is_numeric($_GET['caja_id']) ? (int)$_GET['caja_id'] : null;
-        if (!Auth::esAdmin() && !$caja_id) json(400, ['error' => 'caja_id requerido']);
+        $caja_id     = isset($_GET['caja_id'])     && is_numeric($_GET['caja_id'])     ? (int)$_GET['caja_id']     : null;
+        $sucursal_id = isset($_GET['sucursal_id']) && is_numeric($_GET['sucursal_id']) ? (int)$_GET['sucursal_id'] : null;
+        if (!Auth::puede('cajas_todas') && !$caja_id) json(400, ['error' => 'caja_id requerido']);
 
         $where  = [];
         $params = [];
-        if ($caja_id)               { $where[] = 't.caja_id = ?';     $params[] = $caja_id; }
-        if (!empty($_GET['desde'])) { $where[] = 't.abierto_en >= ?'; $params[] = $_GET['desde'] . ' 00:00:00'; }
-        if (!empty($_GET['hasta'])) { $where[] = 't.abierto_en <= ?'; $params[] = $_GET['hasta'] . ' 23:59:59'; }
+        if ($caja_id)               { $where[] = 't.caja_id = ?';       $params[] = $caja_id;     }
+        if ($sucursal_id)           { $where[] = 'c.sucursal_id = ?';   $params[] = $sucursal_id; }
+        if (!empty($_GET['desde'])) { $where[] = 't.abierto_en >= ?';   $params[] = $_GET['desde'] . ' 00:00:00'; }
+        if (!empty($_GET['hasta'])) { $where[] = 't.abierto_en <= ?';   $params[] = $_GET['hasta'] . ' 23:59:59'; }
         $whereSql = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
         $stmt = DB::get()->prepare("
-            SELECT t.*, c.nombre AS caja_nombre, u.nombre AS usuario_nombre
+            SELECT t.*, c.nombre AS caja_nombre, c.sucursal_id, s.nombre AS sucursal_nombre, u.nombre AS usuario_nombre
             FROM caja_turnos t
-            JOIN cajas c    ON c.id = t.caja_id
-            JOIN usuarios u ON u.id = t.usuario_id
+            JOIN cajas      c ON c.id = t.caja_id
+            LEFT JOIN sucursales s ON s.id = c.sucursal_id
+            JOIN usuarios   u ON u.id = t.usuario_id
             $whereSql
             ORDER BY t.id DESC
         ");

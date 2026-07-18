@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Libro IVA — Logos</title>
+<script src="config.js"></script>
+<script src="helpers.js"></script>
+<link rel="stylesheet" href="/Logos/pos/pos-base.css">
+<style>
+.page-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px; gap: 10px; background: var(--neo-bg-deep); }
+
+.toolbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--neo-bg); border-radius: var(--neo-r-md);
+  padding: 8px 12px; box-shadow: var(--neo-e2);
+}
+.tab-grupo { display: flex; border-radius: var(--neo-r-sm); overflow: hidden; box-shadow: var(--neo-e1); }
+.tab-tipo  { padding: 7px 20px; background: var(--neo-bg); border: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; cursor: pointer; color: var(--neo-text-3); font-family: inherit; transition: color var(--neo-t-fast), box-shadow var(--neo-t-fast); }
+.tab-tipo.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
+.tb-sep { width: 1px; background: rgba(163,177,198,.35); height: 30px; margin: 0 4px; }
+.tb-input {
+  padding: 7px 11px; border: none; border-radius: var(--neo-r-xs); font-size: 13px;
+  font-family: inherit; outline: none; background: var(--neo-bg); color: var(--neo-text);
+  box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast);
+}
+.tb-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.tb-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.btn-accion {
+  padding: 7px 14px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer;
+  box-shadow: var(--neo-e1); transition: box-shadow var(--neo-t-fast);
+  background: var(--neo-bg); color: var(--neo-text-2);
+  text-transform: uppercase; letter-spacing: .3px;
+}
+.btn-accion:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+.btn-accion.export { background: var(--neo-success); color: #fff; }
+.btn-accion.export:hover { box-shadow: var(--neo-e3); }
+
+/* Totales */
+.totales-bar {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  background: var(--neo-bg); border-radius: var(--neo-r-md);
+  padding: 10px 16px; box-shadow: var(--neo-e2);
+}
+.total-item { display: flex; flex-direction: column; gap: 2px; padding: 0 12px; border-right: 1px solid rgba(163,177,198,.3); }
+.total-item:last-child { border: none; }
+.total-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.total-val { font-size: 15px; font-weight: 800; color: var(--neo-text); font-variant-numeric: tabular-nums; }
+.total-val.accent { color: var(--neo-accent); }
+
+/* Tabla */
+.card { background: var(--neo-bg-deep); border-radius: var(--neo-r-lg); box-shadow: var(--neo-i1); flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.tabla-wrap { flex: 1; overflow: auto; }
+.tabla-wrap::-webkit-scrollbar { width: 6px; }
+.tabla-wrap::-webkit-scrollbar-track { background: var(--neo-bg-deep); }
+.tabla-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; white-space: nowrap; }
+thead th { position: sticky; top: 0; background: var(--neo-bg-deep); padding: 9px 10px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4); }
+thead th.r { text-align: right; }
+tbody tr { border-bottom: 1px solid rgba(163,177,198,.15); }
+tbody tr:hover { background: rgba(255,255,255,.4); }
+tbody tr.fila-nc { background: rgba(231,76,60,.04); }
+tbody td { padding: 7px 10px; vertical-align: middle; color: var(--neo-text); }
+tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
+tbody td.muted { color: var(--neo-text-3); }
+.badge-nc { display: inline-block; padding: 1px 6px; font-size: 9px; font-weight: 700; border-radius: var(--neo-r-xs); background: rgba(231,76,60,.12); color: var(--neo-danger); margin-left: 4px; }
+.tfoot-row td { font-weight: 700; background: var(--neo-bg-deep); border-top: 2px solid rgba(163,177,198,.4); color: var(--neo-text); }
+
+.empty { padding: 32px; text-align: center; color: var(--neo-text-3); font-size: 13px; font-style: italic; }
+</style>
+</head>
+<body class="app-layout">
+<?php $nav_activo = 'iva'; include __DIR__ . '/nav.php'; ?>
+
+<div class="page-body">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="tab-grupo">
+      <button class="tab-tipo activo" data-tipo="ventas" onclick="setTipo('ventas', this)">Ventas</button>
+      <button class="tab-tipo"        data-tipo="compras" onclick="setTipo('compras', this)">Compras</button>
+    </div>
+    <div class="tb-sep"></div>
+    <span class="tb-lbl">Desde</span>
+    <input type="date" id="tb-desde" class="tb-input" value="">
+    <span class="tb-lbl">Hasta</span>
+    <input type="date" id="tb-hasta" class="tb-input" value="">
+    <button class="btn-accion" onclick="cargar()">Aplicar</button>
+    <div class="tb-sep"></div>
+    <button class="btn-accion export" onclick="exportar()">Exportar CSV</button>
+    <span id="count-lbl" style="margin-left:auto;font-size:11px;color:var(--neo-text-3)"></span>
+  </div>
+
+  <!-- Totales -->
+  <div class="totales-bar" id="totales-bar" style="display:none">
+    <div class="total-item"><span class="total-lbl">Neto 21%</span><span class="total-val" id="tot-neto21">—</span></div>
+    <div class="total-item"><span class="total-lbl">IVA 21%</span><span class="total-val accent" id="tot-iva21">—</span></div>
+    <div class="total-item" id="wrap-105" style="display:none">
+      <span class="total-lbl">Neto 10.5%</span><span class="total-val" id="tot-neto105">—</span>
+    </div>
+    <div class="total-item" id="wrap-iva105" style="display:none">
+      <span class="total-lbl">IVA 10.5%</span><span class="total-val accent" id="tot-iva105">—</span>
+    </div>
+    <div class="total-item" id="wrap-exento" style="display:none">
+      <span class="total-lbl">Exento</span><span class="total-val" id="tot-exento">—</span>
+    </div>
+    <div class="total-item" id="wrap-perc" style="display:none">
+      <span class="total-lbl">Perc. IIBB</span><span class="total-val" id="tot-perc">—</span>
+    </div>
+    <div class="total-item"><span class="total-lbl">Total</span><span class="total-val" id="tot-total">—</span></div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card">
+    <div class="tabla-wrap">
+      <table id="tabla">
+        <thead id="thead-ventas">
+          <tr>
+            <th>Fecha</th><th>Tipo</th><th class="r">Pto.Vta</th><th class="r">N° AFIP</th>
+            <th>CAE</th><th>Cliente</th><th>CUIT</th><th>Cond. IVA</th>
+            <th class="r">Neto 21%</th><th class="r">IVA 21%</th>
+            <th class="r">Neto 10.5%</th><th class="r">IVA 10.5%</th>
+            <th class="r">Exento</th><th class="r">Total</th>
+          </tr>
+        </thead>
+        <thead id="thead-compras" style="display:none">
+          <tr>
+            <th>Fecha</th><th>Tipo</th><th>N° Comprobante</th>
+            <th>Proveedor</th><th>CUIT</th>
+            <th class="r">Neto 21%</th><th class="r">IVA 21%</th>
+            <th class="r">Neto 10.5%</th><th class="r">IVA 10.5%</th>
+            <th class="r">Exento</th><th class="r">IVA Total</th><th class="r">Perc. IIBB</th>
+            <th class="r">Total</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+        <tfoot id="tfoot"></tfoot>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = window.CONFIG?.apiBase ?? '/Logos/api';
+let tipoActual = 'ventas';
+
+// Defaults: mes actual
+const hoy = new Date();
+const primerDia = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+const hoyStr    = hoy.toISOString().slice(0,10);
+document.getElementById('tb-desde').value = primerDia;
+document.getElementById('tb-hasta').value = hoyStr;
+
+function setTipo(tipo, btn) {
+  tipoActual = tipo;
+  document.querySelectorAll('.tab-tipo').forEach(b => b.classList.toggle('activo', b === btn));
+  document.getElementById('thead-ventas').style.display  = tipo === 'ventas'  ? '' : 'none';
+  document.getElementById('thead-compras').style.display = tipo === 'compras' ? '' : 'none';
+  cargar();
+}
+
+function pesos(n) {
+  return '$ ' + Number(n).toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function cargar() {
+  const desde = document.getElementById('tb-desde').value;
+  const hasta = document.getElementById('tb-hasta').value;
+  if (!desde || !hasta) return;
+
+  const data = await apiFetch(`${API}/iva/${tipoActual}?desde=${desde}&hasta=${hasta}`);
+  const filas = data.filas || [];
+  const tot   = data.totales || {};
+
+  document.getElementById('count-lbl').textContent = `${filas.length} comprobante(s)`;
+  document.getElementById('totales-bar').style.display = filas.length ? '' : 'none';
+
+  // Mostrar/ocultar columnas de alícuotas según si hay datos
+  const hay105  = filas.some(r => r.neto_105 > 0 || r.iva_105 > 0);
+  const hayExen = filas.some(r => r.neto_exento > 0);
+  const hayPerc = tipoActual === 'compras' && filas.some(r => r.percepcion_iibb > 0);
+
+  ['wrap-105','wrap-iva105'].forEach(id => document.getElementById(id).style.display = hay105 ? '' : 'none');
+  document.getElementById('wrap-exento').style.display = hayExen ? '' : 'none';
+  document.getElementById('wrap-perc').style.display   = hayPerc ? '' : 'none';
+
+  // Totales bar
+  document.getElementById('tot-neto21').textContent = pesos(tot.neto_21 ?? 0);
+  document.getElementById('tot-iva21').textContent  = pesos(tot.iva_21  ?? 0);
+  document.getElementById('tot-neto105').textContent = pesos(tot.neto_105 ?? 0);
+  document.getElementById('tot-iva105').textContent  = pesos(tot.iva_105  ?? 0);
+  document.getElementById('tot-exento').textContent  = pesos(tot.neto_exento ?? 0);
+  document.getElementById('tot-perc').textContent    = pesos(tot.percepcion_iibb ?? 0);
+  document.getElementById('tot-total').textContent   = pesos(tot.total ?? 0);
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+
+  if (!filas.length) {
+    tbody.insertAdjacentHTML('beforeend', `<tr><td colspan="14" class="empty">Sin comprobantes para el período seleccionado.</td></tr>`);
+    document.getElementById('tfoot').innerHTML = '';
+    return;
+  }
+
+  if (tipoActual === 'ventas') {
+    filas.forEach(r => {
+      const nc = r.es_nc;
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr class="${nc ? 'fila-nc' : ''}">
+          <td>${r.fecha}</td>
+          <td>${esc(r.tipo_comprobante)}${nc ? '<span class="badge-nc">NC</span>' : ''}</td>
+          <td class="r">${r.punto_venta || '—'}</td>
+          <td class="r">${esc(r.numero_afip) || '—'}</td>
+          <td class="muted">${esc(r.cae || '—')}</td>
+          <td>${esc(r.cliente_nombre || 'Consumidor Final')}</td>
+          <td class="muted">${esc(r.cliente_cuit || '—')}</td>
+          <td class="muted">${esc(r.cliente_condicion_iva || '—')}</td>
+          <td class="r">${pesos(r.neto_21)}</td>
+          <td class="r">${pesos(r.iva_21)}</td>
+          <td class="r">${r.neto_105 > 0 ? pesos(r.neto_105) : '—'}</td>
+          <td class="r">${r.iva_105  > 0 ? pesos(r.iva_105)  : '—'}</td>
+          <td class="r">${r.neto_exento > 0 ? pesos(r.neto_exento) : '—'}</td>
+          <td class="r"><strong>${pesos(r.total)}</strong></td>
+        </tr>`);
+    });
+    document.getElementById('tfoot').innerHTML = `
+      <tr class="tfoot-row">
+        <td colspan="8">TOTALES</td>
+        <td class="r">${pesos(tot.neto_21)}</td>
+        <td class="r">${pesos(tot.iva_21)}</td>
+        <td class="r">${pesos(tot.neto_105)}</td>
+        <td class="r">${pesos(tot.iva_105)}</td>
+        <td class="r">${pesos(tot.neto_exento)}</td>
+        <td class="r">${pesos(tot.total)}</td>
+      </tr>`;
+  } else {
+    filas.forEach(r => {
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr>
+          <td>${r.fecha}</td>
+          <td>${esc(r.tipo_comprobante)}</td>
+          <td class="muted">${esc(r.numero_comprobante || '—')}</td>
+          <td>${esc(r.proveedor_nombre || '—')}</td>
+          <td class="muted">${esc(r.proveedor_cuit || '—')}</td>
+          <td class="r">${pesos(r.neto_21)}</td>
+          <td class="r">${pesos(r.iva_21)}</td>
+          <td class="r">${r.neto_105 > 0 ? pesos(r.neto_105) : '—'}</td>
+          <td class="r">${r.iva_105  > 0 ? pesos(r.iva_105)  : '—'}</td>
+          <td class="r">${r.neto_exento > 0 ? pesos(r.neto_exento) : '—'}</td>
+          <td class="r">${pesos(r.iva_total)}</td>
+          <td class="r">${r.percepcion_iibb > 0 ? pesos(r.percepcion_iibb) : '—'}</td>
+          <td class="r"><strong>${pesos(r.total)}</strong></td>
+        </tr>`);
+    });
+    document.getElementById('tfoot').innerHTML = `
+      <tr class="tfoot-row">
+        <td colspan="5">TOTALES</td>
+        <td class="r">${pesos(tot.neto_21)}</td>
+        <td class="r">${pesos(tot.iva_21)}</td>
+        <td class="r">${pesos(tot.neto_105)}</td>
+        <td class="r">${pesos(tot.iva_105)}</td>
+        <td class="r">${pesos(tot.neto_exento)}</td>
+        <td class="r">${pesos(tot.iva_total)}</td>
+        <td class="r">${pesos(tot.percepcion_iibb)}</td>
+        <td class="r">${pesos(tot.total)}</td>
+      </tr>`;
+  }
+}
+
+async function exportar() {
+  const desde = document.getElementById('tb-desde').value;
+  const hasta = document.getElementById('tb-hasta').value;
+  if (!desde || !hasta) return;
+  try {
+    const r = await fetch(`${API}/iva/export?tipo=${tipoActual}&desde=${desde}&hasta=${hasta}`);
+    if (!r.ok) { const e = await r.json().catch(() => ({})); toast_(e.error ?? 'Error al exportar', 'err'); return; }
+    const blob = await r.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `libro_iva_${tipoActual}_${desde}_${hasta}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) { toast_('Error al exportar: ' + e.message, 'err'); }
+}
+
+cargar();
+</script>
+</body>
+</html>

@@ -9,319 +9,266 @@
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
-/* ── Page header ─────────────────────────────────────────── */
+/* ── Page header ── */
 .page-header {
-  background: #fff;
-  border-bottom: 2px solid var(--texto);
-  padding: 16px clamp(20px, 4vw, 48px);
-  flex-shrink: 0;
+  background: var(--neo-bg);
+  box-shadow: 0 3px 8px var(--neo-sd), 0 -1px 4px var(--neo-sl);
+  padding: 16px clamp(20px,4vw,48px); flex-shrink: 0; position: relative; z-index: 10;
 }
-.page-header h1 {
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
-  color: var(--texto);
-}
-.page-header p {
-  font-size: 11px;
-  color: var(--gris3);
-  margin-top: 3px;
-  letter-spacing: .2px;
-}
+.page-header h1 { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--neo-text); }
+.page-header p  { font-size: 11px; color: var(--neo-text-3); margin-top: 3px; }
 
-/* ── Tab bar ─────────────────────────────────────────────── */
+/* ── Tab bar ── */
 .tab-bar {
-  background: #fff;
-  border-bottom: 1px solid var(--borde);
-  display: flex;
-  padding: 0 clamp(20px, 4vw, 48px);
-  flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
+  background: var(--neo-bg);
+  border-bottom: 1px solid rgba(163,177,198,.3);
+  display: flex; padding: 0 clamp(20px,4vw,48px); flex-shrink: 0;
+  overflow-x: auto; scrollbar-width: none;
 }
 .tab-bar::-webkit-scrollbar { display: none; }
 .tab-btn {
-  padding: 12px 18px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .8px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: var(--gris3);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: color 120ms, border-color 120ms;
-  white-space: nowrap;
-  flex-shrink: 0;
+  padding: 12px 18px; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .8px;
+  border: none; background: none; cursor: pointer; color: var(--neo-text-3);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: color var(--neo-t-fast), border-color var(--neo-t-fast);
+  white-space: nowrap; flex-shrink: 0;
 }
-.tab-btn:hover { color: var(--texto); }
-.tab-btn.activo { color: var(--azul); border-bottom-color: var(--azul); }
+.tab-btn:hover { color: var(--neo-text); }
+.tab-btn.activo { color: var(--neo-accent); border-bottom-color: var(--neo-accent); }
 
-/* ── Content layout ──────────────────────────────────────── */
-.contenido {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 24px clamp(20px, 4vw, 48px);
-  background: var(--gris1);
-}
+/* ── Content layout ── */
+.contenido { flex: 1; min-height: 0; overflow-y: auto; padding: 24px clamp(20px,4vw,48px); background: var(--neo-bg-deep); }
 .contenido-inner { max-width: 1280px; margin: 0 auto; }
 .panel { display: none; }
 .panel.activo { display: block; }
 
-/* ── Cards ───────────────────────────────────────────────── */
+/* ── Cards ── */
 .card {
-  background: #fff;
-  border: 1px solid var(--borde);
-  border-radius: 0;
-  box-shadow: none;
-  margin-bottom: 16px;
-  overflow: hidden;
+  background: var(--neo-bg); border: none !important;
+  border-radius: var(--neo-r-lg); box-shadow: var(--neo-e2);
+  margin-bottom: 16px; overflow: hidden;
 }
 .card-titulo {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--gris3);
-  padding: 10px 20px;
-  border-bottom: 1px solid var(--borde);
-  background: var(--gris1);
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--neo-text-3); padding: 10px 20px;
+  border-bottom: 1px solid rgba(163,177,198,.25);
 }
 .card-body { padding: 20px; }
-.grid-2 {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 16px;
-  align-items: start;
-  margin-bottom: 16px;
-}
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px,1fr)); gap: 16px; align-items: stretch; margin-bottom: 16px; }
 .grid-2 .card { margin-bottom: 0; }
+.btn-cell { display: flex; gap: 5px; align-items: center; }
 
-/* ── Form elements ───────────────────────────────────────── */
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px 20px;
-}
-@media (max-width: 900px) { .form-grid { grid-template-columns: repeat(2, 1fr); } }
+/* ── Form elements ── */
+.form-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px 20px; }
+@media (max-width: 900px) { .form-grid { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
 .form-group { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .form-group.full { grid-column: 1 / -1; }
-.form-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .6px;
-  color: var(--gris3);
-}
+.form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--neo-text-3); }
 .form-input, .form-select {
-  padding: 9px 11px;
-  border: 1px solid var(--borde);
-  border-radius: 0;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  background: #fff;
-  transition: border-color 120ms;
-  width: 100%;
+  padding: 9px 12px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 13px; font-family: inherit; outline: none;
+  background: var(--neo-bg); color: var(--neo-text);
+  box-shadow: var(--neo-i1); width: 100%;
+  transition: box-shadow var(--neo-t-fast);
 }
-.form-input:focus, .form-select:focus { border-color: var(--texto); }
-.form-hint { font-size: 11px; color: var(--gris3); margin-top: 3px; line-height: 1.5; }
+.form-input:focus, .form-select:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.form-hint { font-size: 11px; color: var(--neo-text-3); margin-top: 3px; line-height: 1.5; }
+.checkbox-group { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-top: 4px; }
+.checkbox-item { display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+.checkbox-item input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; accent-color: var(--neo-accent); }
 
-/* ── Buttons ─────────────────────────────────────────────── */
+/* ── Buttons ── */
 .btn {
-  padding: 10px 20px;
-  border: 1.5px solid transparent;
-  border-radius: 0;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .6px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: background 100ms, border-color 100ms;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+  cursor: pointer; font-family: inherit;
+  transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
 }
-.btn:active { opacity: .85; }
+.btn:active { transform: scale(.97); }
 .btn-ok {
-  background: var(--azul);
-  color: #fff;
-  border-color: var(--azul);
+  background: var(--neo-accent); color: #fff;
+  box-shadow: 4px 4px 10px var(--neo-accent-glow), -2px -2px 5px rgba(255,255,255,.15);
 }
-.btn-ok:hover { background: var(--azul-h); border-color: var(--azul-h); }
-.btn-sec {
-  background: #fff;
-  color: var(--texto);
-  border-color: #888;
-}
-.btn-sec:hover { background: var(--gris1); border-color: var(--texto); }
+.btn-ok:hover { background: var(--neo-accent-h); box-shadow: 6px 6px 14px var(--neo-accent-glow); }
+.btn-sec { background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); }
+.btn-sec:hover { box-shadow: var(--neo-e3); }
 .btn-row { display: flex; gap: 10px; align-items: center; margin-top: 16px; flex-wrap: wrap; }
 
-/* ── Logo & swatches ─────────────────────────────────────── */
+/* ── Logo ── */
 .logo-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
-.swatch {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: transform 120ms, border-color 120ms;
-  position: relative;
-  flex-shrink: 0;
-}
-.swatch:hover { transform: scale(1.12); }
-.swatch.activo { border-color: var(--texto); }
-.swatch[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: #111;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 7px;
-  white-space: nowrap;
-  pointer-events: none;
-  letter-spacing: .3px;
-}
 .logo-preview {
-  width: 60px;
-  height: 60px;
-  border: 1px solid var(--borde);
-  border-radius: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  background: var(--gris1);
-  flex-shrink: 0;
+  width: 60px; height: 60px; border-radius: var(--neo-r-sm); box-shadow: var(--neo-i1);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; background: var(--neo-bg-deep); flex-shrink: 0;
 }
 .logo-preview img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-/* ── Tables ──────────────────────────────────────────────── */
-.table-wrap { overflow-x: auto; }
-table.cajas {
-  width: 100%;
-  border-collapse: collapse;
-  min-width: 480px;
-}
+/* ── Tables ── */
+.table-wrap { overflow-x: auto; border-radius: var(--neo-r-md); box-shadow: var(--neo-i1); }
+table.cajas { width: 100%; border-collapse: collapse; min-width: 480px; }
 table.cajas th {
-  text-align: left;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .6px;
-  color: var(--gris3);
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--texto);
-  white-space: nowrap;
-  background: var(--gris1);
+  text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
+  color: var(--neo-text-3); padding: 9px 12px;
+  border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap;
+  background: var(--neo-bg-deep);
 }
-table.cajas td {
-  padding: 9px 12px;
-  font-size: 13px;
-  border-bottom: 1px solid var(--gris2);
-  vertical-align: middle;
-}
-table.cajas tbody tr:hover { background: #FAFAFA; }
+table.cajas td { padding: 9px 12px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); vertical-align: middle; color: var(--neo-text); }
+table.cajas tbody tr:hover { background: rgba(255,255,255,.45); }
 table.cajas input[type="text"] {
-  padding: 7px 10px;
-  border: 1px solid var(--borde);
-  border-radius: 0;
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  width: 100%;
-  transition: border-color 120ms;
-  background: #fff;
+  padding: 7px 10px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 13px; font-family: inherit; outline: none; width: 100%;
+  background: var(--neo-bg); box-shadow: var(--neo-i1); color: var(--neo-text);
+  transition: box-shadow var(--neo-t-fast);
 }
-table.cajas input[type="text"]:focus { border-color: var(--texto); }
-.check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
-.check-label input { width: 15px; height: 15px; accent-color: var(--azul); cursor: pointer; }
+table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.check-label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--neo-text); }
+.check-label input { width: 15px; height: 15px; accent-color: var(--neo-accent); cursor: pointer; }
 
 .btn-mini {
-  padding: 5px 11px;
-  background: #fff;
-  color: var(--texto);
-  border: 1px solid #999;
-  border-radius: 0;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .4px;
-  cursor: pointer;
-  transition: background 100ms, border-color 100ms;
-  white-space: nowrap;
+  padding: 5px 11px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e1);
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  cursor: pointer; white-space: nowrap; font-family: inherit;
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
 }
-.btn-mini:hover { background: var(--gris1); border-color: var(--texto); }
-.btn-mini:active { opacity: .8; }
-.btn-mini.danger { color: var(--rojo); border-color: var(--rojo); }
-.btn-mini.danger:hover { background: #FEF2F2; }
+.btn-mini:hover { box-shadow: var(--neo-e2); }
+.btn-mini:active { transform: scale(.97); }
+.btn-mini.danger { color: var(--neo-danger); }
+.btn-mini.danger:hover { box-shadow: var(--neo-e2); }
 
 .fila-nueva {
-  display: flex;
-  gap: 8px;
-  padding-top: 14px;
-  margin-top: 14px;
-  border-top: 1px solid var(--borde);
-  flex-wrap: wrap;
+  display: flex; gap: 8px; padding-top: 14px; margin-top: 14px;
+  border-top: 1px solid rgba(163,177,198,.3); flex-wrap: wrap;
 }
 .fila-nueva input { flex: 1; min-width: 160px; }
 
-/* ── AFIP status ─────────────────────────────────────────── */
+/* ── AFIP status ── */
 .afip-estado {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 0;
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid var(--borde);
-  background: var(--gris1);
-  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  border-radius: var(--neo-r-sm); font-size: 13px; font-weight: 600;
+  box-shadow: var(--neo-e1); margin-bottom: 16px; background: var(--neo-bg);
+  color: var(--neo-text-2);
 }
-.afip-estado.ok   { border-color: #BBF7D0; background: #F0FDF4; color: #15803D; }
-.afip-estado.warn { border-color: #FED7AA; background: #FFF7ED; color: #C2410C; }
-.afip-estado .afip-dot {
-  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-}
-.afip-estado.ok   .afip-dot { background: #16A34A; }
-.afip-estado.warn .afip-dot { background: #EA580C; }
+.afip-estado.ok   { background: rgba(39,174,96,.1); color: var(--neo-success); }
+.afip-estado.warn { background: rgba(243,156,18,.1); color: var(--neo-warning); }
+.afip-estado .afip-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.afip-estado.ok   .afip-dot { background: var(--neo-success); }
+.afip-estado.warn .afip-dot { background: var(--neo-warning); }
 
-/* ── Danger zone ─────────────────────────────────────────── */
-.danger-card {
-  border-color: var(--rojo);
-}
-.danger-card .card-titulo {
-  color: var(--rojo);
-  border-bottom-color: #F3D2D2;
-  background: #FFF5F5;
-}
+/* ── Danger zone ── */
+.danger-card { box-shadow: var(--neo-e2), 0 0 0 2px rgba(231,76,60,.3) !important; }
+.danger-card .card-titulo { color: var(--neo-danger); border-bottom-color: rgba(231,76,60,.2); }
 #btn-reset-fabrica {
-  background: var(--rojo);
-  color: #fff;
-  border-color: var(--rojo);
-  border-radius: 0;
-  transition: opacity 200ms, background 100ms;
+  background: var(--neo-danger); color: #fff; border-color: transparent;
+  box-shadow: 4px 4px 10px var(--neo-danger-glow), -2px -2px 5px rgba(255,255,255,.15);
+  transition: opacity 200ms, background var(--neo-t-fast);
 }
-#btn-reset-fabrica:disabled {
-  background: #ccc;
-  border-color: #ccc;
-  color: #888;
-  cursor: not-allowed;
-  opacity: 1;
-}
+#btn-reset-fabrica:disabled { background: var(--neo-text-3); box-shadow: none; cursor: not-allowed; opacity: .5; }
 
 @media (max-width: 640px) {
   .page-header h1 { font-size: 12px; }
   .card-body { padding: 16px; }
   .fila-nueva { flex-direction: column; }
+}
+
+/* ── Sucursales / Depósitos tab ── */
+
+/* Card con header + botón de acción */
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(163,177,198,.25);
+}
+.card-header h3 {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--neo-text-3); margin: 0;
+}
+
+/* Botón acción primario (+ Nueva sucursal, Guardar, etc.) */
+.btn-accion {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 14px; border: none; border-radius: var(--neo-r-xs);
+  background: var(--neo-accent); color: #fff;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+  cursor: pointer; font-family: inherit;
+  transition: background var(--neo-t-fast), box-shadow var(--neo-t-fast);
+}
+.btn-accion:hover  { background: var(--neo-accent-h); }
+.btn-accion:active { transform: scale(.97); }
+
+/* Tabla genérica del tab */
+.tabla {
+  width: 100%; border-collapse: collapse;
+}
+.tabla th {
+  text-align: left; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .6px;
+  color: var(--neo-text-3); padding: 9px 16px;
+  border-bottom: 1px solid rgba(163,177,198,.4);
+  background: var(--neo-bg-deep); white-space: nowrap;
+}
+.tabla td {
+  padding: 9px 16px; font-size: 13px;
+  border-bottom: 1px solid rgba(163,177,198,.15);
+  vertical-align: middle; color: var(--neo-text);
+}
+.tabla tbody tr:last-child td { border-bottom: none; }
+.tabla tbody tr:hover { background: rgba(163,177,198,.07); }
+.tabla td.empty { color: var(--neo-text-3); font-style: italic; text-align: center; padding: 24px; }
+.tabla td.acciones { text-align: right; white-space: nowrap; }
+.tabla td.acciones .btn-mini + .btn-mini { margin-left: 4px; }
+
+/* Badges de estado */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 8px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+  background: rgba(163,177,198,.2); color: var(--neo-text-2);
+}
+.badge.ok   { background: rgba(39,174,96,.12); color: var(--neo-success, #27ae60); }
+.badge.warn { background: rgba(243,156,18,.12); color: var(--neo-warning, #f39c12); }
+
+/* Botón × dentro de un badge/chip */
+.btn-mini-x {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; padding: 0; border: none;
+  background: none; color: inherit; cursor: pointer;
+  font-size: 12px; line-height: 1; font-family: inherit;
+  opacity: .6;
+}
+.btn-mini-x:hover { opacity: 1; }
+
+/* Checkbox en forma de check-label dentro de form-group */
+.form-group.form-check { flex-direction: row; align-items: center; gap: 8px; }
+.form-group.form-check label { font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 7px; }
+.form-group.form-check input[type=checkbox] { width: 15px; height: 15px; accent-color: var(--neo-accent); cursor: pointer; flex-shrink: 0; }
+
+/* Modales del tab (override para display:none/flex en vez del sistema .abierto) */
+#modal-sucursal, #modal-deposito {
+  opacity: 1 !important; visibility: visible !important;
+  pointer-events: auto !important;
+  transition: none !important;
+}
+.modal-body {
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal-footer {
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+.modal-body .form-group label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .6px; color: var(--neo-text-3); margin-bottom: 2px;
+}
+/* select de asignación de sucursales a usuarios */
+#body-usuarios-suc select {
+  padding: 5px 9px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; font-family: inherit; cursor: pointer;
+  background: var(--neo-bg); color: var(--neo-text);
+  box-shadow: var(--neo-i1); outline: none;
 }
 
 </style>
@@ -339,6 +286,7 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
   <button class="tab-btn activo" data-tab="contables">Datos contables</button>
   <button class="tab-btn" data-tab="negocio">Datos del negocio</button>
   <button class="tab-btn" data-tab="avanzado">Configuración avanzada</button>
+  <button class="tab-btn" data-tab="sucursales">Sucursales y Depósitos</button>
 </div>
 
 <div class="contenido">
@@ -424,6 +372,17 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
           <div class="form-group">
             <label class="form-label">% IVA</label>
             <input class="form-input" type="number" min="0" max="100" step="0.01" id="cfg-iva_porcentaje">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Tipos de comprobante habilitados</label>
+            <div class="checkbox-group">
+              <label class="checkbox-item"><input type="checkbox" id="tipo-FC B-ELECT" value="FC B-ELECT"> Factura B</label>
+              <label class="checkbox-item"><input type="checkbox" id="tipo-FC A-ELECT" value="FC A-ELECT"> Factura A</label>
+              <label class="checkbox-item"><input type="checkbox" id="tipo-FC C-ELECT" value="FC C-ELECT"> Factura C</label>
+              <label class="checkbox-item"><input type="checkbox" id="tipo-REMITO"    value="REMITO">     Remito</label>
+              <label class="checkbox-item"><input type="checkbox" id="tipo-PRESUPUESTO" value="PRESUPUESTO"> Presupuesto</label>
+            </div>
+            <div class="form-hint">Si ninguno está seleccionado, todos quedan habilitados.</div>
           </div>
           <div class="form-group full">
             <label class="form-label">Domicilio</label>
@@ -516,7 +475,7 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
     <div class="card">
       <div class="card-titulo">Usuarios</div>
       <div class="card-body">
-        <div class="form-hint" style="margin-bottom:14px">El rol "Admin" entra directo a la caja de tipo Compra. El rol "User" elige entre las cajas de tipo Venta al iniciar sesión.</div>
+        <div class="form-hint" style="margin-bottom:14px">"Admin" tiene acceso total y entra directo a la caja de tipo Compra. "Vendedor" y "Encargado" son plantillas de permisos sobre el rol User: el usuario nace con esos accesos y podés afinarlos cuando quieras con el botón <b>Permisos</b>.</div>
         <div class="table-wrap">
           <table class="cajas">
             <thead><tr><th>Nombre</th><th style="width:120px">Rol</th><th style="width:140px">Nuevo PIN</th><th style="width:90px">Activo</th><th style="width:110px"></th></tr></thead>
@@ -525,8 +484,9 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
         </div>
         <div class="fila-nueva">
           <input type="text" id="usuario-nuevo-nombre" class="form-input" placeholder="Nombre">
-          <select class="form-select" id="usuario-nuevo-rol" style="flex:0 0 120px">
-            <option value="user">User</option>
+          <select class="form-select" id="usuario-nuevo-rol" style="flex:0 0 140px" title="Vendedor y Encargado son plantillas de permisos (ajustables después); Admin tiene acceso total">
+            <option value="vendedor">Vendedor</option>
+            <option value="encargado">Encargado</option>
             <option value="admin">Admin</option>
           </select>
           <input type="text" id="usuario-nuevo-pin" class="form-input" placeholder="PIN (4-6 dígitos)" style="flex:0 0 160px" inputmode="numeric">
@@ -534,6 +494,37 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
         </div>
       </div>
     </div>
+
+    <!-- ═══ Modal de permisos granulares (estilo plano) ═══ -->
+    <div id="perm-overlay" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+      <div style="background:#fff;border:1px solid #D5D0CA;width:min(94vw,560px);max-height:88vh;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #D5D0CA;background:#F0EEEB;flex-shrink:0">
+          <h3 id="perm-titulo" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9B9590;margin:0">Permisos</h3>
+          <button id="perm-cerrar" style="background:none;border:none;cursor:pointer;color:#9B9590;font-size:16px;line-height:1;padding:2px 6px">✕</button>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:16px 20px">
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button class="btn btn-sec" id="perm-tpl-vendedor" style="font-size:12px">Plantilla Vendedor</button>
+            <button class="btn btn-sec" id="perm-tpl-encargado" style="font-size:12px">Plantilla Encargado</button>
+          </div>
+          <div id="perm-checks" style="display:flex;flex-direction:column;gap:2px"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #D5D0CA;flex-shrink:0">
+          <button class="btn btn-sec" id="perm-cancelar">Cancelar</button>
+          <button class="btn btn-ok" id="perm-guardar">Guardar permisos</button>
+        </div>
+      </div>
+    </div>
+    <style>
+      #perm-overlay .btn { border-radius:0 !important; box-shadow:none !important; }
+      .perm-item { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; cursor:pointer; border-bottom:1px solid #EDEAE6; }
+      .perm-item:last-child { border-bottom:none; }
+      .perm-item:hover { background:#FAFAF9; }
+      .perm-item input { margin-top:3px; flex-shrink:0; }
+      .perm-item span { display:flex; flex-direction:column; gap:1px; }
+      .perm-item b { font-size:13px; color:#111; font-weight:600; }
+      .perm-item small { font-size:11px; color:#9B9590; line-height:1.4; }
+    </style>
 
     <div class="grid-2">
       <div class="card">
@@ -553,10 +544,18 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
       </div>
 
       <div class="card">
-        <div class="card-titulo">Color del sistema</div>
+        <div class="card-titulo">Este equipo</div>
         <div class="card-body">
-          <div id="tema-swatches" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px"></div>
-          <div class="form-hint">El color principal afecta botones, bordes y destacados en todo el sistema.</div>
+          <div class="form-hint" style="margin-bottom:14px">El nombre de este equipo aparece en el log de acciones para identificar desde qué PC se realizó cada operación. Se guarda solo en este navegador.</div>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label">Nombre del equipo</label>
+              <input class="form-input" id="cfg-device-name" placeholder="Ej: Caja 1, Administración…" maxlength="100">
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ok" id="btn-guardar-device">Guardar nombre</button>
+          </div>
         </div>
       </div>
 
@@ -568,10 +567,85 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
               <label class="form-label">Carpeta de backups</label>
               <input class="form-input" id="cfg-carpeta_backups" placeholder="C:\Logos\backups">
             </div>
+            <div class="form-group full">
+              <label class="form-label">Carpeta secundaria (copia externa)</label>
+              <input class="form-input" id="cfg-carpeta_backups_secundaria" placeholder="Unidad de red o carpeta sincronizada a la nube (Drive, Dropbox)">
+            </div>
+          </div>
+          <div class="form-group full" style="margin-top:10px">
+            <label class="check-label">
+              <input type="checkbox" id="cfg-backup_auto_cierre">
+              Hacer backup automáticamente al cerrar el turno diario (Z)
+            </label>
           </div>
           <div class="btn-row">
-            <button class="btn btn-ok" id="btn-guardar-carpeta-backups">Guardar carpeta</button>
+            <button class="btn btn-ok" id="btn-guardar-carpeta-backups">Guardar configuración</button>
             <button class="btn btn-sec" id="btn-backup-ahora">Backup ahora</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Integraciones ── -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-titulo">MercadoPago</div>
+        <div class="card-body">
+          <div class="form-hint" style="margin-bottom:14px">Generá links de pago QR desde Ventas para que el cliente pague con MercadoPago.</div>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label">Access Token de producción</label>
+              <input class="form-input" type="password" id="cfg-mp_access_token" placeholder="APP_USR-..." autocomplete="new-password">
+            </div>
+          </div>
+          <div id="cfg-mp-estado" style="margin:8px 0 4px;font-size:13px"></div>
+          <div class="btn-row">
+            <button class="btn btn-ok" id="btn-guardar-mp">Guardar MercadoPago</button>
+          </div>
+
+          <!-- Webhook — pendiente hasta versión servidor -->
+          <div style="margin-top:18px;padding:14px;background:#f5f5f5;border-radius:8px;border:1.5px dashed #ccc;opacity:.6;pointer-events:none">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:12px;font-weight:700;background:#888;color:#fff;padding:2px 8px;border-radius:4px;letter-spacing:.5px">PRÓXIMAMENTE</span>
+              <span style="font-size:13px;font-weight:600;color:#555">Confirmación automática de pagos (Webhook)</span>
+            </div>
+            <div style="font-size:12px;color:#777;margin-bottom:10px">Cuando el sistema esté en un servidor con URL pública, MercadoPago podrá notificar automáticamente cada pago aprobado y registrarlo en caja sin intervención del cajero.</div>
+            <div class="form-grid">
+              <div class="form-group full">
+                <label class="form-label" style="color:#999">Webhook Secret</label>
+                <input class="form-input" type="password" id="cfg-mp_webhook_secret" placeholder="Disponible con servidor público" disabled>
+              </div>
+              <div class="form-group full">
+                <label class="form-label" style="color:#999">URL del webhook</label>
+                <input class="form-input" id="cfg-mp_webhook_url" readonly disabled placeholder="—" style="font-size:12px">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">WhatsApp Business</div>
+        <div class="card-body">
+          <div class="form-hint" style="margin-bottom:14px">Enviá comprobantes PDF al cliente directamente desde Ventas. Requiere cuenta Meta Business con número verificado y plantilla aprobada.</div>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label">Phone Number ID</label>
+              <input class="form-input" id="cfg-wa_phone_id" placeholder="123456789012345">
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Access Token permanente</label>
+              <input class="form-input" type="password" id="cfg-wa_token" placeholder="EAAxxxxx..." autocomplete="new-password">
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Nombre de la plantilla aprobada</label>
+              <input class="form-input" id="cfg-wa_template_name" placeholder="envio_comprobante">
+              <div class="form-hint">La plantilla debe tener un header de tipo documento (PDF) y 4 variables en el cuerpo: nombre, tipo comprobante, número y total.</div>
+            </div>
+          </div>
+          <div id="cfg-wa-estado" style="margin:8px 0 4px;font-size:13px"></div>
+          <div class="btn-row">
+            <button class="btn btn-ok" id="btn-guardar-wa">Guardar WhatsApp</button>
           </div>
         </div>
       </div>
@@ -605,7 +679,81 @@ table.cajas input[type="text"]:focus { border-color: var(--texto); }
 
   </div>
 
+  <!-- ── Panel: Sucursales y Depósitos ── -->
+  <div class="panel" id="panel-sucursales">
+
+    <!-- Bloque 1: Sucursales -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Sucursales</h3>
+        <button class="btn-accion" id="btn-nueva-sucursal">+ Nueva sucursal</button>
+      </div>
+      <table class="tabla" id="tabla-sucursales">
+        <thead><tr><th>#</th><th>Nombre</th><th>Domicilio</th><th>Teléfono</th><th>P. Venta</th><th>Activa</th><th></th></tr></thead>
+        <tbody id="body-sucursales"><tr><td colspan="7" class="empty">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Bloque 2: Depósitos (accordion por sucursal) -->
+    <div class="card" id="card-depositos" style="display:none;">
+      <div class="card-header">
+        <h3 id="dep-titulo">Depósitos</h3>
+        <button class="btn-accion" id="btn-nuevo-deposito">+ Nuevo depósito</button>
+      </div>
+      <table class="tabla" id="tabla-depositos">
+        <thead><tr><th>#</th><th>Nombre</th><th>Descripción</th><th>Principal</th><th>Activo</th><th></th></tr></thead>
+        <tbody id="body-depositos"><tr><td colspan="6" class="empty">Seleccioná una sucursal</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Bloque 3: Usuarios → sucursales -->
+    <div class="card">
+      <div class="card-header"><h3>Acceso de usuarios por sucursal</h3></div>
+      <table class="tabla" id="tabla-usuarios-suc">
+        <thead><tr><th>Usuario</th><th>Rol</th><th>Sucursales permitidas</th><th></th></tr></thead>
+        <tbody id="body-usuarios-suc"><tr><td colspan="4" class="empty">Cargando…</td></tr></tbody>
+      </table>
+    </div>
+
+  </div>
+
 </div>
+</div>
+
+<!-- Modal: Sucursal -->
+<div class="modal-overlay" id="modal-sucursal" style="display:none;">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header"><h3 id="ms-titulo">Nueva sucursal</h3><button class="modal-close" id="ms-cerrar">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nombre *</label><input id="ms-nombre" type="text" class="form-input" placeholder="Ej: Sucursal Central"></div>
+      <div class="form-group"><label>Nombre fantasia</label><input id="ms-fantasia" type="text" class="form-input"></div>
+      <div class="form-group"><label>Domicilio</label><input id="ms-domicilio" type="text" class="form-input"></div>
+      <div class="form-group"><label>Teléfono</label><input id="ms-telefono" type="text" class="form-input"></div>
+      <div class="form-group"><label>Email</label><input id="ms-email" type="email" class="form-input"></div>
+      <div class="form-group"><label>Punto de venta AFIP (override)</label><input id="ms-pto-venta" type="number" class="form-input" placeholder="Dejar vacío para usar el global"></div>
+      <div class="form-group form-check"><label><input id="ms-activo" type="checkbox" checked> Activa</label></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" id="ms-cancelar">Cancelar</button>
+      <button class="btn-accion" id="ms-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Depósito -->
+<div class="modal-overlay" id="modal-deposito" style="display:none;">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header"><h3 id="md-titulo">Nuevo depósito</h3><button class="modal-close" id="md-cerrar">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Nombre *</label><input id="md-nombre" type="text" class="form-input" placeholder="Ej: Depósito Norte"></div>
+      <div class="form-group"><label>Descripción</label><input id="md-descripcion" type="text" class="form-input"></div>
+      <div class="form-group form-check"><label><input id="md-activo" type="checkbox" checked> Activo</label></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sec" id="md-cancelar">Cancelar</button>
+      <button class="btn-accion" id="md-guardar">Guardar</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -660,19 +808,35 @@ async function cargarConfig() {
   $('cfg-website').value              = configActual.website || '';
   $('cfg-punto_venta').value          = configActual.punto_venta || 1;
   $('cfg-iva_porcentaje').value       = configActual.iva_porcentaje || 21;
+  // Tipos habilitados
+  const tiposEnabled = Array.isArray(configActual.tipos_habilitados) ? configActual.tipos_habilitados : [];
+  ['FC A-ELECT','FC B-ELECT','FC C-ELECT','REMITO','PRESUPUESTO'].forEach(t => {
+    const el = document.getElementById('tipo-' + t);
+    if (el) el.checked = tiposEnabled.length === 0 || tiposEnabled.includes(t);
+  });
   $('cfg-carpeta_comprobantes').value = configActual.carpeta_comprobantes || '';
   $('cfg-carpeta_backups').value      = configActual.carpeta_backups || '';
+  $('cfg-carpeta_backups_secundaria').value = configActual.carpeta_backups_secundaria || '';
+  $('cfg-backup_auto_cierre').checked = !!(configActual.backup_auto_cierre);
   $('cfg-clave_autorizacion').value   = '';
   $('rf-clave-grupo').style.display   = configActual.clave_autorizacion_configurada ? '' : 'none';
   $('cfg-clave-hint').textContent = (configActual.clave_autorizacion_configurada
     ? 'Clave configurada. '
     : 'Todavía no hay clave configurada — los usuarios no Admin podrán eliminar libremente. ')
     + 'Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.';
-  renderSwatches(configActual.color_tema || 'bordo');
   posnetTerminales = Array.isArray(configActual.posnet_terminales) ? configActual.posnet_terminales : [];
   renderPosnetTabla();
   renderAfipEstado(configActual);
   $('afip-entorno').value = configActual.afip_entorno || 'homologacion';
+  // Integraciones — los tokens no se devuelven por la API, inputs quedan vacíos
+  $('cfg-wa_phone_id').value      = configActual.wa_phone_id || '';
+  $('cfg-wa_template_name').value = configActual.wa_template_name || 'envio_comprobante';
+  const mpEst = $('cfg-mp-estado');
+  mpEst.textContent  = configActual.mp_configurado ? '✓ MercadoPago configurado' : 'Sin configurar';
+  mpEst.style.color  = configActual.mp_configurado ? 'var(--neo-ok)' : '#888';
+  const waEst = $('cfg-wa-estado');
+  waEst.textContent  = configActual.wa_configurado ? '✓ WhatsApp configurado' : 'Sin configurar';
+  waEst.style.color  = configActual.wa_configurado ? 'var(--neo-ok)' : '#888';
 }
 
 function renderAfipEstado(cfg) {
@@ -686,38 +850,6 @@ function renderAfipEstado(cfg) {
   }
 }
 
-let temaSeleccionado = 'bordo';
-
-function renderSwatches(temaActual) {
-  temaSeleccionado = temaActual;
-  const temas = window.LOGOS_TEMAS || {};
-  const wrap  = $('tema-swatches');
-  wrap.innerHTML = '';
-  Object.entries(temas).forEach(([key, t]) => {
-    const btn = document.createElement('button');
-    btn.className = 'swatch' + (key === temaActual ? ' activo' : '');
-    btn.title = t.label;
-    btn.style.background = t.primary;
-    btn.addEventListener('click', async () => {
-      temaSeleccionado = key;
-      wrap.querySelectorAll('.swatch').forEach(s => s.classList.remove('activo'));
-      btn.classList.add('activo');
-      window.LOGOS_aplicarTema(key);
-      // Guardar inmediatamente sin recolectar todo el formulario
-      try {
-        const r = await fetch(`${API}/configuracion`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...recolectarConfig(), color_tema: key }),
-        });
-        const d = await r.json();
-        if (!r.ok) toast(d.error || 'Error al guardar el tema', 'err');
-        else toast(`Tema ${t.label} aplicado`, 'ok');
-      } catch { toast('Error de conexión', 'err'); }
-    });
-    wrap.appendChild(btn);
-  });
-}
 
 async function cargarImpresoras() {
   const sel = $('cfg-impresora_nombre');
@@ -746,11 +878,16 @@ function recolectarConfig() {
     website:              $('cfg-website').value.trim(),
     punto_venta:          parseInt($('cfg-punto_venta').value) || 1,
     iva_porcentaje:       parseFloat($('cfg-iva_porcentaje').value) || 21,
+    tipos_habilitados:    ['FC A-ELECT','FC B-ELECT','FC C-ELECT','REMITO','PRESUPUESTO']
+                            .filter(t => { const el = document.getElementById('tipo-' + t); return el && el.checked; }),
     impresora_nombre:     $('cfg-impresora_nombre').value,
     carpeta_comprobantes: $('cfg-carpeta_comprobantes').value.trim(),
     carpeta_backups:      $('cfg-carpeta_backups').value.trim(),
+    carpeta_backups_secundaria: $('cfg-carpeta_backups_secundaria').value.trim(),
+    backup_auto_cierre:   $('cfg-backup_auto_cierre').checked ? 1 : 0,
     clave_autorizacion:   $('cfg-clave_autorizacion').value,
-    color_tema:           temaSeleccionado,
+    wa_phone_id:          $('cfg-wa_phone_id').value.trim(),
+    wa_template_name:     $('cfg-wa_template_name').value.trim(),
   };
 }
 
@@ -778,6 +915,71 @@ async function guardarConfig() {
 $('btn-guardar').addEventListener('click', guardarConfig);
 $('btn-guardar-carpeta-backups').addEventListener('click', guardarConfig);
 $('btn-guardar-clave').addEventListener('click', guardarConfig);
+
+// ── MercadoPago ───────────────────────────────────────────────
+$('btn-guardar-mp').addEventListener('click', async () => {
+  const btn = $('btn-guardar-mp');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const res = await fetch(`${API}/configuracion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...recolectarConfig(),
+        mp_access_token:   $('cfg-mp_access_token').value.trim(),
+        mp_webhook_secret: $('cfg-mp_webhook_secret').value.trim(),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al guardar', 'err'); return; }
+    configActual = data;
+    $('cfg-mp_access_token').value   = '';
+    $('cfg-mp_webhook_secret').value = '';
+    const est = $('cfg-mp-estado');
+    est.textContent = data.mp_configurado ? '✓ MercadoPago configurado' : 'Sin configurar';
+    est.style.color = data.mp_configurado ? 'var(--neo-ok)' : '#888';
+    toast('MercadoPago guardado', 'ok');
+  } catch { toast('Error de conexión', 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Guardar MercadoPago'; }
+});
+
+// ── WhatsApp ──────────────────────────────────────────────────
+$('btn-guardar-wa').addEventListener('click', async () => {
+  const btn = $('btn-guardar-wa');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const res = await fetch(`${API}/configuracion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...recolectarConfig(),
+        wa_token: $('cfg-wa_token').value.trim(),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al guardar', 'err'); return; }
+    configActual = data;
+    $('cfg-wa_token').value = '';
+    const est = $('cfg-wa-estado');
+    est.textContent = data.wa_configurado ? '✓ WhatsApp configurado' : 'Sin configurar';
+    est.style.color = data.wa_configurado ? 'var(--neo-ok)' : '#888';
+    toast('WhatsApp guardado', 'ok');
+  } catch { toast('Error de conexión', 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Guardar WhatsApp'; }
+});
+
+// ── Nombre de equipo (localStorage) ──────────────────────────
+(function () {
+  var input = $('cfg-device-name');
+  if (input) {
+    try { input.value = localStorage.getItem('logos_device_name') || ''; } catch(e) {}
+    $('btn-guardar-device').addEventListener('click', function () {
+      var val = input.value.trim();
+      try { localStorage.setItem('logos_device_name', val); } catch(e) {}
+      toast('Nombre de equipo guardado');
+    });
+  }
+})();
 
 // ── Logo ─────────────────────────────────────────────────────
 $('logo-file').addEventListener('change', async (e) => {
@@ -841,7 +1043,7 @@ async function cargarCajas() {
       <td><input type="text" value="${esc(c.nombre)}" class="caja-nombre"></td>
       <td><select class="form-select caja-tipo">${opcionesTipo(c.tipo)}</select></td>
       <td><label class="check-label"><input type="checkbox" class="caja-activa" ${c.activo ? 'checked' : ''}></label></td>
-      <td><button class="btn-mini caja-guardar">Guardar</button> <button class="btn-mini danger caja-borrar">Borrar</button></td>
+      <td class="btn-cell"><button class="btn-mini caja-guardar">Guardar</button> <button class="btn-mini danger caja-borrar">Borrar</button></td>
     </tr>
   `).join('') || '<tr><td colspan="4" style="color:var(--gris3)">Sin cajas todavía.</td></tr>';
 }
@@ -949,24 +1151,97 @@ function opcionesRol(actual) {
   ).join('');
 }
 
+let usuariosCache = [];
 async function cargarUsuarios() {
   const res = await fetch(`${API}/usuarios/todos`);
   const usuarios = await res.json();
+  usuariosCache = usuarios;
   $('usuarios-tbody').innerHTML = usuarios.map(u => `
     <tr data-id="${u.id}">
       <td><input type="text" value="${esc(u.nombre)}" class="usuario-nombre"></td>
       <td><select class="form-select usuario-rol">${opcionesRol(u.rol)}</select></td>
       <td><input type="text" class="usuario-pin" placeholder="(sin cambios)" inputmode="numeric"></td>
       <td><label class="check-label"><input type="checkbox" class="usuario-activo" ${u.activo ? 'checked' : ''}></label></td>
-      <td><button class="btn-mini usuario-guardar">Guardar</button> <button class="btn-mini danger usuario-borrar">Borrar</button></td>
+      <td class="btn-cell">${u.rol === 'user' ? '<button class="btn-mini usuario-permisos">Permisos</button> ' : ''}<button class="btn-mini usuario-guardar">Guardar</button> <button class="btn-mini danger usuario-borrar">Borrar</button></td>
     </tr>
   `).join('') || '<tr><td colspan="5" style="color:var(--gris3)">Sin usuarios todavía.</td></tr>';
 }
+
+// ── Modal de permisos granulares ─────────────────────────────
+const PERMISOS_DEF = [
+  ['compras',          'Compras',                                'Cargar y anular compras a proveedores'],
+  ['importar',         'Importar',                               'Importador masivo de productos, clientes y proveedores'],
+  ['productos_editar', 'Editar productos y precios',             'Crear/editar productos, ajustar stock, listas de precio'],
+  ['costos',           'Ver costos y ganancia',                  'Costo de productos, margen, rentabilidad y ganancia del negocio'],
+  ['reportes',         'Reportes',                               'Dashboard de ventas y Libro IVA'],
+  ['cc_ver',           'Ver cuentas corrientes',                 'Saldos, deudas y vencimientos de clientes y proveedores'],
+  ['cc_cobrar',        'Registrar cobros de cuenta corriente',   'Asentar pagos/cobros de CC'],
+  ['anular',           'Anular sin clave',                       'Anular ventas y movimientos de caja sin clave de autorización'],
+  ['log',              'Ver bitácora',                           'Registro de acciones de todos los usuarios'],
+  ['cajas_todas',      'Operar todas las cajas',                 'Vender y filtrar reportes de cualquier caja, no solo la propia'],
+];
+const PERM_TPL = {
+  vendedor:  {},
+  encargado: { productos_editar: true, reportes: true, cc_ver: true, cc_cobrar: true, anular: true, cajas_todas: true },
+};
+let permUsuarioId = null;
+
+function abrirPermisos(usuario) {
+  permUsuarioId = usuario.id;
+  $('perm-titulo').textContent = 'Permisos — ' + usuario.nombre;
+  const actual = usuario.permisos || {};
+  $('perm-checks').innerHTML = PERMISOS_DEF.map(([k, label, desc]) => `
+    <label class="perm-item">
+      <input type="checkbox" data-perm="${k}" ${actual[k] ? 'checked' : ''}>
+      <span><b>${esc(label)}</b><small>${esc(desc)}</small></span>
+    </label>`).join('');
+  $('perm-overlay').style.display = 'flex';
+}
+
+function cerrarPermisos() { $('perm-overlay').style.display = 'none'; permUsuarioId = null; }
+
+function aplicarPlantilla(tpl) {
+  $('perm-checks').querySelectorAll('[data-perm]').forEach(chk => {
+    chk.checked = !!PERM_TPL[tpl][chk.dataset.perm];
+  });
+}
+
+$('perm-tpl-vendedor').addEventListener('click',  () => aplicarPlantilla('vendedor'));
+$('perm-tpl-encargado').addEventListener('click', () => aplicarPlantilla('encargado'));
+$('perm-cerrar').addEventListener('click',   cerrarPermisos);
+$('perm-cancelar').addEventListener('click', cerrarPermisos);
+
+$('perm-guardar').addEventListener('click', async () => {
+  const tr = $('usuarios-tbody').querySelector(`tr[data-id="${permUsuarioId}"]`);
+  if (!tr) { cerrarPermisos(); return; }
+  const permisos = {};
+  $('perm-checks').querySelectorAll('[data-perm]').forEach(chk => { permisos[chk.dataset.perm] = chk.checked; });
+  const body = {
+    nombre:   tr.querySelector('.usuario-nombre').value.trim(),
+    rol:      tr.querySelector('.usuario-rol').value,
+    activo:   tr.querySelector('.usuario-activo').checked,
+    permisos,
+  };
+  const res  = await fetch(`${API}/usuarios/${permUsuarioId}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) { toast(data.error || 'Error al guardar permisos', 'err'); return; }
+  toast('Permisos guardados. El usuario los ve completos al volver a iniciar sesión.', 'ok');
+  cerrarPermisos();
+  cargarUsuarios();
+});
 
 $('usuarios-tbody').addEventListener('click', async (e) => {
   const tr = e.target.closest('tr');
   if (!tr) return;
   const id = tr.dataset.id;
+
+  if (e.target.classList.contains('usuario-permisos')) {
+    const u = usuariosCache.find(x => String(x.id) === String(id));
+    if (u) abrirPermisos(u);
+    return;
+  }
 
   if (e.target.classList.contains('usuario-guardar')) {
     const nombre = tr.querySelector('.usuario-nombre').value.trim();
@@ -998,14 +1273,19 @@ $('usuarios-tbody').addEventListener('click', async (e) => {
 
 $('btn-usuario-agregar').addEventListener('click', async () => {
   const nombre = $('usuario-nuevo-nombre').value.trim();
-  const rol    = $('usuario-nuevo-rol').value;
+  const perfil = $('usuario-nuevo-rol').value;
   const pin    = $('usuario-nuevo-pin').value.trim();
   if (!nombre) { toast('Ingresá un nombre', 'err'); return; }
   if (!/^\d{4,6}$/.test(pin)) { toast('El PIN debe ser numérico de 4 a 6 dígitos', 'err'); return; }
+  // Vendedor/Encargado son plantillas de permisos sobre el rol 'user';
+  // el detalle fino se ajusta después con el botón Permisos.
+  const body = perfil === 'admin'
+    ? { nombre, rol: 'admin', pin }
+    : { nombre, rol: 'user', pin, permisos: PERM_TPL[perfil] || {} };
   const res = await fetch(`${API}/usuarios`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nombre, rol, pin }),
+    body: JSON.stringify(body),
   });
   const data = await res.json();
   if (!res.ok) { toast(data.error || 'Error al crear el usuario', 'err'); return; }
@@ -1021,7 +1301,8 @@ $('rf-confirmacion').addEventListener('input', () => {
 });
 
 $('btn-reset-fabrica').addEventListener('click', async () => {
-  if (!confirm('Esto borra TODOS los datos (productos, clientes, ventas, usuarios, cajas) y no se puede deshacer. ¿Confirmás?')) return;
+  const ok = await confirmarModal('Esto borra TODOS los datos (productos, clientes, ventas, usuarios, cajas) y no se puede deshacer.', { titulo: 'Restablecer de fábrica', confirmLabel: 'Borrar todo', danger: true });
+  if (!ok) return;
   const btn = $('btn-reset-fabrica');
   btn.disabled = true; btn.textContent = 'Restableciendo…';
   try {
@@ -1079,6 +1360,170 @@ $('btn-subir-cert').addEventListener('click', async () => {
   await cargarCajas();
   await cargarUsuarios();
 })();
+
+// ── Sucursales y Depósitos ─────────────────────────────────
+let _sucursales  = [];
+let _sucActualId = null;
+
+async function cargarSucursales() {
+  const data = await apiFetch(`${API}/sucursales?todas=1`);
+  _sucursales = data || [];
+  const tbody = document.getElementById('body-sucursales');
+  if (!_sucursales.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Sin sucursales</td></tr>';
+    return;
+  }
+  tbody.innerHTML = _sucursales.map(s => `
+    <tr>
+      <td>${s.id}</td>
+      <td><strong>${esc(s.nombre)}</strong>${s.nombre_fantasia ? '<br><small>'+esc(s.nombre_fantasia)+'</small>' : ''}</td>
+      <td>${esc(s.domicilio||'—')}</td>
+      <td>${esc(s.telefono||'—')}</td>
+      <td>${s.punto_venta||'<em>Global</em>'}</td>
+      <td><span class="badge ${s.activo?'ok':'warn'}">${s.activo?'Sí':'No'}</span></td>
+      <td class="acciones">
+        <button class="btn-mini" onclick="editarSucursal(${s.id})">Editar</button>
+        <button class="btn-mini" onclick="verDepositos(${s.id}, '${esc(s.nombre).replace(/'/g,'&#39;')}')">Depósitos</button>
+      </td>
+    </tr>`).join('');
+  await cargarUsuariosSucursales();
+}
+
+async function verDepositos(sucursal_id, nombre) {
+  _sucActualId = sucursal_id;
+  document.getElementById('dep-titulo').textContent = `Depósitos de "${nombre}"`;
+  document.getElementById('card-depositos').style.display = '';
+  const data = await apiFetch(`${API}/sucursales/depositos?sucursal_id=${sucursal_id}`);
+  const tbody = document.getElementById('body-depositos');
+  if (!data || !data.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">Sin depósitos</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(d => `
+    <tr>
+      <td>${d.id}</td>
+      <td>${esc(d.nombre)}</td>
+      <td>${esc(d.descripcion||'—')}</td>
+      <td>${d.es_principal ? '<span class="badge ok">Principal</span>' : `<button class="btn-mini" onclick="setPrincipal(${d.id})">Establecer</button>`}</td>
+      <td><span class="badge ${d.activo?'ok':'warn'}">${d.activo?'Sí':'No'}</span></td>
+      <td class="acciones"><button class="btn-mini" onclick="editarDeposito(${d.id},'${esc(d.nombre).replace(/'/g,'&#39;')}','${esc(d.descripcion||'').replace(/'/g,'&#39;')}',${d.activo?1:0})">Editar</button></td>
+    </tr>`).join('');
+}
+
+async function setPrincipal(deposito_id) {
+  await apiFetch(`${API}/sucursales/deposito/${deposito_id}`, { method:'PUT', body: JSON.stringify({ es_principal: true }) });
+  if (_sucActualId) verDepositos(_sucActualId, document.getElementById('dep-titulo').textContent.replace('Depósitos de "','').replace('"',''));
+  toast('Depósito principal actualizado');
+}
+
+// Modal Sucursal
+let _editSucId = null;
+function abrirModalSucursal(s = null) {
+  _editSucId = s ? s.id : null;
+  document.getElementById('ms-titulo').textContent = s ? 'Editar sucursal' : 'Nueva sucursal';
+  document.getElementById('ms-nombre').value    = s?.nombre    || '';
+  document.getElementById('ms-fantasia').value  = s?.nombre_fantasia || '';
+  document.getElementById('ms-domicilio').value = s?.domicilio || '';
+  document.getElementById('ms-telefono').value  = s?.telefono  || '';
+  document.getElementById('ms-email').value     = s?.email     || '';
+  document.getElementById('ms-pto-venta').value = s?.punto_venta || '';
+  document.getElementById('ms-activo').checked  = s ? !!s.activo : true;
+  document.getElementById('modal-sucursal').style.display = 'flex';
+}
+function editarSucursal(id) {
+  abrirModalSucursal(_sucursales.find(s => s.id === id));
+}
+document.getElementById('btn-nueva-sucursal').onclick = () => abrirModalSucursal();
+document.getElementById('ms-cerrar').onclick   = () => document.getElementById('modal-sucursal').style.display='none';
+document.getElementById('ms-cancelar').onclick = () => document.getElementById('modal-sucursal').style.display='none';
+document.getElementById('ms-guardar').onclick  = async () => {
+  const body = {
+    nombre:          document.getElementById('ms-nombre').value.trim(),
+    nombre_fantasia: document.getElementById('ms-fantasia').value.trim()  || null,
+    domicilio:       document.getElementById('ms-domicilio').value.trim() || null,
+    telefono:        document.getElementById('ms-telefono').value.trim()  || null,
+    email:           document.getElementById('ms-email').value.trim()     || null,
+    punto_venta:     document.getElementById('ms-pto-venta').value        || null,
+    activo:          document.getElementById('ms-activo').checked,
+  };
+  if (!body.nombre) { toast('Nombre es requerido', 'err'); return; }
+  const url    = _editSucId ? `${API}/sucursales/${_editSucId}` : `${API}/sucursales`;
+  const method = _editSucId ? 'PUT' : 'POST';
+  const r = await apiFetch(url, { method, body: JSON.stringify(body) });
+  if (r?.ok !== undefined || r?.id) {
+    document.getElementById('modal-sucursal').style.display = 'none';
+    await cargarSucursales();
+    toast('Sucursal guardada');
+  }
+};
+
+// Modal Depósito
+let _editDepId = null;
+function abrirModalDeposito(dep = null) {
+  _editDepId = dep ? dep.id : null;
+  document.getElementById('md-titulo').textContent    = dep ? 'Editar depósito' : 'Nuevo depósito';
+  document.getElementById('md-nombre').value          = dep?.nombre || '';
+  document.getElementById('md-descripcion').value     = dep?.descripcion || '';
+  document.getElementById('md-activo').checked        = dep ? !!dep.activo : true;
+  document.getElementById('modal-deposito').style.display = 'flex';
+}
+function editarDeposito(id, nombre, descripcion, activo) {
+  abrirModalDeposito({ id, nombre, descripcion, activo });
+}
+document.getElementById('btn-nuevo-deposito').onclick = () => abrirModalDeposito();
+document.getElementById('md-cerrar').onclick   = () => document.getElementById('modal-deposito').style.display='none';
+document.getElementById('md-cancelar').onclick = () => document.getElementById('modal-deposito').style.display='none';
+document.getElementById('md-guardar').onclick  = async () => {
+  const body = {
+    nombre:       document.getElementById('md-nombre').value.trim(),
+    descripcion:  document.getElementById('md-descripcion').value.trim() || null,
+    activo:       document.getElementById('md-activo').checked,
+    sucursal_id:  _sucActualId,
+  };
+  if (!body.nombre) { toast('Nombre es requerido', 'err'); return; }
+  const url    = _editDepId ? `${API}/sucursales/deposito/${_editDepId}` : `${API}/sucursales/deposito`;
+  const method = _editDepId ? 'PUT' : 'POST';
+  await apiFetch(url, { method, body: JSON.stringify(body) });
+  document.getElementById('modal-deposito').style.display = 'none';
+  if (_sucActualId) verDepositos(_sucActualId, document.getElementById('dep-titulo').textContent.replace('Depósitos de "','').replace('"',''));
+  toast('Depósito guardado');
+};
+
+// Acceso de usuarios por sucursal
+async function cargarUsuariosSucursales() {
+  const data = await apiFetch(`${API}/usuarios/todos`);
+  const tbody = document.getElementById('body-usuarios-suc');
+  if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">Sin usuarios</td></tr>'; return; }
+  tbody.innerHTML = data.map(u => {
+    const ids      = Array.isArray(u.sucursal_ids) ? u.sucursal_ids : null;
+    const etiqueta = !ids || u.rol === 'admin'
+      ? '<span class="badge ok">Todas</span>'
+      : (ids.map(id => { const s = _sucursales.find(x => x.id === id); return s ? `<span class="badge">${esc(s.nombre)}<button class="btn-mini-x" onclick="quitarSucursalUsuario(${u.id},[${ids.filter(x=>x!==id).join(',')}])">×</button></span>` : ''; }).join('') || '<em>Sin acceso</em>');
+    const addBtn   = u.rol !== 'admin' ? `<select onchange="agregarSucursalUsuario(${u.id}, this.value, ${JSON.stringify(ids||[])})"><option value="">+ Agregar sucursal</option>${_sucursales.filter(s=>!ids||!ids.includes(s.id)).map(s=>`<option value="${s.id}">${esc(s.nombre)}</option>`).join('')}</select>` : '';
+    const resetBtn = u.rol !== 'admin' && ids ? `<button class="btn-mini" onclick="quitarSucursalUsuario(${u.id},[])">Dar acceso a todas</button>` : '';
+    return `<tr><td>${esc(u.nombre)}</td><td><span class="badge ${u.rol==='admin'?'ok':''}">${u.rol}</span></td><td>${etiqueta}</td><td class="acciones">${addBtn} ${resetBtn}</td></tr>`;
+  }).join('');
+}
+
+async function agregarSucursalUsuario(usuario_id, sucursal_id_str, actual) {
+  if (!sucursal_id_str) return;
+  const nueva = [...actual, parseInt(sucursal_id_str)];
+  await apiFetch(`${API}/usuarios/${usuario_id}`, { method:'PUT', body: JSON.stringify({ sucursal_ids: nueva }) });
+  await cargarSucursales();
+  toast('Acceso actualizado');
+}
+async function quitarSucursalUsuario(usuario_id, restantes) {
+  await apiFetch(`${API}/usuarios/${usuario_id}`, { method:'PUT', body: JSON.stringify({ sucursal_ids: restantes.length ? restantes : null }) });
+  await cargarSucursales();
+  toast('Acceso actualizado');
+}
+
+// Cargar sucursales al activar la pestaña
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab === 'sucursales') cargarSucursales();
+  });
+});
 </script>
 
 </body>

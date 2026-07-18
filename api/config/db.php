@@ -18,6 +18,20 @@ class DB {
                 'user'   => 'root',
                 'pass'   => '',
             ], $local);
+
+            // Overrides por variable de entorno: los usa la suite de tests
+            // (tools/test_integracion.php) para apuntar el servidor embebido a
+            // una base de prueba. Bajo Apache estas variables no existen, así
+            // que la operación normal no cambia.
+            foreach (['host' => 'LOGOS_DB_HOST', 'port' => 'LOGOS_DB_PORT', 'dbname' => 'LOGOS_DB_NAME',
+                      'user' => 'LOGOS_DB_USER', 'pass' => 'LOGOS_DB_PASS'] as $clave => $env) {
+                $v = getenv($env);
+                if ($v === false) continue;
+                // Para pass el string vacío es un valor válido (root de XAMPP);
+                // para el resto, vacío = sin override.
+                if ($v === '' && $clave !== 'pass') continue;
+                self::$config[$clave] = $clave === 'port' ? (int)$v : $v;
+            }
         }
         return self::$config;
     }

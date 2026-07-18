@@ -7,6 +7,10 @@ uploads/*
 !uploads/.htaccess
 install/backups/
 
+# Archivos de caché generados por librerías (Dompdf, etc.)
+vendor/dompdf/dompdf/lib/fonts/*.afm.json
+vendor/dompdf/dompdf/lib/fonts/*.ufm.json
+
 # Artefactos del entorno de desarrollo
 .impeccable/
 pos/.impeccable/

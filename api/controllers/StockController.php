@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../helpers/Auth.php';
+require_once __DIR__ . '/../helpers/LogAcciones.php';
 
 class StockController {
 
@@ -92,6 +94,8 @@ class StockController {
     public function historial(): void {
         $producto_id = isset($_GET['producto_id']) && is_numeric($_GET['producto_id'])
                        ? (int)$_GET['producto_id'] : null;
+        $deposito_id = isset($_GET['deposito_id']) && is_numeric($_GET['deposito_id'])
+                       ? (int)$_GET['deposito_id'] : null;
         $limit = min((int)($_GET['limit'] ?? 100), 500);
 
         $where  = ['1=1'];
@@ -101,14 +105,20 @@ class StockController {
             $where[]  = 'm.producto_id = ?';
             $params[] = $producto_id;
         }
+        if ($deposito_id) {
+            $where[]  = 'm.deposito_id = ?';
+            $params[] = $deposito_id;
+        }
 
         $params[] = $limit;
 
         $stmt = DB::get()->prepare("
             SELECT m.id, m.tipo, m.cantidad, m.fecha, m.referencia_id,
+                   m.deposito_id, d.nombre AS deposito_nombre,
                    p.nombre AS producto_nombre, p.codigo AS producto_codigo
             FROM movimientos_stock m
-            LEFT JOIN productos p ON p.id = m.producto_id
+            LEFT JOIN productos p  ON p.id = m.producto_id
+            LEFT JOIN depositos  d ON d.id = m.deposito_id
             WHERE " . implode(' AND ', $where) . "
             ORDER BY m.fecha DESC, m.id DESC
             LIMIT ?
@@ -117,12 +127,52 @@ class StockController {
         json(200, $stmt->fetchAll());
     }
 
+    public function alertas(): void {
+        $db = DB::get();
+
+        $items = $db->query("
+            SELECT id, codigo, nombre, proveedor, categoria,
+                   stock_actual, stock_minimo,
+                   (stock_minimo - stock_actual) AS faltante,
+                   costo_actual, precio_venta
+            FROM productos
+            WHERE activo = 1 AND stock_minimo > 0 AND stock_actual <= stock_minimo
+            ORDER BY proveedor, nombre
+        ")->fetchAll();
+
+        foreach ($items as &$p) {
+            $p['stock_actual']  = (float)$p['stock_actual'];
+            $p['stock_minimo']  = (float)$p['stock_minimo'];
+            $p['faltante']      = (float)$p['faltante'];
+            $p['costo_actual']  = (float)$p['costo_actual'];
+            $p['precio_venta']  = (float)$p['precio_venta'];
+        }
+        unset($p);
+
+        // Agrupar por proveedor para facilitar el pedido
+        $por_proveedor = [];
+        foreach ($items as $item) {
+            $prov = $item['proveedor'] ?: '(Sin proveedor)';
+            if (!isset($por_proveedor[$prov])) {
+                $por_proveedor[$prov] = ['proveedor' => $prov, 'items' => []];
+            }
+            $por_proveedor[$prov]['items'][] = $item;
+        }
+
+        json(200, [
+            'count'         => count($items),
+            'items'         => $items,
+            'por_proveedor' => array_values($por_proveedor),
+        ]);
+    }
+
     public function ajustar(): void {
         $body = json_decode(file_get_contents('php://input'), true);
 
         $producto_id = (int)($body['producto_id'] ?? 0);
         $tipo        = $body['tipo']     ?? '';
         $cantidad    = (float)($body['cantidad'] ?? 0);
+        $deposito_id = isset($body['deposito_id']) && is_numeric($body['deposito_id']) ? (int)$body['deposito_id'] : 1;
 
         if (!$producto_id || !in_array($tipo, ['entrada', 'salida', 'ajuste'], true) || $cantidad < 0) {
             json(400, ['error' => 'producto_id, tipo (entrada|salida|ajuste) y cantidad son requeridos']);
@@ -140,32 +190,52 @@ class StockController {
         $stock_anterior = (float)$producto['stock_actual'];
 
         if ($tipo === 'ajuste') {
-            $mov_cantidad    = $cantidad - $stock_anterior;
-            $nuevo_stock_sql = '?';
-            $update_params   = [$cantidad, $producto_id];
+            $mov_cantidad = $cantidad - $stock_anterior;
         } elseif ($tipo === 'entrada') {
-            $mov_cantidad    = $cantidad;
-            $nuevo_stock_sql = 'stock_actual + ?';
-            $update_params   = [$cantidad, $producto_id];
+            $mov_cantidad = $cantidad;
         } else {
-            $mov_cantidad    = -$cantidad;
-            $nuevo_stock_sql = 'stock_actual - ?';
-            $update_params   = [$cantidad, $producto_id];
+            $mov_cantidad = -$cantidad;
         }
 
         $db->beginTransaction();
         try {
-            $db->prepare("UPDATE productos SET stock_actual = $nuevo_stock_sql WHERE id = ?")
-               ->execute($update_params);
+            // Actualizar stock total del producto
+            $db->prepare("
+                UPDATE productos
+                SET stock_actual = CASE
+                    WHEN ? = 'ajuste'  THEN ?
+                    WHEN ? = 'entrada' THEN stock_actual + ?
+                    ELSE                    stock_actual - ?
+                END
+                WHERE id = ?
+            ")->execute([$tipo, $cantidad, $tipo, $cantidad, $cantidad, $producto_id]);
 
-            $db->prepare("INSERT INTO movimientos_stock (producto_id, tipo, cantidad, fecha) VALUES (?, ?, ?, NOW())")
-               ->execute([$producto_id, $tipo, $mov_cantidad]);
+            // Actualizar stock por depósito
+            if ($tipo === 'ajuste') {
+                $db->prepare("
+                    INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE stock_actual = VALUES(stock_actual)
+                ")->execute([$producto_id, $deposito_id, $cantidad]);
+            } else {
+                $delta = $tipo === 'entrada' ? $cantidad : -$cantidad;
+                $db->prepare("
+                    INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)
+                ")->execute([$producto_id, $deposito_id, $delta]);
+            }
+
+            $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, fecha) VALUES (?, ?, ?, ?, NOW())")
+               ->execute([$producto_id, $deposito_id, $tipo, $mov_cantidad]);
 
             $db->commit();
 
             $stmt = $db->prepare("SELECT stock_actual FROM productos WHERE id = ?");
             $stmt->execute([$producto_id]);
             $nuevo_stock = (float)$stmt->fetchColumn();
+
+            LogAcciones::registrar('ajuste_stock', 'producto', $producto_id, ['nombre' => $producto['nombre'], 'tipo' => $tipo, 'delta' => $mov_cantidad, 'stock_anterior' => $stock_anterior, 'stock_actual' => $nuevo_stock]);
 
             json(200, [
                 'ok'             => true,

@@ -9,97 +9,156 @@
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
-.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; }
-.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
-.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+.page-header {
+  background: var(--neo-bg);
+  box-shadow: 0 3px 8px var(--neo-sd), 0 -1px 4px var(--neo-sl);
+  padding: 20px clamp(20px,4vw,48px); flex-shrink: 0;
+  position: relative; z-index: 10;
+}
+.page-header h1 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; color: var(--neo-text); }
+.page-header p  { font-size: 13px; color: var(--neo-text-3); margin-top: 4px; }
 
-.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
-.contenido-inner { max-width:1100px; margin:0 auto; }
+.contenido { flex: 1; min-height: 0; overflow-y: auto; padding: clamp(16px,2vw,28px) clamp(16px,2.5vw,32px); background: var(--neo-bg-deep); }
 
-.pasos { display:flex; gap:6px; margin-bottom:18px; }
-.paso-pill { flex:1; padding:9px 14px; background:white; border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-weight:700; color:var(--gris3); text-align:center; }
-.paso-pill.activo { border-color:var(--azul); color:var(--azul); background:#FEF2F2; }
-.paso-pill.hecho  { border-color:var(--verde); color:#15803D; background:#F0FDF4; }
+/* Stepper de pasos */
+.pasos { display: flex; gap: 6px; margin-bottom: 18px; }
+.paso-pill {
+  flex: 1; padding: 9px 14px; border-radius: var(--neo-r-md);
+  font-size: 12px; font-weight: 700; color: var(--neo-text-3); text-align: center;
+  background: var(--neo-bg); box-shadow: var(--neo-e1); border: none;
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
+}
+.paso-pill.activo { color: var(--neo-accent); box-shadow: var(--neo-i1); }
+.paso-pill.hecho  { color: var(--neo-success); box-shadow: var(--neo-i1); }
 
-.card { background:white; border:1px solid var(--borde); border-radius:12px; padding:22px; margin-bottom:16px; }
-.card h2 { font-size:16px; font-weight:800; margin-bottom:4px; }
-.card .sub { font-size:var(--fs-sm); color:var(--gris3); margin-bottom:16px; }
+/* Card */
+.card { background: var(--neo-bg); border-radius: var(--neo-r-lg); box-shadow: var(--neo-e2); border: none !important; padding: 22px; margin-bottom: 16px; }
+.card h2 { font-size: 15px; font-weight: 800; margin-bottom: 4px; color: var(--neo-text); }
+.card .sub { font-size: 13px; color: var(--neo-text-3); margin-bottom: 16px; }
 
-.form-row { display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; margin-bottom:14px; }
-.form-group { display:flex; flex-direction:column; gap:5px; }
-.form-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); }
-.form-input { padding:9px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:14px; font-family:inherit; outline:none; background:var(--gris1); min-width:200px; }
-.form-input:focus { border-color:var(--azul); background:white; }
-.form-hint { font-size:12px; color:var(--gris3); margin-top:4px; }
+/* Formularios */
+.form-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.form-input {
+  padding: 9px 12px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 14px; font-family: inherit; outline: none;
+  background: var(--neo-bg); color: var(--neo-text);
+  box-shadow: var(--neo-i1); min-width: 200px;
+  transition: box-shadow var(--neo-t-fast);
+}
+.form-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.form-hint { font-size: 12px; color: var(--neo-text-3); margin-top: 4px; }
 
-.btn-pri { padding:10px 20px; background:var(--azul); color:white; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; }
-.btn-pri:hover:not(:disabled) { background:var(--azul-h); }
-.btn-pri:disabled { opacity:.5; cursor:not-allowed; }
-.btn-sec { padding:10px 20px; background:var(--gris2); color:var(--texto); border:none; border-radius:8px; font-size:14px; font-weight:600; cursor:pointer; }
-.btn-sec:hover { background:var(--borde); }
-.btn-mini { padding:7px 14px; background:white; border:1.5px solid var(--borde); border-radius:7px; font-size:12px; font-weight:700; cursor:pointer; }
-.btn-mini:hover { background:var(--gris1); }
-.btn-row { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+/* Botones */
+.btn-pri {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit;
+  background: var(--neo-accent); color: white;
+  box-shadow: 4px 4px 10px var(--neo-accent-glow), -2px -2px 5px rgba(255,255,255,.15);
+  transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
+}
+.btn-pri:hover:not(:disabled) { background: var(--neo-accent-h); box-shadow: 6px 6px 14px var(--neo-accent-glow); }
+.btn-pri:active:not(:disabled) { transform: scale(.97); }
+.btn-pri:disabled { opacity: .5; cursor: not-allowed; }
+.btn-sec {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 20px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2);
+  transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
+}
+.btn-sec:hover { box-shadow: var(--neo-e3); }
+.btn-sec:active { transform: scale(.97); }
+.btn-mini {
+  padding: 7px 14px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e1);
+  transition: box-shadow var(--neo-t-fast);
+}
+.btn-mini:hover { box-shadow: var(--neo-e2); }
+.btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
 
 /* Proveedor */
-.prov-wrap { position:relative; max-width:360px; }
-.prov-tag { display:none; align-items:center; gap:8px; background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:9px 12px; }
-.prov-tag.visible { display:flex; }
-.prov-tag .nom { font-weight:700; flex:1; }
-.prov-tag .x { background:none; border:none; cursor:pointer; color:var(--rojo); font-size:18px; line-height:1; }
-.prov-dd { position:absolute; top:calc(100% + 4px); left:0; right:0; background:white; border:1px solid var(--borde); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:100; max-height:240px; overflow-y:auto; display:none; }
-.prov-dd.visible { display:block; }
-.prov-dd-item { padding:9px 14px; cursor:pointer; border-bottom:1px solid var(--gris2); font-size:13px; }
-.prov-dd-item:last-child { border-bottom:none; }
-.prov-dd-item:hover { background:#FEF2F2; }
-.prov-dd-item .cuit { font-size:11px; color:var(--gris3); margin-top:1px; }
-.prov-nuevo-form { display:none; margin-top:10px; padding:14px; background:var(--gris1); border-radius:8px; border:1px solid var(--borde); }
-.prov-nuevo-form.visible { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; }
+.prov-wrap { position: relative; max-width: 360px; }
+.prov-tag { display: none; align-items: center; gap: 8px; border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); background: rgba(79,142,247,.1); padding: 9px 12px; }
+.prov-tag.visible { display: flex; }
+.prov-tag .nom { font-weight: 700; flex: 1; color: var(--neo-accent); }
+.prov-tag .x { background: none; border: none; cursor: pointer; color: var(--neo-danger); font-size: 18px; line-height: 1; }
+.prov-dd { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--neo-bg); border-radius: var(--neo-r-md); box-shadow: var(--neo-e3); z-index: 100; max-height: 240px; overflow-y: auto; display: none; }
+.prov-dd.visible { display: block; }
+.prov-dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid rgba(163,177,198,.2); font-size: 13px; color: var(--neo-text); transition: background var(--neo-t-fast); }
+.prov-dd-item:last-child { border-bottom: none; }
+.prov-dd-item:hover, .prov-dd-item.dd-activo { background: rgba(255,255,255,.55); }
+.prov-dd-item .cuit { font-size: 11px; color: var(--neo-text-3); margin-top: 1px; }
+.prov-nuevo-form { display: none; margin-top: 10px; padding: 14px; background: var(--neo-bg-deep); border-radius: var(--neo-r-md); box-shadow: var(--neo-i1); }
+.prov-nuevo-form.visible { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
 
-/* Items */
-.busq-wrap { position:relative; max-width:420px; margin-bottom:10px; }
-.dropdown { position:absolute; top:calc(100% + 4px); left:0; right:0; background:white; border:1px solid var(--borde); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); z-index:100; max-height:240px; overflow-y:auto; display:none; }
-.dropdown.visible { display:block; }
-.dd-item { padding:9px 14px; cursor:pointer; border-bottom:1px solid var(--gris2); font-size:13px; display:flex; gap:10px; }
-.dd-item:last-child { border-bottom:none; }
-.dd-item:hover { background:#FEF2F2; }
-.dd-item .cod { font-family:monospace; color:var(--gris3); font-size:12px; }
+/* Items / búsqueda */
+.busq-wrap { position: relative; max-width: 420px; margin-bottom: 10px; }
+.dropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--neo-bg); border-radius: var(--neo-r-md); box-shadow: var(--neo-e3); z-index: 100; max-height: 240px; overflow-y: auto; display: none; }
+.dropdown.visible { display: block; }
+.dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid rgba(163,177,198,.2); font-size: 13px; display: flex; gap: 10px; color: var(--neo-text); transition: background var(--neo-t-fast); }
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover, .dd-item.dd-activo { background: rgba(255,255,255,.55); }
+.dd-item .cod { font-family: monospace; color: var(--neo-text-3); font-size: 12px; }
 
-.excel-row { display:flex; gap:10px; align-items:center; margin-bottom:6px; }
-.excel-errores { background:#FEF2F2; border:1px solid #FECACA; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-size:13px; color:var(--rojo); }
-.excel-errores div { padding:2px 0; }
+.excel-row { display: flex; gap: 10px; align-items: center; margin-bottom: 6px; }
+.excel-errores { background: rgba(231,76,60,.08); border-radius: var(--neo-r-sm); box-shadow: var(--neo-i1); padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: var(--neo-danger); }
+.excel-errores div { padding: 2px 0; }
 
-.table-wrap { overflow-x:auto; border:1px solid var(--borde); border-radius:8px; margin-bottom:16px; }
-table.items { width:100%; border-collapse:collapse; min-width:760px; }
-table.items th { text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); padding:9px 12px; border-bottom:2px solid var(--gris2); white-space:nowrap; }
-table.items td { padding:7px 12px; font-size:13px; border-bottom:1px solid var(--gris2); vertical-align:middle; }
-table.items input { width:100%; padding:5px 7px; border:1px solid var(--borde); border-radius:6px; font-size:13px; font-family:inherit; text-align:right; }
-table.items input:focus { outline:none; border-color:var(--azul); }
-.col-prod { min-width:200px; }
-.btn-del { background:none; border:none; cursor:pointer; color:var(--rojo); font-size:16px; padding:4px; }
-.vacio-mini { padding:18px; text-align:center; color:var(--gris3); font-size:13px; }
+/* Tabla de items */
+.table-wrap { overflow-x: auto; border-radius: var(--neo-r-md); box-shadow: var(--neo-i1); margin-bottom: 16px; background: var(--neo-bg-deep); }
+table.items { width: 100%; border-collapse: collapse; table-layout: fixed; }
+table.items th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); padding: 9px 10px; border-bottom: 1px solid rgba(163,177,198,.35); white-space: nowrap; overflow: hidden; background: var(--neo-bg-deep); }
+table.items td { padding: 6px 10px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); vertical-align: middle; white-space: nowrap; overflow: hidden; color: var(--neo-text); }
+table.items input {
+  width: 100%; padding: 5px 7px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 13px; font-family: inherit; text-align: right;
+  background: var(--neo-bg); box-shadow: var(--neo-i1); color: var(--neo-text);
+  box-sizing: border-box; outline: none;
+  transition: box-shadow var(--neo-t-fast);
+}
+table.items input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.td-precio { text-align: right; font-variant-numeric: tabular-nums; }
+.btn-del { background: none; border: none; cursor: pointer; color: var(--neo-danger); font-size: 16px; padding: 4px; opacity: .7; transition: opacity var(--neo-t-fast); }
+.btn-del:hover { opacity: 1; }
+.vacio-mini { padding: 18px; text-align: center; color: var(--neo-text-3); font-size: 13px; }
 
-.totales-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:14px; margin-bottom:6px; }
-.total-box { background:var(--gris1); border-radius:10px; padding:14px 16px; }
-.total-box .lbl { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; color:var(--gris3); margin-bottom:4px; }
-.total-box .val { font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; }
-.total-box.total .val { color:var(--azul); }
+/* Totales */
+.totales-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 6px; }
+.total-box { background: var(--neo-bg); border-radius: var(--neo-r-md); box-shadow: var(--neo-e1); padding: 14px 16px; }
+.total-box .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); margin-bottom: 4px; }
+.total-box .val { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--neo-text); }
+.total-box.total { box-shadow: var(--neo-e2); }
+.total-box.total .val { color: var(--neo-accent); }
 
 /* Pago */
-.pago-modo-row { display:flex; gap:10px; margin-bottom:14px; }
-.pago-modo-btn { padding:10px 16px; border:1.5px solid var(--borde); border-radius:8px; background:white; font-size:13px; font-weight:600; cursor:pointer; }
-.pago-modo-btn.activo { border-color:var(--azul); background:#FEF2F2; color:var(--azul); }
-.pago-linea { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
-.pago-linea select { padding:8px 10px; border:1.5px solid var(--borde); border-radius:8px; font-size:13px; font-family:inherit; }
-.pago-resumen { font-size:13px; margin-top:8px; padding:10px 14px; border-radius:8px; }
-.pago-resumen.ok  { background:#F0FDF4; color:#15803D; }
-.pago-resumen.err { background:#FEF2F2; color:var(--rojo); }
+.pago-modo-row { display: flex; gap: 10px; margin-bottom: 14px; }
+.pago-modo-btn {
+  padding: 10px 16px; border: none; border-radius: var(--neo-r-sm);
+  background: var(--neo-bg); box-shadow: var(--neo-e1);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  color: var(--neo-text-2); transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
+}
+.pago-modo-btn.activo { box-shadow: var(--neo-i1); color: var(--neo-accent); }
+.pago-linea { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.pago-linea select {
+  padding: 8px 10px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 13px; font-family: inherit; outline: none;
+  background: var(--neo-bg); box-shadow: var(--neo-i1); color: var(--neo-text);
+}
+.pago-resumen { font-size: 13px; margin-top: 8px; padding: 10px 14px; border-radius: var(--neo-r-sm); box-shadow: var(--neo-i1); }
+.pago-resumen.ok  { background: rgba(39,174,96,.1); color: var(--neo-success); }
+.pago-resumen.err { background: rgba(231,76,60,.1); color: var(--neo-danger); }
 
-.exito-box { text-align:center; padding:30px 0; }
-.exito-box .check { font-size:48px; color:#15803D; margin-bottom:10px; }
-.exito-box h2 { font-size:20px; margin-bottom:6px; }
-.exito-box .monto { font-size:30px; font-weight:800; color:var(--azul); margin:14px 0; }
-.exito-acciones { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+/* Éxito */
+.exito-box { text-align: center; padding: 30px 0; }
+.exito-box .check { font-size: 48px; color: var(--neo-success); margin-bottom: 10px; }
+.exito-box h2 { font-size: 20px; margin-bottom: 6px; color: var(--neo-text); }
+.exito-box .monto { font-size: 30px; font-weight: 800; color: var(--neo-accent); margin: 14px 0; font-variant-numeric: tabular-nums; }
+.exito-acciones { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
 
 </style>
 </head>
@@ -108,12 +167,26 @@ table.items input:focus { outline:none; border-color:var(--azul); }
 <?php $nav_activo = 'compras'; include __DIR__ . '/nav.php'; ?>
 
 <div class="page-header">
-  <h1>Nueva compra</h1>
-  <p>Cargá una factura o remito de compra en 3 pasos</p>
+  <h1 id="page-titulo">Nueva compra</h1>
+  <p id="page-sub">Cargá una factura o remito de compra en 3 pasos</p>
 </div>
 
 <div class="contenido">
 <div class="contenido-inner">
+
+  <!-- Banner de modo edición -->
+  <div id="edit-banner" style="display:none;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:8px;padding:10px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:12px">
+    <span id="edit-banner-txt" style="font-weight:700;color:var(--rojo);font-size:14px"></span>
+    <button id="btn-anular" class="btn-mini" style="color:var(--rojo);border-color:#FECACA;flex-shrink:0">Anular compra</button>
+  </div>
+  <div id="anular-confirm" style="display:none;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+    <div style="font-weight:700;color:var(--rojo);margin-bottom:8px">¿Confirmar anulación?</div>
+    <div style="font-size:13px;margin-bottom:10px">Se revertirán el stock y la cuenta corriente. Esta acción no se puede deshacer.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-sec" id="btn-anular-no">Cancelar</button>
+      <button class="btn-pri" id="btn-anular-si" style="background:var(--rojo)">Sí, anular</button>
+    </div>
+  </div>
 
   <div class="pasos">
     <div class="paso-pill activo" id="pill-1">1. Comprobante</div>
@@ -149,9 +222,19 @@ table.items input:focus { outline:none; border-color:var(--azul); }
         </div>
         <div class="form-group">
           <label class="form-label">Condición IVA</label>
-          <input type="text" id="pn-condicion" class="form-input" style="min-width:160px" value="Responsable Inscripto">
+          <select id="pn-condicion" class="form-input" style="min-width:180px">
+            <option value="">—</option>
+            <option>Responsable Inscripto</option>
+            <option>Monotributista</option>
+            <option>Consumidor Final</option>
+            <option>Exento</option>
+            <option>No Responsable</option>
+          </select>
         </div>
-        <button class="btn-pri" id="btn-prov-crear">Crear y usar</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn-pri" id="btn-prov-crear">Crear y usar</button>
+          <button class="btn-sec" id="btn-prov-completo" type="button">Carga completa…</button>
+        </div>
       </div>
     </div>
 
@@ -174,7 +257,18 @@ table.items input:focus { outline:none; border-color:var(--azul); }
       </div>
     </div>
 
-    <div class="btn-row"><button class="btn-pri" id="btn-paso1-continuar">Continuar</button></div>
+    <div id="dup-warn" style="display:none;background:#FEF2F2;border:1.5px solid #FECACA;border-radius:8px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-weight:700;color:var(--rojo);font-size:14px;margin-bottom:6px">Comprobante duplicado</div>
+      <div id="dup-detalle" style="font-size:13px;margin-bottom:12px"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sec" id="btn-dup-cancelar">Cancelar</button>
+        <button class="btn-pri" id="btn-dup-forzar" style="background:var(--rojo)">Cargar de todas formas</button>
+      </div>
+    </div>
+    <div class="btn-row" id="paso1-btn-row">
+      <button class="btn-sec" id="btn-cancelar-edit" style="display:none">Cancelar</button>
+      <button class="btn-pri" id="btn-paso1-continuar">Continuar</button>
+    </div>
   </div>
 
   <!-- Paso 2: Productos -->
@@ -195,23 +289,46 @@ table.items input:focus { outline:none; border-color:var(--azul); }
 
     <div class="table-wrap">
       <table class="items">
+        <colgroup>
+          <col><!-- producto: toma el espacio restante -->
+          <col style="width:90px"><!-- Cant -->
+          <col style="width:140px"><!-- Costo unit -->
+          <col style="width:78px"><!-- % IVA -->
+          <col style="width:78px"><!-- % Desc -->
+          <col style="width:120px"><!-- $ Desc -->
+          <col style="width:150px"><!-- Subtotal -->
+          <col style="width:125px"><!-- IVA -->
+          <col style="width:150px"><!-- Total -->
+          <col style="width:38px"><!-- borrar -->
+        </colgroup>
         <thead><tr>
-          <th class="col-prod">Producto</th><th>Cant.</th><th>Costo unit.</th><th>% IVA</th><th>Subtotal</th><th>IVA</th><th>Total</th><th></th>
+          <th>Producto</th><th>Cant.</th><th>Costo unit.</th><th>% IVA</th><th>% Desc.</th><th>$ Desc.</th><th>Subtotal</th><th>IVA</th><th>Total</th><th></th>
         </tr></thead>
         <tbody id="p2-tbody"></tbody>
       </table>
       <div class="vacio-mini" id="p2-vacio">Todavía no agregaste productos</div>
     </div>
 
-    <div class="form-group" style="max-width:220px; margin-bottom:16px">
-      <label class="form-label">Percepción IIBB (%)</label>
-      <input type="number" id="p2-percepcion" class="form-input" min="0" step="0.01" placeholder="Opcional">
+    <div class="form-row" style="margin-bottom:16px;align-items:flex-end;flex-wrap:wrap">
+      <div class="form-group" style="max-width:180px">
+        <label class="form-label">Percepción IIBB (%)</label>
+        <input type="number" id="p2-percepcion" class="form-input" min="0" step="0.01" placeholder="Opcional">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descuento general</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="p2-desc-gen-pct" class="form-input" min="0" max="100" step="0.01" placeholder="%" style="max-width:90px">
+          <span style="font-size:12px;color:var(--gris3)">%  ó</span>
+          <input type="number" id="p2-desc-gen-monto" class="form-input" min="0" step="0.01" placeholder="$ monto" style="max-width:150px">
+        </div>
+      </div>
     </div>
 
     <div class="totales-grid">
       <div class="total-box"><div class="lbl">Subtotal</div><div class="val" id="p2-subtotal">$ 0,00</div></div>
       <div class="total-box"><div class="lbl">IVA</div><div class="val" id="p2-iva">$ 0,00</div></div>
       <div class="total-box"><div class="lbl">Percepción</div><div class="val" id="p2-percep-monto">$ 0,00</div></div>
+      <div class="total-box" id="p2-desc-box" style="display:none"><div class="lbl">Descuento</div><div class="val" style="color:var(--verde)" id="p2-desc-display">$ 0,00</div></div>
       <div class="total-box total"><div class="lbl">Total</div><div class="val" id="p2-total">$ 0,00</div></div>
     </div>
 
@@ -250,9 +367,15 @@ table.items input:focus { outline:none; border-color:var(--azul); }
     </div>
 
     <div class="form-group" id="p3-caja-group" style="max-width:260px; margin-top:16px; display:none">
-      <label class="form-label">Caja de donde sale el dinero</label>
+      <label class="form-label">Descuento de caja <em style="font-weight:400;font-style:normal;color:var(--neo-text-3)">(opcional)</em></label>
       <select id="p3-caja" class="form-input"></select>
-      <span class="form-hint">Necesita tener un turno abierto.</span>
+      <span class="form-hint">Si la caja tiene turno abierto, se registra el egreso. Si no, el pago queda solo en la compra.</span>
+    </div>
+
+    <div class="form-group" id="p3-deposito-group" style="max-width:260px; margin-top:8px; display:none">
+      <label class="form-label">Depósito destino</label>
+      <select id="p3-deposito" class="form-input"></select>
+      <span class="form-hint">El stock de esta compra ingresa a este depósito.</span>
     </div>
 
     <div class="btn-row">
@@ -265,7 +388,7 @@ table.items input:focus { outline:none; border-color:var(--azul); }
   <div class="card" id="paso-4" style="display:none">
     <div class="exito-box">
       <div class="check">✓</div>
-      <h2>Compra registrada</h2>
+      <h2 id="p4-titulo">Compra registrada</h2>
       <div class="sub" id="p4-numero"></div>
       <div class="monto" id="p4-monto"></div>
       <div class="exito-acciones">
@@ -307,10 +430,23 @@ function irPaso(n) {
   }
 }
 
+const editId = parseInt(new URLSearchParams(location.search).get('id')) || null;
+
 let proveedorSel = null;
 let items = [];
 let pagoModo = 'simple';
 let pagosMixto = []; // [{tipo, monto}]
+
+// ── Navegación por teclado en dropdowns ──────────────────────────
+let provDDIdx = -1;
+let busqDDIdx = -1;
+
+function resaltarDD(ddEl, itemSel, idx) {
+  ddEl.querySelectorAll(itemSel).forEach((el, i) => {
+    el.classList.toggle('dd-activo', i === idx);
+    if (i === idx) el.scrollIntoView({ block: 'nearest' });
+  });
+}
 
 // ── Paso 1: Proveedor ────────────────────────────────────────────
 let provTimeout = null;
@@ -319,6 +455,28 @@ $('prov-input').addEventListener('input', () => {
   const q = $('prov-input').value.trim();
   if (q.length < 2) { cerrarProvDD(); return; }
   provTimeout = setTimeout(() => buscarProveedores(q), 250);
+});
+$('prov-input').addEventListener('keydown', e => {
+  const dd = $('prov-dd');
+  if (!dd.classList.contains('visible')) return;
+  const its = dd.querySelectorAll('.prov-dd-item');
+  if (!its.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    provDDIdx = Math.min(provDDIdx + 1, its.length - 1);
+    resaltarDD(dd, '.prov-dd-item', provDDIdx);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    provDDIdx = provDDIdx > 0 ? provDDIdx - 1 : -1;
+    resaltarDD(dd, '.prov-dd-item', provDDIdx);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    (its[provDDIdx >= 0 ? provDDIdx : 0])?.click();
+    provDDIdx = -1;
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    cerrarProvDD();
+  }
 });
 document.addEventListener('click', e => { if (!e.target.closest('.prov-wrap')) cerrarProvDD(); });
 
@@ -332,12 +490,13 @@ async function buscarProveedores(q) {
         <div>${esc(p.nombre)}</div>
         <div class="cuit">${esc(p.cuit || 'Sin CUIT')}</div>
       </div>`).join('');
+    provDDIdx = -1;
     $('prov-dd').classList.add('visible');
     $('prov-dd').querySelectorAll('.prov-dd-item').forEach(el =>
       el.addEventListener('click', () => seleccionarProveedor(JSON.parse(el.dataset.json))));
   } catch { /* no bloquea */ }
 }
-function cerrarProvDD() { $('prov-dd').classList.remove('visible'); $('prov-dd').innerHTML = ''; }
+function cerrarProvDD() { $('prov-dd').classList.remove('visible'); $('prov-dd').innerHTML = ''; provDDIdx = -1; }
 
 function seleccionarProveedor(p) {
   proveedorSel = p;
@@ -372,10 +531,50 @@ $('btn-prov-crear').addEventListener('click', async () => {
   } catch (e) { toast(e.message, 'err'); }
 });
 
-$('btn-paso1-continuar').addEventListener('click', () => {
+$('btn-prov-completo').addEventListener('click', () => {
+  $('prov-nuevo-form').classList.remove('visible');
+  ContactoModal.nuevo('proveedores', {
+    onGuardado: (data) => {
+      seleccionarProveedor(data);
+      toast('Proveedor creado', 'ok');
+    },
+  });
+});
+
+function resetDupWarn() {
+  $('dup-warn').style.display = 'none';
+  $('btn-paso1-continuar').style.display = '';
+}
+
+$('btn-paso1-continuar').addEventListener('click', async () => {
   if (!proveedorSel) { toast('Elegí o creá un proveedor', 'err'); return; }
+  const numero = $('c1-numero').value.trim();
+  if (numero) {
+    const tipo = $('c1-tipo').value;
+    try {
+      const res = await fetch(`${API}/compras?proveedor_id=${proveedorSel.id}&tipo_comprobante=${encodeURIComponent(tipo)}&numero_comprobante=${encodeURIComponent(numero)}&limit=5`);
+      const data = await res.json();
+      const dups = (Array.isArray(data) ? data : []).filter(c => c.estado !== 'anulado' && c.id !== editId);
+      if (dups.length) {
+        const d = dups[0];
+        const fecha = d.fecha ? d.fecha.split('-').reverse().join('/') : '—';
+        $('dup-detalle').innerHTML = `Ya existe la compra <strong>N°&nbsp;${esc(d.numero)}</strong> del <strong>${fecha}</strong> por <strong>${fmt(parseFloat(d.total || 0))}</strong> con el mismo proveedor y comprobante.`;
+        $('dup-warn').style.display = '';
+        $('btn-paso1-continuar').style.display = 'none';
+        return;
+      }
+    } catch { /* si falla la consulta dejamos pasar */ }
+  }
   irPaso(2);
 });
+
+$('btn-dup-cancelar').addEventListener('click', resetDupWarn);
+$('btn-dup-forzar').addEventListener('click', () => { resetDupWarn(); irPaso(2); });
+
+// Resetear aviso cuando cambia el proveedor o el comprobante
+$('prov-tag-quitar').addEventListener('click', resetDupWarn);
+$('c1-numero').addEventListener('input', resetDupWarn);
+$('c1-tipo').addEventListener('change', resetDupWarn);
 
 // ── Paso 2: Productos ────────────────────────────────────────────
 let busqTimeout = null;
@@ -384,6 +583,28 @@ $('p2-busq').addEventListener('input', () => {
   const q = $('p2-busq').value.trim();
   if (q.length < 2) { cerrarDD(); return; }
   busqTimeout = setTimeout(() => buscarProductos(q), 250);
+});
+$('p2-busq').addEventListener('keydown', e => {
+  const dd = $('p2-dd');
+  if (!dd.classList.contains('visible')) return;
+  const its = dd.querySelectorAll('.dd-item');
+  if (!its.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    busqDDIdx = Math.min(busqDDIdx + 1, its.length - 1);
+    resaltarDD(dd, '.dd-item', busqDDIdx);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    busqDDIdx = busqDDIdx > 0 ? busqDDIdx - 1 : -1;
+    resaltarDD(dd, '.dd-item', busqDDIdx);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    (its[busqDDIdx >= 0 ? busqDDIdx : 0])?.click();
+    busqDDIdx = -1;
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    cerrarDD();
+  }
 });
 document.addEventListener('click', e => { if (!e.target.closest('.busq-wrap')) cerrarDD(); });
 
@@ -397,12 +618,13 @@ async function buscarProductos(q) {
       <div class="dd-item" data-json='${JSON.stringify(p).replace(/'/g,"&#39;")}'>
         <span class="cod">${esc(p.codigo)}</span><span>${esc(p.nombre)}</span>
       </div>`).join('');
+    busqDDIdx = -1;
     $('p2-dd').classList.add('visible');
     $('p2-dd').querySelectorAll('.dd-item').forEach(el =>
       el.addEventListener('click', () => { agregarItem(JSON.parse(el.dataset.json)); cerrarDD(); $('p2-busq').value = ''; }));
   } catch { /* no bloquea */ }
 }
-function cerrarDD() { $('p2-dd').classList.remove('visible'); $('p2-dd').innerHTML = ''; }
+function cerrarDD() { $('p2-dd').classList.remove('visible'); $('p2-dd').innerHTML = ''; busqDDIdx = -1; }
 
 function agregarItem(p, cantidad, costo) {
   const idx = items.findIndex(i => i.producto_id === p.id);
@@ -416,6 +638,8 @@ function agregarItem(p, cantidad, costo) {
       cantidad: cantidad ?? 1,
       costo_unitario: costo ?? parseFloat(p.costo_actual) ?? 0,
       iva_porcentaje: parseFloat(p.iva_porcentaje ?? 21),
+      desc_porcentaje: 0,
+      desc_monto: 0,
     });
   }
   renderItems();
@@ -457,55 +681,115 @@ $('btn-leer-excel').addEventListener('click', async () => {
 function calcularTotales() {
   let subtotal = 0, ivaTotal = 0;
   items.forEach(i => {
-    const sub = i.cantidad * i.costo_unitario;
-    subtotal += sub;
-    ivaTotal += sub * i.iva_porcentaje / 100;
+    const sub_bruto = i.cantidad * i.costo_unitario;
+    const sub_neto  = sub_bruto - Math.min(sub_bruto, Math.max(0, i.desc_monto ?? 0));
+    subtotal += sub_neto;
+    ivaTotal += sub_neto * i.iva_porcentaje / 100;
   });
   const percepPct = parseFloat($('p2-percepcion').value) || 0;
   const percepMonto = percepPct > 0 ? subtotal * percepPct / 100 : 0;
-  const total = subtotal + ivaTotal + percepMonto;
-  return { subtotal, ivaTotal, percepMonto, total };
+  const totalBruto = subtotal + ivaTotal + percepMonto;
+  const descGenMonto = Math.min(totalBruto, Math.max(0, parseFloat($('p2-desc-gen-monto')?.value) || 0));
+  const total = totalBruto - descGenMonto;
+  return { subtotal, ivaTotal, percepMonto, totalBruto, descGenMonto, total };
 }
 
-function renderItems() {
-  $('p2-vacio').style.display = items.length ? 'none' : '';
-  $('p2-tbody').innerHTML = items.map((i, idx) => {
-    const sub = i.cantidad * i.costo_unitario;
-    const iva = sub * i.iva_porcentaje / 100;
-    return `<tr>
-      <td class="col-prod">${esc(i.nombre)}<br><small style="color:var(--gris3)">${esc(i.codigo)}</small></td>
-      <td><input type="number" min="0.001" step="any" value="${i.cantidad}" data-idx="${idx}" data-campo="cantidad"></td>
-      <td><input type="number" min="0" step="any" value="${i.costo_unitario}" data-idx="${idx}" data-campo="costo"></td>
-      <td><input type="number" min="0" max="100" step="0.01" value="${i.iva_porcentaje}" data-idx="${idx}" data-campo="iva"></td>
-      <td style="text-align:right">${fmt(sub)}</td>
-      <td style="text-align:right">${fmt(iva)}</td>
-      <td style="text-align:right;font-weight:700">${fmt(sub + iva)}</td>
-      <td><button class="btn-del" data-idx="${idx}">×</button></td>
-    </tr>`;
-  }).join('');
-
+function renderTotales() {
   const t = calcularTotales();
   $('p2-subtotal').textContent     = fmt(t.subtotal);
   $('p2-iva').textContent          = fmt(t.ivaTotal);
   $('p2-percep-monto').textContent = fmt(t.percepMonto);
   $('p2-total').textContent        = fmt(t.total);
+  const hasDesc = t.descGenMonto > 0.001;
+  $('p2-desc-box').style.display   = hasDesc ? '' : 'none';
+  if (hasDesc) $('p2-desc-display').textContent = fmt(t.descGenMonto);
+}
+
+function renderItems() {
+  $('p2-vacio').style.display = items.length ? 'none' : '';
+  $('p2-tbody').innerHTML = items.map((i, idx) => {
+    const sub_bruto = i.cantidad * i.costo_unitario;
+    const sub_neto  = sub_bruto - (i.desc_monto ?? 0);
+    const iva       = sub_neto * i.iva_porcentaje / 100;
+    return `<tr>
+      <td>${esc(i.nombre)}<br><small style="color:var(--gris3)">${esc(i.codigo)}</small></td>
+      <td><input type="number" min="0.001" step="any" value="${i.cantidad}" data-idx="${idx}" data-campo="cantidad"></td>
+      <td><input type="number" min="0" step="any" value="${i.costo_unitario}" data-idx="${idx}" data-campo="costo"></td>
+      <td><input type="number" min="0" max="100" step="0.01" value="${i.iva_porcentaje}" data-idx="${idx}" data-campo="iva"></td>
+      <td><input type="number" min="0" max="100" step="0.01" value="${i.desc_porcentaje || ''}" placeholder="0" data-idx="${idx}" data-campo="desc_pct"></td>
+      <td><input type="number" min="0" step="0.01" value="${i.desc_monto || ''}" placeholder="0" data-idx="${idx}" data-campo="desc_monto"></td>
+      <td class="td-precio">${fmt(sub_neto)}</td>
+      <td class="td-precio">${fmt(iva)}</td>
+      <td class="td-precio" style="font-weight:700">${fmt(sub_neto + iva)}</td>
+      <td><button class="btn-del" data-idx="${idx}">×</button></td>
+    </tr>`;
+  }).join('');
+  renderTotales();
 }
 
 $('p2-tbody').addEventListener('input', e => {
   const el = e.target; if (!el.dataset.idx) return;
   const idx = parseInt(el.dataset.idx);
   const val = parseFloat(el.value);
-  if (isNaN(val) || val < 0) return;
-  if (el.dataset.campo === 'cantidad') items[idx].cantidad = val;
-  if (el.dataset.campo === 'costo')    items[idx].costo_unitario = val;
-  if (el.dataset.campo === 'iva')      items[idx].iva_porcentaje = val;
-  renderItems();
+  const tr  = el.closest('tr');
+
+  if (el.dataset.campo === 'cantidad'  && !isNaN(val) && val > 0)  items[idx].cantidad = val;
+  if (el.dataset.campo === 'costo'     && !isNaN(val) && val >= 0) items[idx].costo_unitario = val;
+  if (el.dataset.campo === 'iva'       && !isNaN(val) && val >= 0) items[idx].iva_porcentaje = val;
+
+  if (el.dataset.campo === 'desc_pct' && !isNaN(val) && val >= 0) {
+    const pct = Math.min(100, val);
+    items[idx].desc_porcentaje = pct;
+    const sub_bruto = items[idx].cantidad * items[idx].costo_unitario;
+    items[idx].desc_monto = sub_bruto * pct / 100;
+    const dm = tr?.querySelector('[data-campo="desc_monto"]');
+    if (dm) dm.value = items[idx].desc_monto.toFixed(2);
+  }
+  if (el.dataset.campo === 'desc_monto' && !isNaN(val) && val >= 0) {
+    const sub_bruto = items[idx].cantidad * items[idx].costo_unitario;
+    items[idx].desc_monto = Math.min(sub_bruto, val);
+    items[idx].desc_porcentaje = sub_bruto > 0 ? items[idx].desc_monto / sub_bruto * 100 : 0;
+    const dp = tr?.querySelector('[data-campo="desc_pct"]');
+    if (dp) dp.value = items[idx].desc_porcentaje.toFixed(2);
+  }
+
+  // Al cambiar cantidad o costo, recalcular desc_monto desde desc_porcentaje si está fijado
+  if ((el.dataset.campo === 'cantidad' || el.dataset.campo === 'costo') && items[idx].desc_porcentaje > 0) {
+    const sub_bruto = items[idx].cantidad * items[idx].costo_unitario;
+    items[idx].desc_monto = sub_bruto * items[idx].desc_porcentaje / 100;
+    const dm = tr?.querySelector('[data-campo="desc_monto"]');
+    if (dm) dm.value = items[idx].desc_monto.toFixed(2);
+  }
+
+  // Actualizar celdas calculadas (índices: 6=subtotal neto, 7=iva, 8=total)
+  if (tr) {
+    const it = items[idx];
+    const sub_bruto = it.cantidad * it.costo_unitario;
+    const sub_neto  = sub_bruto - (it.desc_monto ?? 0);
+    const iva = sub_neto * it.iva_porcentaje / 100;
+    tr.cells[6].textContent = fmt(sub_neto);
+    tr.cells[7].textContent = fmt(iva);
+    tr.cells[8].textContent = fmt(sub_neto + iva);
+  }
+  renderTotales();
 });
 $('p2-tbody').addEventListener('click', e => {
   const btn = e.target.closest('.btn-del');
   if (btn) { items.splice(parseInt(btn.dataset.idx), 1); renderItems(); }
 });
-$('p2-percepcion').addEventListener('input', renderItems);
+$('p2-percepcion').addEventListener('input', renderTotales);
+$('p2-desc-gen-pct').addEventListener('input', () => {
+  const pct = parseFloat($('p2-desc-gen-pct').value) || 0;
+  const t = calcularTotales();
+  $('p2-desc-gen-monto').value = pct > 0 ? (t.totalBruto * pct / 100).toFixed(2) : '';
+  renderTotales();
+});
+$('p2-desc-gen-monto').addEventListener('input', () => {
+  const monto = parseFloat($('p2-desc-gen-monto').value) || 0;
+  const t = calcularTotales();
+  $('p2-desc-gen-pct').value = (t.totalBruto > 0 && monto > 0) ? (monto / t.totalBruto * 100).toFixed(2) : '';
+  renderTotales();
+});
 
 $('btn-paso2-volver').addEventListener('click', () => irPaso(1));
 $('btn-paso2-continuar').addEventListener('click', () => {
@@ -586,19 +870,61 @@ function actualizarCajaVisible() {
 }
 $('p3-medio-simple').addEventListener('change', actualizarCajaVisible);
 
+async function actualizarDepositoSelector(sucursalId) {
+  const grp = $('p3-deposito-group');
+  const sel = $('p3-deposito');
+  try {
+    const url = sucursalId ? `${API}/sucursales/depositos?sucursal_id=${sucursalId}` : `${API}/sucursales/depositos`;
+    const res  = await fetch(url);
+    const deps = await res.json();
+    const activos = Array.isArray(deps) ? deps.filter(d => d.activo) : [];
+    if (activos.length <= 1) { grp.style.display = 'none'; return; }
+    sel.innerHTML = activos.map(d =>
+      `<option value="${d.id}" ${d.es_principal ? 'selected' : ''}>${esc(d.nombre)}</option>`
+    ).join('');
+    grp.style.display = '';
+  } catch { grp.style.display = 'none'; }
+}
+
 async function prepararPaso3() {
   const t = calcularTotales();
   $('p3-total-lbl').textContent = fmt(t.total);
   actualizarCajaVisible();
   try {
-    const res = await fetch(`${API}/cajas`);
+    const res  = await fetch(`${API}/cajas`);
     const cajas = await res.json();
-    $('p3-caja').innerHTML = cajas.map(c => `<option value="${c.id}">${esc(c.nombre)} (${c.tipo})</option>`).join('');
+    $('p3-caja').innerHTML = '<option value="">Sin asignar a caja</option>' +
+      cajas.map(c => `<option value="${c.id}" data-sucursal-id="${c.sucursal_id || ''}">${esc(c.nombre)} (${c.tipo})</option>`).join('');
+    // Pre-seleccionar la caja operativa si existe
+    const cajaActual = window.cajaOperativaId?.() || window.LOGOS_SESION?.caja_id;
+    if (cajaActual) $('p3-caja').value = cajaActual;
   } catch { /* no bloquea */ }
+  // Cargar depósitos para la caja pre-seleccionada (o sucursal de sesión)
+  const opt = $('p3-caja').selectedOptions[0];
+  const sucId = opt?.dataset?.sucursalId ? parseInt(opt.dataset.sucursalId) : null;
+  if (sucId) {
+    await actualizarDepositoSelector(sucId);
+  } else {
+    const s = JSON.parse(localStorage.getItem('logos_sesion') || '{}');
+    await actualizarDepositoSelector(s.sucursal_id || null);
+  }
 }
+
+$('p3-caja').addEventListener('change', async function () {
+  actualizarCajaVisible();
+  const opt = this.selectedOptions[0];
+  const sucId = opt?.dataset?.sucursalId ? parseInt(opt.dataset.sucursalId) : null;
+  if (sucId) {
+    await actualizarDepositoSelector(sucId);
+  } else {
+    const s = JSON.parse(localStorage.getItem('logos_sesion') || '{}');
+    await actualizarDepositoSelector(s.sucursal_id || null);
+  }
+});
 
 $('btn-paso3-volver').addEventListener('click', () => irPaso(2));
 $('btn-paso3-confirmar').addEventListener('click', confirmarCompra);
+$('btn-cancelar-edit').addEventListener('click', () => location.href = 'compras.html');
 
 async function confirmarCompra() {
   const t = calcularTotales();
@@ -614,8 +940,10 @@ async function confirmarCompra() {
   }
 
   const noCCVisible = $('p3-caja-group').style.display !== 'none';
-  const caja_id = noCCVisible ? parseInt($('p3-caja').value) : null;
-  if (noCCVisible && !caja_id) { toast('Elegí una caja', 'err'); return; }
+  const caja_id     = noCCVisible ? (parseInt($('p3-caja').value) || null) : null;
+  const deposito_id = $('p3-deposito-group').style.display !== 'none'
+                      ? (parseInt($('p3-deposito').value) || null)
+                      : null;
 
   const body = {
     proveedor_id: proveedorSel.id,
@@ -625,31 +953,36 @@ async function confirmarCompra() {
     items: items.map(i => ({
       producto_id: i.producto_id, cantidad: i.cantidad,
       costo_unitario: i.costo_unitario, iva_porcentaje: i.iva_porcentaje,
+      descuento_porcentaje: i.desc_porcentaje || 0,
+      descuento_monto: i.desc_monto || 0,
     })),
     percepcion_iibb_porcentaje: parseFloat($('p2-percepcion').value) || null,
+    descuento_general_porcentaje: parseFloat($('p2-desc-gen-pct').value) || null,
+    descuento_general_monto: parseFloat($('p2-desc-gen-monto').value) || null,
     tipo_pago,
     pagos,
     caja_id,
+    deposito_id,
   };
 
   const btn = $('btn-paso3-confirmar');
+  const btnLbl = editId ? 'Guardar cambios' : 'Confirmar compra';
   btn.disabled = true; btn.textContent = 'Guardando…';
   try {
-    const res = await fetch(`${API}/compras`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+    const url    = editId ? `${API}/compras/${editId}` : `${API}/compras`;
+    const method = editId ? 'PUT' : 'POST';
+    const res  = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Error al guardar la compra');
 
-    $('p4-numero').textContent = `Compra N° ${data.numero}`;
+    $('p4-numero').textContent = editId ? `Compra N° ${data.numero} — guardada` : `Compra N° ${data.numero}`;
     $('p4-monto').textContent  = fmt(data.total);
     $('btn-ver-cc').dataset.proveedorId = data.proveedor_id;
     irPaso(4);
   } catch (e) {
     toast(e.message, 'err');
   } finally {
-    btn.disabled = false; btn.textContent = 'Confirmar compra';
+    btn.disabled = false; btn.textContent = btnLbl;
   }
 }
 
@@ -660,8 +993,222 @@ $('btn-ver-cc').addEventListener('click', () => {
   location.href = `cuentacorriente.html?tipo=proveedor&id=${$('btn-ver-cc').dataset.proveedorId}`;
 });
 
+// ── Modo edición ─────────────────────────────────────────────────
+async function cargarModoEdicion(id) {
+  try {
+    const res  = await fetch(`${API}/compras/${id}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al cargar la compra');
+
+    const esAnulada = data.estado === 'anulado';
+
+    // UI
+    document.title = `Logos — ${esAnulada ? 'Compra anulada' : 'Editar compra'} N° ${data.numero}`;
+    $('page-titulo').textContent = esAnulada
+      ? `Compra N° ${data.numero} — ANULADA`
+      : `Editando compra N° ${data.numero}`;
+    $('page-sub').textContent = esAnulada
+      ? 'Esta compra está anulada. El stock y la cuenta corriente ya fueron revertidos.'
+      : 'Modificá los datos y confirmá para guardar los cambios.';
+    $('btn-paso3-confirmar').textContent = 'Guardar cambios';
+    $('p4-titulo').textContent   = 'Compra actualizada';
+    $('btn-cargar-otra').style.display = 'none';
+    const banner = $('edit-banner');
+    $('edit-banner-txt').textContent = esAnulada
+      ? `Compra N° ${data.numero} ANULADA — solo lectura`
+      : `Editando compra N° ${data.numero} — ${data.proveedor_nombre}`;
+    if (esAnulada) {
+      banner.style.background = '#FEF2F2';
+      $('btn-anular').style.display = 'none';
+      $('btn-paso3-confirmar').disabled = true;
+      $('btn-paso3-confirmar').title = 'La compra está anulada y no puede editarse';
+    }
+    banner.style.display = 'flex';
+
+    // Cancelar visible en paso 1
+    $('btn-cancelar-edit').style.display = '';
+
+    // Pills clicables en modo edición (pasos 1-3)
+    if (!esAnulada) {
+      [1, 2, 3].forEach(n => {
+        const pill = $('pill-' + n);
+        pill.style.cursor = 'pointer';
+        pill.title = `Ir al paso ${n}`;
+        pill.addEventListener('click', () => irPaso(n));
+      });
+    }
+
+    // Paso 1 — proveedor y comprobante
+    seleccionarProveedor({ id: data.proveedor_id, nombre: data.proveedor_nombre });
+    $('c1-tipo').value   = data.tipo_comprobante || 'factura_a';
+    $('c1-numero').value = data.numero_comprobante || '';
+    $('c1-fecha').value  = data.fecha || new Date().toISOString().split('T')[0];
+
+    // Paso 2 — ítems
+    items = (data.items || []).map(it => ({
+      producto_id:     it.producto_id,
+      nombre:          it.producto_nombre,
+      codigo:          it.producto_codigo,
+      cantidad:        parseFloat(it.cantidad),
+      costo_unitario:  parseFloat(it.costo_unitario),
+      iva_porcentaje:  parseFloat(it.iva_porcentaje),
+      desc_porcentaje: 0,
+      desc_monto:      0,
+    }));
+    $('p2-percepcion').value = data.percepcion_iibb_porcentaje || '';
+    renderItems();
+
+    // Paso 3 — pago
+    if (data.tipo_pago === 'mixto' && data.pagos?.length) {
+      pagoModo    = 'mixto';
+      pagosMixto  = data.pagos.map(p => ({ tipo: p.tipo_pago, monto: parseFloat(p.monto) }));
+      document.querySelectorAll('.pago-modo-btn').forEach(b =>
+        b.classList.toggle('activo', b.dataset.modo === 'mixto'));
+      $('pago-simple-box').style.display = 'none';
+      $('pago-mixto-box').style.display  = '';
+      renderPagosMixto();
+    } else {
+      $('p3-medio-simple').value = data.tipo_pago || 'efectivo';
+    }
+    actualizarCajaVisible();
+
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+}
+
+// Anulación
+$('btn-anular').addEventListener('click', () => {
+  $('edit-banner').style.display   = 'none';
+  $('anular-confirm').style.display = '';
+});
+$('btn-anular-no').addEventListener('click', () => {
+  $('anular-confirm').style.display = 'none';
+  $('edit-banner').style.display    = 'flex';
+});
+$('btn-anular-si').addEventListener('click', async () => {
+  $('btn-anular-si').disabled = true;
+  $('btn-anular-si').textContent = 'Anulando…';
+  try {
+    const res  = await fetch(`${API}/compras/${editId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al anular');
+    toast('Compra anulada', 'ok');
+    setTimeout(() => location.href = 'compras.html', 1800);
+  } catch (e) {
+    toast(e.message, 'err');
+    $('btn-anular-si').disabled = false;
+    $('btn-anular-si').textContent = 'Sí, anular';
+    $('anular-confirm').style.display = 'none';
+    $('edit-banner').style.display    = 'flex';
+  }
+});
+
 // ── Init ──────────────────────────────────────────────────────────
 $('c1-fecha').value = new Date().toISOString().split('T')[0];
+if (editId) cargarModoEdicion(editId);
 </script>
+
+<script>
+if (sessionStorage.getItem('tour_force_compras_nueva')) {
+  sessionStorage.removeItem('tour_force_compras_nueva');
+  localStorage.removeItem('tour_seen_compras_nueva');
+}
+
+window.TOUR_PAGE_KEY = 'compras_nueva';
+window.TOUR_STEPS = [
+
+  /* 1 — Intro */
+  { el: null,
+    title: 'Nueva compra — 3 pasos',
+    body: 'El formulario de carga tiene 3 pasos: <strong>1. Comprobante</strong> (proveedor y datos), <strong>2. Productos</strong> y <strong>3. Pago</strong>. El stock se actualiza automáticamente al confirmar.' },
+
+  /* 2 — Proveedor (onEnter selecciona PROVEEDOR DEMO) */
+  { el: '.prov-wrap',
+    title: 'Proveedor',
+    body: 'Buscás el proveedor escribiendo su nombre. El sistema muestra sugerencias en tiempo real. Podés crear uno nuevo si no existe.',
+    onEnter: async ({ delay }) => {
+      const inp = document.getElementById('prov-input');
+      if (!inp || document.querySelector('#prov-tag.visible')) return;
+      inp.value = 'PROVEEDOR';
+      inp.dispatchEvent(new Event('input', { bubbles: true }));
+      await delay(1000);
+      const item = document.querySelector('.prov-dd-item');
+      if (item) { item.click(); await delay(200); }
+    } },
+
+  /* 3 — Tipo de comprobante */
+  { el: '#c1-tipo',
+    title: 'Tipo de comprobante',
+    body: 'Elegís el tipo: Factura A, Factura B o Remito. También podés ingresar el número y la fecha del comprobante del proveedor.',
+    onEnter: async () => {
+      const sel = document.getElementById('c1-tipo');
+      if (sel) sel.value = 'factura_a';
+    } },
+
+  /* 4 — Continuar al paso 2 */
+  { el: '#btn-paso1-continuar',
+    title: 'Continuar al paso 2',
+    body: 'Una vez completados el proveedor y los datos del comprobante, pasás a cargar los productos.' },
+
+  /* 5 — Productos (onEnter transiciona al paso 2 y busca PRUEBA1) */
+  { el: '#p2-busq',
+    title: 'Buscar productos',
+    body: 'Buscás los productos por nombre o código. También podés importar un Excel o CSV con código, cantidad y costo.',
+    onEnter: async ({ delay }) => {
+      if (!document.querySelector('#prov-tag.visible')) {
+        const inp = document.getElementById('prov-input');
+        if (inp) {
+          inp.value = 'PROVEEDOR';
+          inp.dispatchEvent(new Event('input', { bubbles: true }));
+          await delay(1000);
+          const pi = document.querySelector('.prov-dd-item');
+          if (pi) { pi.click(); await delay(200); }
+        }
+      }
+      document.getElementById('btn-paso1-continuar').click();
+      await delay(400);
+      const busq = document.getElementById('p2-busq');
+      if (!busq) return;
+      busq.value = 'PRUEBA1';
+      busq.dispatchEvent(new Event('input', { bubbles: true }));
+      await delay(1000);
+      const ddItem = document.querySelector('#p2-dd .dd-item');
+      if (ddItem) { ddItem.click(); await delay(200); }
+    } },
+
+  /* 6 — Tabla de ítems */
+  { el: '#p2-tbody',
+    title: 'Ítems de la compra',
+    body: 'Cada producto aparece con cantidad, costo unitario, porcentaje de IVA, descuento y subtotal calculados. Podés editar los valores directamente en la tabla.' },
+
+  /* 7 — Totales */
+  { el: '.totales-grid',
+    title: 'Totales automáticos',
+    body: 'El subtotal, IVA, percepción IIBB (si aplica) y total se recalculan en tiempo real al modificar cualquier campo.' },
+
+  /* 8 — Continuar al paso 3 */
+  { el: '#btn-paso2-continuar',
+    title: 'Continuar al paso 3',
+    body: 'Una vez confirmados todos los ítems, pasás a elegir la forma de pago.' },
+
+  /* 9 — Medio de pago (onEnter transiciona al paso 3) */
+  { el: '#p3-medio-simple',
+    title: 'Medio de pago',
+    body: 'Elegís el medio: Efectivo, Transferencia, Tarjeta o Cuenta corriente del proveedor. También podés combinar varios medios con el modo <em>Mixto</em>.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('btn-paso2-continuar').click();
+      await delay(500);
+    } },
+
+  /* 10 — Fin: highlight Contabilidad en nav */
+  { el: 'a.nav-drop-toggle[href="#"]',
+    title: '¡Eso es todo para Compras!',
+    body: 'Ya viste el ciclo completo: filtros, lista de compras, y cómo registrar una compra nueva con proveedor, ítems y pago. El stock se actualiza automáticamente al confirmar. El próximo módulo es <strong>Contabilidad</strong>.' },
+];
+</script>
+
+<?php include __DIR__ . '/contacto-modal.php'; ?>
+
 </body>
 </html>

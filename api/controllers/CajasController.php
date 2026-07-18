@@ -5,9 +5,12 @@ require_once __DIR__ . '/../config/db.php';
 class CajasController {
 
     public function listar(): void {
-        $stmt = DB::get()->query("SELECT id, nombre, tipo, activo, orden FROM cajas ORDER BY orden, nombre");
+        $stmt = DB::get()->query("SELECT id, nombre, tipo, activo, orden, sucursal_id FROM cajas ORDER BY orden, nombre");
         $items = $stmt->fetchAll();
-        foreach ($items as &$c) { $c['activo'] = (bool)$c['activo']; }
+        foreach ($items as &$c) {
+            $c['activo']      = (bool)$c['activo'];
+            $c['sucursal_id'] = $c['sucursal_id'] !== null ? (int)$c['sucursal_id'] : null;
+        }
         unset($c);
         json(200, $items);
     }

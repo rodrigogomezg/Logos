@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rentabilidad — Logos</title>
+<script src="config.js"></script>
+<script src="helpers.js"></script>
+<link rel="stylesheet" href="/Logos/pos/pos-base.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+.page-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px; gap: 10px; background: var(--neo-bg-deep); }
+
+/* Toolbar */
+.toolbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--neo-bg); border-radius: var(--neo-r-md);
+  padding: 8px 14px; box-shadow: var(--neo-e2); flex-shrink: 0;
+}
+.tab-grupo { display: flex; border-radius: var(--neo-r-sm); overflow: hidden; box-shadow: var(--neo-e1); }
+.tab-vista  { padding: 7px 16px; background: var(--neo-bg); border: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; cursor: pointer; color: var(--neo-text-3); font-family: inherit; transition: color var(--neo-t-fast), box-shadow var(--neo-t-fast); }
+.tab-vista.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
+.tb-sep { width: 1px; background: rgba(163,177,198,.35); height: 30px; margin: 0 4px; }
+.tb-input { padding: 7px 11px; border: none; border-radius: var(--neo-r-xs); font-size: 13px; font-family: inherit; outline: none; background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast); }
+.tb-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.tb-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
+.btn-accion { padding: 7px 14px; border: none; border-radius: var(--neo-r-xs); font-size: 11px; font-weight: 700; font-family: inherit; cursor: pointer; box-shadow: var(--neo-e1); transition: box-shadow var(--neo-t-fast); background: var(--neo-bg); color: var(--neo-text-2); text-transform: uppercase; letter-spacing: .3px; }
+.btn-accion:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+
+/* KPIs */
+.kpis-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; flex-shrink: 0; }
+.kcard { background: var(--neo-bg); box-shadow: var(--neo-e2); border-radius: var(--neo-r-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.klbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--neo-text-3); }
+.kval { font-size: 22px; font-weight: 800; color: var(--neo-text); font-variant-numeric: tabular-nums; letter-spacing: -.5px; }
+.kval.g { color: var(--neo-success); }
+.kdtl { font-size: 10px; color: var(--neo-text-3); }
+
+/* Contenido principal con scroll */
+.content-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+.content-scroll::-webkit-scrollbar { width: 6px; }
+.content-scroll::-webkit-scrollbar-track { background: var(--neo-bg-deep); }
+.content-scroll::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
+
+/* Bloques */
+.bloque { background: var(--neo-bg); border-radius: var(--neo-r-lg); box-shadow: var(--neo-e2); overflow: hidden; }
+.bh { padding: 12px 16px; border-bottom: 1px solid rgba(163,177,198,.3); display: flex; align-items: center; justify-content: space-between; }
+.bt { font-size: 11px; font-weight: 700; color: var(--neo-text); text-transform: uppercase; letter-spacing: .4px; }
+.bs { font-size: 11px; color: var(--neo-text-3); }
+.chart-pad { padding: 14px; height: 240px; position: relative; }
+
+/* Grid 2 columnas */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Tablas */
+.tabla-wrap { overflow-x: auto; max-height: 320px; overflow-y: auto; }
+.tabla-wrap::-webkit-scrollbar { width: 5px; }
+.tabla-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+thead th { position: sticky; top: 0; background: var(--neo-bg); padding: 8px 12px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.3); }
+thead th.r { text-align: right; }
+tbody tr { border-bottom: 1px solid rgba(163,177,198,.12); }
+tbody tr:hover { background: rgba(255,255,255,.4); }
+tbody td { padding: 7px 12px; color: var(--neo-text); }
+tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
+tbody td.muted { color: var(--neo-text-3); font-size: 10px; }
+
+/* ABC badges */
+.abc { display: inline-block; padding: 2px 7px; font-size: 9px; font-weight: 800; border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1); }
+.abc-A { background: rgba(39,174,96,.12);  color: var(--neo-success); }
+.abc-B { background: rgba(79,142,247,.12); color: var(--neo-accent); }
+.abc-C { background: rgba(163,177,198,.2); color: var(--neo-text-3); }
+
+/* Barra de margen inline */
+.margen-bar { display: flex; align-items: center; gap: 6px; }
+.bar-track { flex: 1; height: 4px; background: rgba(163,177,198,.25); border-radius: 2px; min-width: 60px; }
+.bar-fill  { height: 4px; border-radius: 2px; background: var(--neo-success); }
+.bar-pct   { font-size: 10px; font-weight: 700; color: var(--neo-text-3); min-width: 36px; text-align: right; }
+
+.empty { padding: 24px; text-align: center; color: var(--neo-text-3); font-size: 12px; font-style: italic; }
+
+/* Vistas */
+.vista { display: none; }
+.vista.activa { display: contents; }
+</style>
+</head>
+<body class="app-layout">
+<?php $nav_activo = 'rentabilidad'; include __DIR__ . '/nav.php'; ?>
+
+<div class="page-body">
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="tab-grupo">
+      <button class="tab-vista activo" data-vista="resumen"   onclick="setVista('resumen', this)">Resumen</button>
+      <button class="tab-vista"        data-vista="tendencia" onclick="setVista('tendencia', this)">Tendencia</button>
+      <button class="tab-vista"        data-vista="abc"       onclick="setVista('abc', this)">ABC Productos</button>
+      <button class="tab-vista"        data-vista="clientes"  onclick="setVista('clientes', this)">Por Cliente</button>
+      <button class="tab-vista"        data-vista="margen"    onclick="setVista('margen', this)">Margen crítico</button>
+    </div>
+    <div class="tb-sep"></div>
+    <div id="wrap-fechas" style="display:flex;align-items:center;gap:8px">
+      <span class="tb-lbl">Desde</span>
+      <input type="date" id="tb-desde" class="tb-input">
+      <span class="tb-lbl">Hasta</span>
+      <input type="date" id="tb-hasta" class="tb-input">
+    </div>
+    <button class="btn-accion" onclick="cargarVista()">Aplicar</button>
+    <div class="tb-sep" id="sep-meses" style="display:none"></div>
+    <span class="tb-lbl" id="lbl-meses" style="display:none">Meses</span>
+    <select id="sel-meses" class="tb-input" style="display:none;width:70px" onchange="cargarVista()">
+      <option value="6">6</option>
+      <option value="12" selected>12</option>
+      <option value="24">24</option>
+    </select>
+  </div>
+
+  <!-- KPIs (solo resumen y ABC) -->
+  <div class="kpis-row" id="kpis-row">
+    <div class="kcard"><span class="klbl">Ventas</span><span class="kval" id="k-ventas">—</span><span class="kdtl" id="k-ventas-dtl"></span></div>
+    <div class="kcard"><span class="klbl">Costo</span><span class="kval" id="k-costo">—</span></div>
+    <div class="kcard"><span class="klbl">Ganancia bruta</span><span class="kval g" id="k-ganancia">—</span></div>
+    <div class="kcard"><span class="klbl">Margen</span><span class="kval g" id="k-margen">—</span><span class="kdtl">sobre ventas</span></div>
+  </div>
+
+  <div class="content-scroll" id="contenido"></div>
+</div>
+
+<script>
+const API = window.CONFIG?.apiBase ?? '/Logos/api';
+let vistaActual = 'resumen';
+let charts = {};
+
+// Defaults: mes actual
+const hoy = new Date();
+document.getElementById('tb-desde').value = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-01`;
+document.getElementById('tb-hasta').value = hoy.toISOString().slice(0,10);
+
+function setVista(v, btn) {
+  vistaActual = v;
+  document.querySelectorAll('.tab-vista').forEach(b => b.classList.toggle('activo', b === btn));
+  const esTend   = v === 'tendencia';
+  const esMargen = v === 'margen'; // catálogo actual: no depende del período
+  ['sep-meses','lbl-meses','sel-meses'].forEach(id => document.getElementById(id).style.display = esTend ? '' : 'none');
+  document.getElementById('wrap-fechas').style.display = (esTend || esMargen) ? 'none' : 'flex';
+  document.getElementById('kpis-row').style.display = (esTend || esMargen) ? 'none' : '';
+  cargarVista();
+}
+
+function pesos(n, corto) {
+  if (corto && Math.abs(n) >= 1000000) return '$ ' + (n/1000000).toFixed(1) + 'M';
+  if (corto && Math.abs(n) >= 1000)    return '$ ' + (n/1000).toFixed(1) + 'k';
+  return '$ ' + Number(n).toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function margenBar(pct) {
+  const w = Math.min(100, Math.max(0, pct));
+  return `<div class="margen-bar"><div class="bar-track"><div class="bar-fill" style="width:${w}%"></div></div><span class="bar-pct">${pct.toFixed(1)}%</span></div>`;
+}
+
+function destroyCharts() { Object.values(charts).forEach(c => c.destroy()); charts = {}; }
+
+function colorSet(n) {
+  const palette = ['#4F8EF7','#27AE60','#E74C3C','#F39C12','#9B59B6','#1ABC9C','#E67E22','#2980B9','#C0392B','#16A085'];
+  return Array.from({length: n}, (_, i) => palette[i % palette.length]);
+}
+
+function setKpis(d) {
+  document.getElementById('k-ventas').textContent  = pesos(d.ventas, true);
+  document.getElementById('k-costo').textContent   = pesos(d.costo,  true);
+  document.getElementById('k-ganancia').textContent = pesos(d.ganancia, true);
+  document.getElementById('k-margen').textContent  = d.margen_pct + '%';
+}
+
+async function cargarVista() {
+  destroyCharts();
+  const cnt = document.getElementById('contenido');
+  cnt.innerHTML = '<div class="empty">Cargando…</div>';
+  try {
+    if (vistaActual === 'resumen')   await cargarResumen(cnt);
+    if (vistaActual === 'tendencia') await cargarTendencia(cnt);
+    if (vistaActual === 'abc')       await cargarAbc(cnt);
+    if (vistaActual === 'clientes')  await cargarClientes(cnt);
+    if (vistaActual === 'margen')    await cargarMargen(cnt);
+  } catch (e) {
+    cnt.innerHTML = `<div class="empty">Error al cargar datos: ${e.message}</div>`;
+  }
+}
+
+async function cargarResumen(cnt) {
+  const desde = document.getElementById('tb-desde').value;
+  const hasta = document.getElementById('tb-hasta').value;
+  if (!desde || !hasta) { cnt.innerHTML = ''; return; }
+
+  const data = await apiFetch(`${API}/rentabilidad/resumen?desde=${desde}&hasta=${hasta}`);
+  setKpis(data);
+
+  const cats = data.por_categoria || [];
+  const provs = data.por_proveedor || [];
+
+  cnt.innerHTML = `
+    <div class="grid2">
+      <div class="bloque">
+        <div class="bh"><span class="bt">Por Categoría</span><span class="bs">${cats.length} categorías</span></div>
+        <div class="chart-pad"><canvas id="chart-cat"></canvas></div>
+      </div>
+      <div class="bloque">
+        <div class="bh"><span class="bt">Por Proveedor</span><span class="bs">${provs.length} proveedores</span></div>
+        <div class="chart-pad"><canvas id="chart-prov"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="bloque">
+        <div class="bh"><span class="bt">Detalle por Categoría</span></div>
+        <div class="tabla-wrap">${tablaGrupo(cats)}</div>
+      </div>
+      <div class="bloque">
+        <div class="bh"><span class="bt">Detalle por Proveedor</span></div>
+        <div class="tabla-wrap">${tablaGrupo(provs)}</div>
+      </div>
+    </div>`;
+
+  const chartOpts = {
+    type: 'bar',
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font: { size: 10 }, color: '#a3b1c6', maxRotation: 30 }, grid: { display: false } },
+        y: { ticks: { font: { size: 10 }, color: '#a3b1c6', callback: v => pesos(v, true) }, grid: { color: 'rgba(163,177,198,.15)' } },
+      }
+    }
+  };
+
+  charts['cat'] = new Chart(document.getElementById('chart-cat'), {
+    ...chartOpts,
+    data: {
+      labels: cats.slice(0,10).map(c => c.grupo),
+      datasets: [
+        { label: 'Ganancia', data: cats.slice(0,10).map(c => c.ganancia), backgroundColor: colorSet(cats.length), borderRadius: 4 }
+      ]
+    }
+  });
+
+  charts['prov'] = new Chart(document.getElementById('chart-prov'), {
+    ...chartOpts,
+    data: {
+      labels: provs.slice(0,10).map(p => p.grupo),
+      datasets: [
+        { label: 'Ganancia', data: provs.slice(0,10).map(p => p.ganancia), backgroundColor: colorSet(provs.length), borderRadius: 4 }
+      ]
+    }
+  });
+}
+
+function tablaGrupo(rows) {
+  if (!rows.length) return '<div class="empty">Sin datos</div>';
+  const filas = rows.map(r => `
+    <tr>
+      <td>${esc(r.grupo)}</td>
+      <td class="r">${pesos(r.ventas, true)}</td>
+      <td class="r">${pesos(r.ganancia, true)}</td>
+      <td>${margenBar(r.margen_pct)}</td>
+    </tr>`).join('');
+  return `<table><thead><tr><th>Grupo</th><th class="r">Ventas</th><th class="r">Ganancia</th><th>Margen</th></tr></thead><tbody>${filas}</tbody></table>`;
+}
+
+async function cargarTendencia(cnt) {
+  const meses = document.getElementById('sel-meses').value;
+  const data = await apiFetch(`${API}/rentabilidad/tendencia?meses=${meses}`);
+  const rows = data.datos || [];
+
+  if (!rows.length) { cnt.innerHTML = '<div class="empty">Sin datos de ventas en el período.</div>'; return; }
+
+  cnt.innerHTML = `
+    <div class="bloque">
+      <div class="bh"><span class="bt">Ventas vs Costo — últimos ${meses} meses</span></div>
+      <div class="chart-pad" style="height:280px"><canvas id="chart-tend"></canvas></div>
+    </div>
+    <div class="bloque">
+      <div class="bh"><span class="bt">Margen mensual</span></div>
+      <div class="chart-pad"><canvas id="chart-margen"></canvas></div>
+    </div>`;
+
+  const labels = rows.map(r => r.mes);
+  const colores = { ventas: '#4F8EF7', costo: '#E74C3C', ganancia: '#27AE60' };
+
+  charts['tend'] = new Chart(document.getElementById('chart-tend'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Ventas',  data: rows.map(r => r.ventas),  backgroundColor: colores.ventas  + '99', borderRadius: 3 },
+        { label: 'Costo',   data: rows.map(r => r.costo),   backgroundColor: colores.costo   + '99', borderRadius: 3 },
+        { label: 'Ganancia',data: rows.map(r => r.ganancia),backgroundColor: colores.ganancia + '99', borderRadius: 3 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { font: { size: 10 }, color: '#a3b1c6' } } },
+      scales: {
+        x: { ticks: { font:{size:10}, color:'#a3b1c6' }, grid:{display:false} },
+        y: { ticks: { font:{size:10}, color:'#a3b1c6', callback: v => pesos(v,true) }, grid:{color:'rgba(163,177,198,.15)'} }
+      }
+    }
+  });
+
+  charts['margen'] = new Chart(document.getElementById('chart-margen'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Margen %', data: rows.map(r => r.margen_pct),
+        borderColor: colores.ganancia, backgroundColor: colores.ganancia + '22',
+        fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: colores.ganancia,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { font:{size:10}, color:'#a3b1c6' }, grid:{display:false} },
+        y: { ticks: { font:{size:10}, color:'#a3b1c6', callback: v => v + '%' }, grid:{color:'rgba(163,177,198,.15)'} }
+      }
+    }
+  });
+}
+
+async function cargarAbc(cnt) {
+  const desde = document.getElementById('tb-desde').value;
+  const hasta = document.getElementById('tb-hasta').value;
+  if (!desde || !hasta) { cnt.innerHTML = ''; return; }
+
+  const data = await apiFetch(`${API}/rentabilidad/abc?desde=${desde}&hasta=${hasta}`);
+  const prods = data.productos || [];
+
+  setKpis({ ventas: prods.reduce((s,p) => s+p.ventas,0), costo: prods.reduce((s,p) => s+p.costo,0),
+            ganancia: data.total_ganancia, margen_pct: prods.length && prods[0].ventas > 0
+              ? Math.round(data.total_ganancia / prods.reduce((s,p)=>s+p.ventas,0) * 1000) / 10 : 0 });
+
+  const countA = prods.filter(p => p.clase_abc === 'A').length;
+  const countB = prods.filter(p => p.clase_abc === 'B').length;
+  const countC = prods.filter(p => p.clase_abc === 'C').length;
+
+  const filas = prods.map((p, i) => `
+    <tr>
+      <td class="muted">${i+1}</td>
+      <td><span class="abc abc-${p.clase_abc}">${p.clase_abc}</span></td>
+      <td>${esc(p.codigo)}</td>
+      <td>${esc(p.nombre)}</td>
+      <td class="muted">${esc(p.categoria)}</td>
+      <td class="muted">${esc(p.proveedor)}</td>
+      <td class="r">${p.cantidad % 1 === 0 ? p.cantidad : p.cantidad.toFixed(2)}</td>
+      <td class="r">${pesos(p.ventas, true)}</td>
+      <td class="r">${pesos(p.ganancia, true)}</td>
+      <td>${margenBar(p.margen_pct)}</td>
+      <td class="r muted">${p.pct_ganancia_acum}%</td>
+    </tr>`).join('');
+
+  cnt.innerHTML = `
+    <div class="bloque">
+      <div class="bh">
+        <span class="bt">Clasificación ABC</span>
+        <span class="bs">A: ${countA} productos · B: ${countB} · C: ${countC}</span>
+      </div>
+      <div class="tabla-wrap" style="max-height:none">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Clase</th><th>Código</th><th>Nombre</th>
+            <th>Categoría</th><th>Proveedor</th>
+            <th class="r">Cant.</th><th class="r">Ventas</th>
+            <th class="r">Ganancia</th><th>Margen</th><th class="r">% Acum.</th>
+          </tr></thead>
+          <tbody>${filas || '<tr><td colspan="11" class="empty">Sin datos para el período.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ── Vista: rentabilidad por cliente ─────────────────────────
+async function cargarClientes(cnt) {
+  const desde = document.getElementById('tb-desde').value;
+  const hasta = document.getElementById('tb-hasta').value;
+  if (!desde || !hasta) { cnt.innerHTML = ''; return; }
+
+  const data = await apiFetch(`${API}/rentabilidad/clientes?desde=${desde}&hasta=${hasta}`);
+  setKpis(data.totales);
+
+  const filas = (data.filas || []).map((c, i) => `
+    <tr>
+      <td class="muted">${i+1}</td>
+      <td>${esc(c.nombre)}</td>
+      <td class="r muted">${c.operaciones}</td>
+      <td class="r">${pesos(c.ventas, true)}</td>
+      <td class="r muted">${pesos(c.costo, true)}</td>
+      <td class="r" style="${c.ganancia < 0 ? 'color:var(--neo-danger);font-weight:700' : ''}">${pesos(c.ganancia, true)}</td>
+      <td>${margenBar(c.margen_pct)}</td>
+      <td class="r muted">${c.pct_ganancia}%</td>
+    </tr>`).join('');
+
+  cnt.innerHTML = `
+    <div class="bloque">
+      <div class="bh">
+        <span class="bt">Ganancia por cliente</span>
+        <span class="bs">${(data.filas || []).length} clientes con ventas en el período</span>
+      </div>
+      <div class="tabla-wrap" style="max-height:none">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Cliente</th><th class="r">Ops.</th>
+            <th class="r">Ventas</th><th class="r">Costo</th>
+            <th class="r">Ganancia</th><th>Margen</th><th class="r">% Ganancia</th>
+          </tr></thead>
+          <tbody>${filas || '<tr><td colspan="8" class="empty">Sin ventas en el período.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+// ── Vista: margen crítico (catálogo actual) ─────────────────
+let umbralMargen = 20;
+
+async function cargarMargen(cnt) {
+  const data = await apiFetch(`${API}/rentabilidad/margen-critico?umbral=${umbralMargen}`);
+  const prods = data.productos || [];
+  const negativos = prods.filter(p => p.margen_pct < 0).length;
+
+  const filas = prods.map(p => `
+    <tr>
+      <td>${esc(p.codigo)}</td>
+      <td>${esc(p.nombre)}</td>
+      <td class="muted">${esc(p.categoria)}</td>
+      <td class="muted">${esc(p.proveedor)}</td>
+      <td class="r">${pesos(p.costo_actual, true)}</td>
+      <td class="r">${pesos(p.precio_venta, true)}</td>
+      <td class="r" style="font-weight:700;color:${p.margen_pct < 0 ? 'var(--neo-danger)' : '#B7791F'}">${p.margen_pct.toFixed(1)}%</td>
+      <td class="r muted">${p.stock_actual % 1 === 0 ? p.stock_actual : p.stock_actual.toFixed(2)}</td>
+    </tr>`).join('');
+
+  cnt.innerHTML = `
+    <div class="bloque">
+      <div class="bh">
+        <span class="bt">Margen crítico — precio vs costo actuales</span>
+        <span class="bs" style="display:flex;align-items:center;gap:8px">
+          ${negativos ? `<b style="color:var(--neo-danger)">${negativos} bajo costo</b> · ` : ''}
+          ${prods.length} productos con margen menor a
+          <input id="inp-umbral" type="number" min="0" max="90" step="1" value="${umbralMargen}"
+                 style="width:56px;padding:3px 6px;font-family:inherit;font-size:12px"> %
+        </span>
+      </div>
+      <div class="empty" style="padding:8px 14px;text-align:left;font-size:12px">
+        Compara el precio de venta vigente contra el costo actual de cada producto — detecta listas
+        desactualizadas. No depende del período: es una foto del catálogo de hoy.
+      </div>
+      <div class="tabla-wrap" style="max-height:none">
+        <table>
+          <thead><tr>
+            <th>Código</th><th>Nombre</th><th>Categoría</th><th>Proveedor</th>
+            <th class="r">Costo</th><th class="r">Precio</th><th class="r">Margen</th><th class="r">Stock</th>
+          </tr></thead>
+          <tbody>${filas || '<tr><td colspan="8" class="empty">Ningún producto con margen bajo el umbral.</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  document.getElementById('inp-umbral').addEventListener('change', e => {
+    umbralMargen = Math.max(0, Math.min(90, parseInt(e.target.value) || 20));
+    cargarVista();
+  });
+}
+
+// Init
+cargarVista();
+</script>
+</body>
+</html>

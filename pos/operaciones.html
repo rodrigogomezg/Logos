@@ -9,42 +9,58 @@
 <link rel="stylesheet" href="pos-base.css">
 <style>
 
-.page-header { background:white; border-bottom:1px solid var(--borde); padding:20px clamp(20px, 4vw, 48px); flex-shrink:0; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.page-header h1 { font-size:22px; font-weight:700; letter-spacing:-.3px; }
-.page-header p { font-size:var(--fs-sm); color:var(--gris3); margin-top:4px; }
+.page-header {
+  background: var(--neo-bg); box-shadow: 0 3px 8px var(--neo-sd);
+  padding: 16px clamp(16px,4vw,48px); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+.page-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; color: var(--neo-text); }
+.page-header p  { font-size: 12px; color: var(--neo-text-3); margin-top: 3px; }
 
-.filtros { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-.fil-select, .fil-input { padding:8px 11px; border:1.5px solid var(--borde); border-radius:8px; font-size:var(--fs-sm); font-family:inherit; outline:none; background:var(--gris1); transition:border-color 140ms ease-out, background 140ms ease-out; }
-.fil-select:focus, .fil-input:focus { border-color:var(--azul); background:white; }
+.filtros { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.fil-select, .fil-input {
+  padding: 8px 11px; border: none; border-radius: var(--neo-r-sm);
+  font-size: 12px; font-family: inherit; outline: none;
+  background: var(--neo-bg); color: var(--neo-text);
+  box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast);
+}
+.fil-select:focus, .fil-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
 
-.contenido { flex:1; min-height:0; overflow-y:auto; padding:clamp(20px, 3vw, 32px) clamp(20px, 4vw, 48px); background:var(--gris1); }
-.contenido-inner { max-width:1400px; margin:0 auto; }
+.contenido { flex: 1; min-height: 0; overflow-y: auto; padding: clamp(16px,3vw,32px) clamp(16px,4vw,48px); background: var(--neo-bg-deep); }
+.contenido-inner { max-width: 1400px; margin: 0 auto; }
 
-.card { background:white; border:1px solid var(--borde); border-radius:12px; box-shadow:0 1px 2px rgba(0,0,0,.03); padding:0; overflow:hidden; }
+.card { background: var(--neo-bg); border-radius: var(--neo-r-lg); box-shadow: var(--neo-i1); padding: 0; overflow: hidden; border: none; }
 
-.table-wrap { overflow-x:auto; }
-table { width:100%; border-collapse:collapse; min-width:1180px; }
-thead th { text-align:left; font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--gris3); padding:12px 14px; border-bottom:2px solid var(--gris2); white-space:nowrap; }
-thead th.r { text-align:right; }
-tbody td { padding:10px 14px; font-size:var(--fs-md); border-bottom:1px solid var(--gris2); white-space:nowrap; }
-tbody td.r { text-align:right; font-variant-numeric:tabular-nums; font-weight:600; }
-tbody td.r.vacia { color:var(--gris3); font-weight:400; }
-tbody tr:last-child td { border-bottom:none; }
-tbody tr:hover { background:var(--gris1); }
+.table-wrap { overflow-x: auto; }
+.table-wrap::-webkit-scrollbar { height: 5px; }
+.table-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; min-width: 1180px; }
+thead th {
+  text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; color: var(--neo-text-3); padding: 12px 14px;
+  border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap;
+  background: var(--neo-bg-deep); position: sticky; top: 0;
+}
+thead th.r { text-align: right; }
+tbody td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); white-space: nowrap; color: var(--neo-text); }
+tbody td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+tbody td.r.vacia { color: var(--neo-text-3); font-weight: 400; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: rgba(255,255,255,.4); }
 
-tfoot td { padding:12px 14px; font-size:var(--fs-md); font-weight:700; border-top:2px solid var(--gris2); }
-tfoot td.r { text-align:right; font-variant-numeric:tabular-nums; }
+tfoot td { padding: 12px 14px; font-size: 13px; font-weight: 700; border-top: 1px solid rgba(163,177,198,.4); color: var(--neo-text); }
+tfoot td.r { text-align: right; font-variant-numeric: tabular-nums; }
 
-.tipo-badge { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; padding:3px 7px; border-radius:5px; margin-right:6px; background:var(--gris2); color:var(--gris3); }
+.tipo-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; padding: 3px 7px; border-radius: var(--neo-r-xs); margin-right: 6px; background: rgba(163,177,198,.2); color: var(--neo-text-3); }
 
-.acc-btn { background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px; font-size:12px; font-weight:600; color:var(--azul); transition:background 120ms ease-out; }
-.acc-btn:hover { background:var(--gris2); }
-.acc-btn.editar { color:var(--bajo); }
+.acc-btn { background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: var(--neo-r-xs); font-size: 12px; font-weight: 600; color: var(--neo-accent); transition: background var(--neo-t-fast); }
+.acc-btn:hover { background: rgba(79,142,247,.1); }
+.acc-btn.editar { color: var(--neo-warning); }
 
-.vacio { text-align:center; padding:48px 20px; color:var(--gris3); font-size:var(--fs-md); }
+.vacio { text-align: center; padding: 48px 20px; color: var(--neo-text-3); font-size: 13px; }
 
 @media (max-width: 640px) {
-  .page-header h1 { font-size:19px; }
+  .page-header h1 { font-size: 19px; }
 }
 
 </style>
@@ -132,7 +148,8 @@ function montoColumna(v, tipo) {
   return v.tipo_pago === tipo ? Number(v.total) : 0;
 }
 
-const esAdmin = window.LOGOS_SESION?.rol === 'admin';
+// "esAdmin" histórico: acá significa "puede operar/filtrar cualquier caja"
+const esAdmin = window.puede?.('cajas_todas') ?? (window.LOGOS_SESION?.rol === 'admin');
 let ventasCache = [];
 
 async function init() {
@@ -212,8 +229,12 @@ function render(data) {
     btn.addEventListener('click', () => accionEditar(+btn.dataset.id)));
 }
 
-function accionVer(id) {
-  window.open(`${API}/ventas/${id}/comprobante`, '_blank');
+async function accionVer(id) {
+  try {
+    const r = await fetch(`${API}/ventas/${id}/comprobante`);
+    if (!r.ok) { const d = await r.json(); toast_(d.error || 'Error al generar PDF', 'err'); return; }
+    abrirPdfModal(await r.blob());
+  } catch { toast_('Error de conexión al generar PDF', 'err'); }
 }
 
 async function accionEditar(id) {

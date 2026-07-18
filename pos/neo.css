@@ -1,0 +1,1122 @@
+/* ===================================================================
+   BRON POS — Neo Design System v1.0
+   Estilo: Neomorphism + Color Accents
+   Fondo: #e0e5ec | Sombra clara: #ffffff | Sombra oscura: #a3b1c6
+   Accent: #4f8ef7 | Danger: #e74c3c | Success: #27ae60
+=================================================================== */
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   1. TOKENS CSS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+:root {
+  /* Remapeo de variables legacy para coherencia en páginas no migradas aún */
+  --azul:   #9B1B2E;
+  --azul-h: #7D1525;
+  --verde:  #27ae60;
+  --rojo:   #e74c3c;
+  --gris1:  #e0e5ec;
+  --gris2:  #d1d9e6;
+  --gris3:  #9ba3b2;
+  --texto:  #31344b;
+  --borde:  rgba(163,177,198,0.3);
+  /* Superficies */
+  --neo-bg:       #e0e5ec;
+  --neo-bg-deep:  #d1d9e6;
+
+  /* Sombras base */
+  --neo-sl: #ffffff;
+  --neo-sd: #a3b1c6;
+
+  /* Elevación raised (outset) */
+  --neo-e1: 3px 3px 6px var(--neo-sd), -3px -3px 6px var(--neo-sl);
+  --neo-e2: 6px 6px 12px var(--neo-sd), -6px -6px 12px var(--neo-sl);
+  --neo-e3: 10px 10px 20px var(--neo-sd), -10px -10px 20px var(--neo-sl);
+  --neo-e4: 16px 16px 32px var(--neo-sd), -16px -16px 32px var(--neo-sl);
+
+  /* Inset (hundido/presionado) */
+  --neo-i1: inset 3px 3px 6px var(--neo-sd), inset -3px -3px 6px var(--neo-sl);
+  --neo-i2: inset 6px 6px 12px var(--neo-sd), inset -6px -6px 12px var(--neo-sl);
+  --neo-i3: inset 8px 8px 16px var(--neo-sd), inset -8px -8px 16px var(--neo-sl);
+
+  /* Colores accent */
+  --neo-accent:       #9B1B2E;
+  --neo-accent-h:     #7D1525;
+  --neo-accent-glow:  rgba(155, 27, 46, 0.35);
+  --neo-danger:       #e74c3c;
+  --neo-danger-h:     #c0392b;
+  --neo-danger-glow:  rgba(231, 76, 60, 0.3);
+  --neo-success:      #27ae60;
+  --neo-success-h:    #219a52;
+  --neo-success-glow: rgba(39, 174, 96, 0.3);
+  --neo-warning:      #f39c12;
+  --neo-warning-h:    #d68910;
+  --neo-warning-glow: rgba(243, 156, 18, 0.3);
+
+  /* Texto */
+  --neo-text:    #31344b;
+  --neo-text-2:  #6b7280;
+  --neo-text-3:  #9ba3b2;
+  --neo-text-inv: #ffffff;
+
+  /* Border radius */
+  --neo-r-xs:   6px;
+  --neo-r-sm:  10px;
+  --neo-r-md:  14px;
+  --neo-r-lg:  18px;
+  --neo-r-xl:  24px;
+  --neo-r-pill: 100px;
+
+  /* Spacing (sistema 4/8dp) */
+  --neo-sp-1:  4px;
+  --neo-sp-2:  8px;
+  --neo-sp-3:  12px;
+  --neo-sp-4:  16px;
+  --neo-sp-5:  20px;
+  --neo-sp-6:  24px;
+  --neo-sp-8:  32px;
+  --neo-sp-10: 40px;
+  --neo-sp-12: 48px;
+
+  /* Tipografía */
+  --neo-fs-xs:  10px;
+  --neo-fs-sm:  11px;
+  --neo-fs-md:  13px;
+  --neo-fs-lg:  16px;
+  --neo-fs-xl:  20px;
+  --neo-fs-2xl: 28px;
+
+  /* Transiciones */
+  --neo-t-fast: 120ms cubic-bezier(0.23, 1, 0.32, 1);
+  --neo-t-base: 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  --neo-t-slow: 320ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   2. RESET GLOBAL BODY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+body {
+  background: var(--neo-bg) !important;
+  color: var(--neo-text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   3. OVERRIDE NAV EXISTENTE (sin cambiar HTML)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.app-nav {
+  background: var(--neo-bg) !important;
+  box-shadow: 0 4px 12px var(--neo-sd), 0 -2px 6px var(--neo-sl) !important;
+  height: 52px;
+}
+
+.nav-brand {
+  padding: 5px 11px;
+  border-radius: var(--neo-r-sm);
+  box-shadow: var(--neo-e1);
+  transition: box-shadow var(--neo-t-fast);
+}
+.nav-brand:hover { box-shadow: var(--neo-e2); }
+
+.nav-link {
+  color: var(--neo-text-2) !important;
+  border-radius: var(--neo-r-sm);
+  font-size: 12px;
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast) !important;
+}
+.nav-link:hover {
+  background: transparent !important;
+  color: var(--neo-text) !important;
+  box-shadow: var(--neo-e1);
+}
+.nav-link.activo {
+  background: transparent !important;
+  color: var(--neo-accent) !important;
+  box-shadow: var(--neo-i1);
+  font-weight: 700;
+}
+
+.nav-drop-menu {
+  background: var(--neo-bg) !important;
+  border: none !important;
+  border-radius: var(--neo-r-md) !important;
+  box-shadow: var(--neo-e3) !important;
+}
+.nav-drop-menu a {
+  color: var(--neo-text-2) !important;
+  border-radius: var(--neo-r-xs) !important;
+  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast) !important;
+}
+.nav-drop-menu a:hover {
+  background: transparent !important;
+  color: var(--neo-text) !important;
+  box-shadow: var(--neo-i1);
+}
+.nav-drop-menu a.activo {
+  background: transparent !important;
+  color: var(--neo-accent) !important;
+  box-shadow: var(--neo-i1);
+}
+
+.nav-caja-select {
+  background: var(--neo-bg) !important;
+  color: var(--neo-text) !important;
+  border: none !important;
+  border-radius: var(--neo-r-sm) !important;
+  box-shadow: var(--neo-i1) !important;
+  font-weight: 600;
+}
+.nav-caja-select:focus { box-shadow: var(--neo-i2) !important; }
+
+.nav-fecha  { color: var(--neo-text-3) !important; }
+.nav-sep    { background: var(--neo-sd) !important; opacity: 0.5; }
+.nav-usuario { color: var(--neo-text) !important; }
+.nav-usuario span { color: var(--neo-text-3) !important; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   4. CARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-card {
+  background: var(--neo-bg);
+  border-radius: var(--neo-r-lg);
+  box-shadow: var(--neo-e2);
+  overflow: hidden;
+}
+.neo-card-sm {
+  background: var(--neo-bg);
+  border-radius: var(--neo-r-md);
+  box-shadow: var(--neo-e1);
+  overflow: hidden;
+}
+.neo-card-inset {
+  background: var(--neo-bg-deep);
+  border-radius: var(--neo-r-md);
+  box-shadow: var(--neo-i2);
+}
+.neo-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(163, 177, 198, 0.3);
+}
+.neo-card-title {
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--neo-text-2);
+}
+.neo-card-subtitle { font-size: var(--neo-fs-sm); color: var(--neo-text-3); }
+.neo-card-body     { padding: 18px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   5. KPI CARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-kcard {
+  background: var(--neo-bg);
+  border-radius: var(--neo-r-lg);
+  box-shadow: var(--neo-e2);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: box-shadow var(--neo-t-base), transform var(--neo-t-base);
+}
+.neo-kcard:hover {
+  box-shadow: var(--neo-e3);
+  transform: translateY(-1px);
+}
+.neo-kcard-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--neo-r-sm);
+  box-shadow: var(--neo-e1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  color: var(--neo-accent);
+}
+.neo-kcard-label {
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--neo-text-3);
+}
+.neo-kcard-value {
+  font-size: var(--neo-fs-xl);
+  font-weight: 700;
+  color: var(--neo-text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.neo-kcard-value.accent  { color: var(--neo-accent); }
+.neo-kcard-value.success { color: var(--neo-success); }
+.neo-kcard-value.danger  { color: var(--neo-danger); }
+.neo-kcard-value.warning { color: var(--neo-warning); }
+.neo-kcard-sub {
+  font-size: var(--neo-fs-sm);
+  color: var(--neo-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   6. BOTONES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--neo-r-sm);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--neo-bg);
+  color: var(--neo-text);
+  box-shadow: var(--neo-e2);
+  transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast), color var(--neo-t-fast);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+.neo-btn:hover:not(:disabled) { box-shadow: var(--neo-e3); }
+.neo-btn:active:not(:disabled) {
+  box-shadow: var(--neo-i2);
+  transform: scale(0.98);
+}
+.neo-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  box-shadow: var(--neo-e1);
+}
+
+/* Variantes de color */
+.neo-btn-primary {
+  background: var(--neo-accent);
+  color: var(--neo-text-inv);
+  box-shadow: 4px 4px 10px var(--neo-accent-glow), -2px -2px 6px rgba(255,255,255,0.25);
+}
+.neo-btn-primary:hover:not(:disabled) {
+  background: var(--neo-accent-h);
+  box-shadow: 6px 6px 16px var(--neo-accent-glow), -3px -3px 8px rgba(255,255,255,0.25);
+}
+.neo-btn-primary:active:not(:disabled) {
+  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(255,255,255,0.1);
+}
+
+.neo-btn-danger {
+  background: var(--neo-danger);
+  color: var(--neo-text-inv);
+  box-shadow: 4px 4px 10px var(--neo-danger-glow), -2px -2px 6px rgba(255,255,255,0.25);
+}
+.neo-btn-danger:hover:not(:disabled) {
+  background: var(--neo-danger-h);
+  box-shadow: 6px 6px 16px var(--neo-danger-glow), -3px -3px 8px rgba(255,255,255,0.25);
+}
+.neo-btn-danger:active:not(:disabled) {
+  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(255,255,255,0.1);
+}
+
+.neo-btn-success {
+  background: var(--neo-success);
+  color: var(--neo-text-inv);
+  box-shadow: 4px 4px 10px var(--neo-success-glow), -2px -2px 6px rgba(255,255,255,0.25);
+}
+.neo-btn-success:hover:not(:disabled) { background: var(--neo-success-h); }
+
+.neo-btn-warning {
+  background: var(--neo-warning);
+  color: var(--neo-text-inv);
+  box-shadow: 4px 4px 10px var(--neo-warning-glow), -2px -2px 6px rgba(255,255,255,0.25);
+}
+
+/* Ghost (sin sombra base) */
+.neo-btn-ghost {
+  background: transparent;
+  box-shadow: none;
+  color: var(--neo-text-2);
+}
+.neo-btn-ghost:hover:not(:disabled) {
+  box-shadow: var(--neo-e1);
+  color: var(--neo-text);
+}
+.neo-btn-ghost:active:not(:disabled) {
+  box-shadow: var(--neo-i1);
+}
+
+/* Tamaños */
+.neo-btn-lg {
+  padding: 12px 28px;
+  font-size: 12px;
+  border-radius: var(--neo-r-md);
+}
+.neo-btn-sm {
+  padding: 6px 12px;
+  font-size: 10px;
+  border-radius: var(--neo-r-xs);
+}
+.neo-btn-xs {
+  padding: 4px 8px;
+  font-size: 10px;
+  border-radius: var(--neo-r-xs);
+  box-shadow: var(--neo-e1);
+}
+
+/* Icon-only */
+.neo-btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--neo-r-sm);
+  flex-shrink: 0;
+}
+.neo-btn-icon-sm {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: var(--neo-r-xs);
+  flex-shrink: 0;
+  font-size: 14px;
+  box-shadow: var(--neo-e1);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   7. INPUTS / SELECTS / TEXTAREA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-input,
+.neo-select,
+.neo-textarea {
+  background: var(--neo-bg);
+  color: var(--neo-text);
+  border: none;
+  border-radius: var(--neo-r-sm);
+  box-shadow: var(--neo-i2);
+  padding: 9px 13px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: box-shadow var(--neo-t-fast);
+  width: 100%;
+  -webkit-appearance: none;
+}
+.neo-input::placeholder,
+.neo-textarea::placeholder { color: var(--neo-text-3); }
+.neo-input:focus,
+.neo-select:focus,
+.neo-textarea:focus {
+  box-shadow: var(--neo-i2), 0 0 0 2px var(--neo-accent);
+}
+.neo-input:disabled,
+.neo-select:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.neo-select  { cursor: pointer; }
+.neo-textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+/* Tamaño SM — ideal para barras de filtros */
+.neo-input-sm { padding: 6px 10px; font-size: 12px; border-radius: var(--neo-r-xs); box-shadow: var(--neo-i1); }
+.neo-select-sm { padding: 6px 10px; font-size: 12px; border-radius: var(--neo-r-xs); box-shadow: var(--neo-i1); cursor: pointer; }
+
+/* Form group */
+.neo-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.neo-form-label {
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--neo-text-3);
+}
+.neo-form-hint {
+  font-size: 11px;
+  color: var(--neo-text-3);
+  line-height: 1.45;
+}
+.neo-form-error {
+  font-size: 11px;
+  color: var(--neo-danger);
+  font-weight: 600;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   8. BADGES / PILLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--neo-r-pill);
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  box-shadow: var(--neo-e1);
+  white-space: nowrap;
+}
+.neo-badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.neo-badge-accent   { color: var(--neo-accent);  background: rgba(79, 142, 247, 0.14); }
+.neo-badge-success  { color: var(--neo-success);  background: rgba(39, 174, 96, 0.14); }
+.neo-badge-danger   { color: var(--neo-danger);   background: rgba(231, 76, 60, 0.14); }
+.neo-badge-warning  { color: var(--neo-warning);  background: rgba(243, 156, 18, 0.14); }
+.neo-badge-neutral  { color: var(--neo-text-2);   background: rgba(163, 177, 198, 0.22); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   9. TOOLBAR / BARRA DE FILTROS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-toolbar {
+  background: var(--neo-bg);
+  box-shadow: 0 4px 8px var(--neo-sd), 0 -1px 4px var(--neo-sl);
+  padding: 10px 20px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
+}
+.neo-toolbar-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--neo-sd);
+  opacity: 0.35;
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+.neo-toolbar-label {
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--neo-text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.neo-toolbar-arrow {
+  font-size: 11px;
+  color: var(--neo-text-3);
+  flex-shrink: 0;
+  font-weight: 600;
+}
+.neo-toolbar-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--neo-text-3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* Checkbox en toolbar */
+.neo-toolbar-chk {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--neo-text-3);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   10. TABLAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-table-wrap {
+  border-radius: var(--neo-r-md);
+  box-shadow: var(--neo-i2);
+  background: var(--neo-bg-deep);
+  overflow: hidden;
+}
+.neo-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.neo-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--neo-text-3);
+  border-bottom: 1px solid rgba(163, 177, 198, 0.4);
+  white-space: nowrap;
+  background: var(--neo-bg-deep);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.neo-table td {
+  padding: 9px 14px;
+  color: var(--neo-text);
+  font-size: 12px;
+  border-bottom: 1px solid rgba(163, 177, 198, 0.18);
+  vertical-align: middle;
+}
+.neo-table tr:last-child td { border-bottom: none; }
+.neo-table tbody tr {
+  transition: background var(--neo-t-fast);
+}
+.neo-table tbody tr:hover { background: rgba(255, 255, 255, 0.42); }
+.neo-table .num  { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+.neo-table .muted { color: var(--neo-text-3); }
+.neo-table .center { text-align: center; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   11. LEDGER (CUADRO CONTABLE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-ledger { display: flex; flex-direction: column; }
+.neo-ledger-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 0;
+}
+.neo-ledger-row.sep {
+  border-top: 1px solid rgba(163, 177, 198, 0.4);
+  margin-top: 6px;
+  padding-top: 12px;
+}
+.neo-ledger-lbl { font-size: 12px; color: var(--neo-text-2); white-space: nowrap; }
+.neo-ledger-fill {
+  flex: 1;
+  border-bottom: 1px dotted rgba(163, 177, 198, 0.5);
+  min-width: 20px;
+  margin-bottom: 3px;
+}
+.neo-ledger-val {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--neo-text);
+  white-space: nowrap;
+}
+.neo-ledger-row.bold .neo-ledger-lbl { font-weight: 700; color: var(--neo-text); font-size: 13px; }
+.neo-ledger-row.bold .neo-ledger-val { font-size: 15px; font-weight: 700; }
+.neo-ledger-row.accent  .neo-ledger-val { color: var(--neo-accent); }
+.neo-ledger-row.success .neo-ledger-val { color: var(--neo-success); }
+.neo-ledger-row.danger  .neo-ledger-val { color: var(--neo-danger); }
+.neo-ledger-row.warning .neo-ledger-val { color: var(--neo-warning); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   12. PAGE HEADER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-page-header {
+  background: var(--neo-bg);
+  box-shadow: 0 3px 8px var(--neo-sd), 0 -1px 4px var(--neo-sl);
+  padding: 14px clamp(20px, 4vw, 48px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  z-index: 10;
+  position: relative;
+}
+.neo-page-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--neo-text);
+}
+.neo-page-subtitle {
+  font-size: 11px;
+  color: var(--neo-text-3);
+  margin-top: 2px;
+}
+.neo-page-header-meta { display: flex; align-items: center; gap: 10px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   13. SCROLL CONTAINER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-scroll {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--neo-bg);
+  padding: 20px clamp(16px, 3vw, 40px);
+}
+.neo-scroll::-webkit-scrollbar         { width: 6px; }
+.neo-scroll::-webkit-scrollbar-track  { background: var(--neo-bg-deep); }
+.neo-scroll::-webkit-scrollbar-thumb  { background: var(--neo-sd); border-radius: 3px; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   14. TOAST (override del existente)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.toast {
+  background: var(--neo-bg) !important;
+  color: var(--neo-text) !important;
+  border-radius: var(--neo-r-lg) !important;
+  box-shadow: var(--neo-e3) !important;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toast.ok {
+  background: var(--neo-success) !important;
+  color: var(--neo-text-inv) !important;
+  box-shadow: 6px 6px 16px var(--neo-success-glow), -4px -4px 10px rgba(255,255,255,0.25) !important;
+}
+.toast.err {
+  background: var(--neo-danger) !important;
+  color: var(--neo-text-inv) !important;
+  box-shadow: 6px 6px 16px var(--neo-danger-glow), -4px -4px 10px rgba(255,255,255,0.25) !important;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   15. MODAL / SCRIM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(49, 52, 75, 0.48);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.neo-modal {
+  background: var(--neo-bg);
+  border-radius: var(--neo-r-xl);
+  box-shadow: var(--neo-e4);
+  padding: 28px;
+  min-width: 340px;
+  max-width: min(90vw, 560px);
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: neo-modal-in 200ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+@keyframes neo-modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.neo-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.neo-modal-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--neo-text);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   16. CHECKBOX / TOGGLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  color: var(--neo-text-2);
+}
+.neo-check input[type=checkbox] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--neo-bg);
+  box-shadow: var(--neo-i1);
+  cursor: pointer;
+  position: relative;
+  transition: background var(--neo-t-fast), box-shadow var(--neo-t-fast);
+  flex-shrink: 0;
+}
+.neo-check input[type=checkbox]:checked {
+  background: var(--neo-accent);
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.25), inset -1px -1px 3px rgba(255,255,255,0.15);
+}
+.neo-check input[type=checkbox]:checked::after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 10px;
+  border: 2px solid white;
+  border-top: none;
+  border-left: none;
+  transform: rotate(42deg);
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   17. EMPTY STATE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--neo-text-3);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.neo-empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--neo-r-lg);
+  box-shadow: var(--neo-e2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--neo-text-3);
+  background: var(--neo-bg);
+  font-size: 22px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   18. DIVIDERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-divider          { height: 1px; background: rgba(163, 177, 198, 0.4); margin: 12px 0; }
+.neo-divider-v        { width: 1px; background: rgba(163, 177, 198, 0.4); align-self: stretch; flex-shrink: 0; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   19. FOCUS VISIBLE (accesibilidad)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-btn:focus-visible,
+.neo-input:focus-visible,
+.neo-select:focus-visible,
+.neo-nav-link:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--neo-accent);
+  outline-offset: 2px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   20. MOTION SEGURO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+@media (prefers-reduced-motion: reduce) {
+  .neo-btn,
+  .neo-kcard,
+  .neo-modal,
+  .neo-toast,
+  .neo-input,
+  .neo-select {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   21. UTILIDADES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.neo-flex          { display: flex; }
+.neo-flex-center   { display: flex; align-items: center; }
+.neo-flex-between  { display: flex; align-items: center; justify-content: space-between; }
+.neo-flex-col      { display: flex; flex-direction: column; }
+.neo-gap-1         { gap: var(--neo-sp-1); }
+.neo-gap-2         { gap: var(--neo-sp-2); }
+.neo-gap-3         { gap: var(--neo-sp-3); }
+.neo-gap-4         { gap: var(--neo-sp-4); }
+.neo-gap-5         { gap: var(--neo-sp-5); }
+.neo-mt-2          { margin-top: var(--neo-sp-2); }
+.neo-mt-3          { margin-top: var(--neo-sp-3); }
+.neo-mt-4          { margin-top: var(--neo-sp-4); }
+.neo-ml-auto       { margin-left: auto; }
+.neo-w-full        { width: 100%; }
+.neo-text-num      { font-variant-numeric: tabular-nums; }
+.neo-text-muted    { color: var(--neo-text-3); }
+.neo-text-2        { color: var(--neo-text-2); }
+.neo-text-accent   { color: var(--neo-accent); }
+.neo-text-danger   { color: var(--neo-danger); }
+.neo-text-success  { color: var(--neo-success); }
+.neo-text-warning  { color: var(--neo-warning); }
+.neo-text-bold     { font-weight: 700; }
+.neo-text-sm       { font-size: var(--neo-fs-sm); }
+.neo-text-xs       { font-size: var(--neo-fs-xs); }
+.neo-text-upper    { text-transform: uppercase; letter-spacing: 0.5px; }
+.neo-sr-only       { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+.neo-nowrap        { white-space: nowrap; }
+.neo-truncate      { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   22. COMPATIBILIDAD — clases legacy usadas por JS
+       (modales generados dinámicamente, cierre-modal.js, etc.)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+/* Botones legacy */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border: none;
+  border-radius: var(--neo-r-sm);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: inherit;
+  background: var(--neo-bg);
+  color: var(--neo-text);
+  box-shadow: var(--neo-e2);
+  transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
+  user-select: none;
+}
+.btn:hover:not(:disabled)  { box-shadow: var(--neo-e3); }
+.btn:active:not(:disabled) { box-shadow: var(--neo-i2); transform: scale(0.98); }
+.btn:disabled              { opacity: 0.42; cursor: not-allowed; box-shadow: var(--neo-e1); }
+
+.btn-ok {
+  background: var(--neo-accent);
+  color: var(--neo-text-inv);
+  box-shadow: 4px 4px 10px var(--neo-accent-glow), -2px -2px 6px rgba(255,255,255,0.25);
+}
+.btn-ok:hover:not(:disabled) {
+  background: var(--neo-accent-h);
+  box-shadow: 6px 6px 16px var(--neo-accent-glow), -3px -3px 8px rgba(255,255,255,0.25);
+}
+.btn-ok:active:not(:disabled) {
+  box-shadow: inset 4px 4px 8px rgba(0,0,0,0.25), inset -2px -2px 4px rgba(255,255,255,0.1);
+}
+
+.btn-sec {
+  background: var(--neo-bg);
+  color: var(--neo-text);
+  box-shadow: var(--neo-e2);
+}
+.btn-sec:hover:not(:disabled) { box-shadow: var(--neo-e3); }
+
+.btn-danger {
+  background: var(--neo-danger);
+  color: var(--neo-text-inv);
+  box-shadow: 4px 4px 10px var(--neo-danger-glow), -2px -2px 6px rgba(255,255,255,0.25);
+}
+.btn-danger:hover:not(:disabled) {
+  background: var(--neo-danger-h);
+  box-shadow: 6px 6px 16px var(--neo-danger-glow), -3px -3px 8px rgba(255,255,255,0.25);
+}
+
+/* Modales legacy (activados con JS via classList) */
+.overlay,
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(49, 52, 75, 0.48);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity var(--neo-t-base), visibility 0s var(--neo-t-base);
+}
+.overlay.abierto,
+.modal-overlay.abierto {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: opacity var(--neo-t-base);
+}
+
+.modal {
+  background: var(--neo-bg);
+  border-radius: var(--neo-r-xl);
+  box-shadow: var(--neo-e4);
+  padding: 0;
+  min-width: 340px;
+  max-width: min(90vw, 580px);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.modal-head,
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(163, 177, 198, 0.3);
+}
+.modal-head h2,
+.modal-head h3,
+.modal-header h2,
+.modal-header h3,
+.modal-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--neo-text-3);
+  margin: 0;
+  flex: 1;
+}
+.modal-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--neo-text-3);
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: var(--neo-r-xs);
+  flex-shrink: 0;
+}
+.modal-close:hover { background: rgba(163, 177, 198, 0.2); color: var(--neo-text); }
+
+.modal-body  { padding: 20px; }
+.modal-footer {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 14px 20px;
+  border-top: 1px solid rgba(163, 177, 198, 0.3);
+}
+
+/* Pills de estado legacy */
+.estado-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: var(--neo-r-pill);
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  box-shadow: var(--neo-e1);
+}
+.estado-pill .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.estado-pill.abierto  { color: var(--neo-success); background: rgba(39,174,96,0.12); }
+.estado-pill.cerrado  { color: var(--neo-text-2);  background: rgba(163,177,198,0.18); }
+
+/* Tags de transacciones */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: var(--neo-r-pill);
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  box-shadow: var(--neo-e1);
+}
+.tag.ingreso       { color: var(--neo-success);  background: rgba(39,174,96,0.12); }
+.tag.retiro        { color: var(--neo-danger);   background: rgba(231,76,60,0.12); }
+.tag.transferencia { color: var(--neo-accent);   background: rgba(79,142,247,0.12); }
+
+/* Card genérica legacy */
+.card {
+  background: var(--neo-bg);
+  border: none !important;
+  border-radius: var(--neo-r-lg);
+  box-shadow: var(--neo-e2);
+  overflow: hidden;
+}
+
+/* Table wrap legacy */
+.table-wrap {
+  background: var(--neo-bg-deep);
+  border: none !important;
+  border-radius: var(--neo-r-md);
+  box-shadow: var(--neo-i2);
+  overflow: hidden;
+}
+.table-wrap table,
+.table-wrap .tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table-wrap thead th {
+  padding: 9px 14px;
+  text-align: left;
+  font-size: var(--neo-fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--neo-text-3);
+  border-bottom: 1px solid rgba(163,177,198,0.4);
+  background: var(--neo-bg-deep);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.table-wrap tbody td {
+  padding: 8px 14px;
+  font-size: 12px;
+  color: var(--neo-text);
+  border-bottom: 1px solid rgba(163,177,198,0.18);
+  vertical-align: middle;
+}
+.table-wrap tbody tr:last-child td { border-bottom: none; }
+.table-wrap tbody tr:hover          { background: rgba(255,255,255,0.42); }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   23. ESTADOS JS-TOGGLE GLOBALES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+.oculto         { display: none !important; }
+.neo-hidden     { display: none !important; }
+
+/* Cierre-modal estados */
+.cierre-ok    { color: var(--neo-success) !important; }
+.cierre-error { color: var(--neo-danger) !important; }
+.cierre-alerta {
+  background: rgba(243,156,18,0.12);
+  border-radius: var(--neo-r-sm);
+  padding: 10px 14px;
+  color: var(--neo-warning);
+  font-weight: 600;
+  font-size: 13px;
+}
+.cierre-exito {
+  background: rgba(39,174,96,0.12);
+  border-radius: var(--neo-r-sm);
+  padding: 10px 14px;
+  color: var(--neo-success);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Validación inputs */
+.cod-ok  { box-shadow: var(--neo-i2), 0 0 0 2px var(--neo-success) !important; }
+.cod-err { box-shadow: var(--neo-i2), 0 0 0 2px var(--neo-danger) !important; }
+
+/* Drag & drop */
+.drag-over {
+  box-shadow: var(--neo-i2), 0 0 0 2px var(--neo-accent) !important;
+  background: rgba(79,142,247,0.06) !important;
+}

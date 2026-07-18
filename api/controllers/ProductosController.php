@@ -4,6 +4,14 @@ require_once __DIR__ . '/../config/db.php';
 
 class ProductosController {
 
+    /** Sin el permiso 'costos', el costo no viaja al cliente. */
+    private static function ocultarCostos(array $filas): array {
+        if (Auth::puede('costos')) return $filas;
+        foreach ($filas as &$p) { unset($p['costo_actual']); }
+        unset($p);
+        return $filas;
+    }
+
     public function search(): void {
         $q         = trim($_GET['q']         ?? '');
         $exacto    = ($_GET['exacto']        ?? '0') === '1';
@@ -62,7 +70,8 @@ class ProductosController {
 
         $sql = "
             SELECT id, codigo, nombre, marca, proveedor, categoria, subcategoria,
-                   precio_venta, costo_actual, stock_actual, stock_minimo, activo
+                   precio_venta, costo_actual, stock_actual, stock_minimo,
+                   iva_porcentaje, unidad_medida, activo
             FROM productos
             WHERE " . implode(' AND ', $where) . "
             ORDER BY $order
@@ -72,13 +81,14 @@ class ProductosController {
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
 
-        json(200, $stmt->fetchAll());
+        json(200, self::ocultarCostos($stmt->fetchAll()));
     }
 
     public function get(int $id): void {
         $stmt = DB::get()->prepare("
             SELECT id, codigo, nombre, marca, proveedor, categoria, subcategoria,
-                   precio_venta, costo_actual, stock_actual, stock_minimo, activo
+                   precio_venta, costo_actual, stock_actual, stock_minimo,
+                   iva_porcentaje, unidad_medida, activo
             FROM productos WHERE id = ?
         ");
         $stmt->execute([$id]);
@@ -86,7 +96,7 @@ class ProductosController {
 
         if (!$producto) { json(404, ['error' => 'Producto no encontrado']); }
 
-        json(200, $producto);
+        json(200, self::ocultarCostos([$producto])[0]);
     }
 
     public function listar(): void {
@@ -132,7 +142,8 @@ class ProductosController {
 
         $stmt = $db->prepare("
             SELECT id, codigo, nombre, marca, categoria, subcategoria, proveedor,
-                   precio_venta, costo_actual, stock_minimo, activo
+                   precio_venta, costo_actual, stock_minimo,
+                   iva_porcentaje, unidad_medida, activo
             FROM productos
             WHERE $whereStr
             ORDER BY $orderSql
@@ -142,10 +153,11 @@ class ProductosController {
         $items = $stmt->fetchAll();
 
         foreach ($items as &$p) {
-            $p['precio_venta'] = (float)$p['precio_venta'];
-            $p['costo_actual'] = (float)$p['costo_actual'];
-            $p['stock_minimo'] = (float)$p['stock_minimo'];
-            $p['activo']       = (bool)$p['activo'];
+            $p['precio_venta']  = (float)$p['precio_venta'];
+            $p['costo_actual']  = (float)$p['costo_actual'];
+            $p['stock_minimo']  = (float)$p['stock_minimo'];
+            $p['iva_porcentaje'] = $p['iva_porcentaje'] !== null ? (float)$p['iva_porcentaje'] : null;
+            $p['activo']        = (bool)$p['activo'];
         }
         unset($p);
 
@@ -154,7 +166,7 @@ class ProductosController {
             'page'     => $page,
             'per_page' => $per_page,
             'pages'    => (int)ceil($total / max(1, $per_page)),
-            'items'    => $items,
+            'items'    => self::ocultarCostos($items),
         ]);
     }
 
@@ -167,13 +179,18 @@ class ProductosController {
 
         $codigo        = trim($body['codigo']       ?? '') ?: null;
         $precio        = isset($body['precio_venta']) && $body['precio_venta'] !== null ? (float)$body['precio_venta'] : null;
-        $costo         = isset($body['costo_actual']) && $body['costo_actual'] !== null ? (float)$body['costo_actual'] : null;
+        // Sin permiso 'costos' el body no puede fijar el costo: arranca en 0
+        $costo         = Auth::puede('costos')
+                         ? (isset($body['costo_actual']) && $body['costo_actual'] !== null ? (float)$body['costo_actual'] : null)
+                         : 0.0;
         $marca         = trim($body['marca']        ?? '') ?: null;
         $proveedor     = trim($body['proveedor']    ?? '') ?: null;
         $categoria     = trim($body['categoria']    ?? '') ?: null;
         $subcategoria  = trim($body['subcategoria'] ?? '') ?: null;
         $stock_min     = isset($body['stock_minimo'])  && $body['stock_minimo']  !== null ? (float)$body['stock_minimo']  : null;
         $stock_inicial = isset($body['stock_inicial']) && $body['stock_inicial'] !== null ? (float)$body['stock_inicial'] : 0;
+        $iva_pct       = isset($body['iva_porcentaje']) && $body['iva_porcentaje'] !== null ? (float)$body['iva_porcentaje'] : 21;
+        $unidad        = trim($body['unidad_medida'] ?? '') ?: null;
         $activo        = isset($body['activo']) ? ($body['activo'] ? 1 : 0) : 1;
 
         $db = DB::get();
@@ -189,10 +206,12 @@ class ProductosController {
             $db->prepare("
                 INSERT INTO productos
                     (nombre, codigo, precio_venta, costo_actual, marca, proveedor,
-                     categoria, subcategoria, stock_minimo, stock_actual, activo)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     categoria, subcategoria, stock_minimo, stock_actual,
+                     iva_porcentaje, unidad_medida, activo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ")->execute([$nombre, $codigo, $precio, $costo, $marca, $proveedor,
-                         $categoria, $subcategoria, $stock_min, $stock_inicial, $activo]);
+                         $categoria, $subcategoria, $stock_min, $stock_inicial,
+                         $iva_pct, $unidad, $activo]);
 
             $newId = (int)$db->lastInsertId();
 
@@ -219,7 +238,8 @@ class ProductosController {
         $codigo       = isset($body['codigo'])       ? trim($body['codigo'])        : null;
         $precio       = array_key_exists('precio_venta', $body) && $body['precio_venta'] !== null
                         ? (float)$body['precio_venta'] : null;
-        $costo        = array_key_exists('costo_actual', $body) && $body['costo_actual'] !== null
+        // Sin permiso 'costos', el costo del body se ignora (COALESCE preserva el actual)
+        $costo        = Auth::puede('costos') && array_key_exists('costo_actual', $body) && $body['costo_actual'] !== null
                         ? (float)$body['costo_actual'] : null;
         $marca        = isset($body['marca'])        ? trim($body['marca'])         : null;
         $proveedor    = isset($body['proveedor'])    ? trim($body['proveedor'])     : null;
@@ -227,6 +247,9 @@ class ProductosController {
         $subcategoria = isset($body['subcategoria']) ? trim($body['subcategoria'])  : null;
         $stock_min    = array_key_exists('stock_minimo', $body) && $body['stock_minimo'] !== null
                         ? (float)$body['stock_minimo'] : null;
+        $iva_pct      = array_key_exists('iva_porcentaje', $body) && $body['iva_porcentaje'] !== null
+                        ? (float)$body['iva_porcentaje'] : null;
+        $unidad       = array_key_exists('unidad_medida', $body) ? (trim($body['unidad_medida']) ?: null) : null;
         $activo       = array_key_exists('activo', $body) ? ($body['activo'] ? 1 : 0) : null;
 
         if ($nombre === '') json(400, ['error' => 'nombre es requerido']);
@@ -238,16 +261,18 @@ class ProductosController {
 
         $db->prepare("
             UPDATE productos SET
-                nombre        = ?,
-                codigo        = COALESCE(?, codigo),
-                precio_venta  = COALESCE(?, precio_venta),
-                costo_actual  = COALESCE(?, costo_actual),
-                marca         = ?,
-                proveedor     = ?,
-                categoria     = ?,
-                subcategoria  = ?,
-                stock_minimo  = COALESCE(?, stock_minimo),
-                activo        = COALESCE(?, activo)
+                nombre         = ?,
+                codigo         = COALESCE(?, codigo),
+                precio_venta   = COALESCE(?, precio_venta),
+                costo_actual   = COALESCE(?, costo_actual),
+                marca          = ?,
+                proveedor      = ?,
+                categoria      = ?,
+                subcategoria   = ?,
+                stock_minimo   = COALESCE(?, stock_minimo),
+                iva_porcentaje = COALESCE(?, iva_porcentaje),
+                unidad_medida  = ?,
+                activo         = COALESCE(?, activo)
             WHERE id = ?
         ")->execute([
             $nombre,
@@ -259,6 +284,8 @@ class ProductosController {
             $categoria    ?: null,
             $subcategoria ?: null,
             $stock_min,
+            $iva_pct,
+            $unidad,
             $activo,
             $id,
         ]);

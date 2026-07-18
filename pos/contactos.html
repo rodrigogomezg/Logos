@@ -9,62 +9,75 @@
 <link rel="stylesheet" href="/Logos/pos/pos-base.css">
 <style>
 /* ── layout ─────────────────────────────────────────────── */
-.page-body { flex:1; display:flex; flex-direction:column; overflow:hidden; padding:16px; gap:12px; }
+.page-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 12px; gap: 10px; background: var(--neo-bg-deep); }
 
 /* ── toolbar ─────────────────────────────────────────────── */
-.toolbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.toolbar .tab-grupo { display:flex; border:1px solid var(--borde); overflow:hidden; }
-.tab-tipo { padding:7px 18px; background:#fff; border:none; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; cursor:pointer; color:var(--gris3); font-family:inherit; }
-.tab-tipo.activo { background:var(--azul); color:#fff; }
-.toolbar-sep { width:1px; background:var(--borde); height:30px; margin:0 4px; }
-.busqueda { flex:1; min-width:180px; max-width:360px; padding:7px 11px; border:1px solid var(--borde); border-radius:0; font-size:13px; font-family:inherit; outline:none; }
-.busqueda:focus { border-color:var(--texto); }
-.filtro-activo { padding:7px 12px; border:1px solid var(--borde); border-radius:0; font-size:11px; font-family:inherit; outline:none; background:#fff; cursor:pointer; }
+.toolbar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: var(--neo-bg); border-radius: var(--neo-r-md);
+  padding: 8px 12px; box-shadow: var(--neo-e2);
+}
+.toolbar .tab-grupo { display: flex; border-radius: var(--neo-r-sm); overflow: hidden; box-shadow: var(--neo-e1); }
+.tab-tipo { padding: 7px 18px; background: var(--neo-bg); border: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; cursor: pointer; color: var(--neo-text-3); font-family: inherit; transition: color var(--neo-t-fast), box-shadow var(--neo-t-fast); }
+.tab-tipo.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
+.toolbar-sep { width: 1px; background: rgba(163,177,198,.35); height: 30px; margin: 0 4px; }
+.busqueda {
+  flex: 1; min-width: 180px; max-width: 360px; padding: 7px 11px; border: none;
+  border-radius: var(--neo-r-xs); font-size: 13px; font-family: inherit; outline: none;
+  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-i1);
+  transition: box-shadow var(--neo-t-fast);
+}
+.busqueda:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+.filtro-activo {
+  padding: 7px 12px; border: none; border-radius: var(--neo-r-xs); font-size: 11px;
+  font-family: inherit; outline: none; background: var(--neo-bg); color: var(--neo-text);
+  cursor: pointer; box-shadow: var(--neo-i1);
+}
 
 /* ── card/table ─────────────────────────────────────────── */
-.card { background:#fff; border:1px solid var(--borde); border-radius:0; flex:1; display:flex; flex-direction:column; overflow:hidden; }
-.tabla-wrap { flex:1; overflow:auto; }
-table { width:100%; border-collapse:collapse; font-size:13px; }
-thead th { position:sticky; top:0; background:var(--gris1); padding:9px 12px; text-align:left; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--gris3); border-bottom:1px solid var(--borde); white-space:nowrap; }
-tbody tr { border-bottom:1px solid var(--borde); cursor:pointer; }
-tbody tr:hover { background:var(--gris1); }
-tbody tr.inactivo { opacity:.5; }
-tbody td { padding:9px 12px; vertical-align:middle; }
-.badge { display:inline-block; padding:2px 7px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
-.badge-verde { background:#dcfce7; color:#15803d; }
-.badge-gris  { background:#f1f5f9; color:#64748b; }
-.badge-azul  { background:#dbeafe; color:#1d4ed8; }
+.card { background: var(--neo-bg-deep); border-radius: var(--neo-r-lg); box-shadow: var(--neo-i1); flex: 1; display: flex; flex-direction: column; overflow: hidden; border: none !important; }
+.tabla-wrap { flex: 1; overflow: auto; }
+.tabla-wrap::-webkit-scrollbar { width: 6px; }
+.tabla-wrap::-webkit-scrollbar-track { background: var(--neo-bg-deep); }
+.tabla-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { position: sticky; top: 0; background: var(--neo-bg-deep); padding: 9px 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap; }
+tbody tr { border-bottom: 1px solid rgba(163,177,198,.18); cursor: pointer; }
+tbody tr:hover { background: rgba(255,255,255,.4); }
+tbody tr.inactivo { opacity: .5; }
+tbody td { padding: 9px 12px; vertical-align: middle; color: var(--neo-text); }
+.badge { display: inline-block; padding: 2px 7px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1); }
+.badge-verde { background: rgba(39,174,96,.1);  color: var(--neo-success); }
+.badge-gris  { background: rgba(163,177,198,.2); color: var(--neo-text-3); }
+.badge-azul  { background: rgba(79,142,247,.1); color: var(--neo-accent);  }
 
 /* ── pagination ─────────────────────────────────────────── */
-.pagination { display:flex; align-items:center; justify-content:flex-end; gap:6px; padding:10px 14px; border-top:1px solid var(--borde); background:var(--gris1); font-size:12px; color:var(--gris3); }
-.pagination button { padding:4px 10px; border:1px solid var(--borde); background:#fff; font-size:11px; cursor:pointer; font-family:inherit; border-radius:0; }
-.pagination button:disabled { opacity:.4; cursor:default; }
-.pagination button.activo { background:var(--azul); color:#fff; border-color:var(--azul); }
+.pagination { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 10px 14px; border-top: 1px solid rgba(163,177,198,.3); background: var(--neo-bg-deep); font-size: 12px; color: var(--neo-text-3); }
+.pagination button { padding: 4px 10px; border: none; background: var(--neo-bg); color: var(--neo-text); font-size: 11px; cursor: pointer; font-family: inherit; border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1); transition: box-shadow var(--neo-t-fast); }
+.pagination button:disabled { opacity: .4; cursor: default; }
+.pagination button.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
 
 /* ── btn strip ───────────────────────────────────────────── */
-.btn { padding:7px 16px; border:1.5px solid transparent; border-radius:0; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; cursor:pointer; font-family:inherit; }
-.btn-ok  { background:var(--azul); color:#fff; border-color:var(--azul); }
-.btn-sec { background:#fff; color:var(--texto); border-color:#888; }
+.btn { padding: 7px 16px; border: none; border-radius: var(--neo-r-xs); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; cursor: pointer; font-family: inherit; }
+.btn-ok  { background: var(--neo-accent); color: white; box-shadow: 3px 3px 7px var(--neo-accent-glow); }
+.btn-ok:hover { background: var(--neo-accent-h); }
+.btn-sec { background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); transition: box-shadow var(--neo-t-fast); }
+.btn-sec:hover { box-shadow: var(--neo-e3); }
 
 /* ── empty/loading ───────────────────────────────────────── */
-.estado-tabla { text-align:center; padding:48px 20px; color:var(--gris3); font-size:13px; }
+.estado-tabla { text-align: center; padding: 48px 20px; color: var(--neo-text-3); font-size: 13px; }
 
 /* ── import modal ────────────────────────────────────────── */
-.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:200; }
-.modal-overlay.oculto { display:none; }
-.modal { background:#fff; border:1px solid var(--borde); width:620px; max-width:95vw; max-height:90vh; display:flex; flex-direction:column; border-radius:0; }
-.modal-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--borde); background:var(--gris1); }
-.modal-header h3 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.8px; color:var(--gris3); margin:0; }
-.modal-header button { background:none; border:none; cursor:pointer; color:var(--gris3); font-size:18px; line-height:1; padding:2px 6px; }
-.modal-header button:hover { color:var(--texto); }
-.modal-body { overflow-y:auto; padding:20px; flex:1; }
-.modal-footer { padding:14px 20px; border-top:1px solid var(--borde); display:flex; gap:8px; justify-content:flex-end; }
-.drop-zone { border:2px dashed var(--borde); padding:32px; text-align:center; cursor:pointer; font-size:13px; color:var(--gris3); }
-.drop-zone.drag-over { border-color:var(--azul); background:#eff6ff; }
-.import-result { font-size:13px; line-height:1.7; }
-.import-result .ok  { color:var(--verde); }
-.import-result .err { color:var(--rojo); }
-.errores-lista { max-height:120px; overflow-y:auto; background:var(--gris1); padding:8px 10px; font-size:12px; color:var(--rojo); border:1px solid var(--borde); margin-top:6px; }
+.drop-zone {
+  border: 1px dashed #D5D0CA; padding: 32px; text-align: center;
+  cursor: pointer; font-size: 13px; color: #9B9590; background: #FAFAF9;
+  transition: border-color 120ms, background 120ms;
+}
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--azul, #2563eb); background: #f0f4ff; color: #111; }
+.import-result { font-size: 13px; line-height: 1.7; color: #111; }
+.import-result .ok  { color: #15803d; font-weight: 600; }
+.import-result .err { color: #B91C1C; }
+.errores-lista { max-height: 120px; overflow-y: auto; background: #fff; border: 1px solid #D5D0CA; padding: 8px 10px; font-size: 12px; color: #B91C1C; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -102,27 +115,27 @@ tbody td { padding:9px 12px; vertical-align:middle; }
 </main>
 
 <!-- ═══ Modal Importar CSV ════════════════════════════════════════ -->
-<div class="modal-overlay oculto" id="modal-import">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Importar clientes — CSV</h3>
-      <button id="import-cerrar">✕</button>
+<div class="cm-overlay cm-oculto" id="modal-import">
+  <div class="cm-modal" style="width:min(96vw,540px);height:auto">
+    <div class="cm-header">
+      <h3 id="import-titulo">Importar CSV</h3>
+      <button class="cm-header-cerrar" id="import-cerrar">✕</button>
     </div>
-    <div class="modal-body">
-      <p style="font-size:13px;color:var(--gris3);margin:0 0 14px">
-        Subí un archivo CSV con los datos. Si un cliente ya existe (mismo CUIT) se actualizan sus datos.
-        <a href="#" id="link-plantilla" style="color:var(--azul)">Descargar plantilla</a>.
+    <div class="cm-col" style="gap:12px">
+      <p style="font-size:13px;color:#9B9590;margin:0">
+        <span id="import-desc">Subí un archivo CSV con los datos.</span> Si ya existe un registro con el mismo CUIT se actualizan sus datos.
+        <a href="#" id="link-plantilla" style="color:var(--azul,#2563eb)">Descargar plantilla</a>.
       </p>
       <div class="drop-zone" id="drop-zone">
         <div>Arrastrá el archivo aquí o hacé click para seleccionar</div>
         <input type="file" id="input-csv" accept=".csv,text/csv" style="display:none">
       </div>
-      <div id="import-nombre" style="font-size:12px;color:var(--gris3);margin-top:8px;display:none"></div>
-      <div id="import-result" class="import-result" style="margin-top:14px;display:none"></div>
+      <div id="import-nombre" style="font-size:12px;color:#9B9590;display:none"></div>
+      <div id="import-result" class="import-result" style="display:none"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-sec" id="import-cancelar">Cancelar</button>
-      <button class="btn btn-ok" id="btn-subir" disabled>Subir e importar</button>
+    <div class="cm-footer">
+      <button class="cm-btn cm-btn-sec" id="import-cancelar">Cancelar</button>
+      <button class="cm-btn cm-btn-ok" id="btn-subir" disabled>Subir e importar</button>
     </div>
   </div>
 </div>
@@ -148,13 +161,22 @@ const tbody = $('tbody-contactos');
 const pag   = $('paginacion');
 
 /* ─── iniciar ────────────────────────────────────────────── */
+(function () {
+  const urlTipo = new URLSearchParams(location.search).get('tipo') ?? '';
+  if (urlTipo === 'proveedor' || urlTipo === 'proveedores') {
+    tipo = 'proveedores';
+    document.querySelector('.tab-tipo[data-tipo="proveedores"]')?.classList.add('activo');
+    document.querySelector('.tab-tipo[data-tipo="clientes"]')?.classList.remove('activo');
+  }
+})();
+
 document.querySelectorAll('.tab-tipo').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tab-tipo').forEach(b => b.classList.remove('activo'));
     btn.classList.add('activo');
     tipo   = btn.dataset.tipo;
     pagina = 1;
-    $('btn-importar').style.display = tipo === 'clientes' ? '' : 'none';
+    $('btn-importar').style.display = '';
     renderCabecera();
     cargar();
   });
@@ -174,11 +196,11 @@ $('btn-importar').addEventListener('click', abrirImport);
 
 /* ─── cabecera tabla ─────────────────────────────────────── */
 function renderCabecera() {
-  const comunes = '<th>Nombre</th><th>CUIT</th><th>Condición IVA</th><th>Teléfono</th><th>CC</th><th>Límite CC</th><th>Lista</th>';
+  const comunes = '<th>Nombre</th><th>CUIT</th><th>Condición IVA</th><th>Teléfono</th><th>CC</th><th>Límite CC</th><th>Plazo pago</th><th>Lista</th>';
   if (tipo === 'clientes') {
     thead.innerHTML = '<tr>' + comunes + '<th>Dto extra</th><th>Estado</th></tr>';
   } else {
-    thead.innerHTML = '<tr>' + comunes + '<th>Plazo pago</th><th>Estado</th></tr>';
+    thead.innerHTML = '<tr>' + comunes + '<th>Estado</th></tr>';
   }
 }
 
@@ -220,9 +242,10 @@ function filaHTML(r) {
   const lista = r.lista_precio_nombre ? `<span class="badge badge-azul">${esc(r.lista_precio_nombre)}</span>` : '—';
   const estado = r.activo ? '<span class="badge badge-verde">Activo</span>' : '<span class="badge badge-gris">Inactivo</span>';
   const limite = r.cc_habilitada ? `$${r.limite_credito.toLocaleString('es-AR',{maximumFractionDigits:0})}` : '—';
+  const plazo  = `<td>${r.plazo_pago_dias ? r.plazo_pago_dias + ' días' : '—'}</td>`;
   const extra  = tipo === 'clientes'
     ? `<td>${r.descuento_extra ? r.descuento_extra + '%' : '—'}</td>`
-    : `<td>${r.plazo_pago_dias ? r.plazo_pago_dias + ' días' : '—'}</td>`;
+    : '';
   return `<tr data-id="${r.id}" class="${r.activo ? '' : 'inactivo'}">
     <td>${esc(r.nombre)}</td>
     <td>${esc(r.cuit || '—')}</td>
@@ -230,6 +253,7 @@ function filaHTML(r) {
     <td>${esc(r.telefono || '—')}</td>
     <td>${cc}</td>
     <td>${limite}</td>
+    ${plazo}
     <td>${lista}</td>
     ${extra}
     <td>${estado}</td>
@@ -251,19 +275,22 @@ function renderPaginacion() {
   });
 }
 
-/* ─── importar CSV (solo clientes) ──────────────────────── */
+/* ─── importar CSV ───────────────────────────────────────── */
 function abrirImport() {
   csvFile = null;
   $('input-csv').value = '';
   $('import-nombre').style.display = 'none';
   $('import-result').style.display = 'none';
   $('btn-subir').disabled = true;
-  $('modal-import').classList.remove('oculto');
+  const label = tipo === 'clientes' ? 'clientes' : 'proveedores';
+  $('import-titulo').textContent = `Importar ${label} — CSV`;
+  $('import-desc').textContent = `Subí un archivo CSV con los datos de ${label}.`;
+  $('modal-import').classList.remove('cm-oculto');
 }
 
-$('import-cerrar').addEventListener('click',   () => $('modal-import').classList.add('oculto'));
-$('import-cancelar').addEventListener('click', () => $('modal-import').classList.add('oculto'));
-$('link-plantilla').addEventListener('click', e => { e.preventDefault(); window.location = '/Logos/api/clientes/plantilla-csv'; });
+$('import-cerrar').addEventListener('click',   () => $('modal-import').classList.add('cm-oculto'));
+$('import-cancelar').addEventListener('click', () => $('modal-import').classList.add('cm-oculto'));
+$('link-plantilla').addEventListener('click', e => { e.preventDefault(); window.location = `/Logos/api/${tipo}/plantilla-csv`; });
 
 const dropZone = $('drop-zone');
 dropZone.addEventListener('click', () => $('input-csv').click());
@@ -290,7 +317,7 @@ $('btn-subir').addEventListener('click', async () => {
 
   const fd = new FormData();
   fd.append('csv', csvFile);
-  const resp = await fetch('/Logos/api/clientes/importar', { method: 'POST', body: fd });
+  const resp = await fetch(`/Logos/api/${tipo}/importar`, { method: 'POST', body: fd });
   const data = await resp.json();
 
   const el = $('import-result');
@@ -318,6 +345,96 @@ function esc(s) {
 renderCabecera();
 $('btn-importar').style.display = '';
 cargar();
+</script>
+
+<script>
+window.TOUR_PAGE_KEY = 'contactos';
+window.TOUR_STEPS = [
+
+  /* 1 — Intro */
+  { el: null,
+    title: 'Módulo de Contactos',
+    body: 'Acá gestionás todos tus clientes y proveedores. Podés buscarlos, editarlos, importarlos en masa y crear nuevos desde un mismo lugar.' },
+
+  /* 2 — Tabs clientes / proveedores */
+  { el: '.tab-grupo',
+    title: 'Clientes y Proveedores',
+    body: 'Dos solapas para alternar entre ambas listas. El sistema usa la misma interfaz para clientes y proveedores; solo cambian algunos campos.' },
+
+  /* 3 — Buscador */
+  { el: '#buscador',
+    title: 'Búsqueda',
+    body: 'Buscá por nombre, CUIT o email. Los resultados se filtran en tiempo real mientras escribís, sin necesidad de confirmar.' },
+
+  /* 4 — Filtro de estado */
+  { el: '#filtro-activo',
+    title: 'Filtro de estado',
+    body: 'Mostrá solo activos, inactivos o todos. Nunca se eliminan registros con historial; en su lugar se marcan como inactivos.' },
+
+  /* 5 — Tabla */
+  { el: '#tabla-contactos',
+    title: 'Lista de contactos',
+    body: 'Cada fila muestra nombre, CUIT, condición IVA, teléfono, estado de cuenta corriente, límite de crédito, lista de precios y estado. Hacé click en una fila para abrir la ficha.' },
+
+  /* 6 — Paginación */
+  { el: '#paginacion',
+    title: 'Paginación',
+    body: 'Con más de 50 contactos la lista se divide en páginas. Navegá entre ellas o ajustá el buscador para reducir resultados.' },
+
+  /* 7 — Abrir ficha (click primera fila) */
+  { el: '#cm-overlay .cm-modal',
+    pad: 0,
+    title: 'Ficha de contacto',
+    body: 'La ficha tiene dos columnas: datos de contacto a la izquierda y configuración comercial a la derecha. Se abre al hacer click en cualquier fila.',
+    onEnter: async ({ delay }) => {
+      const tr = document.querySelector('#tbody-contactos tr[data-id]');
+      if (tr) tr.click();
+      await delay(450);
+    } },
+
+  /* 8 — Columna izquierda: datos */
+  { el: '#cm-overlay .cm-col:not(.cm-col-right)',
+    title: 'Datos de contacto',
+    body: 'Nombre, CUIT, condición IVA, email, teléfono, domicilio, localidad, provincia y observaciones.' },
+
+  /* 9 — Columna derecha: CC + comercial */
+  { el: '#cm-overlay .cm-col-right',
+    title: 'Cuenta corriente y configuración',
+    body: '<strong>CC</strong>: habilitá cuenta corriente y definí el límite de crédito. <strong>Configuración comercial</strong> (clientes): lista de precios y descuento extra. <strong>Estado</strong>: activo o inactivo.' },
+
+  /* 10 — Botón guardar */
+  { el: '#cm-btn-guardar',
+    title: 'Guardar cambios',
+    body: 'Guardá la ficha. El nombre es obligatorio; el resto de los campos son opcionales. Los cambios se reflejan de inmediato en la lista.' },
+
+  /* 11 — Importar CSV */
+  { el: '#btn-importar',
+    title: 'Importar CSV',
+    body: 'Importá muchos contactos de una vez desde un archivo CSV. Descargá la plantilla, completala y subila. Si ya existe el CUIT, el registro se actualiza en lugar de duplicarse.',
+    onEnter: async ({ delay }) => {
+      document.getElementById('cm-btn-cancelar')?.click();
+      await delay(200);
+    } },
+
+  /* 12 — Nuevo contacto */
+  { el: '#btn-nuevo',
+    title: 'Nuevo contacto',
+    body: 'Creá un nuevo cliente o proveedor desde acá. La ficha es la misma que al editar, con todos los campos en blanco.' },
+
+  /* 13 — Solapa Proveedores */
+  { el: 'button[data-tipo="proveedores"]',
+    title: 'Cambiar a Proveedores',
+    body: 'Los mismos filtros e importación aplican para proveedores. La columna "Dto extra" (clientes) se reemplaza por "Plazo de pago".',
+    onEnter: async ({ delay }) => {
+      document.querySelector('button[data-tipo="proveedores"]')?.click();
+      await delay(600);
+    } },
+
+  /* 14 — Fin: highlight Productos en nav */
+  { el: 'a[href="/Logos/pos/productos.html"]',
+    title: 'Productos',
+    body: 'El próximo módulo es <strong>Productos</strong>, donde gestionás el catálogo, precios y stock. ¡Eso es todo para Contactos!' },
+];
 </script>
 </body>
 </html>

@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../helpers/Validadores.php';
 require_once __DIR__ . '/../helpers/Auth.php';
+require_once __DIR__ . '/../helpers/LogAcciones.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -17,16 +18,29 @@ class ComprasController {
         $where  = ['1=1'];
         $params = [];
 
-        $fecha_desde  = $_GET['fecha_desde'] ?? '';
-        $fecha_hasta  = $_GET['fecha_hasta']  ?? '';
-        $proveedor_id = isset($_GET['proveedor_id']) && is_numeric($_GET['proveedor_id'])
-                        ? (int)$_GET['proveedor_id'] : null;
-        $limit        = min((int)($_GET['limit']  ?? 50), 200);
-        $offset       = max((int)($_GET['offset'] ?? 0),  0);
+        $fecha_desde        = $_GET['fecha_desde'] ?? '';
+        $fecha_hasta        = $_GET['fecha_hasta']  ?? '';
+        $proveedor_id       = isset($_GET['proveedor_id']) && is_numeric($_GET['proveedor_id'])
+                              ? (int)$_GET['proveedor_id'] : null;
+        $numero_comprobante = trim($_GET['numero_comprobante'] ?? '');
+        $tipo_comprobante   = trim($_GET['tipo_comprobante']   ?? '');
+        $limit              = min((int)($_GET['limit']  ?? 50), 200);
+        $offset             = max((int)($_GET['offset'] ?? 0),  0);
 
-        if ($fecha_desde)  { $where[] = 'c.fecha >= ?';      $params[] = $fecha_desde;  }
-        if ($fecha_hasta)  { $where[] = 'c.fecha <= ?';      $params[] = $fecha_hasta;  }
-        if ($proveedor_id) { $where[] = 'c.proveedor_id = ?'; $params[] = $proveedor_id; }
+        try {
+            if ($fecha_desde !== '') Validadores::validarFecha($fecha_desde, 'fecha_desde');
+            if ($fecha_hasta  !== '') Validadores::validarFecha($fecha_hasta,  'fecha_hasta');
+            if ($fecha_desde !== '' && $fecha_hasta !== '') Validadores::validarRangoFechas($fecha_desde, $fecha_hasta);
+        } catch (Throwable $e) { json(400, ['error' => $e->getMessage()]); }
+
+        $sucursal_filter = isset($_GET['sucursal_id']) && is_numeric($_GET['sucursal_id']) ? (int)$_GET['sucursal_id'] : null;
+
+        if ($fecha_desde)        { $where[] = 'c.fecha >= ?';              $params[] = $fecha_desde;        }
+        if ($fecha_hasta)        { $where[] = 'c.fecha <= ?';              $params[] = $fecha_hasta;        }
+        if ($proveedor_id)       { $where[] = 'c.proveedor_id = ?';        $params[] = $proveedor_id;       }
+        if ($numero_comprobante) { $where[] = 'c.numero_comprobante = ?';  $params[] = $numero_comprobante; }
+        if ($tipo_comprobante)   { $where[] = 'c.tipo_comprobante = ?';    $params[] = $tipo_comprobante;   }
+        if ($sucursal_filter)    { $where[] = 'c.sucursal_id = ?';         $params[] = $sucursal_filter;    }
 
         $params[] = $limit;
         $params[] = $offset;
@@ -218,11 +232,32 @@ class ComprasController {
         }
         $monto_no_cc = array_sum($montos_no_cc);
 
-        $turno_id = null;
-        if ($monto_no_cc > 0) {
-            if (!$caja_id) json(400, ['error' => 'caja_id es requerido cuando hay un pago en efectivo/transferencia/tarjeta']);
-            if (!$usuario_id) json(400, ['error' => 'No se pudo identificar al usuario que registra la compra']);
+        // Derivar sucursal_id y deposito_id del caja_id
+        $sucursal_id = 1;
+        $deposito_id = 1;
+        if ($caja_id) {
+            $sc = $db->prepare("SELECT sucursal_id FROM cajas WHERE id = ?");
+            $sc->execute([$caja_id]);
+            $cajaRow = $sc->fetch();
+            if ($cajaRow) {
+                $sucursal_id = (int)($cajaRow['sucursal_id'] ?? 1);
+                $dep = $db->prepare("SELECT id FROM depositos WHERE sucursal_id = ? AND es_principal = 1 LIMIT 1");
+                $dep->execute([$sucursal_id]);
+                $depRow = $dep->fetch();
+                if ($depRow) $deposito_id = (int)$depRow['id'];
+            }
+        }
 
+        // Permitir override del depósito desde el body (si es válido y activo)
+        $deposito_id_body = isset($body['deposito_id']) && is_numeric($body['deposito_id']) ? (int)$body['deposito_id'] : null;
+        if ($deposito_id_body) {
+            $dv = $db->prepare("SELECT id FROM depositos WHERE id = ? AND activo = 1");
+            $dv->execute([$deposito_id_body]);
+            if ($dv->fetch()) $deposito_id = $deposito_id_body;
+        }
+
+        $turno_id = null;
+        if ($monto_no_cc > 0 && $caja_id) {
             $stmt = $db->prepare("SELECT id FROM cajas WHERE id = ?");
             $stmt->execute([$caja_id]);
             if (!$stmt->fetch()) json(404, ['error' => 'Caja no encontrada']);
@@ -230,8 +265,7 @@ class ComprasController {
             $stmt = $db->prepare("SELECT id FROM caja_turnos WHERE caja_id = ? AND estado = 'abierto'");
             $stmt->execute([$caja_id]);
             $turno = $stmt->fetch();
-            if (!$turno) json(409, ['error' => 'No hay un turno abierto en esa caja. Abrila antes de registrar el pago.']);
-            $turno_id = (int)$turno['id'];
+            if ($turno) $turno_id = (int)$turno['id'];
         }
 
         try {
@@ -241,13 +275,13 @@ class ComprasController {
                 INSERT INTO compras
                     (fecha, proveedor_id, total, estado, caja_id, usuario_id,
                      tipo_comprobante, numero_comprobante, subtotal, iva_monto,
-                     percepcion_iibb_porcentaje, percepcion_iibb_monto, tipo_pago)
-                VALUES (?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     percepcion_iibb_porcentaje, percepcion_iibb_monto, tipo_pago, sucursal_id)
+                VALUES (?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $fecha, $proveedor_id, $total, $caja_id, $usuario_id,
                 $tipo_comprobante, $numero_comprobante, $subtotal, $iva_total,
-                $percepcion_pct, $percepcion_monto, $tipo_pago,
+                $percepcion_pct, $percepcion_monto, $tipo_pago, $sucursal_id,
             ]);
             $compra_id = (int)$db->lastInsertId();
 
@@ -262,14 +296,19 @@ class ComprasController {
 
                 $db->prepare("UPDATE productos SET stock_actual = stock_actual + ?, costo_actual = ? WHERE id = ?")
                    ->execute([$item['cantidad'], $item['costo_unitario'], $item['producto_id']]);
+                $db->prepare("
+                    INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)
+                ")->execute([$item['producto_id'], $deposito_id, $item['cantidad']]);
 
                 if (abs($item['iva_porcentaje'] - $item['iva_previo']) > 0.001) {
                     $db->prepare("UPDATE productos SET iva_porcentaje = ? WHERE id = ?")
                        ->execute([$item['iva_porcentaje'], $item['producto_id']]);
                 }
 
-                $db->prepare("INSERT INTO movimientos_stock (producto_id, tipo, cantidad, referencia_id, fecha) VALUES (?, 'compra', ?, ?, NOW())")
-                   ->execute([$item['producto_id'], $item['cantidad'], $compra_id]);
+                $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha) VALUES (?, ?, 'compra', ?, ?, NOW())")
+                   ->execute([$item['producto_id'], $deposito_id, $item['cantidad'], $compra_id]);
             }
 
             if ($tipo_pago === 'mixto') {
@@ -289,12 +328,14 @@ class ComprasController {
                    ->execute([$monto_cc, $proveedor_id]);
             }
 
-            foreach ($montos_no_cc as $medio => $monto) {
-                if ($monto <= 0) continue;
-                $db->prepare("
-                    INSERT INTO caja_movimientos (turno_id, tipo, medio_pago, monto, motivo, usuario_id)
-                    VALUES (?, 'retiro', ?, ?, ?, ?)
-                ")->execute([$turno_id, $medio, $monto, 'Compra #' . $compra_id . ' - ' . $proveedor['nombre'], $usuario_id]);
+            if ($turno_id !== null) {
+                foreach ($montos_no_cc as $medio => $monto) {
+                    if ($monto <= 0) continue;
+                    $db->prepare("
+                        INSERT INTO caja_movimientos (turno_id, tipo, medio_pago, monto, motivo, usuario_id)
+                        VALUES (?, 'retiro', ?, ?, ?, ?)
+                    ")->execute([$turno_id, $medio, $monto, 'Compra #' . $compra_id . ' - ' . $proveedor['nombre'], $usuario_id]);
+                }
             }
 
             $db->commit();
@@ -416,6 +457,310 @@ class ComprasController {
             $filas[] = str_getcsv($linea, $delim);
         }
         return $filas;
+    }
+
+    public function editar(int $id): void {
+        $body = json_decode(file_get_contents('php://input'), true);
+        if (!$body) json(400, ['error' => 'Body JSON inválido']);
+
+        $items              = $body['items'] ?? [];
+        $proveedor_id       = isset($body['proveedor_id']) && is_numeric($body['proveedor_id'])
+                              ? (int)$body['proveedor_id'] : null;
+        $tipo_comprobante   = $body['tipo_comprobante'] ?? null;
+        $numero_comprobante = isset($body['numero_comprobante']) ? trim($body['numero_comprobante']) : null;
+        $fecha              = isset($body['fecha']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $body['fecha'])
+                              ? $body['fecha'] : date('Y-m-d');
+        $tipo_pago          = $body['tipo_pago'] ?? 'efectivo';
+        $caja_id            = isset($body['caja_id']) && is_numeric($body['caja_id'])
+                              ? (int)$body['caja_id'] : null;
+        $usuario_id         = Auth::usuarioActual()['id'] ?? null;
+        $percepcion_pct     = isset($body['percepcion_iibb_porcentaje'])
+                              && is_numeric($body['percepcion_iibb_porcentaje'])
+                              && $body['percepcion_iibb_porcentaje'] > 0
+                              ? (float)$body['percepcion_iibb_porcentaje'] : null;
+
+        if (empty($items))   json(400, ['error' => 'La compra debe tener al menos un ítem']);
+        if (!$proveedor_id)  json(400, ['error' => 'proveedor_id es requerido']);
+        if (!in_array($tipo_comprobante, ['factura_a', 'factura_b', 'remito'], true))
+            json(400, ['error' => 'tipo_comprobante inválido']);
+        if (!in_array($tipo_pago, [...self::TIPOS_PAGO_SIMPLES, 'mixto'], true))
+            json(400, ['error' => 'tipo_pago inválido']);
+
+        $db = DB::get();
+
+        $stmt = $db->prepare("SELECT * FROM compras WHERE id = ?");
+        $stmt->execute([$id]);
+        $old = $stmt->fetch();
+        if (!$old)                          json(404, ['error' => 'Compra no encontrada']);
+        if ($old['estado'] === 'anulado')   json(409, ['error' => 'No se puede editar una compra anulada']);
+
+        $stmt = $db->prepare("SELECT id, nombre FROM proveedores WHERE id = ?");
+        $stmt->execute([$proveedor_id]);
+        $proveedor = $stmt->fetch();
+        if (!$proveedor) json(404, ['error' => 'Proveedor no encontrado']);
+
+        $items_data = [];
+        $subtotal   = 0.0;
+        $iva_total  = 0.0;
+        foreach ($items as $i => $item) {
+            $producto_id    = (int)($item['producto_id']    ?? 0);
+            $cantidad       = (float)($item['cantidad']       ?? 0);
+            $costo_unitario = (float)($item['costo_unitario'] ?? 0);
+            if (!$producto_id || $cantidad <= 0 || $costo_unitario < 0) json(400, ['error' => "Ítem $i inválido"]);
+
+            $stmt = $db->prepare("SELECT id, iva_porcentaje FROM productos WHERE id = ?");
+            $stmt->execute([$producto_id]);
+            $producto = $stmt->fetch();
+            if (!$producto) json(404, ['error' => "Producto $producto_id no encontrado"]);
+
+            $iva_p = isset($item['iva_porcentaje']) && is_numeric($item['iva_porcentaje'])
+                     ? (float)$item['iva_porcentaje'] : (float)$producto['iva_porcentaje'];
+            $sub   = $cantidad * $costo_unitario;
+            $iva   = $sub * $iva_p / 100;
+            $subtotal  += $sub;
+            $iva_total += $iva;
+            $items_data[] = [
+                'producto_id'    => $producto_id,
+                'cantidad'       => $cantidad,
+                'costo_unitario' => $costo_unitario,
+                'iva_porcentaje' => $iva_p,
+                'iva_monto'      => $iva,
+                'iva_previo'     => (float)$producto['iva_porcentaje'],
+            ];
+        }
+
+        $percepcion_monto = $percepcion_pct !== null ? $subtotal * $percepcion_pct / 100 : 0.0;
+        $total = $subtotal + $iva_total + $percepcion_monto;
+
+        $pagos_mixto = [];
+        if ($tipo_pago === 'mixto') {
+            $pagos_mixto = $this->validarPagosMixto($body['pagos'] ?? [], $total);
+        }
+
+        $monto_cc = $tipo_pago === 'cc' ? $total
+            : ($tipo_pago === 'mixto'
+               ? array_sum(array_map(fn($p) => $p['tipo'] === 'cc' ? $p['monto'] : 0.0, $pagos_mixto))
+               : 0.0);
+
+        $montos_no_cc = ['efectivo' => 0.0, 'transferencia' => 0.0, 'tarjeta' => 0.0];
+        if ($tipo_pago === 'mixto') {
+            foreach ($pagos_mixto as $p) { if ($p['tipo'] !== 'cc') $montos_no_cc[$p['tipo']] += $p['monto']; }
+        } elseif ($tipo_pago !== 'cc') {
+            $montos_no_cc[$tipo_pago] = $total;
+        }
+        $monto_no_cc = array_sum($montos_no_cc);
+
+        $turno_id        = null;
+        $deposito_id_edit = 1;
+        if ($caja_id) {
+            $sc = $db->prepare("SELECT sucursal_id FROM cajas WHERE id = ?");
+            $sc->execute([$caja_id]);
+            $cajaRow = $sc->fetch();
+            if ($cajaRow) {
+                $sucursal_id_edit = (int)($cajaRow['sucursal_id'] ?? 1);
+                $dep = $db->prepare("SELECT id FROM depositos WHERE sucursal_id = ? AND es_principal = 1 LIMIT 1");
+                $dep->execute([$sucursal_id_edit]);
+                $depRow = $dep->fetch();
+                if ($depRow) $deposito_id_edit = (int)$depRow['id'];
+            }
+        }
+        // Permitir override del depósito desde el body (si es válido y activo)
+        $deposito_id_body_edit = isset($body['deposito_id']) && is_numeric($body['deposito_id']) ? (int)$body['deposito_id'] : null;
+        if ($deposito_id_body_edit) {
+            $dv = $db->prepare("SELECT id FROM depositos WHERE id = ? AND activo = 1");
+            $dv->execute([$deposito_id_body_edit]);
+            if ($dv->fetch()) $deposito_id_edit = $deposito_id_body_edit;
+        }
+        if ($monto_no_cc > 0 && $caja_id) {
+            $stmt = $db->prepare("SELECT id FROM cajas WHERE id = ?");
+            $stmt->execute([$caja_id]);
+            if (!$stmt->fetch()) json(404, ['error' => 'Caja no encontrada']);
+            $stmt = $db->prepare("SELECT id FROM caja_turnos WHERE caja_id = ? AND estado = 'abierto'");
+            $stmt->execute([$caja_id]);
+            $turno = $stmt->fetch();
+            if ($turno) $turno_id = (int)$turno['id'];
+        }
+
+        try {
+            $db->beginTransaction();
+
+            // 1. Revertir stock viejo
+            $stmt = $db->prepare("SELECT producto_id, cantidad FROM compra_items WHERE compra_id = ?");
+            $stmt->execute([$id]);
+            foreach ($stmt->fetchAll() as $oi) {
+                $msRow = $db->prepare("SELECT deposito_id FROM movimientos_stock WHERE referencia_id = ? AND producto_id = ? AND tipo = 'compra' LIMIT 1");
+                $msRow->execute([$id, (int)$oi['producto_id']]);
+                $depId = (int)(($msRow->fetch()['deposito_id'] ?? 1));
+
+                $db->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?")
+                   ->execute([$oi['cantidad'], $oi['producto_id']]);
+                $db->prepare("INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)")
+                   ->execute([(int)$oi['producto_id'], $depId, -(float)$oi['cantidad']]);
+                $db->prepare("DELETE FROM movimientos_stock WHERE tipo = 'compra' AND referencia_id = ? AND producto_id = ?")
+                   ->execute([$id, $oi['producto_id']]);
+            }
+
+            // 2. Revertir CC vieja
+            $old_cc = 0.0;
+            if ($old['tipo_pago'] === 'cc') {
+                $old_cc = (float)$old['total'];
+            } elseif ($old['tipo_pago'] === 'mixto') {
+                $stmt = $db->prepare("SELECT COALESCE(SUM(monto),0) FROM compra_pagos WHERE compra_id = ? AND tipo_pago = 'cc'");
+                $stmt->execute([$id]);
+                $old_cc = (float)$stmt->fetchColumn();
+            }
+            if ($old_cc > 0) {
+                $db->prepare("DELETE FROM cuenta_corriente_movimientos WHERE referencia_id = ? AND entidad_tipo = 'proveedor' AND tipo = 'cargo'")
+                   ->execute([$id]);
+                $db->prepare("UPDATE proveedores SET saldo_cuenta_corriente = saldo_cuenta_corriente - ? WHERE id = ?")
+                   ->execute([$old_cc, $old['proveedor_id']]);
+            }
+
+            // 3. Borrar movimientos de caja anteriores de esta compra
+            $db->prepare("DELETE FROM caja_movimientos WHERE motivo LIKE ?")
+               ->execute(['Compra #' . $id . ' -%']);
+
+            // 4. Borrar ítems y pagos viejos
+            $db->prepare("DELETE FROM compra_items WHERE compra_id = ?")->execute([$id]);
+            $db->prepare("DELETE FROM compra_pagos WHERE compra_id = ?")->execute([$id]);
+
+            // 5. Actualizar cabecera
+            $db->prepare("
+                UPDATE compras SET
+                    fecha = ?, proveedor_id = ?, total = ?, caja_id = ?,
+                    tipo_comprobante = ?, numero_comprobante = ?,
+                    subtotal = ?, iva_monto = ?,
+                    percepcion_iibb_porcentaje = ?, percepcion_iibb_monto = ?,
+                    tipo_pago = ?
+                WHERE id = ?
+            ")->execute([
+                $fecha, $proveedor_id, $total, $caja_id,
+                $tipo_comprobante, $numero_comprobante,
+                $subtotal, $iva_total,
+                $percepcion_pct, $percepcion_monto,
+                $tipo_pago, $id,
+            ]);
+
+            // 6. Insertar nuevos ítems y aplicar stock
+            foreach ($items_data as $item) {
+                $db->prepare("INSERT INTO compra_items (compra_id, producto_id, cantidad, costo_unitario, iva_porcentaje, iva_monto) VALUES (?, ?, ?, ?, ?, ?)")
+                   ->execute([$id, $item['producto_id'], $item['cantidad'], $item['costo_unitario'], $item['iva_porcentaje'], $item['iva_monto']]);
+                $db->prepare("UPDATE productos SET stock_actual = stock_actual + ?, costo_actual = ? WHERE id = ?")
+                   ->execute([$item['cantidad'], $item['costo_unitario'], $item['producto_id']]);
+                $db->prepare("INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)")
+                   ->execute([$item['producto_id'], $deposito_id_edit, $item['cantidad']]);
+                if (abs($item['iva_porcentaje'] - $item['iva_previo']) > 0.001) {
+                    $db->prepare("UPDATE productos SET iva_porcentaje = ? WHERE id = ?")
+                       ->execute([$item['iva_porcentaje'], $item['producto_id']]);
+                }
+                $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha) VALUES (?, ?, 'compra', ?, ?, NOW())")
+                   ->execute([$item['producto_id'], $deposito_id_edit, $item['cantidad'], $id]);
+            }
+
+            // 7. Nuevos pagos mixtos
+            if ($tipo_pago === 'mixto') {
+                foreach ($pagos_mixto as $p) {
+                    $db->prepare("INSERT INTO compra_pagos (compra_id, tipo_pago, monto) VALUES (?, ?, ?)")
+                       ->execute([$id, $p['tipo'], $p['monto']]);
+                }
+            }
+
+            // 8. Nueva CC
+            if ($monto_cc > 0) {
+                $db->prepare("INSERT INTO cuenta_corriente_movimientos (entidad_tipo, entidad_id, tipo, monto, referencia_id, fecha) VALUES ('proveedor', ?, 'cargo', ?, ?, CURDATE())")
+                   ->execute([$proveedor_id, $monto_cc, $id]);
+                $db->prepare("UPDATE proveedores SET saldo_cuenta_corriente = saldo_cuenta_corriente + ? WHERE id = ?")
+                   ->execute([$monto_cc, $proveedor_id]);
+            }
+
+            // 9. Nuevos movimientos de caja
+            if ($turno_id !== null) {
+                foreach ($montos_no_cc as $medio => $monto) {
+                    if ($monto <= 0) continue;
+                    $db->prepare("INSERT INTO caja_movimientos (turno_id, tipo, medio_pago, monto, motivo, usuario_id) VALUES (?, 'retiro', ?, ?, ?, ?)")
+                       ->execute([$turno_id, $medio, $monto, 'Compra #' . $id . ' - ' . $proveedor['nombre'], $usuario_id]);
+                }
+            }
+
+            $db->commit();
+
+            LogAcciones::registrar('editar_compra', 'compra', $id, [
+                'total'        => $total,
+                'tipo_pago'    => $tipo_pago,
+                'proveedor_id' => $proveedor_id,
+            ]);
+
+            json(200, ['id' => $id, 'numero' => str_pad($id, 8, '0', STR_PAD_LEFT), 'total' => $total, 'proveedor_id' => $proveedor_id]);
+
+        } catch (Throwable $e) {
+            $db->rollBack();
+            json(500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    public function anular(int $id): void {
+        $db = DB::get();
+
+        $stmt = $db->prepare("SELECT * FROM compras WHERE id = ?");
+        $stmt->execute([$id]);
+        $compra = $stmt->fetch();
+        if (!$compra)                        json(404, ['error' => 'Compra no encontrada']);
+        if ($compra['estado'] === 'anulado') json(409, ['error' => 'La compra ya está anulada']);
+
+        $old_cc = 0.0;
+        if ($compra['tipo_pago'] === 'cc') {
+            $old_cc = (float)$compra['total'];
+        } elseif ($compra['tipo_pago'] === 'mixto') {
+            $stmt = $db->prepare("SELECT COALESCE(SUM(monto),0) FROM compra_pagos WHERE compra_id = ? AND tipo_pago = 'cc'");
+            $stmt->execute([$id]);
+            $old_cc = (float)$stmt->fetchColumn();
+        }
+
+        try {
+            $db->beginTransaction();
+
+            $stmt = $db->prepare("SELECT producto_id, cantidad FROM compra_items WHERE compra_id = ?");
+            $stmt->execute([$id]);
+            foreach ($stmt->fetchAll() as $item) {
+                $msRow = $db->prepare("SELECT deposito_id FROM movimientos_stock WHERE referencia_id = ? AND producto_id = ? AND tipo = 'compra' LIMIT 1");
+                $msRow->execute([$id, (int)$item['producto_id']]);
+                $depId = (int)(($msRow->fetch()['deposito_id'] ?? 1));
+
+                $db->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?")
+                   ->execute([$item['cantidad'], $item['producto_id']]);
+                $db->prepare("INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)")
+                   ->execute([(int)$item['producto_id'], $depId, -(float)$item['cantidad']]);
+                $db->prepare("DELETE FROM movimientos_stock WHERE tipo = 'compra' AND referencia_id = ? AND producto_id = ?")
+                   ->execute([$id, $item['producto_id']]);
+            }
+
+            if ($old_cc > 0) {
+                $db->prepare("DELETE FROM cuenta_corriente_movimientos WHERE referencia_id = ? AND entidad_tipo = 'proveedor' AND tipo = 'cargo'")
+                   ->execute([$id]);
+                $db->prepare("UPDATE proveedores SET saldo_cuenta_corriente = saldo_cuenta_corriente - ? WHERE id = ?")
+                   ->execute([$old_cc, $compra['proveedor_id']]);
+            }
+
+            $db->prepare("DELETE FROM caja_movimientos WHERE motivo LIKE ?")
+               ->execute(['Compra #' . $id . ' -%']);
+
+            $db->prepare("UPDATE compras SET estado = 'anulado' WHERE id = ?")
+               ->execute([$id]);
+
+            $db->commit();
+
+            LogAcciones::registrar('anular_compra', 'compra', $id, [
+                'total'        => (float)$compra['total'],
+                'tipo_pago'    => $compra['tipo_pago'],
+                'proveedor_id' => (int)$compra['proveedor_id'],
+            ]);
+
+            json(200, ['ok' => true]);
+
+        } catch (Throwable $e) {
+            $db->rollBack();
+            json(500, ['error' => $e->getMessage()]);
+        }
     }
 
     // Acepta "1.234,56" (AR), "1234.56" (EN/Excel) o números ya nativos.

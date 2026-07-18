@@ -153,7 +153,13 @@ class ProductosImportController {
             $actualizados = 0;
             foreach ($resultado['actualizar'] as $r) {
                 $set = []; $params = [];
-                foreach ($r['despues'] as $campo => $valor) { $set[] = "$campo = ?"; $params[] = $valor; }
+                foreach ($r['despues'] as $campo => $valor) {
+                    // Defensa en profundidad: los nombres de campo van directo al SQL,
+                    // solo pueden ser columnas conocidas (procesarArchivo ya filtra).
+                    if (!in_array($campo, self::CAMPOS_TODOS, true) && $campo !== 'activo') continue;
+                    $set[] = "$campo = ?"; $params[] = $valor;
+                }
+                if (!$set) continue;
                 $params[] = $r['id'];
                 $db->prepare("UPDATE productos SET " . implode(', ', $set) . " WHERE id = ?")->execute($params);
                 $stmtDet->execute([

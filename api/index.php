@@ -49,7 +49,8 @@ $esRutaPublica =
     $recurso === 'instalacion' ||
     ($recurso === 'usuarios'      && $metodo === 'POST' && $accion === 'login') ||
     ($recurso === 'usuarios'      && $metodo === 'GET'  && $id === null && $accion === null) ||
-    ($recurso === 'configuracion' && $metodo === 'GET'  && $accion === null);
+    ($recurso === 'configuracion' && $metodo === 'GET'  && $accion === null) ||
+    ($recurso === 'mercadopago'   && $metodo === 'POST' && $sub === 'webhook');
 
 try {
     if (!$esRutaPublica && Auth::usuarioActual() === null && !Auth::modoInstalacion()) {
@@ -80,7 +81,7 @@ try {
             if ($metodo === 'PUT' || $metodo === 'DELETE' ||
                 ($metodo === 'POST' && in_array($accion, ['bulk', 'eliminar-bulk'], true)) ||
                 ($metodo === 'POST' && $id === null && $accion === null)) {
-                Auth::requireAdmin();
+                Auth::requirePermiso('productos_editar');
             }
             match (true) {
                 $metodo === 'GET'    && $id !== null              => $ctrl->get($id),
@@ -97,7 +98,7 @@ try {
 
         'productos-import' => (function () use ($metodo, $id, $accion) {
             require_once __DIR__ . '/controllers/ProductosImportController.php';
-            Auth::requireAdmin();
+            Auth::requirePermiso('importar');
             $ctrl = new ProductosImportController();
             match (true) {
                 $metodo === 'POST' && $accion === 'leer'     => $ctrl->leer(),
@@ -113,6 +114,8 @@ try {
         'clientes' => (function () use ($metodo, $id, $accion) {
             require_once __DIR__ . '/controllers/ClientesController.php';
             $ctrl = new ClientesController();
+            if ($metodo === 'DELETE') Auth::requireAdmin();
+            if ($metodo === 'POST' && $accion === 'importar') Auth::requirePermiso('importar');
             match (true) {
                 $metodo === 'GET'  && $id !== null                      => $ctrl->get($id),
                 $metodo === 'GET'  && isset($_GET['page'])              => $ctrl->listar(),
@@ -129,20 +132,24 @@ try {
         'proveedores' => (function () use ($metodo, $id, $accion) {
             require_once __DIR__ . '/controllers/ProveedoresController.php';
             $ctrl = new ProveedoresController();
+            if ($metodo === 'DELETE') Auth::requireAdmin();
+            if ($metodo === 'POST' && $accion === 'importar') Auth::requirePermiso('importar');
             match (true) {
-                $metodo === 'GET'  && $id !== null         => $ctrl->get($id),
-                $metodo === 'GET'  && isset($_GET['page']) => $ctrl->listar(),
-                $metodo === 'GET'                          => $ctrl->search(),
-                $metodo === 'POST' && $id === null         => $ctrl->crear(),
-                $metodo === 'PUT'  && $id !== null         => $ctrl->put($id),
-                $metodo === 'DELETE' && $id !== null       => $ctrl->eliminar($id),
+                $metodo === 'GET'  && $id !== null                      => $ctrl->get($id),
+                $metodo === 'GET'  && isset($_GET['page'])              => $ctrl->listar(),
+                $metodo === 'GET'  && $accion === 'plantilla-csv'       => $ctrl->plantillaCSV(),
+                $metodo === 'GET'                                        => $ctrl->search(),
+                $metodo === 'POST' && $accion === 'importar'            => $ctrl->importar(),
+                $metodo === 'POST' && $id === null                      => $ctrl->crear(),
+                $metodo === 'PUT'  && $id !== null                      => $ctrl->put($id),
+                $metodo === 'DELETE' && $id !== null                    => $ctrl->eliminar($id),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
 
         'listas-precio' => (function () use ($metodo, $id) {
             if ($metodo === 'POST' || $metodo === 'PUT' || $metodo === 'DELETE') {
-                Auth::requireAdmin();
+                Auth::requirePermiso('productos_editar');
             }
             require_once __DIR__ . '/controllers/ListasPrecioController.php';
             $ctrl = new ListasPrecioController();
@@ -158,57 +165,82 @@ try {
         'ventas' => (function () use ($metodo, $id, $accion, $subAccion) {
             require_once __DIR__ . '/controllers/VentasController.php';
             $ctrl = new VentasController();
+            // DELETE no se gatea acá: el controller decide (permiso 'anular',
+            // o clave de autorización para quien no lo tiene).
+            if ($metodo === 'GET' && $accion === 'dashboard') {
+                Auth::requirePermiso('reportes');
+            }
             match (true) {
-                $metodo === 'GET'    && $id !== null && $subAccion === 'comprobante' => $ctrl->comprobante($id),
-                $metodo === 'POST'   && $id !== null && $subAccion === 'imprimir'    => $ctrl->imprimir($id),
-                $metodo === 'POST'   && $id !== null && $subAccion === 'facturar'    => $ctrl->facturar($id),
-                $metodo === 'GET'    && $id !== null        => $ctrl->get($id),
-                $metodo === 'GET'                           => $ctrl->listar(),
-                $metodo === 'POST'   && $accion === 'unificar' => $ctrl->unificar(),
-                $metodo === 'POST'   && $id === null        => $ctrl->crear(),
-                $metodo === 'PUT'    && $id !== null        => $ctrl->actualizar($id),
-                $metodo === 'DELETE' && $id !== null        => $ctrl->eliminar($id),
+                $metodo === 'GET'    && $id !== null && $subAccion === 'comprobante'   => $ctrl->comprobante($id),
+                $metodo === 'POST'   && $id !== null && $subAccion === 'imprimir'     => $ctrl->imprimir($id),
+                $metodo === 'POST'   && $id !== null && $subAccion === 'facturar'             => $ctrl->facturar($id),
+                $metodo === 'POST'   && $id !== null && $subAccion === 'confirmar-presupuesto' => $ctrl->confirmarPresupuesto($id),
+                $metodo === 'POST'   && $id !== null && $subAccion === 'nota-credito' => $ctrl->emitirNc($id),
+                $metodo === 'GET'    && $id !== null && $subAccion === 'afip-estado'  => $ctrl->consultarAfip($id),
+                $metodo === 'GET'    && $accion === 'export'    => $ctrl->exportar(),
+                $metodo === 'GET'    && $accion === 'dashboard' => $ctrl->dashboard(),
+                $metodo === 'GET'    && $id !== null            => $ctrl->get($id),
+                $metodo === 'GET'                               => $ctrl->listar(),
+                $metodo === 'POST'   && $accion === 'unificar'  => $ctrl->unificar(),
+                $metodo === 'POST'   && $id === null            => $ctrl->crear(),
+                $metodo === 'PUT'    && $id !== null            => $ctrl->actualizar($id),
+                $metodo === 'DELETE' && $id !== null            => $ctrl->eliminar($id),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
 
-        'stock' => (function () use ($metodo) {
+        'stock' => (function () use ($metodo, $accion) {
             require_once __DIR__ . '/controllers/StockController.php';
             $ctrl = new StockController();
             if ($metodo === 'POST') {
-                Auth::requireAdmin();
+                Auth::requirePermiso('productos_editar');
             }
             match (true) {
-                $metodo === 'GET'  && isset($_GET['historial']) => $ctrl->historial(),
-                $metodo === 'GET'                               => $ctrl->listarProductos(),
-                $metodo === 'POST'                              => $ctrl->ajustar(),
+                $metodo === 'GET'  && $accion === 'alertas'      => $ctrl->alertas(),
+                $metodo === 'GET'  && isset($_GET['historial'])   => $ctrl->historial(),
+                $metodo === 'GET'                                  => $ctrl->listarProductos(),
+                $metodo === 'POST'                                 => $ctrl->ajustar(),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
 
         'compras' => (function () use ($metodo, $id, $accion) {
-            Auth::requireAdmin();
+            Auth::requirePermiso('compras');
             require_once __DIR__ . '/controllers/ComprasController.php';
             $ctrl = new ComprasController();
             match (true) {
                 $metodo === 'GET'  && $id !== null            => $ctrl->get($id),
                 $metodo === 'GET'                              => $ctrl->listar(),
-                $metodo === 'POST' && $accion === 'leer-excel' => $ctrl->leerExcel(),
-                $metodo === 'POST' && $id === null             => $ctrl->crear(),
+                $metodo === 'POST'   && $accion === 'leer-excel' => $ctrl->leerExcel(),
+                $metodo === 'POST'   && $id === null            => $ctrl->crear(),
+                $metodo === 'PUT'    && $id !== null            => $ctrl->editar($id),
+                $metodo === 'DELETE' && $id !== null            => $ctrl->anular($id),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
 
-        'cc' => (function () use ($metodo, $id) {
+        'cc' => (function () use ($metodo, $id, $accion) {
             require_once __DIR__ . '/controllers/CuentaCorrienteController.php';
             $ctrl = new CuentaCorrienteController();
-            if ($metodo === 'DELETE') {
-                Auth::requireAdmin();
-            }
+            if ($metodo === 'GET')    Auth::requirePermiso('cc_ver');
+            if ($metodo === 'POST')   Auth::requirePermiso('cc_cobrar');
+            if ($metodo === 'DELETE') Auth::requireAdmin();
             match (true) {
+                $metodo === 'GET' && $accion === 'aging'   => $ctrl->aging(),
                 $metodo === 'GET'                          => $ctrl->listar(),
                 $metodo === 'POST'                         => $ctrl->registrar(),
                 $metodo === 'DELETE' && $id !== null       => $ctrl->eliminar($id),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'notas-envio' => (function () use ($metodo, $id, $subAccion) {
+            require_once __DIR__ . '/controllers/NotasEnvioController.php';
+            $ctrl = new NotasEnvioController();
+            match (true) {
+                $metodo === 'GET'  && $id !== null && $subAccion === 'pdf' => $ctrl->pdf($id),
+                $metodo === 'GET'  && isset($_GET['venta_id'])             => $ctrl->listarPorVenta((int)$_GET['venta_id']),
+                $metodo === 'POST' && $id === null                         => $ctrl->crear(),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
@@ -301,10 +333,107 @@ try {
         'caja-movimientos' => (function () use ($metodo, $id) {
             require_once __DIR__ . '/controllers/CajaMovimientosController.php';
             $ctrl = new CajaMovimientosController();
+            if ($metodo === 'DELETE') {
+                Auth::requirePermiso('anular');
+            }
             match (true) {
                 $metodo === 'GET'    => $ctrl->listar(),
                 $metodo === 'POST'   => $ctrl->crear(),
                 $metodo === 'DELETE' && $id !== null => $ctrl->eliminar($id),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'log-acciones' => (function () use ($metodo) {
+            Auth::requirePermiso('log');
+            require_once __DIR__ . '/controllers/LogAccionesController.php';
+            match ($metodo) {
+                'GET'   => (new LogAccionesController())->listar(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'iva' => (function () use ($metodo, $accion) {
+            Auth::requirePermiso('reportes');
+            require_once __DIR__ . '/controllers/IvaController.php';
+            $ctrl = new IvaController();
+            match (true) {
+                $metodo === 'GET' && $accion === 'ventas'  => $ctrl->ventas(),
+                $metodo === 'GET' && $accion === 'compras' => $ctrl->compras(),
+                $metodo === 'GET' && $accion === 'export'  => $ctrl->exportar(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'rentabilidad' => (function () use ($metodo, $accion) {
+            Auth::requirePermiso('costos');
+            require_once __DIR__ . '/controllers/RentabilidadController.php';
+            $ctrl = new RentabilidadController();
+            match (true) {
+                $metodo === 'GET' && $accion === 'resumen'        => $ctrl->resumen(),
+                $metodo === 'GET' && $accion === 'tendencia'      => $ctrl->tendencia(),
+                $metodo === 'GET' && $accion === 'abc'            => $ctrl->abc(),
+                $metodo === 'GET' && $accion === 'margen-critico' => $ctrl->margenCritico(),
+                $metodo === 'GET' && $accion === 'clientes'       => $ctrl->clientes(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'reportes' => (function () use ($metodo, $accion) {
+            Auth::requirePermiso('reportes');
+            require_once __DIR__ . '/controllers/ReportesController.php';
+            $ctrl = new ReportesController();
+            match (true) {
+                $metodo === 'GET' && $accion === 'resumen-ejecutivo'   => $ctrl->resumenEjecutivo(),
+                $metodo === 'GET' && $accion === 'rotacion-inventario' => $ctrl->rotacionInventario(),
+                $metodo === 'GET' && $accion === 'compras-proveedor'   => $ctrl->comprasPorProveedor(),
+                $metodo === 'GET' && $accion === 'flujo-caja'          => $ctrl->flujoCaja(),
+                $metodo === 'GET' && $accion === 'exportar'            => $ctrl->exportar($_GET['tipo'] ?? ''),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'sucursales' => (function () use ($metodo, $accion, $id, $subAccion) {
+            require_once __DIR__ . '/controllers/SucursalesController.php';
+            $ctrl    = new SucursalesController();
+            $depId   = is_numeric($subAccion) ? (int)$subAccion : 0;
+            match (true) {
+                $metodo === 'GET'  && $accion === 'depositos'      => $ctrl->depositos(),
+                $metodo === 'GET'  && $accion === 'stock-deposito' => $ctrl->stockDeposito(),
+                $metodo === 'GET'                                   => $ctrl->listar(),
+                $metodo === 'POST' && $accion === 'deposito'       => $ctrl->crearDeposito(),
+                $metodo === 'POST'                                  => $ctrl->crear(),
+                $metodo === 'PUT'  && $accion === 'deposito'       => $ctrl->actualizarDeposito($depId),
+                $metodo === 'PUT'                                   => $ctrl->actualizar($id ?? 0),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'mercadopago' => (function () use ($metodo, $sub) {
+            require_once __DIR__ . '/controllers/MercadoPagoController.php';
+            $ctrl = new MercadoPagoController();
+            match (true) {
+                $metodo === 'POST' && $sub === 'preferencia'      => $ctrl->preferencia(),
+                $metodo === 'POST' && $sub === 'confirmar-manual' => $ctrl->confirmarManual(),
+                $metodo === 'POST' && $sub === 'webhook'          => $ctrl->webhook(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'whatsapp' => (function () use ($metodo, $sub) {
+            require_once __DIR__ . '/controllers/WhatsAppController.php';
+            $ctrl = new WhatsAppController();
+            match (true) {
+                $metodo === 'POST' && $sub === 'enviar' => $ctrl->enviar(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'pedido' => (function () use ($metodo, $sub) {
+            require_once __DIR__ . '/controllers/PedidoController.php';
+            $ctrl = new PedidoController();
+            match (true) {
+                $metodo === 'POST' && $sub === 'pdf' => $ctrl->pdf(),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),

@@ -173,6 +173,92 @@ class ProveedoresController {
         ];
     }
 
+    public function importar(): void {
+        if (empty($_FILES['csv']) || $_FILES['csv']['error'] !== UPLOAD_ERR_OK) {
+            json(400, ['error' => 'No se recibió el archivo CSV']);
+        }
+
+        $handle = fopen($_FILES['csv']['tmp_name'], 'r');
+        if (!$handle) json(500, ['error' => 'No se pudo leer el archivo']);
+
+        $bom = fread($handle, 3);
+        if ($bom !== "\xEF\xBB\xBF") rewind($handle);
+
+        $header = fgetcsv($handle);
+        if (!$header) { fclose($handle); json(400, ['error' => 'Archivo vacío o sin encabezados']); }
+        $header = array_map(fn($h) => strtolower(trim($h)), $header);
+
+        $creados = 0; $actualizados = 0; $errores = []; $fila = 1;
+        $db = DB::get();
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $fila++;
+            if (array_filter($row) === []) continue;
+            $data = array_combine($header, array_pad($row, count($header), ''));
+
+            $nombre = trim($data['nombre'] ?? '');
+            if ($nombre === '') { $errores[] = "Fila $fila: nombre vacío"; continue; }
+
+            $cuit      = trim($data['cuit'] ?? '')          ?: null;
+            $condicion = trim($data['condicion_iva'] ?? '') ?: null;
+            $email     = trim($data['email'] ?? '')         ?: null;
+            $telefono  = trim($data['telefono'] ?? '')      ?: null;
+            $domicilio = trim($data['domicilio'] ?? '')     ?: null;
+            $localidad = trim($data['localidad'] ?? '')     ?: null;
+            $provincia = trim($data['provincia'] ?? '')     ?: null;
+            $ccHab     = in_array(strtolower(trim($data['cc_habilitada'] ?? '')), ['1','si','sí','yes','true'], true) ? 1 : 0;
+            $limite    = (float)str_replace(',', '.', trim($data['limite_credito'] ?? '0') ?: '0');
+            $plazo     = trim($data['plazo_pago_dias'] ?? '') !== '' ? (int)$data['plazo_pago_dias'] : null;
+            $obs       = trim($data['observaciones'] ?? '') ?: null;
+
+            try {
+                $existe = null;
+                if ($cuit) {
+                    $s = $db->prepare("SELECT id FROM proveedores WHERE cuit = ? LIMIT 1");
+                    $s->execute([$cuit]);
+                    $existe = $s->fetchColumn() ?: null;
+                }
+
+                if ($existe) {
+                    $db->prepare("
+                        UPDATE proveedores SET
+                            nombre=?, condicion_iva=?, email=?, telefono=?, domicilio=?,
+                            localidad=?, provincia=?, cc_habilitada=?, limite_credito=?,
+                            plazo_pago_dias=?, observaciones=?
+                        WHERE id=?
+                    ")->execute([$nombre, $condicion, $email, $telefono, $domicilio,
+                                 $localidad, $provincia, $ccHab, $limite, $plazo, $obs, $existe]);
+                    $actualizados++;
+                } else {
+                    $db->prepare("
+                        INSERT INTO proveedores
+                            (nombre, cuit, condicion_iva, email, telefono, domicilio, localidad,
+                             provincia, cc_habilitada, limite_credito, plazo_pago_dias, observaciones)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+                    ")->execute([$nombre, $cuit, $condicion, $email, $telefono, $domicilio,
+                                 $localidad, $provincia, $ccHab, $limite, $plazo, $obs]);
+                    $creados++;
+                }
+            } catch (\Throwable $e) {
+                $errores[] = "Fila $fila: " . $e->getMessage();
+            }
+        }
+
+        fclose($handle);
+        json(200, ['creados' => $creados, 'actualizados' => $actualizados, 'errores' => $errores]);
+    }
+
+    public function plantillaCSV(): void {
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="plantilla_proveedores.csv"');
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF");
+        fputcsv($out, ['nombre','cuit','condicion_iva','email','telefono','domicilio','localidad','provincia','cc_habilitada','limite_credito','plazo_pago_dias','observaciones']);
+        fputcsv($out, ['Proveedor Ejemplo SA','30-12345678-9','Responsable Inscripto','ventas@proveedor.com','11-5678-9012','Av. Industrial 500','Córdoba','Córdoba','1','0','30','Proveedor mayorista']);
+        fclose($out);
+        exit;
+    }
+
     public function eliminar(int $id): void {
         $db = DB::get();
 

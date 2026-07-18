@@ -38,19 +38,35 @@ if (!function_exists('cp_iva_pct')) {
     }
 }
 
-$tipo          = $venta['tipo_comprobante'] ?? 'REMITO';
-$esFacturaA    = $tipo === 'FC A-ELECT';
-$esFacturaB    = $tipo === 'FC B-ELECT';
-$esAfip        = $esFacturaA || $esFacturaB;
-$tieneCae      = !empty($venta['cae']);
+$tipo       = $venta['tipo_comprobante'] ?? 'REMITO';
+$esFacturaA = $tipo === 'FC A-ELECT';
+$esFacturaB = $tipo === 'FC B-ELECT';
+$esFacturaC = $tipo === 'FC C-ELECT';
+$esNc       = in_array($tipo, ['NC A-ELECT', 'NC B-ELECT', 'NC C-ELECT'], true);
+$esAfip     = $esFacturaA || $esFacturaB || $esFacturaC || $esNc;
+$tieneCae   = !empty($venta['cae']);
 
-$docTipo = match ($tipo) {
-    'FC A-ELECT', 'FC B-ELECT' => 'Factura',
-    'PRESUPUESTO'              => 'Presupuesto',
-    default                    => 'Remito',
+$docTipo = match (true) {
+    $esFacturaA || $esFacturaB || $esFacturaC => 'Factura',
+    $esNc                                     => 'Nota de Crédito',
+    $tipo === 'PRESUPUESTO'                   => 'Presupuesto',
+    default                                   => 'Remito',
 };
-$letra    = $esFacturaA ? 'A' : ($esFacturaB ? 'B' : null);
-$letraCod = $esFacturaA ? '001' : ($esFacturaB ? '006' : null);
+$letra = match ($tipo) {
+    'FC A-ELECT', 'NC A-ELECT' => 'A',
+    'FC B-ELECT', 'NC B-ELECT' => 'B',
+    'FC C-ELECT', 'NC C-ELECT' => 'C',
+    default                    => null,
+};
+$letraCod = match ($tipo) {
+    'FC A-ELECT' => '001',
+    'NC A-ELECT' => '003',
+    'FC B-ELECT' => '006',
+    'NC B-ELECT' => '008',
+    'FC C-ELECT' => '011',
+    'NC C-ELECT' => '013',
+    default      => null,
+};
 
 $logo = str_replace('\\', '/', realpath(__DIR__ . '/../../logo_background.png'));
 
@@ -80,7 +96,16 @@ if ($esFacturaA) {
 
 $tieneEntregaOrigen = !empty($venta['envio_direccion']) || !empty($venta['observaciones']);
 
-$margenInferior = $tieneCae ? '72mm' : '42mm';
+$tieneQrMp = !empty($venta['mp_qr_data_uri']);
+if ($tieneCae && $tieneQrMp) {
+    $margenInferior = '84mm';
+} elseif ($tieneCae) {
+    $margenInferior = '72mm';
+} elseif ($tieneQrMp) {
+    $margenInferior = '56mm';
+} else {
+    $margenInferior = '42mm';
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -178,6 +203,12 @@ $margenInferior = $tieneCae ? '72mm' : '42mm';
   .qr-box img { width:22mm; height:22mm; }
   .cae-info { font-size:10px; color:#333; text-align:right; }
   .cae-info .cae-num { font-weight:700; font-size:13px; color:#111; }
+
+  .mp-qr-box { text-align:center; }
+  .mp-qr-box img { width:30mm; height:30mm; display:block; margin:0 auto 2px; }
+  .mp-qr-label { font-size:8.5px; color:#009EE3; font-weight:700; letter-spacing:.01em; }
+  table.footer-layout { width:100%; border-collapse:collapse; }
+  table.footer-layout td { vertical-align:bottom; padding:0; }
 </style>
 </head>
 <body>
@@ -292,17 +323,31 @@ $margenInferior = $tieneCae ? '72mm' : '42mm';
 </table>
 
 <div class="hoja-footer">
-  <table class="tot">
-    <?php if ($esFacturaA): ?>
-      <tr><td>Subtotal productos</td><td class="r"><?= cp_fmt($subtotalProdNeto) ?></td></tr>
-      <?php if ($envioGross > 0): ?><tr><td>Envío</td><td class="r"><?= cp_fmt($envioNeto) ?></td></tr><?php endif; ?>
-      <tr><td>IVA <?= cp_esc(cp_iva_pct((float)$config['iva_porcentaje'])) ?>%</td><td class="r"><?= cp_fmt($iva) ?></td></tr>
-      <tr class="final"><td>TOTAL</td><td class="r"><?= cp_fmt($totalGross) ?></td></tr>
-    <?php else: ?>
-      <tr><td>Subtotal productos</td><td class="r"><?= cp_fmt($subtotalProductosGross) ?></td></tr>
-      <?php if ($envioGross > 0): ?><tr><td>Envío</td><td class="r"><?= cp_fmt($envioGross) ?></td></tr><?php endif; ?>
-      <tr class="final"><td>TOTAL</td><td class="r"><?= cp_fmt($totalGross) ?></td></tr>
-    <?php endif; ?>
+  <table class="footer-layout">
+    <tr>
+      <td>
+        <?php if ($tieneQrMp): ?>
+          <div class="mp-qr-box">
+            <img src="<?= cp_esc($venta['mp_qr_data_uri']) ?>" alt="QR MercadoPago">
+            <div class="mp-qr-label">Pagar con MercadoPago</div>
+          </div>
+        <?php endif; ?>
+      </td>
+      <td style="width:72mm; vertical-align:top;">
+        <table class="tot" style="margin:0; width:100%;">
+          <?php if ($esFacturaA): ?>
+            <tr><td>Subtotal productos</td><td class="r"><?= cp_fmt($subtotalProdNeto) ?></td></tr>
+            <?php if ($envioGross > 0): ?><tr><td>Envío</td><td class="r"><?= cp_fmt($envioNeto) ?></td></tr><?php endif; ?>
+            <tr><td>IVA <?= cp_esc(cp_iva_pct((float)$config['iva_porcentaje'])) ?>%</td><td class="r"><?= cp_fmt($iva) ?></td></tr>
+            <tr class="final"><td>TOTAL</td><td class="r"><?= cp_fmt($totalGross) ?></td></tr>
+          <?php else: ?>
+            <tr><td>Subtotal productos</td><td class="r"><?= cp_fmt($subtotalProductosGross) ?></td></tr>
+            <?php if ($envioGross > 0): ?><tr><td>Envío</td><td class="r"><?= cp_fmt($envioGross) ?></td></tr><?php endif; ?>
+            <tr class="final"><td>TOTAL</td><td class="r"><?= cp_fmt($totalGross) ?></td></tr>
+          <?php endif; ?>
+        </table>
+      </td>
+    </tr>
   </table>
 
   <?php if ($tieneCae): ?>
