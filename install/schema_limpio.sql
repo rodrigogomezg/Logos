@@ -363,6 +363,51 @@ CREATE TABLE `depositos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `devolucion_items`
+--
+
+DROP TABLE IF EXISTS `devolucion_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `devolucion_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `devolucion_id` int(11) NOT NULL,
+  `producto_id` int(11) NOT NULL,
+  `nombre` varchar(255) NOT NULL,
+  `cantidad` decimal(10,2) NOT NULL,
+  `precio_unitario` decimal(14,4) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `devolucion_id` (`devolucion_id`),
+  KEY `producto_id` (`producto_id`),
+  CONSTRAINT `devolucion_items_ibfk_1` FOREIGN KEY (`devolucion_id`) REFERENCES `devoluciones` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `devolucion_items_ibfk_2` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `devoluciones`
+--
+
+DROP TABLE IF EXISTS `devoluciones`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `devoluciones` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `venta_id` int(11) NOT NULL,
+  `cliente_id` int(11) NOT NULL,
+  `motivo` varchar(255) DEFAULT NULL,
+  `monto_total` decimal(14,4) NOT NULL DEFAULT 0.0000,
+  `usuario_id` int(11) DEFAULT NULL,
+  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_venta` (`venta_id`),
+  KEY `idx_cliente` (`cliente_id`),
+  CONSTRAINT `devoluciones_ibfk_1` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`),
+  CONSTRAINT `devoluciones_ibfk_2` FOREIGN KEY (`cliente_id`) REFERENCES `clientes` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `escalas_precio`
 --
 
@@ -839,4 +884,4 @@ CREATE TABLE `ventas` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-18 19:40:30
+-- Dump completed on 2026-07-18 19:44:45

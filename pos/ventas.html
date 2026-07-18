@@ -608,6 +608,10 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       Confirmar
     </button>
+    <button class="selec-btn sbtn-ghost" id="sac-devolver">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.38"/></svg>
+      Devolver
+    </button>
     <button class="selec-btn sbtn-ghost" id="sac-modificar">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Editar
@@ -832,6 +836,41 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
     <div class="modal-footer">
       <button class="btn btn-sec" id="wa-cancelar">Cancelar</button>
       <button class="btn btn-ok"  id="wa-confirmar">Enviar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal Devolución con crédito ══════════════════════════════ -->
+<div class="overlay" id="overlay-devolver">
+  <div class="modal" style="width:560px;max-width:96vw" role="dialog" aria-modal="true" aria-labelledby="dev-titulo">
+    <div class="modal-head">
+      <h2 id="dev-titulo">Devolución con crédito</h2>
+      <button class="modal-close" id="dev-close">×</button>
+    </div>
+    <div class="modal-body" style="padding:20px">
+      <p id="dev-desc" style="margin:0 0 14px;font-size:13px;color:#666"></p>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px" id="dev-tabla">
+        <thead>
+          <tr style="border-bottom:2px solid #eee;text-align:left">
+            <th style="padding:6px 8px;font-weight:600">Producto</th>
+            <th style="padding:6px 8px;font-weight:600;text-align:right">Vendido</th>
+            <th style="padding:6px 8px;font-weight:600;text-align:center">Devolver</th>
+            <th style="padding:6px 8px;font-weight:600;text-align:right">Precio</th>
+          </tr>
+        </thead>
+        <tbody id="dev-items"></tbody>
+      </table>
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label">Motivo (opcional)</label>
+        <input type="text" id="dev-motivo" class="form-input" placeholder="Ej: producto defectuoso, cambio de talle…">
+      </div>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;font-size:13px">
+        Crédito a acreditar en CC: <strong id="dev-total" style="font-size:15px">$0,00</strong>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-sec" id="dev-cancelar">Cancelar</button>
+      <button class="btn btn-ok" id="dev-confirmar">Confirmar devolución</button>
     </div>
   </div>
 </div>
@@ -1621,6 +1660,123 @@ $('mail-enviar').addEventListener('click', async () => {
   }
 });
 
+// ── Acción: DEVOLUCIÓN CON CRÉDITO ──────────────────────
+async function accionDevolver() {
+  if (!ventaSeleccionada) return;
+  try {
+    const v = await cargarDetalle(ventaSeleccionada.id);
+    if (v.estado === 'anulada') { toast_('La venta está anulada', 'err'); return; }
+    if (!v.cliente_id)          { toast_('Las devoluciones con crédito requieren un cliente asignado', 'err'); return; }
+    abrirModalDevolver(v);
+  } catch (e) {
+    toast_(e.message, 'err');
+  }
+}
+
+let devVentaActual = null;
+
+async function abrirModalDevolver(v) {
+  devVentaActual = v;
+  $('dev-desc').textContent = `Venta N° ${v.numero} · Cliente: ${v.cliente_nombre ?? '—'} · Total: ${fmt(v.total)}`;
+
+  // Cargar devoluciones previas de esta venta para calcular disponible
+  let yaDevuelto = {};
+  try {
+    const r = await fetch(`${API}/devoluciones?venta_id=${v.id}`);
+    if (r.ok) {
+      const devs = await r.json();
+      for (const d of devs) {
+        for (const it of d.items) {
+          yaDevuelto[it.producto_id] = (yaDevuelto[it.producto_id] ?? 0) + it.cantidad;
+        }
+      }
+    }
+  } catch {}
+
+  const tbody = $('dev-items');
+  tbody.innerHTML = '';
+  let hayDisponibles = false;
+
+  for (const it of v.items) {
+    const vendido    = Number(it.cantidad);
+    const devuelto   = yaDevuelto[it.producto_id] ?? 0;
+    const disponible = vendido - devuelto;
+    if (disponible <= 0) continue;
+    hayDisponibles = true;
+
+    const tr = document.createElement('tr');
+    tr.style.borderBottom = '1px solid #f0f0f0';
+    tr.innerHTML = `
+      <td style="padding:7px 8px">${esc(it.nombre)}</td>
+      <td style="padding:7px 8px;text-align:right;color:#666">${vendido % 1 === 0 ? vendido : vendido.toFixed(2)}${devuelto > 0 ? `<br><span style="font-size:10px;color:#aaa">ya devuelto: ${devuelto}</span>` : ''}</td>
+      <td style="padding:7px 8px;text-align:center">
+        <input type="number" class="form-input dev-cant-input"
+               min="0" max="${disponible}" step="${vendido % 1 === 0 ? 1 : 0.01}"
+               value="0" style="width:70px;text-align:center;padding:4px 6px"
+               data-pid="${it.producto_id}" data-precio="${it.precio_unitario}" data-max="${disponible}">
+      </td>
+      <td style="padding:7px 8px;text-align:right">${fmt(it.precio_unitario)}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  if (!hayDisponibles) {
+    tbody.innerHTML = '<tr><td colspan="4" style="padding:14px 8px;text-align:center;color:#aaa;font-style:italic">Todos los ítems ya fueron devueltos</td></tr>';
+    $('dev-confirmar').disabled = true;
+  } else {
+    $('dev-confirmar').disabled = false;
+  }
+
+  $('dev-motivo').value = '';
+  $('dev-total').textContent = fmt(0);
+  $('dev-confirmar').textContent = 'Confirmar devolución';
+  $('overlay-devolver').classList.add('abierto');
+}
+
+function calcularTotalDevolucion() {
+  let total = 0;
+  document.querySelectorAll('.dev-cant-input').forEach(inp => {
+    const cant  = parseFloat(inp.value) || 0;
+    const precio = parseFloat(inp.dataset.precio) || 0;
+    total += cant * precio;
+  });
+  $('dev-total').textContent = fmt(total);
+}
+
+$('dev-items').addEventListener('input', calcularTotalDevolucion);
+
+$('dev-close').addEventListener('click',    () => $('overlay-devolver').classList.remove('abierto'));
+$('dev-cancelar').addEventListener('click', () => $('overlay-devolver').classList.remove('abierto'));
+overlayAutoClose($('overlay-devolver'), () => $('overlay-devolver').classList.remove('abierto'));
+
+$('dev-confirmar').addEventListener('click', async () => {
+  const items = [];
+  let valido = true;
+  document.querySelectorAll('.dev-cant-input').forEach(inp => {
+    const cant = parseFloat(inp.value) || 0;
+    if (cant < 0 || cant > parseFloat(inp.dataset.max)) { valido = false; return; }
+    if (cant > 0) items.push({ producto_id: parseInt(inp.dataset.pid), cantidad: cant, precio_unitario: parseFloat(inp.dataset.precio) });
+  });
+  if (!valido) { toast_('Cantidad fuera de rango', 'err'); return; }
+  if (items.length === 0) { toast_('Ingresá al menos una cantidad a devolver', 'err'); return; }
+
+  const btn = $('dev-confirmar');
+  btn.disabled = true; btn.textContent = 'Procesando…';
+  try {
+    const res = await fetch(`${API}/devoluciones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ venta_id: devVentaActual.id, items, motivo: $('dev-motivo').value.trim() || null }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Error al registrar devolución');
+    $('overlay-devolver').classList.remove('abierto');
+    toast_(`Devolución registrada · Crédito ${fmt(data.monto_total)} en CC`, 'ok');
+  } catch (e) {
+    toast_(e.message, 'err');
+    btn.disabled = false; btn.textContent = 'Confirmar devolución';
+  }
+});
+
 // ── Acción: NOTA DE ENVÍO ─────────────────────────────
 async function accionNotaEnvio() {
   if (!ventaSeleccionada) return;
@@ -2061,6 +2217,7 @@ $('dd-imprimir').addEventListener('click',      accionImprimir);
 $('dd-pdf').addEventListener('click',           accionPDF);
 $('dd-mail').addEventListener('click',          accionMail);
 $('sac-nota-envio').addEventListener('click',   accionNotaEnvio);
+$('sac-devolver').addEventListener('click',     accionDevolver);
 $('sac-copiar').addEventListener('click',       accionCopiar);
 $('sac-modificar').addEventListener('click',    accionModificarRapido);
 $('edit-ir-items').addEventListener('click',    () => { $('overlay-editar').classList.remove('abierto'); accionEditarItems(); });

@@ -236,6 +236,16 @@ try {
             };
         })(),
 
+        'devoluciones' => (function () use ($metodo) {
+            require_once __DIR__ . '/controllers/DevolucionesController.php';
+            $ctrl = new DevolucionesController();
+            match (true) {
+                $metodo === 'GET'  && isset($_GET['venta_id']) => $ctrl->listarPorVenta(),
+                $metodo === 'POST'                             => $ctrl->crear(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
         'notas-envio' => (function () use ($metodo, $id, $subAccion) {
             require_once __DIR__ . '/controllers/NotasEnvioController.php';
             $ctrl = new NotasEnvioController();
