@@ -528,6 +528,7 @@ class VentasController {
             json(400, ['error' => 'La venta debe tener al menos un ítem']);
         }
 
+        $carrito_id       = trim($body['carrito_id'] ?? '');
         $tipo_pago        = $body['tipo_pago']        ?? 'efectivo';
         $tipo_comprobante = $body['tipo_comprobante'] ?? 'REMITO';
         $cliente_id       = isset($body['cliente_id']) ? (int)$body['cliente_id'] : null;
@@ -607,6 +608,26 @@ class VentasController {
                 json(404, ['error' => "Producto $producto_id no encontrado o inactivo"]);
             }
 
+            // Verificar stock disponible (descontando reservas de otros carritos)
+            $stmtStock = $db->prepare("
+                SELECT p.stock_actual - COALESCE((
+                    SELECT SUM(sr.cantidad) FROM stock_reservas sr
+                    WHERE sr.producto_id = p.id
+                      AND sr.carrito_id != ?
+                      AND sr.vence_en > NOW()
+                ), 0) AS disponible
+                FROM productos p WHERE p.id = ?
+            ");
+            $stmtStock->execute([$carrito_id ?: '', $producto_id]);
+            $disponible = (float)($stmtStock->fetchColumn() ?? $producto['stock_actual']);
+            if ($disponible < $cantidad) {
+                json(422, [
+                    'error'       => "Stock insuficiente para \"{$producto['nombre']}\"",
+                    'disponible'  => max(0, $disponible),
+                    'solicitado'  => $cantidad,
+                ]);
+            }
+
             $precio_original = isset($item['precio_original']) && is_numeric($item['precio_original'])
                                ? (float)$item['precio_original'] : null;
             $ajuste_desc     = isset($item['ajuste_desc']) && trim($item['ajuste_desc']) !== ''
@@ -659,8 +680,12 @@ class VentasController {
         }
 
         // Todo validado — ejecutar en transacción
+        require_once __DIR__ . '/ReservasController.php';
         try {
             $db->beginTransaction();
+
+            // Liberar reservas del carrito antes de descontar stock
+            ReservasController::liberarEnTransaccion($db, $carrito_id);
 
             // 1. Insertar venta
             $stmt = $db->prepare("

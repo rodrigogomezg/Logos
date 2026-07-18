@@ -1103,6 +1103,14 @@ const API = '/Logos/api';
 })();
 
 // ── Estado ───────────────────────────────────────────
+// carrito_id: UUID único por tab, persiste en sessionStorage (para reservas de stock)
+const CARRITO_ID = (() => {
+  const k = 'logos_carrito_id';
+  let id = sessionStorage.getItem(k);
+  if (!id) { id = crypto.randomUUID(); sessionStorage.setItem(k, id); }
+  return id;
+})();
+
 let items           = [];
 let clienteActual   = null;
 let seleccionados   = new Set(); // producto_ids seleccionados
@@ -1441,6 +1449,7 @@ itemsLista.addEventListener('change', e => {
   else if (camp === 'cantidad') { items[idx].cantidad = val; aplicarEscalaAlItem(idx); }
   else                          items[idx].precio_unitario = val;
   renderItems();
+  if (camp === 'cantidad') sincronizarReservas();
 });
 
 itemsLista.addEventListener('click', e => {
@@ -1450,6 +1459,7 @@ itemsLista.addEventListener('click', e => {
     seleccionados.delete(items[idx].producto_id);
     items.splice(idx, 1);
     renderItems();
+    sincronizarReservas();
     return;
   }
 
@@ -1460,6 +1470,7 @@ itemsLista.addEventListener('click', e => {
     if (nueva <= 0) { seleccionados.delete(items[idx].producto_id); items.splice(idx, 1); }
     else { items[idx].cantidad = nueva; aplicarEscalaAlItem(idx); }
     renderItems();
+    sincronizarReservas();
   }
 });
 
@@ -1498,6 +1509,7 @@ function agregarProducto(p) {
   }
   ocultarUltimaVenta();
   renderItems();
+  sincronizarReservas();
   toast_(`+1  ${p.nombre}`);
 }
 
@@ -1543,7 +1555,7 @@ function limpiarEstadoCodigo() {
 
 async function fetchCodigo(cod) {
   try {
-    const r = await fetch(`${API}/productos?q=${encodeURIComponent(cod)}&limit=10`);
+    const r = await fetch(`${API}/productos?q=${encodeURIComponent(cod)}&limit=10&carrito_id=${encodeURIComponent(CARRITO_ID)}`);
     const d = await r.json();
     if (!Array.isArray(d)) return;
     const exacto = d.find(p => p.codigo.toLowerCase() === cod.toLowerCase());
@@ -1597,7 +1609,7 @@ inputRapido.addEventListener('keydown', e => {
 
 async function fetchRapido(q) {
   try {
-    const r = await fetch(`${API}/productos?q=${encodeURIComponent(q)}&limit=25`);
+    const r = await fetch(`${API}/productos?q=${encodeURIComponent(q)}&limit=25&carrito_id=${encodeURIComponent(CARRITO_ID)}`);
     const d = await r.json();
     if (!Array.isArray(d)) { cerrarDD(ddRapido); return; }
     ddRapidoIdx = -1;
@@ -1930,6 +1942,7 @@ async function buscarModal() {
   if (conStock)  params.set('con_stock', '1');
 
   try {
+    params.set('carrito_id', CARRITO_ID);
     const r = await fetch(`${API}/productos?${params}`);
     const d = await r.json();
     if (!r.ok || !Array.isArray(d)) { mostrarEstado(d.error ?? 'Sin resultados'); return; }
@@ -2081,12 +2094,43 @@ function ocultarUltimaVenta() {
 
 btnConfirmar.addEventListener('click', confirmarVenta);
 
+// ── Reservas de stock ─────────────────────────────────
+let _reservaTimer = null;
+function sincronizarReservas() {
+  clearTimeout(_reservaTimer);
+  if (!items.length) {
+    // Carrito vacío: liberar reservas sin debounce
+    fetch(`${API}/reservas/${encodeURIComponent(CARRITO_ID)}`, { method: 'DELETE' }).catch(() => {});
+    return;
+  }
+  // Debounce 400ms para no spamear en cambios rápidos de cantidad
+  _reservaTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(`${API}/reservas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          carrito_id: CARRITO_ID,
+          items: items.map(i => ({ producto_id: i.producto_id, cantidad: i.cantidad })),
+        }),
+      });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.bloqueados?.length) {
+        const lista = d.bloqueados.map(b => `• ${b.producto_id}: disponible ${b.disponible}, pedido ${b.pedido}`).join('\n');
+        toast_(`Stock insuficiente para ${d.bloqueados.length} producto(s):\n${lista}`, 'warn');
+      }
+    } catch { /* no bloquea el flujo */ }
+  }, 400);
+}
+
 async function confirmarVenta() {
   if (!items.length || afipGuardActivo) return;
   btnConfirmar.disabled   = true;
   btnConfirmar.innerHTML  = '<span>Guardando...</span>';
 
   const body = {
+    carrito_id:       CARRITO_ID,
     cliente_id:       clienteActual?.id ?? null,
     caja_id:          window.cajaOperativaId?.() ?? window.LOGOS_SESION?.caja_id ?? null,
     usuario_id:       window.LOGOS_SESION?.usuario_id ?? null,
@@ -2200,6 +2244,7 @@ function nuevaVenta() {
   $('t-envio-row').style.display = 'none';
   inputCodigo.value = ''; limpiarEstadoCodigo();
   renderItems();
+  sincronizarReservas(); // libera reservas del carrito anterior
   inputCodigo.focus();
 }
 

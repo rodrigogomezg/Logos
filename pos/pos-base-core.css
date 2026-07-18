@@ -55,8 +55,9 @@ a:focus-visible { outline: 2px solid var(--azul); outline-offset: 2px; }
   opacity: 0; z-index: 2000;
 }
 .toast.visible { transform: translateX(-50%) translateY(0); opacity: 1; }
-.toast.err { background: var(--rojo); }
-.toast.ok  { background: var(--verde); }
+.toast.err  { background: var(--rojo); }
+.toast.ok   { background: var(--verde); }
+.toast.warn { background: #b45309; }
 
 @media (prefers-reduced-motion: reduce) {
   .toast { transition: none; }

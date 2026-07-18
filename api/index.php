@@ -236,6 +236,16 @@ try {
             };
         })(),
 
+        'reservas' => (function () use ($metodo, $id) {
+            require_once __DIR__ . '/controllers/ReservasController.php';
+            $ctrl = new ReservasController();
+            match (true) {
+                $metodo === 'POST'                    => $ctrl->sincronizar(),
+                $metodo === 'DELETE' && $id !== null  => $ctrl->liberar((string)$id),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
         'devoluciones' => (function () use ($metodo) {
             require_once __DIR__ . '/controllers/DevolucionesController.php';
             $ctrl = new DevolucionesController();

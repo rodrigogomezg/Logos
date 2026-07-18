@@ -38,13 +38,14 @@ class ProductosController {
     }
 
     public function search(): void {
-        $q         = trim($_GET['q']         ?? '');
-        $exacto    = ($_GET['exacto']        ?? '0') === '1';
-        $marca     = trim($_GET['marca']     ?? '');
-        $proveedor = trim($_GET['proveedor'] ?? '');
-        $categoria = trim($_GET['categoria'] ?? '');
-        $con_stock = ($_GET['con_stock']     ?? '0') === '1';
-        $limit     = min((int)($_GET['limit'] ?? 50), 200);
+        $q          = trim($_GET['q']          ?? '');
+        $exacto     = ($_GET['exacto']         ?? '0') === '1';
+        $marca      = trim($_GET['marca']      ?? '');
+        $proveedor  = trim($_GET['proveedor']  ?? '');
+        $categoria  = trim($_GET['categoria']  ?? '');
+        $con_stock  = ($_GET['con_stock']      ?? '0') === '1';
+        $limit      = min((int)($_GET['limit'] ?? 50), 200);
+        $carrito_id = trim($_GET['carrito_id'] ?? '');
 
         // Requiere al menos un criterio
         if ($q === '' && $marca === '' && $proveedor === '' && $categoria === '') {
@@ -93,11 +94,24 @@ class ProductosController {
 
         $params[] = $limit;
 
+        // stock_disponible = stock_actual menos reservas activas de OTROS carritos
+        $reservaSubq = $carrito_id !== ''
+            ? "p.stock_actual - COALESCE((SELECT SUM(sr.cantidad) FROM stock_reservas sr WHERE sr.producto_id = p.id AND sr.carrito_id != ? AND sr.vence_en > NOW()), 0)"
+            : "p.stock_actual";
+
+        if ($carrito_id !== '') {
+            // Insertar el parámetro del carrito_id al inicio de params (antes de WHERE params)
+            // Se necesita antes de los WHERE params porque la subconsulta va en SELECT
+            array_unshift($params, $carrito_id);
+            // El $limit que agregamos al final también se desplaza — no hace falta tocar nada más
+        }
+
         $sql = "
-            SELECT id, codigo, nombre, marca, proveedor, categoria, subcategoria,
-                   precio_venta, costo_actual, stock_actual, stock_minimo,
-                   iva_porcentaje, unidad_medida, activo
-            FROM productos
+            SELECT p.id, p.codigo, p.nombre, p.marca, p.proveedor, p.categoria, p.subcategoria,
+                   p.precio_venta, p.costo_actual, p.stock_actual, p.stock_minimo,
+                   p.iva_porcentaje, p.unidad_medida, p.activo,
+                   $reservaSubq AS stock_disponible
+            FROM productos p
             WHERE " . implode(' AND ', $where) . "
             ORDER BY $order
             LIMIT ?
