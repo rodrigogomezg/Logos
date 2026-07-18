@@ -363,6 +363,25 @@ CREATE TABLE `depositos` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `escalas_precio`
+--
+
+DROP TABLE IF EXISTS `escalas_precio`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `escalas_precio` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `producto_id` int(11) NOT NULL,
+  `desde_cantidad` decimal(10,2) NOT NULL,
+  `precio_unitario` decimal(14,4) NOT NULL,
+  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_producto_cantidad` (`producto_id`,`desde_cantidad`),
+  CONSTRAINT `escalas_precio_ibfk_1` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `listas_precio`
 --
 
@@ -820,4 +839,4 @@ CREATE TABLE `ventas` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-07-18 19:33:10
+-- Dump completed on 2026-07-18 19:40:30

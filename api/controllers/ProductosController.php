@@ -12,6 +12,31 @@ class ProductosController {
         return $filas;
     }
 
+    /** Agrega el array `escalas` a cada producto (batch, sin N+1). */
+    private static function cargarEscalas(array &$filas): void {
+        if (empty($filas)) return;
+        $ids  = array_column($filas, 'id');
+        $ph   = implode(',', array_fill(0, count($ids), '?'));
+        $rows = DB::get()->prepare("
+            SELECT producto_id, desde_cantidad, precio_unitario
+            FROM escalas_precio
+            WHERE producto_id IN ($ph)
+            ORDER BY producto_id, desde_cantidad
+        ");
+        $rows->execute($ids);
+        $mapa = [];
+        foreach ($rows->fetchAll() as $r) {
+            $mapa[(int)$r['producto_id']][] = [
+                'desde'  => (float)$r['desde_cantidad'],
+                'precio' => (float)$r['precio_unitario'],
+            ];
+        }
+        foreach ($filas as &$p) {
+            $p['escalas'] = $mapa[(int)$p['id']] ?? [];
+        }
+        unset($p);
+    }
+
     public function search(): void {
         $q         = trim($_GET['q']         ?? '');
         $exacto    = ($_GET['exacto']        ?? '0') === '1';
@@ -81,7 +106,9 @@ class ProductosController {
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
 
-        json(200, self::ocultarCostos($stmt->fetchAll()));
+        $filas = $stmt->fetchAll();
+        self::cargarEscalas($filas);
+        json(200, self::ocultarCostos($filas));
     }
 
     public function get(int $id): void {
@@ -96,7 +123,9 @@ class ProductosController {
 
         if (!$producto) { json(404, ['error' => 'Producto no encontrado']); }
 
-        json(200, self::ocultarCostos([$producto])[0]);
+        $filas = [$producto];
+        self::cargarEscalas($filas);
+        json(200, self::ocultarCostos($filas)[0]);
     }
 
     public function listar(): void {
@@ -412,5 +441,75 @@ class ProductosController {
         $stmt->execute(array_merge($setP, $whereP));
 
         json(200, ['ok' => true, 'afectados' => $stmt->rowCount()]);
+    }
+
+    /** GET /productos/:id/escalas */
+    public function getEscalas(int $id): void {
+        $db = DB::get();
+        $check = $db->prepare("SELECT id FROM productos WHERE id = ?");
+        $check->execute([$id]);
+        if (!$check->fetch()) json(404, ['error' => 'Producto no encontrado']);
+
+        $rows = $db->prepare("
+            SELECT id, desde_cantidad, precio_unitario
+            FROM escalas_precio
+            WHERE producto_id = ?
+            ORDER BY desde_cantidad
+        ");
+        $rows->execute([$id]);
+        $escalas = array_map(fn($r) => [
+            'id'     => (int)$r['id'],
+            'desde'  => (float)$r['desde_cantidad'],
+            'precio' => (float)$r['precio_unitario'],
+        ], $rows->fetchAll());
+
+        json(200, $escalas);
+    }
+
+    /** PUT /productos/:id/escalas — reemplaza todas las escalas del producto */
+    public function saveEscalas(int $id): void {
+        Auth::requirePermiso('productos_editar');
+        $body = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($body)) json(400, ['error' => 'Body JSON debe ser array de escalas']);
+
+        $db = DB::get();
+        $check = $db->prepare("SELECT id FROM productos WHERE id = ?");
+        $check->execute([$id]);
+        if (!$check->fetch()) json(404, ['error' => 'Producto no encontrado']);
+
+        // Validar cada escala antes de tocar la DB
+        $escalas = [];
+        foreach ($body as $i => $e) {
+            $desde  = isset($e['desde'])  ? (float)$e['desde']  : null;
+            $precio = isset($e['precio']) ? (float)$e['precio'] : null;
+            if ($desde === null || $desde <= 0) json(400, ['error' => "Escala $i: 'desde' debe ser mayor a 0"]);
+            if ($precio === null || $precio < 0) json(400, ['error' => "Escala $i: 'precio' debe ser >= 0"]);
+            $escalas[] = [$desde, $precio];
+        }
+
+        // Verificar que no haya cantidades duplicadas
+        $cantidades = array_column($escalas, 0);
+        if (count($cantidades) !== count(array_unique($cantidades))) {
+            json(400, ['error' => 'No pueden existir dos escalas con la misma cantidad']);
+        }
+
+        $db->beginTransaction();
+        try {
+            $db->prepare("DELETE FROM escalas_precio WHERE producto_id = ?")->execute([$id]);
+            if (!empty($escalas)) {
+                $ins = $db->prepare("
+                    INSERT INTO escalas_precio (producto_id, desde_cantidad, precio_unitario)
+                    VALUES (?, ?, ?)
+                ");
+                foreach ($escalas as [$desde, $precio]) {
+                    $ins->execute([$id, $desde, $precio]);
+                }
+            }
+            $db->commit();
+            json(200, ['ok' => true, 'escalas' => count($escalas)]);
+        } catch (Throwable $e) {
+            $db->rollBack();
+            json(500, ['error' => $e->getMessage()]);
+        }
     }
 }

@@ -412,6 +412,18 @@ tr.row-saved { animation: rowFlash 1.5s ease-out forwards; }
 .m-overlay .form-section-line { background: #D5D0CA; }
 .m-overlay .form-section-label { color: #888; }
 
+/* Escalas de precio */
+.escalas-section { margin-top: 18px; border-top: 1px solid #E8E3DC; padding-top: 14px; }
+.escalas-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.escalas-titulo { font-size: 12px; font-weight: 700; color: #888; text-transform: uppercase; letter-spacing: .05em; }
+.btn-escala-add { background: none; border: 1.5px solid var(--neo-accent); color: var(--neo-accent); border-radius: 4px; padding: 3px 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-escala-add:hover { background: var(--neo-accent); color: #fff; }
+.escala-fila { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 6px; }
+.escala-fila .form-input { font-size: 13px; padding: 5px 8px; }
+.escala-fila .btn-del-escala { background: none; border: none; cursor: pointer; color: #B91C1C; font-size: 16px; padding: 0 4px; line-height: 1; }
+.escala-fila .escala-label { font-size: 11px; color: #888; margin-bottom: 2px; }
+.escalas-vacio { font-size: 12px; color: #aaa; font-style: italic; padding: 6px 0; }
+
 </style>
 </head>
 <body>
@@ -599,6 +611,16 @@ tr.row-saved { animation: rowFlash 1.5s ease-out forwards; }
             <input type="checkbox" id="e-activo"> Producto activo
           </label>
         </div>
+      </div>
+
+      <!-- Escalas de precio por volumen -->
+      <div class="escalas-section">
+        <div class="escalas-header">
+          <span class="escalas-titulo">Escalas de precio por volumen</span>
+          <button type="button" class="btn-escala-add" id="btn-escala-add" onclick="agregarFilaEscala()">+ Agregar</button>
+        </div>
+        <div id="escalas-lista"><!-- filas dinámicas --></div>
+        <div id="escalas-vacio" class="escalas-vacio">Sin escalas — el precio base aplica para cualquier cantidad.</div>
       </div>
     </div>
     <div class="m-foot">
@@ -1279,6 +1301,88 @@ async function guardarNuevoProducto() {
 }
 
 // ── Modal editar ─────────────────────────────────────────────
+// ── Escalas de precio ───────────────────────────────
+let escalasFila = [];  // [{desde, precio}]
+
+function renderEscalas() {
+  const lista  = $('escalas-lista');
+  const vacio  = $('escalas-vacio');
+  lista.innerHTML = '';
+  if (escalasFila.length === 0) { vacio.style.display = ''; return; }
+  vacio.style.display = 'none';
+  escalasFila.forEach((e, i) => {
+    const div = document.createElement('div');
+    div.className = 'escala-fila';
+    div.innerHTML = `
+      <div>
+        <div class="escala-label">A partir de</div>
+        <input type="number" class="form-input" min="1" step="1" value="${e.desde}"
+               data-escala-idx="${i}" data-escala-campo="desde" placeholder="cantidad">
+      </div>
+      <div>
+        <div class="escala-label">Precio unitario</div>
+        <input type="number" class="form-input" min="0" step="0.01" value="${e.precio}"
+               data-escala-idx="${i}" data-escala-campo="precio" placeholder="$">
+      </div>
+      <button class="btn-del-escala" data-escala-del="${i}" title="Eliminar">×</button>`;
+    lista.appendChild(div);
+  });
+}
+
+$('escalas-lista').addEventListener('change', e => {
+  const inp = e.target.closest('[data-escala-idx]');
+  if (!inp) return;
+  const idx   = parseInt(inp.dataset.escalaIdx);
+  const campo = inp.dataset.escalaCampo;
+  const val   = parseFloat(inp.value);
+  if (!isNaN(val) && val >= 0) escalasFila[idx][campo] = val;
+});
+
+$('escalas-lista').addEventListener('click', e => {
+  const btn = e.target.closest('[data-escala-del]');
+  if (!btn) return;
+  escalasFila.splice(parseInt(btn.dataset.escalaDel), 1);
+  renderEscalas();
+});
+
+function agregarFilaEscala() {
+  const ultimaDesde = escalasFila.length > 0 ? escalasFila[escalasFila.length - 1].desde + 1 : 2;
+  escalasFila.push({ desde: ultimaDesde, precio: 0 });
+  renderEscalas();
+  const inputs = $('escalas-lista').querySelectorAll('[data-escala-campo="desde"]');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+async function cargarEscalas(productoId) {
+  escalasFila = [];
+  renderEscalas();
+  try {
+    const res = await fetch(`${API}/productos/${productoId}/escalas`);
+    if (!res.ok) return;
+    const data = await res.json();
+    escalasFila = data.map(e => ({ desde: e.desde, precio: e.precio }));
+    renderEscalas();
+  } catch {}
+}
+
+async function guardarEscalas(productoId) {
+  // Normalizar y validar antes de enviar
+  const payload = escalasFila
+    .filter(e => e.desde > 0 && e.precio >= 0)
+    .sort((a, b) => a.desde - b.desde)
+    .map(e => ({ desde: e.desde, precio: e.precio }));
+
+  const res = await fetch(`${API}/productos/${productoId}/escalas`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const d = await res.json().catch(() => ({}));
+    throw new Error(d.error || 'Error al guardar escalas');
+  }
+}
+
 function abrirModalEditar(p) {
   productoActual = p;
   $('edit-subtitulo').textContent = p.codigo ? `Cód. ${p.codigo}` : '';
@@ -1296,10 +1400,11 @@ function abrirModalEditar(p) {
   $('e-activo').checked     = p.activo !== false;
   $('btn-guardar-prod').disabled = false;
   $('btn-guardar-prod').textContent = 'Guardar cambios';
+  cargarEscalas(p.id);
   $('overlay-editar').classList.add('abierto');
   setTimeout(() => $('e-nombre').focus(), 50);
 }
-function cerrarModalEditar() { $('overlay-editar').classList.remove('abierto'); productoActual = null; }
+function cerrarModalEditar() { $('overlay-editar').classList.remove('abierto'); productoActual = null; escalasFila = []; }
 
 async function guardarProducto() {
   const nombre = $('e-nombre').value.trim();
@@ -1326,6 +1431,7 @@ async function guardarProducto() {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Error al guardar');
+    await guardarEscalas(productoActual.id);
     cerrarModalEditar();
     toast(`${nombre} — cambios guardados`, 'ok');
     const tr = $('tbody-datos').querySelector(`tr[data-id="${productoActual.id}"]`);

@@ -84,6 +84,8 @@ try {
                 Auth::requirePermiso('productos_editar');
             }
             match (true) {
+                $metodo === 'GET'    && $id !== null && $accion === 'escalas' => $ctrl->getEscalas($id),
+                $metodo === 'PUT'    && $id !== null && $accion === 'escalas' => $ctrl->saveEscalas($id),
                 $metodo === 'GET'    && $id !== null              => $ctrl->get($id),
                 $metodo === 'GET'    && isset($_GET['page'])      => $ctrl->listar(),
                 $metodo === 'GET'                                 => $ctrl->search(),
