@@ -1,3 +1,8 @@
+-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
+--
+-- Host: 127.0.0.1    Database: logos
+-- ------------------------------------------------------
+-- Server version	10.4.32-MariaDB
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -9,9 +14,15 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `afip_tokens`
+--
+
+DROP TABLE IF EXISTS `afip_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `afip_tokens` (
+CREATE TABLE `afip_tokens` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `servicio` varchar(20) NOT NULL,
   `entorno` varchar(20) NOT NULL,
@@ -20,11 +31,17 @@ CREATE TABLE IF NOT EXISTS `afip_tokens` (
   `expira` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_servicio_entorno` (`servicio`,`entorno`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `caja_cierres`
+--
+
+DROP TABLE IF EXISTS `caja_cierres`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `caja_cierres` (
+CREATE TABLE `caja_cierres` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `turno_id` int(11) NOT NULL,
   `tipo` enum('parcial','total') NOT NULL DEFAULT 'parcial',
@@ -53,9 +70,15 @@ CREATE TABLE IF NOT EXISTS `caja_cierres` (
   KEY `idx_turno` (`turno_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `caja_movimientos`
+--
+
+DROP TABLE IF EXISTS `caja_movimientos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `caja_movimientos` (
+CREATE TABLE `caja_movimientos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `turno_id` int(11) NOT NULL,
   `tipo` enum('ingreso','retiro','transferencia') NOT NULL,
@@ -66,11 +89,17 @@ CREATE TABLE IF NOT EXISTS `caja_movimientos` (
   `usuario_id` int(11) NOT NULL,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `caja_turnos`
+--
+
+DROP TABLE IF EXISTS `caja_turnos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `caja_turnos` (
+CREATE TABLE `caja_turnos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `caja_id` int(11) NOT NULL,
   `usuario_id` int(11) NOT NULL,
@@ -97,22 +126,37 @@ CREATE TABLE IF NOT EXISTS `caja_turnos` (
   `fondo_siguiente` decimal(12,2) DEFAULT NULL,
   `observaciones` text DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `cajas`
+--
+
+DROP TABLE IF EXISTS `cajas`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `cajas` (
+CREATE TABLE `cajas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sucursal_id` int(11) NOT NULL DEFAULT 1,
   `nombre` varchar(100) NOT NULL,
   `tipo` enum('venta','compra') NOT NULL DEFAULT 'venta',
   `activo` tinyint(1) NOT NULL DEFAULT 1,
   `orden` int(11) NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  PRIMARY KEY (`id`),
+  KEY `fk_cajas_sucursal` (`sucursal_id`),
+  CONSTRAINT `fk_cajas_sucursal` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursales` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `cc_asignaciones`
+--
+
+DROP TABLE IF EXISTS `cc_asignaciones`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `cc_asignaciones` (
+CREATE TABLE `cc_asignaciones` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `movimiento_id` int(11) NOT NULL,
   `venta_id` int(11) DEFAULT NULL,
@@ -125,11 +169,17 @@ CREATE TABLE IF NOT EXISTS `cc_asignaciones` (
   CONSTRAINT `fk_cca_com` FOREIGN KEY (`compra_id`) REFERENCES `compras` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cca_mov` FOREIGN KEY (`movimiento_id`) REFERENCES `cuenta_corriente_movimientos` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cca_ven` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `clientes`
+--
+
+DROP TABLE IF EXISTS `clientes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `clientes` (
+CREATE TABLE `clientes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(255) NOT NULL,
   `cuit` varchar(20) DEFAULT NULL,
@@ -153,11 +203,17 @@ CREATE TABLE IF NOT EXISTS `clientes` (
   PRIMARY KEY (`id`),
   KEY `idx_nombre` (`nombre`),
   KEY `idx_cuit` (`cuit`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `compra_items`
+--
+
+DROP TABLE IF EXISTS `compra_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `compra_items` (
+CREATE TABLE `compra_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `compra_id` int(11) NOT NULL,
   `producto_id` int(11) NOT NULL,
@@ -170,9 +226,15 @@ CREATE TABLE IF NOT EXISTS `compra_items` (
   KEY `idx_producto` (`producto_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `compra_pagos`
+--
+
+DROP TABLE IF EXISTS `compra_pagos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `compra_pagos` (
+CREATE TABLE `compra_pagos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `compra_id` int(11) NOT NULL,
   `tipo_pago` varchar(20) NOT NULL,
@@ -181,10 +243,17 @@ CREATE TABLE IF NOT EXISTS `compra_pagos` (
   KEY `idx_compra` (`compra_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `compras`
+--
+
+DROP TABLE IF EXISTS `compras`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `compras` (
+CREATE TABLE `compras` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sucursal_id` int(11) NOT NULL DEFAULT 1,
   `fecha` date NOT NULL,
   `proveedor_id` int(11) DEFAULT NULL,
   `total` decimal(14,4) NOT NULL DEFAULT 0.0000,
@@ -200,12 +269,20 @@ CREATE TABLE IF NOT EXISTS `compras` (
   `tipo_pago` varchar(20) NOT NULL DEFAULT 'efectivo',
   PRIMARY KEY (`id`),
   KEY `idx_fecha` (`fecha`),
-  KEY `idx_proveedor` (`proveedor_id`)
+  KEY `idx_proveedor` (`proveedor_id`),
+  KEY `fk_compras_sucursal` (`sucursal_id`),
+  CONSTRAINT `fk_compras_sucursal` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursales` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `configuracion`
+--
+
+DROP TABLE IF EXISTS `configuracion`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `configuracion` (
+CREATE TABLE `configuracion` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `razon_social` varchar(255) NOT NULL DEFAULT '',
   `nombre_fantasia` varchar(255) DEFAULT NULL,
@@ -236,11 +313,17 @@ CREATE TABLE IF NOT EXISTS `configuracion` (
   `actualizado_en` datetime DEFAULT NULL,
   `backup_auto_cierre` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `cuenta_corriente_movimientos`
+--
+
+DROP TABLE IF EXISTS `cuenta_corriente_movimientos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `cuenta_corriente_movimientos` (
+CREATE TABLE `cuenta_corriente_movimientos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `entidad_tipo` enum('cliente','proveedor') NOT NULL,
   `entidad_id` int(11) NOT NULL,
@@ -255,11 +338,38 @@ CREATE TABLE IF NOT EXISTS `cuenta_corriente_movimientos` (
   PRIMARY KEY (`id`),
   KEY `idx_entidad` (`entidad_tipo`,`entidad_id`),
   KEY `idx_fecha` (`fecha`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `depositos`
+--
+
+DROP TABLE IF EXISTS `depositos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `listas_precio` (
+CREATE TABLE `depositos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sucursal_id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `descripcion` varchar(255) DEFAULT NULL,
+  `es_principal` tinyint(1) NOT NULL DEFAULT 0,
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `sucursal_id` (`sucursal_id`),
+  CONSTRAINT `depositos_ibfk_1` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursales` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `listas_precio`
+--
+
+DROP TABLE IF EXISTS `listas_precio`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `listas_precio` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `porcentaje` decimal(7,2) NOT NULL DEFAULT 0.00 COMMENT 'Positivo = recargo, negativo = descuento',
@@ -269,9 +379,15 @@ CREATE TABLE IF NOT EXISTS `listas_precio` (
   KEY `idx_activa` (`activa`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `log_acciones`
+--
+
+DROP TABLE IF EXISTS `log_acciones`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `log_acciones` (
+CREATE TABLE `log_acciones` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `fecha` datetime NOT NULL DEFAULT current_timestamp(),
   `usuario_id` int(11) DEFAULT NULL,
@@ -286,11 +402,17 @@ CREATE TABLE IF NOT EXISTS `log_acciones` (
   KEY `idx_fecha` (`fecha`),
   KEY `idx_accion` (`accion`),
   KEY `idx_usuario` (`usuario_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `login_intentos`
+--
+
+DROP TABLE IF EXISTS `login_intentos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `login_intentos` (
+CREATE TABLE `login_intentos` (
   `usuario_id` int(11) NOT NULL,
   `intentos` int(11) NOT NULL DEFAULT 0,
   `bloqueado_hasta` datetime DEFAULT NULL,
@@ -298,11 +420,18 @@ CREATE TABLE IF NOT EXISTS `login_intentos` (
   PRIMARY KEY (`usuario_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `movimientos_stock`
+--
+
+DROP TABLE IF EXISTS `movimientos_stock`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `movimientos_stock` (
+CREATE TABLE `movimientos_stock` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `producto_id` int(11) NOT NULL,
+  `deposito_id` int(11) NOT NULL DEFAULT 1,
   `tipo` varchar(20) NOT NULL,
   `cantidad` decimal(14,4) NOT NULL DEFAULT 0.0000,
   `referencia_id` int(11) DEFAULT NULL,
@@ -310,12 +439,20 @@ CREATE TABLE IF NOT EXISTS `movimientos_stock` (
   PRIMARY KEY (`id`),
   KEY `idx_producto` (`producto_id`),
   KEY `idx_fecha` (`fecha`),
-  KEY `idx_tipo` (`tipo`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `idx_tipo` (`tipo`),
+  KEY `fk_movstock_deposito` (`deposito_id`),
+  CONSTRAINT `fk_movstock_deposito` FOREIGN KEY (`deposito_id`) REFERENCES `depositos` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=49 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `mp_pagos`
+--
+
+DROP TABLE IF EXISTS `mp_pagos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `mp_pagos` (
+CREATE TABLE `mp_pagos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `payment_id` varchar(64) NOT NULL,
   `venta_id` int(11) DEFAULT NULL,
@@ -327,9 +464,15 @@ CREATE TABLE IF NOT EXISTS `mp_pagos` (
   KEY `idx_venta` (`venta_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `nota_envio_items`
+--
+
+DROP TABLE IF EXISTS `nota_envio_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `nota_envio_items` (
+CREATE TABLE `nota_envio_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nota_envio_id` int(11) NOT NULL,
   `venta_item_id` int(11) NOT NULL,
@@ -340,11 +483,17 @@ CREATE TABLE IF NOT EXISTS `nota_envio_items` (
   PRIMARY KEY (`id`),
   KEY `idx_nota` (`nota_envio_id`),
   KEY `idx_venta_item` (`venta_item_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `notas_envio`
+--
+
+DROP TABLE IF EXISTS `notas_envio`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `notas_envio` (
+CREATE TABLE `notas_envio` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `venta_id` int(11) NOT NULL,
   `numero` int(11) NOT NULL DEFAULT 1,
@@ -357,11 +506,17 @@ CREATE TABLE IF NOT EXISTS `notas_envio` (
   `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `idx_venta` (`venta_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `productos`
+--
+
+DROP TABLE IF EXISTS `productos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `productos` (
+CREATE TABLE `productos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `codigo` varchar(50) NOT NULL,
   `nombre` varchar(255) NOT NULL,
@@ -380,11 +535,17 @@ CREATE TABLE IF NOT EXISTS `productos` (
   KEY `idx_codigo` (`codigo`),
   KEY `idx_nombre` (`nombre`),
   KEY `idx_activo` (`activo`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `productos_import_detalle`
+--
+
+DROP TABLE IF EXISTS `productos_import_detalle`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `productos_import_detalle` (
+CREATE TABLE `productos_import_detalle` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `lote_id` int(11) NOT NULL,
   `producto_id` int(11) DEFAULT NULL,
@@ -397,9 +558,15 @@ CREATE TABLE IF NOT EXISTS `productos_import_detalle` (
   KEY `idx_lote` (`lote_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `productos_import_lotes`
+--
+
+DROP TABLE IF EXISTS `productos_import_lotes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `productos_import_lotes` (
+CREATE TABLE `productos_import_lotes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `proveedor` varchar(150) NOT NULL,
   `archivo` varchar(255) NOT NULL,
@@ -413,9 +580,15 @@ CREATE TABLE IF NOT EXISTS `productos_import_lotes` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `productos_import_plantillas`
+--
+
+DROP TABLE IF EXISTS `productos_import_plantillas`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `productos_import_plantillas` (
+CREATE TABLE `productos_import_plantillas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `proveedor` varchar(150) NOT NULL,
   `mapeo` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`mapeo`)),
@@ -425,9 +598,15 @@ CREATE TABLE IF NOT EXISTS `productos_import_plantillas` (
   UNIQUE KEY `uq_proveedor` (`proveedor`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `proveedores`
+--
+
+DROP TABLE IF EXISTS `proveedores`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `proveedores` (
+CREATE TABLE `proveedores` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(255) NOT NULL,
   `cuit` varchar(20) DEFAULT NULL,
@@ -449,9 +628,15 @@ CREATE TABLE IF NOT EXISTS `proveedores` (
   KEY `idx_nombre` (`nombre`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `sesiones`
+--
+
+DROP TABLE IF EXISTS `sesiones`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `sesiones` (
+CREATE TABLE `sesiones` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `token_hash` char(64) NOT NULL,
   `usuario_id` int(11) NOT NULL,
@@ -462,32 +647,92 @@ CREATE TABLE IF NOT EXISTS `sesiones` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_token` (`token_hash`),
   KEY `idx_usuario` (`usuario_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `stock_depositos`
+--
+
+DROP TABLE IF EXISTS `stock_depositos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `usuarios` (
+CREATE TABLE `stock_depositos` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `producto_id` int(11) NOT NULL,
+  `deposito_id` int(11) NOT NULL,
+  `stock_actual` decimal(14,4) NOT NULL DEFAULT 0.0000,
+  `actualizado_en` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_prod_dep` (`producto_id`,`deposito_id`),
+  KEY `deposito_id` (`deposito_id`),
+  CONSTRAINT `stock_depositos_ibfk_1` FOREIGN KEY (`deposito_id`) REFERENCES `depositos` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `sucursales`
+--
+
+DROP TABLE IF EXISTS `sucursales`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `sucursales` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) NOT NULL,
+  `nombre_fantasia` varchar(100) DEFAULT NULL,
+  `domicilio` varchar(255) DEFAULT NULL,
+  `telefono` varchar(50) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `punto_venta` int(11) DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `usuarios`
+--
+
+DROP TABLE IF EXISTS `usuarios`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `usuarios` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
   `pin_hash` varchar(255) NOT NULL,
   `rol` enum('admin','user') NOT NULL DEFAULT 'user',
   `permisos` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`permisos`)),
+  `sucursal_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL CHECK (json_valid(`sucursal_ids`)),
   `activo` tinyint(1) NOT NULL DEFAULT 1,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `vendedores`
+--
+
+DROP TABLE IF EXISTS `vendedores`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `vendedores` (
+CREATE TABLE `vendedores` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `venta_items`
+--
+
+DROP TABLE IF EXISTS `venta_items`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `venta_items` (
+CREATE TABLE `venta_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `venta_id` int(11) NOT NULL,
   `producto_id` int(11) NOT NULL,
@@ -500,23 +745,36 @@ CREATE TABLE IF NOT EXISTS `venta_items` (
   PRIMARY KEY (`id`),
   KEY `idx_venta` (`venta_id`),
   KEY `idx_producto` (`producto_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `venta_pagos`
+--
+
+DROP TABLE IF EXISTS `venta_pagos`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `venta_pagos` (
+CREATE TABLE `venta_pagos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `venta_id` int(11) NOT NULL,
   `tipo_pago` varchar(20) NOT NULL,
   `monto` decimal(14,4) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_venta` (`venta_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `ventas`
+--
+
+DROP TABLE IF EXISTS `ventas`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE IF NOT EXISTS `ventas` (
+CREATE TABLE `ventas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sucursal_id` int(11) NOT NULL DEFAULT 1,
   `fecha` date NOT NULL,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
   `cliente_id` int(11) DEFAULT NULL,
@@ -547,8 +805,10 @@ CREATE TABLE IF NOT EXISTS `ventas` (
   KEY `idx_fecha` (`fecha`),
   KEY `idx_cliente` (`cliente_id`),
   KEY `idx_numero_afip` (`numero_afip`),
-  KEY `idx_cbte_asoc` (`cbte_asoc_tipo`,`cbte_asoc_pto_vta`,`cbte_asoc_nro`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+  KEY `idx_cbte_asoc` (`cbte_asoc_tipo`,`cbte_asoc_pto_vta`,`cbte_asoc_nro`),
+  KEY `fk_ventas_sucursal` (`sucursal_id`),
+  CONSTRAINT `fk_ventas_sucursal` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursales` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -560,3 +820,4 @@ CREATE TABLE IF NOT EXISTS `ventas` (
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
+-- Dump completed on 2026-07-18 19:33:10

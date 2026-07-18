@@ -88,7 +88,10 @@ $db = pdoTest($rootUser, $rootPass, TEST_DB);
 $db->exec("INSERT INTO configuracion (id, razon_social, cuit, punto_venta, iva_porcentaje) VALUES (1, 'TEST SRL', '20111111112', 1, 21)");
 $db->prepare("INSERT INTO usuarios (id, nombre, pin_hash, rol, activo) VALUES (1, 'admin-test', ?, 'admin', 1)")
    ->execute([password_hash('1234', PASSWORD_DEFAULT)]);
-$db->exec("INSERT INTO cajas (id, nombre, tipo, activo) VALUES (1, 'Caja Test', 'venta', 1), (2, 'Caja Sin Turno', 'venta', 1)");
+// Sucursal y depósito requeridos como FK desde migraciones 44-45
+$db->exec("INSERT INTO sucursales (id, nombre, activo) VALUES (1, 'Sucursal Test', 1)");
+$db->exec("INSERT INTO depositos (id, sucursal_id, nombre, es_principal, activo) VALUES (1, 1, 'Depósito Principal', 1, 1)");
+$db->exec("INSERT INTO cajas (id, sucursal_id, nombre, tipo, activo) VALUES (1, 1, 'Caja Test', 'venta', 1), (2, 1, 'Caja Sin Turno', 'venta', 1)");
 $db->exec("INSERT INTO caja_turnos (id, caja_id, usuario_id, fondo_inicial, abierto_en, estado) VALUES (1, 1, 1, 1000, NOW(), 'abierto')");
 $db->exec("INSERT INTO productos (id, codigo, nombre, precio_venta, costo_actual, stock_actual, activo, iva_porcentaje)
            VALUES (1, 'T21', 'Producto 21%', 121, 80, 100, 1, 21.00),
@@ -271,7 +274,8 @@ check('aging: saldo 700 (800 - 300 + 200)', ($f['saldo'] ?? 0) == 700.0, json_en
 check('aging: residual viejo 500 en bucket 31-60d', ($f['v31_60'] ?? 0) == 500.0, json_encode($f));
 check('aging: deuda de hoy 200 a vencer', ($f['a_vencer'] ?? 0) == 200.0, json_encode($f));
 check('aging: vencido total 500', ($f['vencido'] ?? 0) == 500.0, json_encode($f));
-check('aging: 33 días de vencimiento máximo', ($f['max_dias_vencido'] ?? 0) === 33, json_encode($f));
+// DATEDIFF puede variar ±1 según el momento exacto de ejecución (boundary de medianoche)
+check('aging: ~33 días de vencimiento máximo', in_array($f['max_dias_vencido'] ?? 0, [32, 33]), json_encode($f));
 
 $f = $porNombre['Cliente Sin Plazo'] ?? [];
 check('aging sin plazo: todo a vencer, nada vencido', ($f['a_vencer'] ?? 0) == 100.0 && ($f['vencido'] ?? 1) == 0.0, json_encode($f));
