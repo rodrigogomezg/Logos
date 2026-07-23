@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logos POS — Servidor</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e8eaf0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 36px;
+      user-select: none;
+    }
+    .logo { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .logo span { color: #4f8ef7; }
+    .subtitle { font-size: 12px; color: #6b7280; margin-bottom: 32px; }
+    h2 { font-size: 15px; font-weight: 600; color: #c9d1d9; margin-bottom: 6px; }
+    .hint { font-size: 12px; color: #6b7280; margin-bottom: 24px; }
+    .form { width: 100%; max-width: 380px; }
+    .row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .row .ip-wrap { flex: 1; }
+    .row .port-wrap { width: 100px; }
+    label { display: block; font-size: 12px; color: #9ca3af; margin-bottom: 6px; }
+    input {
+      width: 100%;
+      padding: 11px 14px;
+      background: #161b27;
+      border: 1.5px solid #1e2330;
+      border-radius: 8px;
+      color: #e8eaf0;
+      font-size: 14px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus { border-color: #4f8ef7; }
+    input::placeholder { color: #374151; }
+    input.error { border-color: #ef4444; }
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 16px;
+    }
+    .btn-primary { background: #4f8ef7; color: #fff; }
+    .btn-primary:hover { background: #3d7de8; }
+    .btn-primary:disabled { opacity: 0.35; cursor: default; }
+    .note { margin-top: 18px; font-size: 11px; color: #4b5563; line-height: 1.6; }
+    .note strong { color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="logo">Logos<span>POS</span></div>
+  <div class="subtitle">Modo cliente</div>
+  <h2>Conectar al servidor</h2>
+  <p class="hint">Ingresá la IP y el puerto del equipo servidor en la red local.</p>
+
+  <div class="form">
+    <div class="row">
+      <div class="ip-wrap">
+        <label for="ip">Dirección IP</label>
+        <input type="text" id="ip" placeholder="192.168.1.10"
+               autocomplete="off" spellcheck="false">
+      </div>
+      <div class="port-wrap">
+        <label for="port">Puerto</label>
+        <input type="number" id="port" value="8080" min="1" max="65535">
+      </div>
+    </div>
+    <button class="btn-primary" id="btn-connect" onclick="connect()">Conectar</button>
+  </div>
+
+  <div class="note">
+    El puerto por defecto es <strong>8080</strong>. Cambialo solo si el servidor
+    fue configurado con un puerto distinto.
+  </div>
+
+  <script>
+    const ipInput   = document.getElementById('ip');
+    const portInput = document.getElementById('port');
+
+    ipInput.focus();
+    [ipInput, portInput].forEach(el =>
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') connect(); })
+    );
+
+    async function connect() {
+      const ip   = ipInput.value.trim();
+      const port = parseInt(portInput.value, 10);
+
+      let valid = true;
+      if (!ip || !/^\d{1,3}(\.\d{1,3}){3}$/.test(ip)) {
+        ipInput.classList.add('error'); valid = false;
+      } else { ipInput.classList.remove('error'); }
+
+      if (!port || port < 1 || port > 65535) {
+        portInput.classList.add('error'); valid = false;
+      } else { portInput.classList.remove('error'); }
+
+      if (!valid) return;
+
+      const btn = document.getElementById('btn-connect');
+      btn.disabled = true;
+      btn.textContent = 'Conectando…';
+
+      await window.logos.saveServerIp(`${ip}:${port}`);
+    }
+  </script>
+</body>
+</html>

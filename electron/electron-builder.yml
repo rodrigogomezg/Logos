@@ -1,0 +1,72 @@
+appId: com.bron.logos-pos
+productName: Logos POS
+copyright: Copyright © 2024 BRON
+
+directories:
+  buildResources: build
+  output: dist
+
+# Electron app files (JS, renderer, services)
+files:
+  - "main.js"
+  - "preload.js"
+  - "build/icon.png"
+  - "build/icon.ico"
+  - "renderer/**"
+  - "services/**"
+  - "www/**"
+  - "node_modules/**"
+  - "!resources/**"
+  - "!scripts/**"
+  - "!dist/**"
+
+# Extra non-JS resources bundled alongside the app in resources/
+extraResources:
+  # PHP + MariaDB portable binaries (downloaded via npm run setup-deps)
+  - from: "resources/php"
+    to: "php"
+    filter: ["**/*"]
+  - from: "resources/mariadb"
+    to: "mariadb"
+    filter: ["**/*"]
+  # NSSM 2.24-101 x64 — Windows service manager (downloaded via npm run setup-deps)
+  - from: "resources/nssm.exe"
+    to: "nssm.exe"
+  # Server setup/teardown scripts (tracked in git, executed by NSIS installer with admin rights)
+  - from: "resources/setup-server.ps1"
+    to: "setup-server.ps1"
+  - from: "resources/teardown-server.ps1"
+    to: "teardown-server.ps1"
+  # PHP web root — the router + the Logos app source
+  - from: "www"
+    to: "www"
+    filter: ["**/*"]
+  # The actual PHP/HTML app files go into www/Logos/
+  - from: ".."
+    to: "www/Logos"
+    filter:
+      - "api/**"
+      - "pos/**"
+      - "vendor/**"
+      - "install/schema_limpio.sql"
+      - "install/seed.sql"
+      - "composer.json"
+      - "logo*.png"
+      - "!pos/.impeccable/**"
+      - "!api/logs/**"
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: "Logos POS"
+  installerLanguages: ["es_ES"]
+  language: 3082
+  # Role selection dialog + NSSM service registration/teardown
+  include: "build/installer.nsh"

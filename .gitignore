@@ -17,3 +17,12 @@ pos/.impeccable/
 .claude/
 .agents/
 PRODUCT.md
+
+# Electron app
+electron/node_modules/
+electron/dist/
+electron/resources/php/
+electron/resources/mariadb/
+electron/resources/nssm.exe
+electron/resources/_tmp/
+electron/resources/www/
