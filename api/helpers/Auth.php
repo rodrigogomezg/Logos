@@ -16,7 +16,8 @@ class Auth {
         'cc_cobrar',        // registrar cobros/pagos de CC
         'anular',           // anular ventas y movimientos de caja sin clave
         'log',              // bitácora de acciones
-        'cajas_todas',      // operar/filtrar cualquier caja
+        'cajas_todas',          // operar/filtrar cualquier caja
+        'gestionar_vendedores', // crear/editar/desactivar vendedores y ver reportes
     ];
 
     private static ?array $usuario = null;

@@ -33,6 +33,8 @@ class ProveedoresController {
         $perPag = min(100, max(10, (int)($_GET['per_page'] ?? 50)));
         $q      = trim($_GET['q'] ?? '');
         $activo = $_GET['activo'] ?? null;
+        $orden  = $_GET['orden']  ?? 'nombre';
+        $ccOnly = !empty($_GET['cc_only']);
         $offset = ($pagina - 1) * $perPag;
 
         $where  = [];
@@ -47,8 +49,17 @@ class ProveedoresController {
             $where[]  = 'p.activo = ?';
             $params[] = (int)$activo;
         }
+        if ($ccOnly) {
+            $where[] = 'p.cc_habilitada = 1';
+        }
 
         $whereStr = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        $orderBy = match($orden) {
+            'saldo'         => 'ABS(p.saldo_cuenta_corriente) DESC, p.nombre',
+            'ultima_compra' => 'uc.ult_fecha DESC, p.nombre',
+            default         => 'p.nombre',
+        };
 
         $cs = $db->prepare("SELECT COUNT(*) FROM proveedores p $whereStr");
         $cs->execute($params);
@@ -61,11 +72,14 @@ class ProveedoresController {
                    p.domicilio, p.localidad, p.provincia, p.observaciones,
                    p.activo, p.cc_habilitada, p.limite_credito, p.saldo_cuenta_corriente,
                    p.plazo_pago_dias, p.lista_precio_id, p.creado_en,
-                   lp.nombre AS lista_precio_nombre
+                   lp.nombre AS lista_precio_nombre,
+                   uc.ult_fecha
             FROM proveedores p
             LEFT JOIN listas_precio lp ON p.lista_precio_id = lp.id
+            LEFT JOIN (SELECT proveedor_id, MAX(fecha) AS ult_fecha FROM compras GROUP BY proveedor_id) AS uc
+                   ON uc.proveedor_id = p.id
             $whereStr
-            ORDER BY p.nombre
+            ORDER BY $orderBy
             LIMIT ? OFFSET ?
         ");
         $stmt->execute($params);

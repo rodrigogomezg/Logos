@@ -28,6 +28,8 @@ DROP TABLE IF EXISTS `caja_cierres`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `caja_cierres` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sync_uuid` char(36) NOT NULL,
+  `sucursal_id` int(11) NOT NULL DEFAULT 1,
   `turno_id` int(11) NOT NULL,
   `tipo` enum('parcial','total') NOT NULL DEFAULT 'parcial',
   `registrado_en` datetime NOT NULL DEFAULT current_timestamp(),
@@ -52,7 +54,10 @@ CREATE TABLE `caja_cierres` (
   `observaciones` text DEFAULT NULL,
   `diferencia_efectivo` decimal(14,2) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_turno` (`turno_id`)
+  UNIQUE KEY `uk_caja_cierres_sync_uuid` (`sync_uuid`),
+  KEY `idx_turno` (`turno_id`),
+  KEY `fk_caja_cierres_sucursal` (`sucursal_id`),
+  CONSTRAINT `fk_caja_cierres_sucursal` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursales` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `caja_movimientos`;
@@ -60,6 +65,8 @@ DROP TABLE IF EXISTS `caja_movimientos`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `caja_movimientos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sync_uuid` char(36) NOT NULL,
+  `sucursal_id` int(11) NOT NULL DEFAULT 1,
   `turno_id` int(11) NOT NULL,
   `tipo` enum('ingreso','retiro','transferencia') NOT NULL,
   `medio_pago` enum('efectivo','transferencia','tarjeta','mercado_pago') DEFAULT NULL,
@@ -68,7 +75,10 @@ CREATE TABLE `caja_movimientos` (
   `motivo` varchar(255) DEFAULT NULL,
   `usuario_id` int(11) NOT NULL,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_caja_movimientos_sync_uuid` (`sync_uuid`),
+  KEY `fk_caja_movimientos_sucursal` (`sucursal_id`),
+  CONSTRAINT `fk_caja_movimientos_sucursal` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursales` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `caja_turnos`;
@@ -76,6 +86,7 @@ DROP TABLE IF EXISTS `caja_turnos`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `caja_turnos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sucursal_id` int(11) NOT NULL DEFAULT 1,
   `caja_id` int(11) NOT NULL,
   `usuario_id` int(11) NOT NULL,
   `device_name` varchar(100) DEFAULT NULL,
@@ -100,7 +111,9 @@ CREATE TABLE `caja_turnos` (
   `mercado_pago_contado` decimal(12,2) DEFAULT NULL,
   `fondo_siguiente` decimal(12,2) DEFAULT NULL,
   `observaciones` text DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `fk_caja_turnos_sucursal` (`sucursal_id`),
+  CONSTRAINT `fk_caja_turnos_sucursal` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursales` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `cajas`;
@@ -252,6 +265,7 @@ CREATE TABLE `configuracion` (
   `wa_template_name` varchar(100) DEFAULT 'envio_comprobante',
   `actualizado_en` datetime DEFAULT NULL,
   `backup_auto_cierre` tinyint(1) NOT NULL DEFAULT 0,
+  `ventas_sin_stock` tinyint(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -389,6 +403,7 @@ DROP TABLE IF EXISTS `movimientos_stock`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `movimientos_stock` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sync_uuid` char(36) NOT NULL,
   `producto_id` int(11) NOT NULL,
   `deposito_id` int(11) NOT NULL DEFAULT 1,
   `tipo` varchar(20) NOT NULL,
@@ -396,6 +411,7 @@ CREATE TABLE `movimientos_stock` (
   `referencia_id` int(11) DEFAULT NULL,
   `fecha` datetime NOT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_movstock_sync_uuid` (`sync_uuid`),
   KEY `idx_producto` (`producto_id`),
   KEY `idx_fecha` (`fecha`),
   KEY `idx_tipo` (`tipo`),
@@ -458,7 +474,9 @@ DROP TABLE IF EXISTS `productos`;
 CREATE TABLE `productos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `codigo` varchar(50) NOT NULL,
+  `codigo_secundario` varchar(50) DEFAULT NULL,
   `nombre` varchar(255) NOT NULL,
+  `descripcion` text DEFAULT NULL,
   `categoria` varchar(100) DEFAULT NULL,
   `subcategoria` varchar(100) DEFAULT NULL,
   `marca` varchar(100) DEFAULT NULL,
@@ -468,10 +486,16 @@ CREATE TABLE `productos` (
   `stock_actual` decimal(14,4) NOT NULL DEFAULT 0.0000,
   `stock_minimo` decimal(14,4) NOT NULL DEFAULT 0.0000,
   `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `publicado_web` tinyint(1) NOT NULL DEFAULT 0,
+  `comisionable` tinyint(1) NOT NULL DEFAULT 0,
+  `comision_tipo` enum('porcentaje','fijo') DEFAULT NULL,
+  `comision_valor` decimal(10,2) DEFAULT NULL,
   `iva_porcentaje` decimal(5,2) NOT NULL DEFAULT 21.00,
   `unidad_medida` varchar(20) DEFAULT NULL,
+  `peso` decimal(10,3) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_codigo` (`codigo`),
+  KEY `idx_codigo_secundario` (`codigo_secundario`),
   KEY `idx_nombre` (`nombre`),
   KEY `idx_activo` (`activo`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -547,6 +571,24 @@ CREATE TABLE `proveedores` (
   KEY `idx_nombre` (`nombre`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `reportes_comisiones`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `reportes_comisiones` (
+  `id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `periodo` char(7) NOT NULL COMMENT 'YYYY-MM',
+  `vendedor_id` int(11) UNSIGNED NOT NULL,
+  `vendedor_nombre` varchar(255) NOT NULL,
+  `total_ventas` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `total_comision` decimal(14,2) NOT NULL DEFAULT 0.00,
+  `cant_ventas` int(11) NOT NULL DEFAULT 0,
+  `cerrado_en` datetime NOT NULL DEFAULT current_timestamp(),
+  `cerrado_por` int(11) UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_periodo_vendedor` (`periodo`,`vendedor_id`),
+  KEY `idx_periodo` (`periodo`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `sesiones`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -601,14 +643,19 @@ DROP TABLE IF EXISTS `sucursales`;
 CREATE TABLE `sucursales` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
+  `modo_operacion` enum('pool_unico','independiente') NOT NULL DEFAULT 'pool_unico',
   `nombre_fantasia` varchar(100) DEFAULT NULL,
   `domicilio` varchar(255) DEFAULT NULL,
   `telefono` varchar(50) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `punto_venta` int(11) DEFAULT NULL,
   `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `fecha_alta` date NOT NULL DEFAULT (current_date()),
+  `deposito_id` int(11) DEFAULT NULL,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `fk_sucursales_deposito` (`deposito_id`),
+  CONSTRAINT `fk_sucursales_deposito` FOREIGN KEY (`deposito_id`) REFERENCES `depositos` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `usuarios`;
@@ -640,6 +687,7 @@ DROP TABLE IF EXISTS `venta_items`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `venta_items` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sync_uuid` char(36) NOT NULL,
   `venta_id` int(11) NOT NULL,
   `producto_id` int(11) NOT NULL,
   `cantidad` decimal(14,4) NOT NULL DEFAULT 0.0000,
@@ -649,6 +697,7 @@ CREATE TABLE `venta_items` (
   `ajuste_visible` tinyint(1) NOT NULL DEFAULT 1,
   `costo_unitario` decimal(14,4) NOT NULL DEFAULT 0.0000,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_venta_items_sync_uuid` (`sync_uuid`),
   KEY `idx_venta` (`venta_id`),
   KEY `idx_producto` (`producto_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -658,10 +707,12 @@ DROP TABLE IF EXISTS `venta_pagos`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `venta_pagos` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sync_uuid` char(36) NOT NULL,
   `venta_id` int(11) NOT NULL,
   `tipo_pago` varchar(20) NOT NULL,
   `monto` decimal(14,4) NOT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_venta_pagos_sync_uuid` (`sync_uuid`),
   KEY `idx_venta` (`venta_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -670,6 +721,7 @@ DROP TABLE IF EXISTS `ventas`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `ventas` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sync_uuid` char(36) NOT NULL,
   `sucursal_id` int(11) NOT NULL DEFAULT 1,
   `fecha` date NOT NULL,
   `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
@@ -693,11 +745,13 @@ CREATE TABLE `ventas` (
   `observaciones` varchar(255) DEFAULT NULL,
   `origen_descripcion` text DEFAULT NULL,
   `envio_precio` decimal(10,2) DEFAULT NULL,
+  `envios_detalle` json DEFAULT NULL,
   `envio_direccion` varchar(500) DEFAULT NULL,
   `caja_id` int(11) DEFAULT NULL,
   `turno_id` int(11) DEFAULT NULL,
   `usuario_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_ventas_sync_uuid` (`sync_uuid`),
   KEY `idx_fecha` (`fecha`),
   KEY `idx_cliente` (`cliente_id`),
   KEY `idx_numero_afip` (`numero_afip`),
@@ -706,7 +760,101 @@ CREATE TABLE `ventas` (
   CONSTRAINT `fk_ventas_sucursal` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursales` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `sync_outbox`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `sync_outbox` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `tabla_origen` varchar(100) NOT NULL,
+  `registro_sync_uuid` char(36) NOT NULL,
+  `tipo_operacion` enum('insert','update') NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`payload`)),
+  `sucursal_id` int(11) NOT NULL,
+  `sincronizado` tinyint(1) NOT NULL DEFAULT 0,
+  `fecha_creacion` datetime NOT NULL DEFAULT current_timestamp(),
+  `fecha_sincronizado` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_sout_pendientes` (`sincronizado`,`fecha_creacion`),
+  KEY `idx_sout_sucursal` (`sucursal_id`),
+  KEY `idx_sout_uuid` (`registro_sync_uuid`),
+  CONSTRAINT `fk_sync_outbox_sucursal` FOREIGN KEY (`sucursal_id`) REFERENCES `sucursales` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+-- Triggers: auto-generación de sync_uuid en INSERT (equivalente a migrate/54_sync_uuid.sql)
+CREATE TRIGGER trg_ventas_sync_uuid BEFORE INSERT ON ventas
+FOR EACH ROW SET NEW.sync_uuid = IF(NEW.sync_uuid IS NULL OR NEW.sync_uuid = '', UUID(), NEW.sync_uuid);
+
+CREATE TRIGGER trg_venta_items_sync_uuid BEFORE INSERT ON venta_items
+FOR EACH ROW SET NEW.sync_uuid = IF(NEW.sync_uuid IS NULL OR NEW.sync_uuid = '', UUID(), NEW.sync_uuid);
+
+CREATE TRIGGER trg_venta_pagos_sync_uuid BEFORE INSERT ON venta_pagos
+FOR EACH ROW SET NEW.sync_uuid = IF(NEW.sync_uuid IS NULL OR NEW.sync_uuid = '', UUID(), NEW.sync_uuid);
+
+CREATE TRIGGER trg_movstock_sync_uuid BEFORE INSERT ON movimientos_stock
+FOR EACH ROW SET NEW.sync_uuid = IF(NEW.sync_uuid IS NULL OR NEW.sync_uuid = '', UUID(), NEW.sync_uuid);
+
+CREATE TRIGGER trg_caja_cierres_sync_uuid BEFORE INSERT ON caja_cierres
+FOR EACH ROW SET NEW.sync_uuid = IF(NEW.sync_uuid IS NULL OR NEW.sync_uuid = '', UUID(), NEW.sync_uuid);
+
+CREATE TRIGGER trg_caja_movimientos_sync_uuid BEFORE INSERT ON caja_movimientos
+FOR EACH ROW SET NEW.sync_uuid = IF(NEW.sync_uuid IS NULL OR NEW.sync_uuid = '', UUID(), NEW.sync_uuid);
+
+-- Catálogo de taxonomías de productos
+CREATE TABLE IF NOT EXISTS `rubros` (
+  `id`     int(11)      NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_rubro_nombre` (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `marcas` (
+  `id`     int(11)      NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_marca_nombre` (`nombre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `cheques` (
+  `id`                    int(11)       NOT NULL AUTO_INCREMENT,
+  `tipo`                  enum('recibido','emitido') NOT NULL,
+  `numero`                varchar(30)   NOT NULL,
+  `banco`                 varchar(100)  NOT NULL,
+  `librador`              varchar(150)  DEFAULT NULL,
+  `beneficiario`          varchar(150)  DEFAULT NULL,
+  `cuit`                  varchar(13)   DEFAULT NULL,
+  `monto`                 decimal(15,2) NOT NULL,
+  `fecha_emision`         date          DEFAULT NULL,
+  `fecha_vencimiento`     date          NOT NULL,
+  `estado`                enum('cartera','depositado','endosado','rechazado','pendiente','debitado') NOT NULL,
+  `venta_id`              int(11)       DEFAULT NULL,
+  `cliente_id`            int(11)       DEFAULT NULL,
+  `cc_movimiento_id`      int(11)       DEFAULT NULL,
+  `banco_destino`         varchar(100)  DEFAULT NULL,
+  `fecha_deposito`        date          DEFAULT NULL,
+  `proveedor_id`          int(11)       DEFAULT NULL,
+  `cc_prov_movimiento_id` int(11)       DEFAULT NULL,
+  `notas`                 text          DEFAULT NULL,
+  `sucursal_id`           int(11)       NOT NULL DEFAULT 1,
+  `created_at`            timestamp     NOT NULL DEFAULT current_timestamp(),
+  `updated_at`            timestamp     NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_tipo_estado`  (`tipo`,`estado`),
+  KEY `idx_vencimiento`  (`fecha_vencimiento`),
+  KEY `idx_cliente`      (`cliente_id`),
+  KEY `idx_proveedor`    (`proveedor_id`),
+  KEY `idx_venta`        (`venta_id`),
+  KEY `idx_cc_mov`       (`cc_movimiento_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Seed mínimo garantizado: sin estos registros los INSERTs en caja_turnos,
+-- caja_cierres y caja_movimientos fallan por FK (sucursal_id NOT NULL DEFAULT 1).
+INSERT INTO `sucursales` (`id`, `nombre`, `modo_operacion`, `activo`)
+    VALUES (1, 'Principal', 'pool_unico', 1);
+INSERT INTO `depositos` (`id`, `sucursal_id`, `nombre`, `es_principal`, `activo`)
+    VALUES (1, 1, 'Depósito principal', 1, 1);
+UPDATE `sucursales` SET `deposito_id` = 1 WHERE `id` = 1;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;

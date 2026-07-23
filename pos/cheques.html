@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logos — Cheques</title>
+<script src="config.js"></script>
+<script src="helpers.js"></script>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+.page-body { flex:1; display:flex; flex-direction:column; overflow:hidden; background:var(--neo-bg-deep); }
+
+/* ── Resumen strip ── */
+.chq-resumen {
+  display:flex; flex-shrink:0;
+  background:var(--neo-bg);
+  border-bottom:1px solid var(--borde-fuerte);
+}
+.chq-card {
+  flex:1; width:25%; padding:8px 18px;
+  display:flex; flex-direction:column; justify-content:center; gap:1px;
+  border-right:1px solid var(--borde);
+}
+.chq-card:last-child { border-right:none; }
+.chq-card-lbl { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--neo-text-3); }
+.chq-card-row  { display:flex; align-items:baseline; gap:8px; }
+.chq-card-val  { font-size:14px; font-weight:700; color:var(--neo-text); font-variant-numeric:tabular-nums; }
+.chq-card-sub  { font-size:11px; color:var(--neo-text-3); }
+.chq-card.warn   .chq-card-val { color:var(--neo-warning); }
+.chq-card.danger .chq-card-val { color:var(--neo-danger); }
+.chq-card.ok     .chq-card-val { color:var(--neo-success); }
+
+/* ── Toolbar ── */
+.chq-toolbar {
+  display:flex; gap:8px; padding:8px 14px; flex-shrink:0; flex-wrap:wrap; align-items:center;
+  background:var(--neo-bg); border-bottom:1px solid var(--borde-fuerte); z-index:10;
+}
+.chq-tabs { display:flex; gap:0; border:1px solid var(--borde-fuerte); overflow:hidden; }
+.chq-tab {
+  padding:5px 16px; border:none; cursor:pointer;
+  font-size:12px; font-weight:600; background:transparent;
+  color:var(--neo-text-2); font-family:inherit; transition:background .12s, color .12s;
+}
+.chq-tab + .chq-tab { border-left:1px solid var(--borde-fuerte); }
+.chq-tab.active { background:var(--neo-accent); color:#fff; }
+.chq-sep { width:1px; height:20px; background:var(--color-bg-alt); }
+.chq-estado-sel {
+  padding:5px 8px; border:1px solid var(--borde-fuerte); border-radius:0;
+  font-size:12px; background:var(--neo-bg); color:var(--neo-text);
+  font-family:inherit; outline:none; cursor:pointer;
+}
+.chq-busq {
+  flex:1; min-width:160px; max-width:260px; padding:5px 10px;
+  border:1px solid var(--borde-fuerte); border-radius:0;
+  font-size:12px; background:var(--neo-bg); color:var(--neo-text); outline:none; font-family:inherit;
+}
+.chq-busq:focus { border-color:var(--neo-accent); }
+.chq-date {
+  padding:5px 8px; border:1px solid var(--borde-fuerte); border-radius:0;
+  font-size:12px; font-family:inherit; background:var(--neo-bg); color:var(--neo-text); outline:none;
+}
+.chq-date:focus { border-color:var(--neo-accent); }
+.chq-lbl-date { font-size:11px; color:var(--neo-text-3); }
+
+/* ── Tabla ── */
+.chq-table-wrap { flex:1; overflow-y:auto; padding:10px 16px 16px; min-height:0; }
+table.chq-tbl { width:100%; border-collapse:collapse; table-layout:auto; background:var(--neo-bg); border-radius:var(--neo-r-lg); box-shadow:var(--neo-e1); overflow:hidden; }
+table.chq-tbl thead th {
+  padding:9px 12px; font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.5px; color:var(--color-ink); border-bottom:1px solid var(--borde-fuerte);
+  text-align:left; background:var(--neo-bg); white-space:nowrap;
+}
+table.chq-tbl thead th.r { text-align:right; }
+table.chq-tbl tbody tr { border-bottom:1px solid var(--borde-fuerte); transition:background .1s; }
+table.chq-tbl tbody tr:hover { background:var(--color-bg-alt); }
+table.chq-tbl tbody tr:last-child { border-bottom:none; }
+table.chq-tbl td { padding:9px 12px; font-size:13px; vertical-align:middle; white-space:nowrap; }
+table.chq-tbl td.r { text-align:right; font-variant-numeric:tabular-nums; }
+.td-mono { font-family:monospace; font-size:12px; }
+.td-monto { font-weight:700; }
+.td-act { text-align:right; }
+.td-venc { }
+.venc-ok   { color:var(--neo-success); }
+.venc-prox { color:var(--neo-warning); font-weight:700; }
+.venc-venc { color:var(--neo-danger);  font-weight:700; }
+.estado-badge {
+  display:inline-block; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700;
+  letter-spacing:.3px; text-transform:uppercase;
+}
+.est-cartera   { background:var(--primary-soft-2);  color:var(--color-primary); }
+.est-depositado{ background:rgba(39,174,96,.1);   color:var(--neo-success); }
+.est-endosado  { background:rgba(124,58,237,.1);  color:#7C3AED; }
+.est-rechazado { background:rgba(185,28,28,.1);   color:var(--neo-danger); }
+.est-pendiente { background:rgba(243,156,18,.1);  color:var(--neo-warning); }
+.est-debitado  { background:rgba(100,116,139,.1); color:#64748B; }
+.chq-empty { text-align:center; padding:48px 20px; color:var(--neo-text-3); font-size:14px; }
+.btn-accion {
+  padding:4px 9px; border:none; border-radius:var(--neo-r-xs); font-size:11px; font-weight:600;
+  cursor:pointer; font-family:inherit; white-space:nowrap; transition:opacity .15s;
+}
+.btn-accion:hover { opacity:.8; }
+.btn-depositar { background:rgba(39,174,96,.15);   color:var(--neo-success); }
+.btn-endosar   { background:rgba(124,58,237,.15);  color:#7C3AED; }
+.btn-rechazar  { background:rgba(185,28,28,.1);    color:var(--neo-danger); }
+.btn-debitado  { background:rgba(39,174,96,.15);   color:var(--neo-success); }
+.btn-reactivar { background:var(--color-bg-alt); color:var(--neo-text-2); }
+.btn-del       { background:rgba(185,28,28,.1);    color:var(--neo-danger); }
+.orig-badge    { font-size:11px; color:var(--neo-text-3); font-style:italic; }
+
+/* ── Modales ── */
+.chq-overlay {
+  position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center;
+  background:rgba(49,52,75,.48); backdrop-filter:blur(4px);
+}
+.chq-overlay.open { display:flex; }
+.chq-modal {
+  background:#fff; border:1px solid var(--borde-fuerte);
+  box-shadow:0 4px 24px rgba(0,0,0,.13);
+  width:480px; max-width:95vw; display:flex; flex-direction:column; max-height:90vh;
+}
+.chq-modal-lg { width:560px; }
+.chq-mhead {
+  padding:14px 20px; background:var(--color-bg-alt); border-bottom:1px solid var(--borde-fuerte);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.chq-mhead h3 { font-size:13px; font-weight:700; margin:0; color:var(--neo-text); }
+.chq-mclose { background:none; border:none; cursor:pointer; font-size:18px; color:var(--neo-text-3); padding:2px 6px; }
+.chq-mclose:hover { color:var(--neo-text); }
+.chq-mbody { padding:20px; overflow-y:auto; flex:1; display:flex; flex-direction:column; gap:14px; }
+.chq-mfoot { padding:12px 20px; border-top:1px solid var(--borde-fuerte); display:flex; justify-content:flex-end; gap:8px; }
+.chq-fg { display:flex; flex-direction:column; gap:4px; }
+.chq-fg-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.chq-fg-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.chq-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--neo-text-3); }
+.chq-inp {
+  padding:8px 10px; border:1px solid var(--borde-fuerte); border-radius:0; font-size:13px;
+  font-family:inherit; outline:none; background:#fff; color:var(--neo-text); width:100%; box-sizing:border-box;
+}
+.chq-inp:focus { border-color:var(--color-primary); }
+.chq-sel { padding:8px 10px; border:1px solid var(--borde-fuerte); border-radius:0; font-size:13px; font-family:inherit; outline:none; background:#fff; color:var(--neo-text); width:100%; }
+.chq-sel:focus { border-color:var(--color-primary); }
+.chq-textarea { padding:8px 10px; border:1px solid var(--borde-fuerte); border-radius:0; font-size:13px; font-family:inherit; outline:none; background:#fff; color:var(--neo-text); width:100%; box-sizing:border-box; resize:vertical; min-height:60px; }
+.chq-btn-pri  { padding:8px 20px; background:var(--neo-accent); color:#fff; border:none; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; }
+.chq-btn-pri:disabled { opacity:.5; cursor:not-allowed; }
+.chq-btn-sec  { padding:8px 20px; background:#fff; color:var(--color-primary); border:1px solid var(--color-primary); cursor:pointer; font-size:13px; font-weight:500; font-family:inherit; }
+.chq-hint { font-size:11px; color:var(--neo-text-3); }
+.chq-modal-info { background:var(--color-bg-alt); padding:10px 14px; font-size:13px; border:1px solid var(--borde-fuerte); }
+.chq-modal-info strong { display:block; font-size:15px; font-weight:800; margin-top:2px; }
+</style>
+</head>
+<body>
+<?php
+$nav_activo = 'cheques';
+include __DIR__ . '/nav.php';
+?>
+
+<div class="page-body">
+
+  <!-- Resumen -->
+  <div class="chq-resumen" id="chq-resumen">
+    <div class="chq-card" id="card-cartera">
+      <div class="chq-card-lbl">En cartera</div>
+      <div class="chq-card-row">
+        <span class="chq-card-val" id="cv-cartera">—</span>
+        <span class="chq-card-sub" id="cs-cartera"></span>
+      </div>
+    </div>
+    <div class="chq-card danger" id="card-vencidos" style="display:none">
+      <div class="chq-card-lbl">Vencidos en cartera</div>
+      <div class="chq-card-row">
+        <span class="chq-card-val" id="cv-vencidos">—</span>
+        <span class="chq-card-sub" id="cs-vencidos"></span>
+      </div>
+    </div>
+    <div class="chq-card ok">
+      <div class="chq-card-lbl">Depositados</div>
+      <div class="chq-card-row">
+        <span class="chq-card-val" id="cv-depositados">—</span>
+        <span class="chq-card-sub" id="cs-depositados"></span>
+      </div>
+    </div>
+    <div class="chq-card">
+      <div class="chq-card-lbl">Endosados</div>
+      <div class="chq-card-row">
+        <span class="chq-card-val" id="cv-endosados">—</span>
+        <span class="chq-card-sub" id="cs-endosados"></span>
+      </div>
+    </div>
+    <div class="chq-card warn">
+      <div class="chq-card-lbl">Emitidos pendientes</div>
+      <div class="chq-card-row">
+        <span class="chq-card-val" id="cv-emitidos">—</span>
+        <span class="chq-card-sub" id="cs-emitidos"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="chq-toolbar">
+    <div class="chq-tabs">
+      <button class="chq-tab active" id="tab-rec" onclick="cambiarTab('recibido')">Recibidos</button>
+      <button class="chq-tab" id="tab-emi" onclick="cambiarTab('emitido')">Emitidos</button>
+    </div>
+    <div class="chq-sep"></div>
+    <select class="chq-estado-sel" id="fil-estado" onchange="cargar()">
+      <option value="">Todos los estados</option>
+      <option value="cartera">En cartera</option>
+      <option value="depositado">Depositados</option>
+      <option value="endosado">Endosados</option>
+      <option value="rechazado">Rechazados</option>
+      <option value="pendiente">Pendientes</option>
+      <option value="debitado">Debitados</option>
+    </select>
+    <input type="search" class="chq-busq" id="chq-busq" placeholder="Buscar N°, banco, librador…" oninput="buscar(this.value)">
+    <span class="chq-lbl-date">Venc. desde</span>
+    <input type="date" class="chq-date" id="fil-desde" onchange="cargar()">
+    <span class="chq-lbl-date">hasta</span>
+    <input type="date" class="chq-date" id="fil-hasta" onchange="cargar()">
+    <div style="flex:1"></div>
+    <button class="btn btn-ok" style="padding:6px 14px;font-size:12px" onclick="abrirNuevo()">+ Nuevo cheque</button>
+  </div>
+
+  <!-- Tabla -->
+  <div class="chq-table-wrap">
+    <table class="chq-tbl">
+      <thead id="chq-thead"></thead>
+      <tbody id="chq-tbody">
+        <tr><td colspan="8" class="chq-empty">Cargando…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- Modal: Nuevo cheque -->
+<div class="chq-overlay" id="ov-nuevo">
+  <div class="chq-modal chq-modal-lg">
+    <div class="chq-mhead">
+      <h3 id="nuevo-titulo">Nuevo cheque recibido</h3>
+      <button class="chq-mclose" onclick="cerrarNuevo()">×</button>
+    </div>
+    <div class="chq-mbody">
+      <div class="chq-fg-row">
+        <div class="chq-fg">
+          <label class="chq-lbl">Tipo *</label>
+          <select class="chq-sel" id="n-tipo" onchange="onTipoChange()">
+            <option value="recibido">Recibido (de terceros)</option>
+            <option value="emitido">Emitido (propio)</option>
+          </select>
+        </div>
+        <div class="chq-fg">
+          <label class="chq-lbl">Monto *</label>
+          <input type="number" class="chq-inp" id="n-monto" min="0.01" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <div class="chq-fg-row">
+        <div class="chq-fg">
+          <label class="chq-lbl">Número de cheque *</label>
+          <input type="text" class="chq-inp" id="n-numero" placeholder="00012345" maxlength="30">
+        </div>
+        <div class="chq-fg">
+          <label class="chq-lbl">Banco *</label>
+          <input type="text" class="chq-inp" id="n-banco" placeholder="Banco Nación…" autocomplete="off" maxlength="100">
+        </div>
+      </div>
+      <div class="chq-fg-row">
+        <div class="chq-fg" id="wrap-n-librador">
+          <label class="chq-lbl">Librador (titular)</label>
+          <input type="text" class="chq-inp" id="n-librador" placeholder="Nombre del firmante" maxlength="150">
+        </div>
+        <div class="chq-fg" id="wrap-n-beneficiario" style="display:none">
+          <label class="chq-lbl">Beneficiario</label>
+          <input type="text" class="chq-inp" id="n-beneficiario" placeholder="A quién se paga" maxlength="150">
+        </div>
+        <div class="chq-fg">
+          <label class="chq-lbl">CUIT</label>
+          <input type="text" class="chq-inp" id="n-cuit" placeholder="20-12345678-9" maxlength="13">
+        </div>
+      </div>
+      <div class="chq-fg-row">
+        <div class="chq-fg">
+          <label class="chq-lbl">Fecha de emisión</label>
+          <input type="date" class="chq-inp" id="n-fecha-emision">
+        </div>
+        <div class="chq-fg">
+          <label class="chq-lbl">Fecha de vencimiento *</label>
+          <input type="date" class="chq-inp" id="n-fecha-vencimiento">
+        </div>
+      </div>
+      <div class="chq-fg" id="wrap-n-proveedor" style="display:none">
+        <label class="chq-lbl">Proveedor (a quién se emite)</label>
+        <select class="chq-sel" id="n-proveedor">
+          <option value="">— Seleccioná un proveedor —</option>
+        </select>
+      </div>
+      <div class="chq-fg">
+        <label class="chq-lbl">Notas</label>
+        <textarea class="chq-textarea" id="n-notas" placeholder="Observaciones opcionales…"></textarea>
+      </div>
+    </div>
+    <div class="chq-mfoot">
+      <button class="chq-btn-sec" onclick="cerrarNuevo()">Cancelar</button>
+      <button class="chq-btn-pri" id="btn-guardar-nuevo" onclick="guardarNuevo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Depositar -->
+<div class="chq-overlay" id="ov-depositar">
+  <div class="chq-modal">
+    <div class="chq-mhead">
+      <h3>Depositar cheque</h3>
+      <button class="chq-mclose" onclick="cerrar('ov-depositar')">×</button>
+    </div>
+    <div class="chq-mbody">
+      <div class="chq-modal-info" id="dep-info"></div>
+      <div class="chq-fg">
+        <label class="chq-lbl">Banco destino (dónde se deposita) *</label>
+        <input type="text" class="chq-inp" id="dep-banco" placeholder="Banco Galicia — Cta. 123-456…" autocomplete="off">
+      </div>
+      <div class="chq-fg">
+        <label class="chq-lbl">Fecha de depósito</label>
+        <input type="date" class="chq-inp" id="dep-fecha">
+      </div>
+    </div>
+    <div class="chq-mfoot">
+      <button class="chq-btn-sec" onclick="cerrar('ov-depositar')">Cancelar</button>
+      <button class="chq-btn-pri" onclick="confirmarDepositar()">Confirmar depósito</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Endosar -->
+<div class="chq-overlay" id="ov-endosar">
+  <div class="chq-modal">
+    <div class="chq-mhead">
+      <h3>Endosar cheque a proveedor</h3>
+      <button class="chq-mclose" onclick="cerrar('ov-endosar')">×</button>
+    </div>
+    <div class="chq-mbody">
+      <div class="chq-modal-info" id="end-info"></div>
+      <div class="chq-fg">
+        <label class="chq-lbl">Proveedor *</label>
+        <select class="chq-sel" id="end-proveedor">
+          <option value="">— Seleccioná un proveedor —</option>
+        </select>
+      </div>
+      <div class="chq-fg">
+        <label class="chq-lbl">Fecha</label>
+        <input type="date" class="chq-inp" id="end-fecha">
+      </div>
+      <div class="chq-fg">
+        <label class="chq-lbl">Observaciones</label>
+        <input type="text" class="chq-inp" id="end-obs" placeholder="Opcional">
+      </div>
+      <p class="chq-hint">Se registrará un abono en la cuenta corriente del proveedor seleccionado.</p>
+    </div>
+    <div class="chq-mfoot">
+      <button class="chq-btn-sec" onclick="cerrar('ov-endosar')">Cancelar</button>
+      <button class="chq-btn-pri" onclick="confirmarEndosar()">Endosar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = (window.APP_CONFIG?.API_BASE || '/Logos/api');
+let tipoActual  = 'recibido';
+let filas       = [];
+let accionId    = null;
+let proveedores = [];
+let busqTimer   = null;
+
+/* ── Init ─────────────────────────────────────────────────── */
+(async function init() {
+  const hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('dep-fecha').value = hoy;
+  document.getElementById('end-fecha').value = hoy;
+  document.getElementById('n-fecha-emision').value = hoy;
+  document.getElementById('n-fecha-vencimiento').value = hoy;
+
+  await Promise.all([cargarResumen(), cargar(), cargarProveedores()]);
+})();
+
+/* ── Tabs ─────────────────────────────────────────────────── */
+function cambiarTab(tipo) {
+  tipoActual = tipo;
+  document.getElementById('tab-rec').classList.toggle('active', tipo === 'recibido');
+  document.getElementById('tab-emi').classList.toggle('active', tipo === 'emitido');
+  const sel = document.getElementById('fil-estado');
+  if (tipo === 'emitido') {
+    [...sel.options].forEach(o => {
+      o.hidden = ['cartera','depositado','endosado'].includes(o.value);
+    });
+    if (['cartera','depositado','endosado'].includes(sel.value)) sel.value = '';
+  } else {
+    [...sel.options].forEach(o => {
+      o.hidden = ['pendiente','debitado'].includes(o.value);
+    });
+    if (['pendiente','debitado'].includes(sel.value)) sel.value = '';
+  }
+  cargar();
+}
+
+/* ── API ──────────────────────────────────────────────────── */
+async function cargarResumen() {
+  const r = await fetch(`${API}/cheques/resumen`);
+  if (!r.ok) return;
+  const d = await r.json();
+
+  const rec = d.data?.recibido ?? {};
+  const emi = d.data?.emitido  ?? {};
+
+  const cartera    = rec.cartera    ?? {cantidad:0, total:0};
+  const depositado = rec.depositado ?? {cantidad:0, total:0};
+  const endosado   = rec.endosado   ?? {cantidad:0, total:0};
+  const emitido    = emi.pendiente  ?? {cantidad:0, total:0};
+
+  document.getElementById('cv-cartera').textContent    = fmt(cartera.total);
+  document.getElementById('cs-cartera').textContent    = pl(cartera.cantidad, 'cheque');
+  document.getElementById('cv-depositados').textContent= fmt(depositado.total);
+  document.getElementById('cs-depositados').textContent= pl(depositado.cantidad, 'cheque');
+  document.getElementById('cv-endosados').textContent  = fmt(endosado.total);
+  document.getElementById('cs-endosados').textContent  = pl(endosado.cantidad, 'cheque');
+  document.getElementById('cv-emitidos').textContent   = fmt(emitido.total);
+  document.getElementById('cs-emitidos').textContent   = pl(emitido.cantidad, 'cheque');
+
+  if (d.vencidos?.cantidad > 0) {
+    document.getElementById('card-vencidos').style.display = '';
+    document.getElementById('cv-vencidos').textContent = fmt(d.vencidos.total);
+    document.getElementById('cs-vencidos').textContent = pl(d.vencidos.cantidad, 'cheque') + ' VENCIDO';
+  }
+}
+
+async function cargar() {
+  document.getElementById('chq-tbody').innerHTML =
+    '<tr><td colspan="8" class="chq-empty">Cargando…</td></tr>';
+
+  const qs = new URLSearchParams({ tipo: tipoActual });
+  const estado = document.getElementById('fil-estado').value;
+  const q      = document.getElementById('chq-busq').value.trim();
+  const desde  = document.getElementById('fil-desde').value;
+  const hasta  = document.getElementById('fil-hasta').value;
+  if (estado) qs.set('estado', estado);
+  if (q)      qs.set('q', q);
+  if (desde)  qs.set('desde', desde);
+  if (hasta)  qs.set('hasta', hasta);
+
+  const r = await fetch(`${API}/cheques?${qs}`);
+  filas   = r.ok ? await r.json() : [];
+  renderThead();
+  renderTbody();
+}
+
+async function cargarProveedores() {
+  const r = await fetch(`${API}/proveedores`);
+  if (!r.ok) return;
+  const d = await r.json();
+  proveedores = Array.isArray(d) ? d : (d.data ?? d.proveedores ?? []);
+  poblarSelProv('end-proveedor');
+  poblarSelProv('n-proveedor');
+}
+
+function poblarSelProv(id) {
+  const sel = document.getElementById(id);
+  if (!sel) return;
+  const v = sel.value;
+  sel.innerHTML = '<option value="">— Seleccioná un proveedor —</option>';
+  proveedores.filter(p => p.activo !== 0).forEach(p => {
+    sel.appendChild(Object.assign(document.createElement('option'), { value: p.id, textContent: p.nombre }));
+  });
+  sel.value = v;
+}
+
+/* ── Render ───────────────────────────────────────────────── */
+function renderThead() {
+  const thead = document.getElementById('chq-thead');
+  if (tipoActual === 'recibido') {
+    thead.innerHTML = `<tr>
+      <th>N° cheque</th><th>Banco</th><th>Librador</th>
+      <th class="r">Monto</th><th>Emisión</th><th>Vencimiento</th>
+      <th>Estado</th><th>Origen</th><th></th>
+    </tr>`;
+  } else {
+    thead.innerHTML = `<tr>
+      <th>N° cheque</th><th>Banco</th><th>Beneficiario</th>
+      <th class="r">Monto</th><th>Emisión</th><th>Vencimiento</th>
+      <th>Estado</th><th>Proveedor</th><th></th>
+    </tr>`;
+  }
+}
+
+function renderTbody() {
+  const tb  = document.getElementById('chq-tbody');
+  const cols = tipoActual === 'recibido' ? 9 : 9;
+  if (!filas.length) {
+    tb.innerHTML = `<tr><td colspan="${cols}" class="chq-empty">No hay cheques para mostrar.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = filas.map(f => rowHtml(f)).join('');
+}
+
+function rowHtml(f) {
+  const hoy   = new Date().toISOString().slice(0,10);
+  const venc  = f.fecha_vencimiento;
+  const diff  = Math.floor((new Date(venc) - new Date(hoy)) / 86400000);
+  const vCls  = diff < 0 ? 'venc-venc' : diff <= 7 ? 'venc-prox' : 'venc-ok';
+
+  const badge = `<span class="estado-badge est-${esc(f.estado)}">${esc(f.estado)}</span>`;
+  const monto = fmt(f.monto);
+  const emis  = f.fecha_emision   ? fmtFecha(f.fecha_emision)   : '—';
+  const vencS = fmtFecha(venc);
+
+  let origen = '—';
+  if (tipoActual === 'recibido') {
+    if (f.venta_id)    origen = `<span class="orig-badge">Venta #${f.venta_id}</span>`;
+    else if (f.cliente_nombre) origen = `<span class="orig-badge">${esc(f.cliente_nombre)}</span>`;
+    else if (f.cc_movimiento_id) origen = `<span class="orig-badge">CC mov. #${f.cc_movimiento_id}</span>`;
+  }
+
+  const tercero = tipoActual === 'recibido'
+    ? esc(f.librador  || '—')
+    : esc(f.beneficiario || f.proveedor_nombre || '—');
+
+  const extra = tipoActual === 'recibido'
+    ? `<td>${origen}</td>`
+    : `<td><span class="orig-badge">${esc(f.proveedor_nombre || '—')}</span></td>`;
+
+  const acciones = buildAcciones(f);
+
+  return `<tr>
+    <td class="td-mono">${esc(f.numero)}</td>
+    <td>${esc(f.banco)}</td>
+    <td>${tercero}</td>
+    <td class="r td-monto">${monto}</td>
+    <td>${emis}</td>
+    <td class="${vCls}">${vencS}${diff < 0 && f.estado === 'cartera' ? ' <small>(vencido)</small>' : diff <= 7 && diff >= 0 && f.estado === 'cartera' ? ' <small>(próximo)</small>' : ''}</td>
+    <td>${badge}</td>
+    ${extra}
+    <td class="td-act">${acciones}</td>
+  </tr>`;
+}
+
+function buildAcciones(f) {
+  const btns = [];
+  if (f.tipo === 'recibido') {
+    if (f.estado === 'cartera') {
+      btns.push(btn('Depositar','depositar', f.id, 'btn-depositar'));
+      btns.push(btn('Endosar','endosar',    f.id, 'btn-endosar'));
+      btns.push(btn('Rechazar','rechazar',  f.id, 'btn-rechazar'));
+      btns.push(btn('✕','eliminar',          f.id, 'btn-del'));
+    } else if (['depositado','rechazado'].includes(f.estado)) {
+      btns.push(btn('Reactivar','reactivar', f.id, 'btn-reactivar'));
+    } else if (f.estado === 'endosado') {
+      btns.push(btn('Reactivar','reactivar', f.id, 'btn-reactivar'));
+    }
+  } else {
+    if (f.estado === 'pendiente') {
+      btns.push(btn('Debitado','debitado',  f.id, 'btn-debitado'));
+      btns.push(btn('Rechazar','rechazar',  f.id, 'btn-rechazar'));
+      btns.push(btn('✕','eliminar',          f.id, 'btn-del'));
+    } else if (['debitado','rechazado'].includes(f.estado)) {
+      btns.push(btn('Reactivar','reactivar', f.id, 'btn-reactivar'));
+    }
+  }
+  return btns.join(' ');
+}
+
+function btn(label, accion, id, cls) {
+  return `<button class="btn-accion ${cls}" onclick="accion('${accion}',${id})">${label}</button>`;
+}
+
+/* ── Acciones ─────────────────────────────────────────────── */
+async function accion(tipo, id) {
+  accionId = id;
+  const f  = filas.find(x => x.id === id);
+  if (!f) return;
+
+  if (tipo === 'depositar') {
+    document.getElementById('dep-info').innerHTML =
+      `Cheque N° <strong>${esc(f.numero)}</strong> — ${esc(f.banco)}<strong>${fmt(f.monto)}</strong>`;
+    document.getElementById('dep-banco').value = '';
+    abrir('ov-depositar');
+    setTimeout(() => document.getElementById('dep-banco').focus(), 80);
+
+  } else if (tipo === 'endosar') {
+    document.getElementById('end-info').innerHTML =
+      `Cheque N° <strong>${esc(f.numero)}</strong> — ${esc(f.banco)}<strong>${fmt(f.monto)}</strong>`;
+    document.getElementById('end-proveedor').value = '';
+    document.getElementById('end-obs').value = '';
+    abrir('ov-endosar');
+
+  } else if (tipo === 'rechazar') {
+    const ok = await confirmarModal(`¿Marcar como rechazado el cheque N° ${f.numero} por ${fmt(f.monto)}?`,
+      { confirmLabel: 'Rechazar', danger: true });
+    if (!ok) return;
+    const r = await fetch(`${API}/cheques/${id}/rechazar`, { method:'POST' });
+    if (r.ok) { toast_('Cheque marcado como rechazado'); recargar(); }
+    else       toast_('Error al rechazar', 'err');
+
+  } else if (tipo === 'debitado') {
+    const ok = await confirmarModal(`¿Confirmar que el cheque N° ${f.numero} fue debitado de la cuenta?`,
+      { confirmLabel: 'Confirmar débito' });
+    if (!ok) return;
+    const r = await fetch(`${API}/cheques/${id}/debitado`, { method:'POST' });
+    if (r.ok) { toast_('Cheque marcado como debitado'); recargar(); }
+    else       toast_('Error', 'err');
+
+  } else if (tipo === 'reactivar') {
+    const ok = await confirmarModal(
+      `¿Reactivar el cheque N° ${f.numero}? Volverá al estado ${f.tipo === 'recibido' ? 'cartera' : 'pendiente'}.`,
+      { confirmLabel: 'Reactivar' });
+    if (!ok) return;
+    const r = await fetch(`${API}/cheques/${id}/reactivar`, { method:'POST' });
+    if (!r.ok) { const d = await r.json(); toast_(d.error || 'Error', 'err'); return; }
+    toast_('Cheque reactivado'); recargar();
+
+  } else if (tipo === 'eliminar') {
+    const ok = await confirmarModal(`¿Eliminar el cheque N° ${f.numero}?`,
+      { confirmLabel: 'Eliminar', danger: true });
+    if (!ok) return;
+    const r = await fetch(`${API}/cheques/${id}`, { method:'DELETE' });
+    if (!r.ok) { const d = await r.json(); toast_(d.error || 'Error', 'err'); return; }
+    toast_('Cheque eliminado'); recargar();
+  }
+}
+
+async function confirmarDepositar() {
+  const banco = document.getElementById('dep-banco').value.trim();
+  const fecha = document.getElementById('dep-fecha').value;
+  if (!banco) { document.getElementById('dep-banco').focus(); return; }
+
+  const r = await fetch(`${API}/cheques/${accionId}/depositar`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ banco_destino: banco, fecha_deposito: fecha })
+  });
+  if (!r.ok) { const d = await r.json(); toast_(d.error || 'Error', 'err'); return; }
+  cerrar('ov-depositar');
+  toast_('Cheque depositado correctamente');
+  recargar();
+}
+
+async function confirmarEndosar() {
+  const provId = document.getElementById('end-proveedor').value;
+  const fecha  = document.getElementById('end-fecha').value;
+  const obs    = document.getElementById('end-obs').value.trim();
+  if (!provId) { document.getElementById('end-proveedor').focus(); return; }
+
+  const r = await fetch(`${API}/cheques/${accionId}/endosar`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ proveedor_id: parseInt(provId), fecha, observaciones: obs })
+  });
+  const d = await r.json();
+  if (!r.ok) { toast_(d.error || 'Error', 'err'); return; }
+  cerrar('ov-endosar');
+  toast_(`Cheque endosado a ${d.proveedor}`);
+  recargar();
+}
+
+/* ── Nuevo cheque ─────────────────────────────────────────── */
+function onTipoChange() {
+  const tipo = document.getElementById('n-tipo').value;
+  document.getElementById('wrap-n-librador').style.display   = tipo === 'recibido' ? '' : 'none';
+  document.getElementById('wrap-n-beneficiario').style.display = tipo === 'emitido'  ? '' : 'none';
+  document.getElementById('wrap-n-proveedor').style.display  = tipo === 'emitido'  ? '' : 'none';
+  document.getElementById('nuevo-titulo').textContent =
+    tipo === 'recibido' ? 'Nuevo cheque recibido' : 'Nuevo cheque emitido';
+}
+
+function abrirNuevo() {
+  const tipo = tipoActual;
+  document.getElementById('n-tipo').value = tipo;
+  onTipoChange();
+  ['n-numero','n-banco','n-librador','n-beneficiario','n-cuit','n-notas'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('n-monto').value = '';
+  const hoy = new Date().toISOString().slice(0,10);
+  document.getElementById('n-fecha-emision').value = hoy;
+  document.getElementById('n-fecha-vencimiento').value = hoy;
+  document.getElementById('n-proveedor').value = '';
+  abrir('ov-nuevo');
+  setTimeout(() => document.getElementById('n-numero').focus(), 80);
+}
+function cerrarNuevo() { cerrar('ov-nuevo'); }
+
+async function guardarNuevo() {
+  const tipo    = document.getElementById('n-tipo').value;
+  const numero  = document.getElementById('n-numero').value.trim();
+  const banco   = document.getElementById('n-banco').value.trim();
+  const monto   = parseFloat(document.getElementById('n-monto').value);
+  const fvenc   = document.getElementById('n-fecha-vencimiento').value;
+
+  if (!numero) { toast_('Ingresá el número de cheque', 'err'); return; }
+  if (!banco)  { toast_('Ingresá el banco', 'err'); return; }
+  if (!monto || monto <= 0) { toast_('Ingresá un monto válido', 'err'); return; }
+  if (!fvenc)  { toast_('Ingresá la fecha de vencimiento', 'err'); return; }
+
+  const body = {
+    tipo, numero, banco, monto,
+    fecha_emision:     document.getElementById('n-fecha-emision').value  || null,
+    fecha_vencimiento: fvenc,
+    librador:          document.getElementById('n-librador').value.trim()    || null,
+    beneficiario:      document.getElementById('n-beneficiario').value.trim()|| null,
+    cuit:              document.getElementById('n-cuit').value.trim()        || null,
+    notas:             document.getElementById('n-notas').value.trim()       || null,
+    proveedor_id:      document.getElementById('n-proveedor').value ? parseInt(document.getElementById('n-proveedor').value) : null,
+  };
+
+  const btn = document.getElementById('btn-guardar-nuevo');
+  btn.disabled = true;
+  const r = await fetch(`${API}/cheques`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+  });
+  btn.disabled = false;
+  const d = await r.json();
+  if (!r.ok) { toast_(d.error || 'Error al guardar', 'err'); return; }
+  cerrarNuevo();
+  toast_('Cheque guardado correctamente');
+  recargar();
+}
+
+/* ── Helpers ──────────────────────────────────────────────── */
+async function recargar() {
+  await Promise.all([cargarResumen(), cargar()]);
+}
+
+let busqTimer2;
+function buscar(q) {
+  clearTimeout(busqTimer2);
+  busqTimer2 = setTimeout(() => cargar(), 280);
+}
+
+function abrir(id)  { document.getElementById(id).classList.add('open'); }
+function cerrar(id) { document.getElementById(id).classList.remove('open'); }
+
+function fmt(n) {
+  if (n == null) return '—';
+  return '$ ' + parseFloat(n).toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+function fmtFecha(s) {
+  if (!s) return '—';
+  const [y,m,d] = s.split('-');
+  return `${d}/${m}/${y}`;
+}
+function pl(n, w) { return `${n} ${w}${n !== 1 ? 's' : ''}`; }
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+</script>
+</body>
+</html>

@@ -46,14 +46,30 @@ class NotasEnvioController {
         $observaciones = trim($body['observaciones']   ?? '') ?: null;
         $items         = is_array($body['items'] ?? null) ? $body['items'] : [];
 
+        // Billing params
+        $accionPrecio  = in_array($body['accion_precio'] ?? '', ['caja', 'cc'], true) ? $body['accion_precio'] : null;
+        $medioPago     = trim($body['medio_pago'] ?? '') ?: 'efectivo';
+        $generarAfip   = !empty($body['generar_afip']);
+        $tipoCbteEnvio = trim($body['tipo_comprobante_envio'] ?? '') ?: null;
+        $cajaId        = isset($body['caja_id']) && is_numeric($body['caja_id']) ? (int)$body['caja_id'] : null;
+
         if (!$ventaId)    json(400, ['error' => 'venta_id requerido']);
         if (empty($items)) json(400, ['error' => 'Debe incluir al menos un ítem']);
 
         $db = DB::get();
 
-        $chk = $db->prepare("SELECT id FROM ventas WHERE id = ?");
-        $chk->execute([$ventaId]);
-        if (!$chk->fetch()) json(404, ['error' => 'Venta no encontrada']);
+        // Load venta + client info (needed for CC movement and AFIP)
+        $chkStmt = $db->prepare("
+            SELECT v.id, v.cliente_id, v.sucursal_id,
+                   c.nombre AS cliente_nombre, c.cuit AS cliente_cuit,
+                   c.condicion_iva AS cliente_condicion_iva
+            FROM ventas v
+            LEFT JOIN clientes c ON c.id = v.cliente_id
+            WHERE v.id = ?
+        ");
+        $chkStmt->execute([$ventaId]);
+        $vRow = $chkStmt->fetch();
+        if (!$vRow) json(404, ['error' => 'Venta no encontrada']);
 
         // Verificar que todos los venta_item_id pertenezcan a esta venta
         $itemIds = array_values(array_filter(array_map(fn($i) => (int)($i['venta_item_id'] ?? 0), $items)));
@@ -70,6 +86,8 @@ class NotasEnvioController {
         $num = $db->prepare("SELECT COALESCE(MAX(numero), 0) + 1 FROM notas_envio WHERE venta_id = ?");
         $num->execute([$ventaId]);
         $numero = (int)$num->fetchColumn();
+
+        $cbteVentaId = null;
 
         $db->beginTransaction();
         try {
@@ -98,13 +116,126 @@ class NotasEnvioController {
                 ]);
             }
 
+            // Handle billing when envio_precio is set
+            if ($envioPrecio > 0 && $accionPrecio !== null) {
+                $usuarioId  = Auth::usuarioActual()['id'] ?? null;
+                $sucursalId = (int)($vRow['sucursal_id'] ?? 1);
+                $clienteId  = $vRow['cliente_id'] ? (int)$vRow['cliente_id'] : null;
+
+                if ($accionPrecio === 'cc') {
+                    if (!$clienteId) json(422, ['error' => 'La venta no tiene cliente asignado para registrar en cuenta corriente']);
+                    $motivo = 'Costo de envío - Nota de envío N° ' . $numero;
+                    $db->prepare("
+                        INSERT INTO cuenta_corriente_movimientos
+                            (entidad_tipo, entidad_id, tipo, monto, referencia_id, fecha)
+                        VALUES ('cliente', ?, 'cargo', ?, ?, CURDATE())
+                    ")->execute([$clienteId, $envioPrecio, $notaId]);
+                    $db->prepare("UPDATE clientes SET saldo_cuenta_corriente = saldo_cuenta_corriente + ? WHERE id = ?")
+                       ->execute([$envioPrecio, $clienteId]);
+
+                } elseif ($accionPrecio === 'caja') {
+                    $turnoId = null;
+                    if ($cajaId) {
+                        $tStmt = $db->prepare("SELECT id FROM caja_turnos WHERE caja_id = ? AND estado = 'abierto' LIMIT 1");
+                        $tStmt->execute([$cajaId]);
+                        $tRow    = $tStmt->fetch();
+                        $turnoId = $tRow ? (int)$tRow['id'] : null;
+                    }
+
+                    if ($turnoId) {
+                        $motivo = 'Costo de envío - Nota N° ' . $numero .
+                                  ($vRow['cliente_nombre'] ? ' (' . $vRow['cliente_nombre'] . ')' : '');
+                        $db->prepare("
+                            INSERT INTO caja_movimientos (turno_id, tipo, medio_pago, monto, motivo, usuario_id, creado_en)
+                            VALUES (?, 'ingreso', ?, ?, ?, ?, NOW())
+                        ")->execute([$turnoId, $medioPago, $envioPrecio, $motivo, $usuarioId]);
+                    }
+
+                    if ($generarAfip && $tipoCbteEnvio) {
+                        $db->prepare("
+                            INSERT INTO ventas
+                                (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado,
+                                 observaciones, caja_id, usuario_id, turno_id, sucursal_id)
+                            VALUES (CURDATE(), ?, ?, ?, ?, 'completado', ?, ?, ?, ?, ?)
+                        ")->execute([
+                            $clienteId,
+                            $envioPrecio,
+                            $tipoCbteEnvio,
+                            $medioPago,
+                            'Costo de envío - Nota N° ' . $numero,
+                            $cajaId,
+                            $usuarioId,
+                            $turnoId,
+                            $sucursalId,
+                        ]);
+                        $cbteVentaId = (int)$db->lastInsertId();
+                    }
+                }
+            }
+
             $db->commit();
         } catch (Throwable $e) {
             $db->rollBack();
             throw $e;
         }
 
-        json(201, ['id' => $notaId, 'numero' => $numero]);
+        // Request CAE from AFIP after commit (avoids holding DB lock during network call)
+        $caeResult = null;
+        $caeError  = null;
+        if ($cbteVentaId !== null) {
+            require_once __DIR__ . '/../helpers/AfipWs.php';
+            require_once __DIR__ . '/../helpers/Configuracion.php';
+
+            $ivaPct = in_array($tipoCbteEnvio, ['FC C-ELECT', 'NC C-ELECT'], true) ? 0 : 21;
+            $ventaAfip = [
+                'id'                    => $cbteVentaId,
+                'fecha'                 => date('Y-m-d'),
+                'total'                 => $envioPrecio,
+                'tipo_comprobante'      => $tipoCbteEnvio,
+                'cae'                   => null,
+                'envio_precio'          => null,
+                'numero_afip_pendiente' => null,
+                'cbte_asoc_tipo'        => null,
+                'cbte_asoc_pto_vta'     => null,
+                'cbte_asoc_nro'         => null,
+                'cliente_cuit'          => $vRow['cliente_cuit'] ?? null,
+                'cliente_condicion_iva' => $vRow['cliente_condicion_iva'] ?? null,
+                'items_iva'             => [
+                    ['cantidad' => 1, 'precio_unitario' => $envioPrecio, 'iva_porcentaje' => $ivaPct],
+                ],
+            ];
+
+            try {
+                $config    = Configuracion::get();
+                $r         = AfipWs::facturar($ventaAfip, $config);
+                $caeResult = $r;
+                DB::get()->prepare("
+                    UPDATE ventas
+                    SET numero_afip = ?, cae = ?, cae_vencimiento = ?,
+                        punto_venta = ?, afip_response = ?, afip_error = NULL
+                    WHERE id = ?
+                ")->execute([
+                    (string)$r['numero_afip'],
+                    $r['cae'],
+                    $r['cae_vencimiento'],
+                    $r['punto_venta'],
+                    json_encode($r['response'] ?? null, JSON_UNESCAPED_UNICODE),
+                    $cbteVentaId,
+                ]);
+            } catch (Throwable $e) {
+                $caeError = mb_substr($e->getMessage(), 0, 500);
+                DB::get()->prepare("UPDATE ventas SET afip_error = ? WHERE id = ?")
+                         ->execute([$caeError, $cbteVentaId]);
+            }
+        }
+
+        $resp = ['id' => $notaId, 'numero' => $numero];
+        if ($cbteVentaId) $resp['cbte_id']     = $cbteVentaId;
+        if ($caeResult)   $resp['cae']          = $caeResult['cae'];
+        if ($caeResult)   $resp['numero_afip']  = $caeResult['numero_afip'];
+        if ($caeError)    $resp['cae_error']    = $caeError;
+
+        json(201, $resp);
     }
 
     public function pdf(int $id): void {

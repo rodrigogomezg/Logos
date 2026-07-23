@@ -26,6 +26,7 @@ class ComprobanteGenerador {
                 v.total,
                 v.observaciones,
                 v.envio_precio,
+                v.envios_detalle,
                 v.envio_direccion,
                 v.numero_afip,
                 v.cae,
@@ -70,8 +71,9 @@ class ComprobanteGenerador {
         $stmt->execute([$id]);
         $venta['items'] = $stmt->fetchAll();
 
-        $venta['total']        = (float)$venta['total'];
-        $venta['envio_precio'] = $venta['envio_precio'] !== null ? (float)$venta['envio_precio'] : null;
+        $venta['total']          = (float)$venta['total'];
+        $venta['envio_precio']   = $venta['envio_precio'] !== null ? (float)$venta['envio_precio'] : null;
+        $venta['envios_detalle'] = $venta['envios_detalle'] !== null ? json_decode($venta['envios_detalle'], true) : null;
         foreach ($venta['items'] as &$item) {
             $item['cantidad']        = (float)$item['cantidad'];
             $item['precio_unitario'] = (float)$item['precio_unitario'];

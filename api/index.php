@@ -246,10 +246,11 @@ try {
             };
         })(),
 
-        'devoluciones' => (function () use ($metodo) {
+        'devoluciones' => (function () use ($metodo, $id) {
             require_once __DIR__ . '/controllers/DevolucionesController.php';
             $ctrl = new DevolucionesController();
             match (true) {
+                $metodo === 'GET'  && $id !== null             => $ctrl->listarUno($id),
                 $metodo === 'GET'  && isset($_GET['venta_id']) => $ctrl->listarPorVenta(),
                 $metodo === 'POST'                             => $ctrl->crear(),
                 default => json(405, ['error' => 'Método no permitido']),
@@ -456,6 +457,60 @@ try {
             $ctrl = new PedidoController();
             match (true) {
                 $metodo === 'POST' && $sub === 'pdf' => $ctrl->pdf(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'vendedores' => (function () use ($metodo, $id, $accion, $subAccion) {
+            require_once __DIR__ . '/controllers/VendedoresController.php';
+            $ctrl = new VendedoresController();
+            match (true) {
+                // Comisiones: /vendedores/comisiones, /vendedores/comisiones/cerrar, /vendedores/comisiones/exportar
+                $metodo === 'GET'  && $accion === 'comisiones' && $subAccion === 'exportar' => $ctrl->exportarCSV(),
+                $metodo === 'GET'  && $accion === 'comisiones'                              => $ctrl->reporteComisiones(),
+                $metodo === 'POST' && $accion === 'comisiones' && $subAccion === 'cerrar'   => $ctrl->cerrarMes(),
+                // Reportes: /vendedores/reporte/ventas  y  /vendedores/:id/reporte
+                $metodo === 'GET'    && $accion === 'reporte' && $subAccion === 'ventas'    => $ctrl->reporteVentas(),
+                $metodo === 'GET'    && $id !== null && $subAccion === 'reporte'            => $ctrl->reporteIndividual($id),
+                $metodo === 'GET'    && $id !== null          => $ctrl->get($id),
+                $metodo === 'GET'                             => $ctrl->listar(),
+                $metodo === 'POST'   && $id === null          => $ctrl->crear(),
+                $metodo === 'PUT'    && $id !== null          => $ctrl->actualizar($id),
+                $metodo === 'DELETE' && $id !== null          => $ctrl->desactivar($id),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'taxonomias' => (function () use ($metodo, $id, $accion) {
+            require_once __DIR__ . '/controllers/TaxonomiasController.php';
+            if ($metodo !== 'GET') Auth::requirePermiso('productos_editar');
+            $ctrl = new TaxonomiasController();
+            match (true) {
+                $metodo === 'GET'                                        => $ctrl->listar(),
+                $metodo === 'POST'   && $accion === 'bulk'               => $ctrl->bulkCrear(),
+                $metodo === 'POST'   && $accion === 'bulk-eliminar'      => $ctrl->bulkEliminar(),
+                $metodo === 'POST'   && $id === null                     => $ctrl->crear(),
+                $metodo === 'PUT'    && $id !== null                     => $ctrl->renombrar($id),
+                $metodo === 'DELETE' && $id !== null                     => $ctrl->eliminar($id),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'cheques' => (function () use ($metodo, $id, $accion, $subAccion) {
+            require_once __DIR__ . '/controllers/ChequesController.php';
+            if ($metodo !== 'GET') Auth::requirePermiso('caja');
+            $ctrl = new ChequesController();
+            match (true) {
+                $metodo === 'GET'  && $accion === 'resumen'              => $ctrl->resumen(),
+                $metodo === 'GET'                                         => $ctrl->listar(),
+                $metodo === 'POST' && $id === null && $accion === null    => $ctrl->crear(),
+                $metodo === 'POST' && $id !== null && $subAccion === 'depositar' => $ctrl->depositar($id),
+                $metodo === 'POST' && $id !== null && $subAccion === 'endosar'   => $ctrl->endosar($id),
+                $metodo === 'POST' && $id !== null && $subAccion === 'rechazar'  => $ctrl->rechazar($id),
+                $metodo === 'POST' && $id !== null && $subAccion === 'debitado'  => $ctrl->marcarDebitado($id),
+                $metodo === 'POST' && $id !== null && $subAccion === 'reactivar' => $ctrl->reactivar($id),
+                $metodo === 'PATCH' && $id !== null                      => $ctrl->actualizarNotas($id),
+                $metodo === 'DELETE' && $id !== null                     => $ctrl->eliminar($id),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),

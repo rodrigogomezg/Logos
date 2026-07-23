@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logos — Vendedores</title>
+<script src="config.js"></script>
+<script src="helpers.js"></script>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+.page-body { flex:1; display:flex; flex-direction:column; overflow:hidden; padding:16px; gap:12px; background:var(--neo-bg-deep); }
+.vnd-inner { max-width:860px; width:100%; margin:0 auto; padding:20px 24px; background:var(--neo-bg); border-radius:var(--neo-r-lg); box-shadow:var(--neo-e2); }
+.vnd-header { display:flex; align-items:center; gap:14px; margin-bottom:20px; }
+.vnd-title  { font-size:18px; font-weight:700; color:var(--neo-text); margin:0; flex:1; }
+
+.t-input { padding:7px 10px; border:none; border-radius:var(--neo-r-sm); font-size:13px;
+           font-family:inherit; outline:none; background:var(--neo-bg); box-shadow:var(--neo-i1);
+           color:var(--neo-text); width:100%; box-sizing:border-box; transition:box-shadow var(--neo-t-fast); }
+.t-input:focus { box-shadow:var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+
+.vnd-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.vnd-search  { flex:1; min-width:160px; max-width:280px; }
+.vnd-count   { font-size:12px; color:var(--neo-text-3); }
+.vnd-chk-todos { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--neo-text-2); cursor:pointer; margin-left:auto; }
+.vnd-chk-todos input { accent-color:var(--neo-accent); cursor:pointer; }
+
+table.vnd-tbl { width:100%; border-collapse:collapse; }
+table.vnd-tbl col.c-nom  { width:auto; }
+table.vnd-tbl col.c-meta { width:160px; }
+table.vnd-tbl col.c-per  { width:180px; }
+table.vnd-tbl col.c-est  { width:80px; }
+table.vnd-tbl col.c-act  { width:90px; }
+table.vnd-tbl th { padding:8px 10px; text-align:left; font-size:10px; font-weight:700;
+                   text-transform:uppercase; letter-spacing:.5px; color:var(--color-ink);
+                   border-bottom:1px solid var(--borde-fuerte); }
+table.vnd-tbl td { padding:9px 10px; font-size:13px; border-bottom:1px solid var(--borde);
+                   color:var(--neo-text); vertical-align:middle; }
+table.vnd-tbl tr:last-child td { border-bottom:none; }
+table.vnd-tbl tr:hover td { background:var(--color-bg-alt); }
+
+.badge-on  { display:inline-block; padding:2px 8px; border-radius:var(--neo-r-pill); font-size:10px; font-weight:700;
+             text-transform:uppercase; background:rgba(46,204,113,.12); color:#27ae60; }
+.badge-off { display:inline-block; padding:2px 8px; border-radius:var(--neo-r-pill); font-size:10px; font-weight:700;
+             text-transform:uppercase; background:var(--color-bg-alt); color:var(--neo-text-3); }
+
+.btn-icon { padding:5px 8px; border:none; border-radius:var(--neo-r-xs); background:var(--neo-bg); cursor:pointer;
+            color:var(--neo-text-2); box-shadow:var(--neo-e1); transition:.15s; font-size:13px; }
+.btn-icon:hover { box-shadow:var(--neo-e2); color:var(--neo-accent); }
+.btn-icon.danger:hover { color:var(--neo-danger); }
+
+/* Modal */
+.overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.45);
+           display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:.2s; }
+.overlay.abierto { opacity:1; pointer-events:auto; }
+.modal { background:var(--neo-bg); border-radius:var(--neo-r-lg); padding:28px 28px 24px;
+         width:440px; max-width:95vw; box-shadow:0 8px 32px rgba(0,0,0,.22);
+         transform:translateY(8px); transition:.2s; }
+.overlay.abierto .modal { transform:none; }
+.modal-title { font-size:16px; font-weight:700; margin:0 0 20px; color:var(--neo-text); }
+.form-row  { margin-bottom:14px; }
+.form-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+              color:var(--neo-text-3); display:block; margin-bottom:5px; }
+.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.form-row-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.form-hint  { font-size:11px; color:var(--neo-text-3); margin-top:4px; }
+.toggle-wrap { display:flex; align-items:center; gap:8px; }
+.toggle-lbl  { font-size:13px; color:var(--neo-text-2); }
+.toggle { position:relative; width:36px; height:20px; }
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-slider { position:absolute; inset:0; border-radius:10px; background:var(--color-bg-alt); transition:.2s; cursor:pointer; }
+.toggle-slider::before { content:''; position:absolute; width:14px; height:14px; left:3px; top:3px;
+                         border-radius:50%; background:#fff; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.toggle input:checked + .toggle-slider { background:var(--neo-accent); }
+.toggle input:checked + .toggle-slider::before { transform:translateX(16px); }
+.modal-footer { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+
+.neo-btn { padding:8px 20px; border:none; border-radius:var(--neo-r-sm); cursor:pointer;
+           font-size:13px; font-weight:700; font-family:inherit; transition:.15s; }
+.neo-btn-primary { background:var(--neo-accent); color:#fff; box-shadow:3px 3px 8px var(--neo-accent-glow),-2px -2px 5px rgba(255,255,255,.2); }
+.neo-btn-primary:hover { opacity:.9; }
+.neo-btn-ghost { background:var(--neo-bg); color:var(--neo-text-2); box-shadow:var(--neo-e1); }
+.neo-btn-ghost:hover { box-shadow:var(--neo-e2); color:var(--neo-text); }
+.neo-btn-add { background:var(--neo-accent); color:#fff; font-size:12px; font-weight:700;
+               box-shadow:3px 3px 8px var(--neo-accent-glow),-2px -2px 5px rgba(255,255,255,.2); }
+.neo-btn-add:hover { opacity:.9; }
+
+.empty-msg { text-align:center; padding:40px 0; color:var(--neo-text-3); font-size:13px; }
+</style>
+</head>
+<body class="app-layout">
+<?php $nav_activo = 'vendedores'; require 'nav.php'; ?>
+
+<div class="page-body">
+  <div class="vnd-inner">
+    <div class="vnd-header">
+      <h1 class="vnd-title">Vendedores</h1>
+      <button class="neo-btn neo-btn-add" id="btn-nuevo">+ Nuevo vendedor</button>
+    </div>
+
+    <div class="vnd-toolbar">
+      <input class="t-input vnd-search" id="inp-search" type="search" placeholder="Buscar vendedor…">
+      <span class="vnd-count" id="lbl-count"></span>
+      <label class="vnd-chk-todos">
+        <input type="checkbox" id="chk-todos"> Mostrar inactivos
+      </label>
+    </div>
+
+    <div class="vnd-table-wrap" id="tabla-wrap">
+      <table class="vnd-tbl">
+        <colgroup><col class="c-nom"><col class="c-meta"><col class="c-per"><col class="c-est"><col class="c-act"></colgroup>
+        <thead>
+          <tr>
+            <th>Nombre</th><th>Meta ($)</th><th>Período meta</th><th>Estado</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body"></tbody>
+      </table>
+      <div class="empty-msg" id="empty-msg" style="display:none">No hay vendedores cargados.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal crear/editar -->
+<div class="overlay" id="modal-overlay">
+  <div class="modal">
+    <p class="modal-title" id="modal-titulo">Nuevo vendedor</p>
+    <div class="form-row">
+      <label class="form-label">Nombre</label>
+      <input class="t-input" id="f-nombre" type="text" placeholder="Ej: Juan García" maxlength="255">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Estado</label>
+      <div class="toggle-wrap">
+        <label class="toggle"><input type="checkbox" id="f-activo" checked><span class="toggle-slider"></span></label>
+        <span class="toggle-lbl" id="lbl-activo">Activo</span>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Meta de venta <span style="font-weight:400;text-transform:none">(opcional)</span></label>
+      <input class="t-input" id="f-meta-monto" type="number" min="0" step="0.01" placeholder="Ej: 500000">
+      <p class="form-hint">Monto a alcanzar en el período configurado abajo.</p>
+    </div>
+    <div class="form-row form-row-2">
+      <div>
+        <label class="form-label">Desde</label>
+        <input class="t-input" id="f-meta-desde" type="date">
+      </div>
+      <div>
+        <label class="form-label">Hasta</label>
+        <input class="t-input" id="f-meta-hasta" type="date">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="neo-btn neo-btn-ghost" id="btn-cancelar">Cancelar</button>
+      <button class="neo-btn neo-btn-primary" id="btn-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var API   = (window.API_BASE || '/Logos/api') + '/vendedores';
+  var datos = [];
+  var editId = null;
+
+  var overlay = document.getElementById('modal-overlay');
+  var body    = document.getElementById('tabla-body');
+  var empty   = document.getElementById('empty-msg');
+  var lbl     = document.getElementById('lbl-count');
+  var fActivo = document.getElementById('f-activo');
+  var lblActivo = document.getElementById('lbl-activo');
+
+  fActivo.addEventListener('change', function () {
+    lblActivo.textContent = fActivo.checked ? 'Activo' : 'Inactivo';
+  });
+
+  function fmt(n) {
+    if (n == null) return '—';
+    return '$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  }
+  function fmtFecha(d) {
+    if (!d) return '';
+    var p = d.split('-');
+    return p[2] + '/' + p[1] + '/' + p[0];
+  }
+
+  function cargar() {
+    var todos = document.getElementById('chk-todos').checked;
+    fetch(API + (todos ? '?todos=1' : ''), { headers: {} })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        datos = d;
+        renderizar();
+      });
+  }
+
+  function renderizar() {
+    var q = document.getElementById('inp-search').value.toLowerCase();
+    var filas = datos.filter(function (v) { return v.nombre.toLowerCase().includes(q); });
+    lbl.textContent = filas.length + ' vendedor' + (filas.length !== 1 ? 'es' : '');
+    body.innerHTML = '';
+    if (!filas.length) { empty.style.display = ''; return; }
+    empty.style.display = 'none';
+    filas.forEach(function (v) {
+      var tr = document.createElement('tr');
+      var periodo = (v.meta_desde || v.meta_hasta)
+        ? (fmtFecha(v.meta_desde) || '?') + ' — ' + (fmtFecha(v.meta_hasta) || '?')
+        : '—';
+      tr.innerHTML =
+        '<td><strong>' + esc(v.nombre) + '</strong></td>' +
+        '<td>' + fmt(v.meta_monto) + '</td>' +
+        '<td style="font-size:11px;color:var(--neo-text-2)">' + esc(periodo) + '</td>' +
+        '<td><span class="' + (v.activo ? 'badge-on' : 'badge-off') + '">' + (v.activo ? 'Activo' : 'Inactivo') + '</span></td>' +
+        '<td>' +
+          '<button class="btn-icon" title="Editar" data-id="' + v.id + '" data-accion="editar">✏️</button> ' +
+          (v.activo
+            ? '<button class="btn-icon danger" title="Desactivar" data-id="' + v.id + '" data-accion="desactivar">🔕</button>'
+            : '') +
+        '</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  body.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-accion]');
+    if (!btn) return;
+    var id     = parseInt(btn.dataset.id);
+    var accion = btn.dataset.accion;
+    var v      = datos.find(function (x) { return x.id === id; });
+    if (accion === 'editar' && v) abrirModal(v);
+    if (accion === 'desactivar' && v) desactivar(v);
+  });
+
+  function abrirModal(v) {
+    editId = v ? v.id : null;
+    document.getElementById('modal-titulo').textContent = v ? 'Editar vendedor' : 'Nuevo vendedor';
+    document.getElementById('f-nombre').value      = v ? v.nombre        : '';
+    document.getElementById('f-activo').checked    = v ? v.activo        : true;
+    document.getElementById('f-meta-monto').value  = v && v.meta_monto != null ? v.meta_monto : '';
+    document.getElementById('f-meta-desde').value  = v ? (v.meta_desde || '') : '';
+    document.getElementById('f-meta-hasta').value  = v ? (v.meta_hasta || '') : '';
+    lblActivo.textContent = (v ? v.activo : true) ? 'Activo' : 'Inactivo';
+    overlay.classList.add('abierto');
+    document.getElementById('f-nombre').focus();
+  }
+
+  function cerrarModal() {
+    overlay.classList.remove('abierto');
+    editId = null;
+  }
+
+  document.getElementById('btn-nuevo').addEventListener('click',   function () { abrirModal(null); });
+  document.getElementById('btn-cancelar').addEventListener('click', cerrarModal);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) cerrarModal(); });
+
+  document.getElementById('btn-guardar').addEventListener('click', function () {
+    var nombre = document.getElementById('f-nombre').value.trim();
+    if (!nombre) { alert('El nombre es requerido.'); return; }
+    var payload = {
+      nombre:     nombre,
+      activo:     document.getElementById('f-activo').checked,
+      meta_monto: document.getElementById('f-meta-monto').value !== '' ? parseFloat(document.getElementById('f-meta-monto').value) : null,
+      meta_desde: document.getElementById('f-meta-desde').value || null,
+      meta_hasta: document.getElementById('f-meta-hasta').value || null,
+    };
+    var url    = editId ? API + '/' + editId : API;
+    var method = editId ? 'PUT' : 'POST';
+    fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok) { alert(res.d.error || 'Error al guardar'); return; }
+        cerrarModal();
+        cargar();
+      });
+  });
+
+  function desactivar(v) {
+    if (!confirm('¿Desactivar a ' + v.nombre + '?\nNo se eliminarán sus ventas históricas.')) return;
+    fetch(API + '/' + v.id, { method: 'DELETE', headers: {} })
+      .then(function (r) { return r.json(); })
+      .then(function () { cargar(); });
+  }
+
+  document.getElementById('inp-search').addEventListener('input', renderizar);
+  document.getElementById('chk-todos').addEventListener('change', cargar);
+
+  cargar();
+})();
+</script>
+</body>
+</html>

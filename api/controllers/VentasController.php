@@ -453,6 +453,8 @@ class VentasController {
         $cliente_id       = isset($_GET['cliente_id']) && is_numeric($_GET['cliente_id'])
                             ? (int)$_GET['cliente_id'] : null;
         $caja_id          = isset($_GET['caja_id']) && is_numeric($_GET['caja_id']) ? (int)$_GET['caja_id'] : null;
+        $turno_id_filter  = isset($_GET['turno_id']) && is_numeric($_GET['turno_id']) ? (int)$_GET['turno_id'] : null;
+        $sin_cae          = !empty($_GET['sin_cae']);
         $q                = trim($_GET['q']            ?? '');
         $monto_min        = isset($_GET['monto_min']) && is_numeric($_GET['monto_min']) ? (float)$_GET['monto_min'] : null;
         $monto_max        = isset($_GET['monto_max']) && is_numeric($_GET['monto_max']) ? (float)$_GET['monto_max'] : null;
@@ -467,8 +469,14 @@ class VentasController {
         if ($tipo_comprobante) { $where[] = 'v.tipo_comprobante = ?';    $params[] = $tipo_comprobante; }
         if ($cliente_id)       { $where[] = 'v.cliente_id = ?';          $params[] = $cliente_id;       }
         if ($caja_id)          { $where[] = 'v.caja_id = ?';             $params[] = $caja_id;          }
-        $sucursal_filter = isset($_GET['sucursal_id']) && is_numeric($_GET['sucursal_id']) ? (int)$_GET['sucursal_id'] : null;
+        if ($turno_id_filter)  { $where[] = 'v.turno_id = ?';            $params[] = $turno_id_filter;  }
+        if ($sin_cae) {
+            $where[] = "(v.tipo_comprobante IN ('FC A-ELECT','FC B-ELECT','FC C-ELECT') AND (v.cae IS NULL OR v.cae = ''))";
+        }
+        $sucursal_filter  = isset($_GET['sucursal_id'])  && is_numeric($_GET['sucursal_id'])  ? (int)$_GET['sucursal_id']  : null;
+        $vendedor_filter  = isset($_GET['vendedor_id'])  && is_numeric($_GET['vendedor_id'])  ? (int)$_GET['vendedor_id']  : null;
         if ($sucursal_filter)  { $where[] = 'v.sucursal_id = ?';         $params[] = $sucursal_filter;  }
+        if ($vendedor_filter)  { $where[] = 'v.vendedor_id = ?';         $params[] = $vendedor_filter;  }
         if ($monto_min !== null){ $where[] = 'v.total >= ?';             $params[] = $monto_min;        }
         if ($monto_max !== null){ $where[] = 'v.total <= ?';             $params[] = $monto_max;        }
         if ($q !== '') {
@@ -542,6 +550,7 @@ class VentasController {
                             ? trim($body['envio_direccion']) : null;
         $fecha            = isset($body['fecha']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $body['fecha'])
                             ? $body['fecha'] : date('Y-m-d');
+        $vendedor_id      = isset($body['vendedor_id']) && is_numeric($body['vendedor_id']) ? (int)$body['vendedor_id'] : null;
 
         $tipos_pago_validos = [...self::TIPOS_PAGO_SIMPLES, 'mixto'];
         if (!in_array($tipo_pago, $tipos_pago_validos, true)) {
@@ -589,8 +598,9 @@ class VentasController {
         }
 
         // Cargar y validar cada ítem
-        $items_validados = [];
-        $total           = 0;
+        $items_validados  = [];
+        $total            = 0;
+        $permitirSinStock = (bool)(Configuracion::get()['ventas_sin_stock'] ?? false);
 
         foreach ($items as $i => $item) {
             $producto_id    = isset($item['producto_id'])    ? (int)$item['producto_id']       : null;
@@ -620,7 +630,7 @@ class VentasController {
             ");
             $stmtStock->execute([$carrito_id ?: '', $producto_id]);
             $disponible = (float)($stmtStock->fetchColumn() ?? $producto['stock_actual']);
-            if ($disponible < $cantidad) {
+            if ($disponible < $cantidad && !$permitirSinStock) {
                 json(422, [
                     'error'       => "Stock insuficiente para \"{$producto['nombre']}\"",
                     'disponible'  => max(0, $disponible),
@@ -689,10 +699,10 @@ class VentasController {
 
             // 1. Insertar venta
             $stmt = $db->prepare("
-                INSERT INTO ventas (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado, observaciones, envio_precio, envio_direccion, caja_id, usuario_id, turno_id, sucursal_id)
-                VALUES (?, ?, ?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO ventas (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado, observaciones, envio_precio, envio_direccion, caja_id, usuario_id, turno_id, sucursal_id, vendedor_id)
+                VALUES (?, ?, ?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$fecha, $cliente_id, $total, $tipo_comprobante, $tipo_pago, $observaciones, $envio_precio, $envio_direccion, $caja_id, $usuario_id, $turno_id, $sucursal_id]);
+            $stmt->execute([$fecha, $cliente_id, $total, $tipo_comprobante, $tipo_pago, $observaciones, $envio_precio, $envio_direccion, $caja_id, $usuario_id, $turno_id, $sucursal_id, $vendedor_id]);
             $venta_id = (int)$db->lastInsertId();
 
             foreach ($items_validados as $item) {
@@ -1153,6 +1163,16 @@ class VentasController {
         $envio_total = array_sum(array_map(fn($v) => (float)($v['envio_precio'] ?? 0), $ventas));
         $total_final = array_sum(array_map(fn($i) => $i['cantidad'] * $i['precio_unitario'], $items_finales)) + $envio_total;
 
+        // Detalle de envíos individuales (solo cuando hay más de uno) para mostrar con fecha en el PDF
+        $envios_con_precio = array_values(array_filter($ventas, fn($v) => (float)($v['envio_precio'] ?? 0) > 0));
+        $envios_detalle    = null;
+        if (count($envios_con_precio) > 1) {
+            $envios_detalle = json_encode(array_map(fn($v) => [
+                'fecha_corta' => (new DateTime($v['fecha']))->format('d/m'),
+                'precio'      => (float)$v['envio_precio'],
+            ], $envios_con_precio));
+        }
+
         // Caja y turno: el comprobante unificado tiene que entrar al arqueo
         // como cualquier venta (antes quedaba sin caja ni turno).
         $caja_id         = isset($body['caja_id']) && is_numeric($body['caja_id']) ? (int)$body['caja_id'] : null;
@@ -1235,10 +1255,11 @@ class VentasController {
             $db->prepare("
                 INSERT INTO ventas
                     (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado, observaciones, origen_descripcion,
-                     envio_precio, caja_id, usuario_id, turno_id, sucursal_id)
-                VALUES (CURDATE(), ?, ?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?, ?)
+                     envio_precio, envios_detalle, caja_id, usuario_id, turno_id, sucursal_id)
+                VALUES (CURDATE(), ?, ?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?, ?, ?)
             ")->execute([$cliente_id, $total_final, $tipo_final, $tipo_pago, $observaciones, $origen_descripcion,
-                         $envio_total > 0 ? $envio_total : null, $caja_id, $usuario_id, $turno_id, $sucursal_id_uni]);
+                         $envio_total > 0 ? $envio_total : null, $envios_detalle,
+                         $caja_id, $usuario_id, $turno_id, $sucursal_id_uni]);
             $nueva_id = (int)$db->lastInsertId();
 
             // Insertar ítems, descontar stock, movimientos
@@ -1393,6 +1414,7 @@ class VentasController {
                 v.observaciones,
                 v.origen_descripcion,
                 v.envio_precio,
+                v.envios_detalle,
                 v.envio_direccion,
                 v.numero_afip,
                 v.cae,
@@ -1449,6 +1471,7 @@ class VentasController {
         // Castear tipos numéricos
         $venta['total']                  = (float)$venta['total'];
         $venta['envio_precio']           = $venta['envio_precio'] !== null ? (float)$venta['envio_precio'] : null;
+        $venta['envios_detalle']         = $venta['envios_detalle'] !== null ? json_decode($venta['envios_detalle'], true) : null;
         $venta['punto_venta']            = $venta['punto_venta'] !== null ? (int)$venta['punto_venta'] : null;
         $venta['cbte_asoc_tipo']         = $venta['cbte_asoc_tipo'] !== null ? (int)$venta['cbte_asoc_tipo'] : null;
         $venta['cbte_asoc_pto_vta']      = $venta['cbte_asoc_pto_vta'] !== null ? (int)$venta['cbte_asoc_pto_vta'] : null;

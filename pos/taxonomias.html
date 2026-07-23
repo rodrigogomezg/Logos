@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logos — Rubros y Marcas</title>
+<script src="config.js"></script>
+<script src="helpers.js"></script>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+/* ── Layout ──────────────────────────────────────────────── */
+.page-body { flex:1; display:flex; flex-direction:column; overflow:hidden; padding:16px; gap:12px; background:var(--neo-bg-deep); }
+.tax-inner { max-width:900px; width:100%; margin:0 auto; padding:20px 24px; background:var(--neo-bg); border-radius:var(--neo-r-lg); box-shadow:var(--neo-e2); }
+
+/* ── Header ──────────────────────────────────────────────── */
+.tax-header { display:flex; align-items:center; gap:14px; margin-bottom:20px; flex-wrap:wrap; }
+.tax-title  { font-size:18px; font-weight:700; color:var(--neo-text); margin:0; }
+.tax-tabs   { display:flex; gap:8px; }
+.tax-tab    { padding:6px 18px; border-radius:var(--neo-r-sm); border:none; cursor:pointer;
+              font-size:12px; font-weight:700; letter-spacing:.4px; text-transform:uppercase;
+              background:var(--neo-bg); color:var(--neo-text-2); box-shadow:var(--neo-e1); transition:.15s; font-family:inherit; }
+.tax-tab:hover  { color:var(--neo-text); box-shadow:var(--neo-e2); }
+.tax-tab.active { background:var(--neo-accent); color:#fff; box-shadow:4px 4px 10px var(--neo-accent-glow),-2px -2px 6px rgba(255,255,255,.25); }
+.tax-spacer { flex:1; }
+
+/* ── Inputs ──────────────────────────────────────────────── */
+.t-input { padding:7px 10px; border:none; border-radius:var(--neo-r-sm); font-size:13px;
+           font-family:inherit; outline:none; background:var(--neo-bg); box-shadow:var(--neo-i1);
+           color:var(--neo-text); width:100%; box-sizing:border-box; transition:box-shadow var(--neo-t-fast); }
+.t-input:focus { box-shadow:var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+textarea.t-input { resize:vertical; min-height:110px; }
+
+/* ── Toolbar ─────────────────────────────────────────────── */
+.tax-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.tax-search  { flex:1; min-width:160px; max-width:280px; }
+.tax-count   { font-size:12px; color:var(--neo-text-3); }
+
+/* ── Bulk add panel ──────────────────────────────────────── */
+.tax-bulk-panel { display:none; padding:14px 16px; background:var(--neo-bg-deep); border-radius:var(--neo-r-sm); box-shadow:var(--neo-i1); margin-bottom:16px; }
+.tax-bulk-panel.open { display:block; }
+.tax-bulk-panel textarea { margin:8px 0; }
+.tax-bulk-hint { font-size:11px; color:var(--neo-text-3); margin:0 0 8px; }
+
+/* ── Table ───────────────────────────────────────────────── */
+.tax-table-wrap { overflow-x:auto; }
+table.tax-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
+table.tax-tbl col.c-chk  { width:38px; }
+table.tax-tbl col.c-nom  { width:auto; }
+table.tax-tbl col.c-prod { width:110px; }
+table.tax-tbl col.c-act  { width:100px; }
+table.tax-tbl thead th { padding:8px 10px; font-size:11px; font-weight:700; text-transform:uppercase;
+                          letter-spacing:.5px; color:var(--color-ink); border-bottom:2px solid var(--borde); text-align:left; }
+table.tax-tbl tbody tr { border-bottom:1px solid var(--borde); transition:background .12s; }
+table.tax-tbl tbody tr:hover { background:var(--primary-soft); }
+table.tax-tbl td { padding:9px 10px; font-size:13px; vertical-align:middle; }
+table.tax-tbl td.td-nom  { font-weight:500; }
+table.tax-tbl td.td-prod { color:var(--neo-text-3); text-align:center; }
+table.tax-tbl td.td-act  { text-align:right; white-space:nowrap; }
+
+/* ── Rename form ─────────────────────────────────────────── */
+.tax-rename-form { display:flex; gap:6px; align-items:center; }
+.ren-wrap        { flex:1; min-width:0; position:relative; }
+.tax-rename-inp  { width:100%; }
+.ren-dropdown    { display:none; position:absolute; top:calc(100% + 4px); left:0; right:0; z-index:200;
+                   background:var(--neo-bg); border-radius:var(--neo-r-sm); box-shadow:var(--neo-e2);
+                   max-height:180px; overflow-y:auto; }
+.ren-dropdown.open { display:block; }
+.ren-dd-item     { padding:7px 12px; font-size:13px; cursor:pointer; color:var(--neo-text); transition:background .1s; }
+.ren-dd-item:hover, .ren-dd-item.foc { background:var(--primary-soft); }
+
+/* ── Quick-add tfoot row ─────────────────────────────────── */
+.tax-add-row td { padding:8px 10px; border-top:2px solid var(--borde); }
+.tax-add-form   { display:flex; gap:8px; align-items:center; }
+.tax-add-inp    { flex:1; min-width:0; }
+
+/* ── Selection bar ───────────────────────────────────────── */
+.tax-sel-bar { display:none; align-items:center; gap:10px; padding:8px 14px;
+               background:var(--primary-soft); border-radius:var(--neo-r-sm);
+               margin-bottom:12px; font-size:13px; }
+.tax-sel-bar.visible { display:flex; }
+.tax-sel-txt { flex:1; }
+
+/* ── States ──────────────────────────────────────────────── */
+.tax-empty   { text-align:center; padding:48px 20px; color:var(--neo-text-3); font-size:14px; }
+.tax-loading { text-align:center; padding:32px; color:var(--neo-text-3); font-size:13px; }
+
+/* ── Small buttons ───────────────────────────────────────── */
+.btn-sm { padding:5px 12px; font-size:11px; }
+.btn-xs { padding:4px 8px; font-size:11px; }
+</style>
+</head>
+<body>
+<?php
+$nav_activo = 'taxonomias';
+include __DIR__ . '/nav.php';
+?>
+
+<main class="page-body">
+  <div class="tax-inner">
+
+    <!-- Header -->
+    <div class="tax-header">
+      <h1 class="tax-title" id="tax-titulo">Rubros</h1>
+      <div class="tax-tabs">
+        <button class="tax-tab" id="tab-rubros" onclick="cambiarTipo('rubros')">Rubros</button>
+        <button class="tax-tab" id="tab-marcas" onclick="cambiarTipo('marcas')">Marcas</button>
+      </div>
+      <div class="tax-spacer"></div>
+      <button class="btn btn-sec btn-sm" onclick="toggleBulkPanel()">+ Agregar varios</button>
+    </div>
+
+    <!-- Bulk add panel -->
+    <div class="tax-bulk-panel" id="tax-bulk-panel">
+      <strong style="font-size:13px">Agregar varios de una vez</strong>
+      <p class="tax-bulk-hint">Escribí uno por línea. Los duplicados se ignoran.</p>
+      <textarea id="bulk-txt" class="t-input" placeholder="Electrónica&#10;Ropa&#10;Calzado"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+        <button class="btn btn-sec btn-sm" onclick="toggleBulkPanel()">Cancelar</button>
+        <button class="btn btn-ok btn-sm" onclick="bulkCrear()">Agregar</button>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="tax-toolbar">
+      <input type="search" id="tax-busq" class="t-input tax-search"
+             placeholder="Buscar…" oninput="buscar(this.value)">
+      <span class="tax-count" id="tax-count"></span>
+    </div>
+
+    <!-- Selection bar -->
+    <div class="tax-sel-bar" id="tax-sel-bar">
+      <span class="tax-sel-txt" id="tax-sel-txt"></span>
+      <button class="btn btn-danger btn-sm" onclick="bulkEliminar()">Eliminar seleccionados</button>
+    </div>
+
+    <!-- Table -->
+    <div class="tax-table-wrap">
+      <table class="tax-tbl">
+        <colgroup>
+          <col class="c-chk"><col class="c-nom"><col class="c-prod"><col class="c-act">
+        </colgroup>
+        <thead>
+          <tr>
+            <th><input type="checkbox" id="chk-all" onchange="toggleAll(this.checked)" title="Seleccionar todos"></th>
+            <th>Nombre</th>
+            <th style="text-align:center">Productos</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tax-tbody">
+          <tr><td colspan="4" class="tax-loading">Cargando…</td></tr>
+        </tbody>
+        <!-- Quick-add row -->
+        <tfoot>
+          <tr class="tax-add-row">
+            <td></td>
+            <td colspan="3">
+              <div class="tax-add-form">
+                <input type="text" id="add-nombre" class="t-input tax-add-inp"
+                       placeholder="Nombre nuevo…" maxlength="100"
+                       onkeydown="if(event.key==='Enter') crearUno()">
+                <button class="btn btn-ok btn-sm" onclick="crearUno()">Agregar</button>
+              </div>
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+const API = (window.APP_CONFIG?.API_BASE || '/Logos/api') + '/taxonomias';
+let tipoActual = 'rubros';
+let filas      = [];
+let selIds     = new Set();
+let renombrando = null; // id being renamed
+
+/* ── Init ─────────────────────────────────────────────────── */
+(function init() {
+  const p = new URLSearchParams(location.search);
+  const t = p.get('tipo');
+  cambiarTipo(t === 'marcas' ? 'marcas' : 'rubros');
+})();
+
+function cambiarTipo(tipo) {
+  tipoActual = tipo;
+  document.getElementById('tax-titulo').textContent = tipo === 'rubros' ? 'Rubros' : 'Marcas';
+  document.getElementById('tab-rubros').classList.toggle('active', tipo === 'rubros');
+  document.getElementById('tab-marcas').classList.toggle('active', tipo === 'marcas');
+  document.getElementById('tax-busq').value = '';
+  selIds.clear();
+  actualizarSelBar();
+  history.replaceState(null, '', '?tipo=' + tipo);
+  cargar();
+}
+
+/* ── API calls ───────────────────────────────────────────── */
+async function cargar(q = '') {
+  document.getElementById('tax-tbody').innerHTML =
+    '<tr><td colspan="4" class="tax-loading">Cargando…</td></tr>';
+  const url = API + '?tipo=' + tipoActual + (q ? '&q=' + encodeURIComponent(q) : '');
+  const r   = await fetch(url);
+  filas     = r.ok ? await r.json() : [];
+  renderTabla();
+}
+
+function renderTabla() {
+  const tb = document.getElementById('tax-tbody');
+  document.getElementById('tax-count').textContent =
+    filas.length ? filas.length + ' ' + (filas.length === 1 ? 'elemento' : 'elementos') : '';
+  document.getElementById('chk-all').checked = false;
+
+  if (!filas.length) {
+    tb.innerHTML = '<tr><td colspan="4" class="tax-empty">No hay elementos. Agregá el primero.</td></tr>';
+    return;
+  }
+  tb.innerHTML = filas.map(f => rowHtml(f)).join('');
+}
+
+function rowHtml(f) {
+  const sel = selIds.has(f.id);
+  if (renombrando === f.id) {
+    return `<tr data-id="${f.id}">
+      <td><input type="checkbox" class="row-chk" value="${f.id}" ${sel ? 'checked' : ''}
+          onchange="toggleSel(${f.id}, this.checked)"></td>
+      <td colspan="3">
+        <div class="tax-rename-form">
+          <input type="text" class="t-input tax-rename-inp" id="ren-${f.id}"
+                 value="${esc(f.nombre)}" maxlength="100"
+                 onkeydown="if(event.key==='Enter') confirmarRename(${f.id}); if(event.key==='Escape') cancelarRename()">
+          <button class="btn btn-ok btn-xs" onclick="confirmarRename(${f.id})">✓</button>
+          <button class="btn btn-sec btn-xs" onclick="cancelarRename()">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }
+  return `<tr data-id="${f.id}">
+    <td><input type="checkbox" class="row-chk" value="${f.id}" ${sel ? 'checked' : ''}
+        onchange="toggleSel(${f.id}, this.checked)"></td>
+    <td class="td-nom">${esc(f.nombre)}</td>
+    <td class="td-prod">${f.productos || 0}</td>
+    <td class="td-act">
+      <button class="btn btn-sec btn-xs" title="Renombrar"
+              onclick="iniciarRename(${f.id})">✎</button>
+      <button class="btn btn-danger btn-xs" title="Eliminar"
+              onclick="eliminarUno(${f.id}, '${esc(f.nombre)}', ${f.productos})">✕</button>
+    </td>
+  </tr>`;
+}
+
+/* ── Search ──────────────────────────────────────────────── */
+let busqTimer;
+function buscar(q) {
+  clearTimeout(busqTimer);
+  busqTimer = setTimeout(() => cargar(q), 260);
+}
+
+/* ── Selection ───────────────────────────────────────────── */
+function toggleSel(id, checked) {
+  checked ? selIds.add(id) : selIds.delete(id);
+  actualizarSelBar();
+}
+function toggleAll(checked) {
+  filas.forEach(f => checked ? selIds.add(f.id) : selIds.delete(f.id));
+  document.querySelectorAll('.row-chk').forEach(c => { c.checked = checked; });
+  actualizarSelBar();
+}
+function actualizarSelBar() {
+  const n   = selIds.size;
+  const bar = document.getElementById('tax-sel-bar');
+  bar.classList.toggle('visible', n > 0);
+  document.getElementById('tax-sel-txt').textContent =
+    n + ' ' + (n === 1 ? 'elemento seleccionado' : 'elementos seleccionados');
+}
+
+/* ── Rename ──────────────────────────────────────────────── */
+function iniciarRename(id) {
+  renombrando = id;
+  renderTabla();
+  setTimeout(() => { const el = document.getElementById('ren-' + id); if (el) { el.focus(); el.select(); } }, 50);
+}
+function cancelarRename() {
+  renombrando = null;
+  renderTabla();
+}
+async function confirmarRename(id) {
+  const inp    = document.getElementById('ren-' + id);
+  const nombre = inp.value.trim();
+  if (!nombre) { inp.focus(); return; }
+
+  const r = await fetch(API + '/' + id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: tipoActual, nombre })
+  });
+  const data = await r.json();
+  if (!r.ok) { mostrarToast(data.error || 'Error al renombrar', 'error'); return; }
+
+  renombrando = null;
+  mostrarToast('Renombrado correctamente');
+  cargar(document.getElementById('tax-busq').value);
+}
+
+/* ── Create one ──────────────────────────────────────────── */
+async function crearUno() {
+  const inp    = document.getElementById('add-nombre');
+  const nombre = inp.value.trim();
+  if (!nombre) { inp.focus(); return; }
+
+  const r = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: tipoActual, nombre })
+  });
+  const data = await r.json();
+  if (!r.ok) { mostrarToast(data.error || 'Error al agregar', 'error'); return; }
+
+  inp.value = '';
+  mostrarToast('Agregado correctamente');
+  cargar(document.getElementById('tax-busq').value);
+}
+
+/* ── Bulk add ────────────────────────────────────────────── */
+function toggleBulkPanel() {
+  const p = document.getElementById('tax-bulk-panel');
+  p.classList.toggle('open');
+  if (p.classList.contains('open')) document.getElementById('bulk-txt').focus();
+}
+async function bulkCrear() {
+  const txt    = document.getElementById('bulk-txt').value;
+  const nombres = txt.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!nombres.length) return;
+
+  const r = await fetch(API + '/bulk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: tipoActual, nombres })
+  });
+  const data = await r.json();
+  if (!r.ok) { mostrarToast(data.error || 'Error', 'error'); return; }
+
+  document.getElementById('bulk-txt').value = '';
+  toggleBulkPanel();
+  mostrarToast('Creados: ' + data.creados + (data.omitidos ? ', omitidos (ya existen): ' + data.omitidos : ''));
+  cargar(document.getElementById('tax-busq').value);
+}
+
+/* ── Delete one ──────────────────────────────────────────── */
+async function eliminarUno(id, nombre, nProductos) {
+  const aviso = nProductos > 0
+    ? `"${nombre}" está asignado a ${nProductos} producto${nProductos > 1 ? 's' : ''}. Se quitará de esos productos.`
+    : `¿Eliminar "${nombre}"?`;
+  const ok = await confirmarModal(aviso, { confirmLabel: 'Eliminar', danger: true });
+  if (!ok) return;
+
+  const r = await fetch(API + '/' + id + '?tipo=' + tipoActual, { method: 'DELETE' });
+  if (!r.ok) { const d = await r.json(); mostrarToast(d.error || 'Error', 'error'); return; }
+  mostrarToast('Eliminado');
+  selIds.delete(id);
+  actualizarSelBar();
+  cargar(document.getElementById('tax-busq').value);
+}
+
+/* ── Bulk delete ─────────────────────────────────────────── */
+async function bulkEliminar() {
+  const ids = [...selIds];
+  if (!ids.length) return;
+
+  const afectados = filas.filter(f => ids.includes(f.id) && f.productos > 0);
+  let msg = `¿Eliminar ${ids.length} ${ids.length === 1 ? 'elemento' : 'elementos'}?`;
+  if (afectados.length) msg += ` ${afectados.length} de ellos tienen productos asignados (se quitará la referencia).`;
+
+  const ok = await confirmarModal(msg, { confirmLabel: 'Eliminar', danger: true });
+  if (!ok) return;
+
+  const r = await fetch(API + '/bulk-eliminar', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: tipoActual, ids })
+  });
+  const data = await r.json();
+  if (!r.ok) { mostrarToast(data.error || 'Error', 'error'); return; }
+  selIds.clear();
+  actualizarSelBar();
+  mostrarToast('Eliminados: ' + data.eliminados);
+  cargar(document.getElementById('tax-busq').value);
+}
+
+/* ── Helpers ─────────────────────────────────────────────── */
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function mostrarToast(msg, tipo = 'ok') {
+  toast_(msg, tipo === 'error' ? 'err' : tipo);
+}
+</script>
+</body>
+</html>

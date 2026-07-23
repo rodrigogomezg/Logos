@@ -509,7 +509,7 @@ class CuentaCorrienteController {
 
             $stmt = $db->prepare("SELECT saldo_cuenta_corriente FROM $tablaEnt WHERE id = ?");
             $stmt->execute([$entidad_id]);
-            json(200, ['ok' => true, 'saldo_actual' => (float)$stmt->fetchColumn()]);
+            json(200, ['ok' => true, 'id' => $mov_id, 'saldo_actual' => (float)$stmt->fetchColumn()]);
         } catch (Throwable $e) {
             $db->rollBack();
             json(500, ['error' => $e->getMessage()]);

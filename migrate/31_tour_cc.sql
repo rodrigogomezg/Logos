@@ -18,8 +18,8 @@ SET @cli = (SELECT id FROM clientes WHERE nombre = 'CLIENTE DEMO' LIMIT 1);
 
 -- Venta CC: 5x PRUEBA1 + 4x PRUEBA2 = $15.000
 -- Marcador: numero_afip = 'TOUR_CC_CLI' (campo interno, no visible en UI de ventas)
-INSERT INTO ventas (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado, numero_afip)
-SELECT CURDATE() - INTERVAL 5 DAY, @cli, 15000.00, 'REMITO', 'cc', 'completado', 'TOUR_CC_CLI'
+INSERT INTO ventas (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado, numero_afip, sync_uuid)
+SELECT CURDATE() - INTERVAL 5 DAY, @cli, 15000.00, 'REMITO', 'cc', 'completado', 'TOUR_CC_CLI', UUID()
 WHERE @cli IS NOT NULL
   AND NOT EXISTS (SELECT 1 FROM ventas WHERE numero_afip = 'TOUR_CC_CLI');
 

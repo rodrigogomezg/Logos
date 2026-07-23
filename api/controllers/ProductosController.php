@@ -61,16 +61,18 @@ class ProductosController {
             if ($exacto) {
                 // Exacto: la frase completa tal cual se escribió, en nombre o código
                 $like     = '%' . $q . '%';
-                $where[]  = '(nombre LIKE ? OR codigo LIKE ?)';
+                $where[]  = '(nombre LIKE ? OR codigo LIKE ? OR codigo_secundario LIKE ?)';
+                $params[] = $like;
                 $params[] = $like;
                 $params[] = $like;
             } else {
                 // Similar (default): cada palabra debe estar presente en el nombre o el
                 // código, en cualquier orden — permite combinar criterios, ej. "fratacho lijador"
                 $palabras     = array_values(array_filter(explode(' ', $q)));
-                $condPalabras = implode(' AND ', array_fill(0, count($palabras), '(nombre LIKE ? OR codigo LIKE ?)'));
+                $condPalabras = implode(' AND ', array_fill(0, count($palabras), '(nombre LIKE ? OR codigo LIKE ? OR codigo_secundario LIKE ?)'));
                 $where[] = "($condPalabras)";
                 foreach ($palabras as $p) {
+                    $params[] = '%' . $p . '%';
                     $params[] = '%' . $p . '%';
                     $params[] = '%' . $p . '%';
                 }
@@ -84,8 +86,10 @@ class ProductosController {
 
         // Ordenar priorizando exactitud cuando se busca la frase completa
         if ($q !== '' && $exacto) {
-            $order   = 'CASE WHEN codigo = ? THEN 0 WHEN codigo LIKE ? THEN 1 WHEN nombre LIKE ? THEN 2 ELSE 3 END, nombre';
+            $order   = 'CASE WHEN codigo = ? OR codigo_secundario = ? THEN 0 WHEN codigo LIKE ? OR codigo_secundario LIKE ? THEN 1 WHEN nombre LIKE ? THEN 2 ELSE 3 END, nombre';
             $params[] = $q;
+            $params[] = $q;
+            $params[] = $q . '%';
             $params[] = $q . '%';
             $params[] = $q . '%';
         } else {
@@ -107,9 +111,10 @@ class ProductosController {
         }
 
         $sql = "
-            SELECT p.id, p.codigo, p.nombre, p.marca, p.proveedor, p.categoria, p.subcategoria,
+            SELECT p.id, p.codigo, p.codigo_secundario, p.nombre, p.marca, p.proveedor, p.categoria, p.subcategoria,
                    p.precio_venta, p.costo_actual, p.stock_actual, p.stock_minimo,
-                   p.iva_porcentaje, p.unidad_medida, p.activo,
+                   p.iva_porcentaje, p.unidad_medida, p.activo, p.publicado_web,
+                   p.comisionable, p.comision_tipo, p.comision_valor,
                    $reservaSubq AS stock_disponible
             FROM productos p
             WHERE " . implode(' AND ', $where) . "
@@ -127,9 +132,10 @@ class ProductosController {
 
     public function get(int $id): void {
         $stmt = DB::get()->prepare("
-            SELECT id, codigo, nombre, marca, proveedor, categoria, subcategoria,
+            SELECT id, codigo, codigo_secundario, nombre, descripcion, marca, proveedor, categoria, subcategoria,
                    precio_venta, costo_actual, stock_actual, stock_minimo,
-                   iva_porcentaje, unidad_medida, activo
+                   iva_porcentaje, unidad_medida, peso, activo, publicado_web,
+                   comisionable, comision_tipo, comision_valor
             FROM productos WHERE id = ?
         ");
         $stmt->execute([$id]);
@@ -157,7 +163,8 @@ class ProductosController {
 
         if ($q !== '') {
             $like    = '%' . $q . '%';
-            $where[] = '(nombre LIKE ? OR codigo LIKE ?)';
+            $where[] = '(nombre LIKE ? OR codigo LIKE ? OR codigo_secundario LIKE ?)';
+            $params[] = $like;
             $params[] = $like;
             $params[] = $like;
         }
@@ -184,9 +191,10 @@ class ProductosController {
         $total = (int)$stmtC->fetchColumn();
 
         $stmt = $db->prepare("
-            SELECT id, codigo, nombre, marca, categoria, subcategoria, proveedor,
+            SELECT id, codigo, codigo_secundario, nombre, descripcion, marca, categoria, subcategoria, proveedor,
                    precio_venta, costo_actual, stock_minimo,
-                   iva_porcentaje, unidad_medida, activo
+                   iva_porcentaje, unidad_medida, peso, activo, publicado_web,
+                   comisionable, comision_tipo, comision_valor
             FROM productos
             WHERE $whereStr
             ORDER BY $orderSql
@@ -196,11 +204,14 @@ class ProductosController {
         $items = $stmt->fetchAll();
 
         foreach ($items as &$p) {
-            $p['precio_venta']  = (float)$p['precio_venta'];
-            $p['costo_actual']  = (float)$p['costo_actual'];
-            $p['stock_minimo']  = (float)$p['stock_minimo'];
+            $p['precio_venta']   = (float)$p['precio_venta'];
+            $p['costo_actual']   = (float)$p['costo_actual'];
+            $p['stock_minimo']   = (float)$p['stock_minimo'];
             $p['iva_porcentaje'] = $p['iva_porcentaje'] !== null ? (float)$p['iva_porcentaje'] : null;
-            $p['activo']        = (bool)$p['activo'];
+            $p['activo']         = (bool)$p['activo'];
+            $p['publicado_web']  = (bool)$p['publicado_web'];
+            $p['comisionable']   = (bool)$p['comisionable'];
+            $p['comision_valor'] = $p['comision_valor'] !== null ? (float)$p['comision_valor'] : null;
         }
         unset($p);
 
@@ -220,7 +231,9 @@ class ProductosController {
         $nombre       = trim($body['nombre'] ?? '');
         if ($nombre === '') json(400, ['error' => 'El nombre es requerido']);
 
-        $codigo        = trim($body['codigo']       ?? '') ?: null;
+        $codigo        = trim($body['codigo']           ?? '') ?: null;
+        $codigo_sec    = trim($body['codigo_secundario'] ?? '') ?: null;
+        $descripcion   = trim($body['descripcion']      ?? '') ?: null;
         $precio        = isset($body['precio_venta']) && $body['precio_venta'] !== null ? (float)$body['precio_venta'] : null;
         // Sin permiso 'costos' el body no puede fijar el costo: arranca en 0
         $costo         = Auth::puede('costos')
@@ -234,7 +247,12 @@ class ProductosController {
         $stock_inicial = isset($body['stock_inicial']) && $body['stock_inicial'] !== null ? (float)$body['stock_inicial'] : 0;
         $iva_pct       = isset($body['iva_porcentaje']) && $body['iva_porcentaje'] !== null ? (float)$body['iva_porcentaje'] : 21;
         $unidad        = trim($body['unidad_medida'] ?? '') ?: null;
-        $activo        = isset($body['activo']) ? ($body['activo'] ? 1 : 0) : 1;
+        $peso          = isset($body['peso']) && $body['peso'] !== null ? (float)$body['peso'] : null;
+        $activo        = isset($body['activo'])        ? ($body['activo']        ? 1 : 0) : 1;
+        $publicado_web = isset($body['publicado_web']) ? ($body['publicado_web'] ? 1 : 0) : 0;
+        $comisionable  = isset($body['comisionable'])  ? ($body['comisionable']  ? 1 : 0) : 0;
+        $comision_tipo = in_array($body['comision_tipo'] ?? null, ['porcentaje', 'fijo'], true) ? $body['comision_tipo'] : null;
+        $comision_valor = isset($body['comision_valor']) && is_numeric($body['comision_valor']) ? (float)$body['comision_valor'] : null;
 
         $db = DB::get();
 
@@ -248,13 +266,15 @@ class ProductosController {
         try {
             $db->prepare("
                 INSERT INTO productos
-                    (nombre, codigo, precio_venta, costo_actual, marca, proveedor,
+                    (nombre, descripcion, codigo, codigo_secundario, precio_venta, costo_actual, marca, proveedor,
                      categoria, subcategoria, stock_minimo, stock_actual,
-                     iva_porcentaje, unidad_medida, activo)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ")->execute([$nombre, $codigo, $precio, $costo, $marca, $proveedor,
+                     iva_porcentaje, unidad_medida, peso, activo, publicado_web,
+                     comisionable, comision_tipo, comision_valor)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ")->execute([$nombre, $descripcion, $codigo, $codigo_sec, $precio, $costo, $marca, $proveedor,
                          $categoria, $subcategoria, $stock_min, $stock_inicial,
-                         $iva_pct, $unidad, $activo]);
+                         $iva_pct, $unidad, $peso, $activo, $publicado_web,
+                         $comisionable, $comision_tipo, $comision_valor]);
 
             $newId = (int)$db->lastInsertId();
 
@@ -278,7 +298,9 @@ class ProductosController {
         if (!$body) json(400, ['error' => 'Body JSON inválido']);
 
         $nombre       = isset($body['nombre'])       ? trim($body['nombre'])        : '';
-        $codigo       = isset($body['codigo'])       ? trim($body['codigo'])        : null;
+        $codigo       = isset($body['codigo'])             ? trim($body['codigo'])             : null;
+        $codigo_sec   = array_key_exists('codigo_secundario', $body) ? (trim($body['codigo_secundario'] ?? '') ?: null) : null;
+        $descripcion  = array_key_exists('descripcion', $body) ? (trim($body['descripcion'] ?? '') ?: null) : null;
         $precio       = array_key_exists('precio_venta', $body) && $body['precio_venta'] !== null
                         ? (float)$body['precio_venta'] : null;
         // Sin permiso 'costos', el costo del body se ignora (COALESCE preserva el actual)
@@ -292,8 +314,13 @@ class ProductosController {
                         ? (float)$body['stock_minimo'] : null;
         $iva_pct      = array_key_exists('iva_porcentaje', $body) && $body['iva_porcentaje'] !== null
                         ? (float)$body['iva_porcentaje'] : null;
-        $unidad       = array_key_exists('unidad_medida', $body) ? (trim($body['unidad_medida']) ?: null) : null;
-        $activo       = array_key_exists('activo', $body) ? ($body['activo'] ? 1 : 0) : null;
+        $unidad        = array_key_exists('unidad_medida', $body) ? (trim($body['unidad_medida']) ?: null) : null;
+        $peso          = array_key_exists('peso', $body) && $body['peso'] !== null ? (float)$body['peso'] : null;
+        $activo        = array_key_exists('activo',        $body) ? ($body['activo']        ? 1 : 0) : null;
+        $publicado_web = array_key_exists('publicado_web', $body) ? ($body['publicado_web'] ? 1 : 0) : null;
+        $comisionable  = array_key_exists('comisionable',  $body) ? ($body['comisionable']  ? 1 : 0) : null;
+        $comision_tipo = array_key_exists('comision_tipo', $body) && in_array($body['comision_tipo'], ['porcentaje', 'fijo'], true) ? $body['comision_tipo'] : null;
+        $comision_valor = array_key_exists('comision_valor', $body) && is_numeric($body['comision_valor']) ? (float)$body['comision_valor'] : null;
 
         if ($nombre === '') json(400, ['error' => 'nombre es requerido']);
 
@@ -304,22 +331,31 @@ class ProductosController {
 
         $db->prepare("
             UPDATE productos SET
-                nombre         = ?,
-                codigo         = COALESCE(?, codigo),
-                precio_venta   = COALESCE(?, precio_venta),
-                costo_actual   = COALESCE(?, costo_actual),
-                marca          = ?,
-                proveedor      = ?,
-                categoria      = ?,
-                subcategoria   = ?,
-                stock_minimo   = COALESCE(?, stock_minimo),
-                iva_porcentaje = COALESCE(?, iva_porcentaje),
-                unidad_medida  = ?,
-                activo         = COALESCE(?, activo)
+                nombre            = ?,
+                codigo            = COALESCE(?, codigo),
+                codigo_secundario = ?,
+                descripcion       = ?,
+                precio_venta      = COALESCE(?, precio_venta),
+                costo_actual      = COALESCE(?, costo_actual),
+                marca             = ?,
+                proveedor         = ?,
+                categoria         = ?,
+                subcategoria      = ?,
+                stock_minimo      = COALESCE(?, stock_minimo),
+                iva_porcentaje    = COALESCE(?, iva_porcentaje),
+                unidad_medida     = ?,
+                peso              = ?,
+                activo            = COALESCE(?, activo),
+                publicado_web     = COALESCE(?, publicado_web),
+                comisionable      = COALESCE(?, comisionable),
+                comision_tipo     = COALESCE(?, comision_tipo),
+                comision_valor    = COALESCE(?, comision_valor)
             WHERE id = ?
         ")->execute([
             $nombre,
             $codigo       ?: null,
+            $codigo_sec,
+            $descripcion,
             $precio,
             $costo,
             $marca        ?: null,
@@ -329,7 +365,12 @@ class ProductosController {
             $stock_min,
             $iva_pct,
             $unidad,
+            $peso,
             $activo,
+            $publicado_web,
+            $comisionable,
+            $comision_tipo,
+            $comision_valor,
             $id,
         ]);
 

@@ -405,7 +405,7 @@ class ComprasController {
                 continue;
             }
 
-            $stmt = $db->prepare("SELECT id, nombre, codigo, iva_porcentaje, activo FROM productos WHERE codigo = ?");
+            $stmt = $db->prepare("SELECT id, nombre, codigo, proveedor, iva_porcentaje, activo FROM productos WHERE codigo = ?");
             $stmt->execute([$codigo]);
             $candidatos = $stmt->fetchAll();
             $activos    = array_values(array_filter($candidatos, fn($p) => (int)$p['activo'] === 1));
@@ -425,12 +425,13 @@ class ComprasController {
             }
 
             $resueltas[] = [
-                'producto_id'    => (int)$producto['id'],
+                'producto_id'     => (int)$producto['id'],
                 'producto_nombre' => $producto['nombre'],
-                'codigo'         => $producto['codigo'],
-                'cantidad'       => $cantidad,
-                'costo_unitario' => $costo,
-                'iva_porcentaje' => (float)$producto['iva_porcentaje'],
+                'codigo'          => $producto['codigo'],
+                'proveedor'       => $producto['proveedor'],
+                'cantidad'        => $cantidad,
+                'costo_unitario'  => $costo,
+                'iva_porcentaje'  => (float)$producto['iva_porcentaje'],
             ];
         }
 

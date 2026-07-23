@@ -8,9 +8,9 @@ class ProductosImportController {
     private const MAX_BYTES = 15 * 1024 * 1024; // 15 MB
     private const DIR_DISCO = __DIR__ . '/../../uploads/importaciones/';
 
-    private const CAMPOS_TEXTO = ['nombre', 'marca', 'categoria', 'subcategoria'];
+    private const CAMPOS_TEXTO = ['nombre', 'marca', 'categoria', 'subcategoria', 'codigo_secundario'];
     private const CAMPOS_NUM   = ['costo_actual', 'precio_venta', 'stock_minimo'];
-    private const CAMPOS_TODOS = ['nombre', 'marca', 'categoria', 'subcategoria', 'proveedor', 'costo_actual', 'precio_venta', 'stock_minimo'];
+    private const CAMPOS_TODOS = ['nombre', 'marca', 'categoria', 'subcategoria', 'codigo_secundario', 'proveedor', 'costo_actual', 'precio_venta', 'stock_minimo'];
 
     // ── Paso 1: subir y leer archivo ──────────────────────────────────
     public function leer(): void {
@@ -135,14 +135,14 @@ class ProductosImportController {
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             $stmtIns = $db->prepare("
-                INSERT INTO productos (codigo, nombre, marca, categoria, subcategoria, proveedor, precio_venta, costo_actual, stock_actual, stock_minimo, activo)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 1)
+                INSERT INTO productos (codigo, codigo_secundario, nombre, marca, categoria, subcategoria, proveedor, precio_venta, costo_actual, stock_actual, stock_minimo, activo)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 1)
             ");
 
             $creados = 0;
             foreach ($resultado['crear'] as $r) {
                 $stmtIns->execute([
-                    $r['codigo'], $r['nombre'], $r['marca'], $r['categoria'], $r['subcategoria'], $r['proveedor'],
+                    $r['codigo'], $r['codigo_secundario'] ?? null, $r['nombre'], $r['marca'], $r['categoria'], $r['subcategoria'], $r['proveedor'],
                     $r['precio_venta'], $r['costo_actual'], $r['stock_minimo'],
                 ]);
                 $nuevoId = (int)$db->lastInsertId();
@@ -186,6 +186,18 @@ class ProductosImportController {
 
             $db->prepare("UPDATE productos_import_lotes SET creados = ?, actualizados = ?, errores = ?, desactivados = ? WHERE id = ?")
                ->execute([$creados, $actualizados, count($resultado['errores']), $desactivados, $loteId]);
+
+            // Auto-crear rubros y marcas nuevos que vengan en la importación
+            $stmtRubro = $db->prepare("INSERT IGNORE INTO rubros (nombre) VALUES (?)");
+            $stmtMarca = $db->prepare("INSERT IGNORE INTO marcas (nombre) VALUES (?)");
+            $rubrosVistos = [];
+            $marcasVistas = [];
+            foreach (array_merge($resultado['crear'], array_map(fn($r) => $r['despues'], $resultado['actualizar'])) as $r) {
+                $cat = isset($r['categoria']) && (string)$r['categoria'] !== '' ? trim((string)$r['categoria']) : null;
+                $mar = isset($r['marca'])     && (string)$r['marca']     !== '' ? trim((string)$r['marca'])     : null;
+                if ($cat && !in_array($cat, $rubrosVistos, true)) { $stmtRubro->execute([$cat]); $rubrosVistos[] = $cat; }
+                if ($mar && !in_array($mar, $marcasVistas, true)) { $stmtMarca->execute([$mar]); $marcasVistas[] = $mar; }
+            }
 
             if ($guardarPlantilla) {
                 $db->prepare("
@@ -288,7 +300,7 @@ class ProductosImportController {
 
         $db = DB::get();
         $stmtBuscar = $db->prepare("
-            SELECT id, nombre, marca, categoria, subcategoria, proveedor, precio_venta, costo_actual, stock_minimo, activo
+            SELECT id, nombre, marca, categoria, subcategoria, codigo_secundario, proveedor, precio_venta, costo_actual, stock_minimo, activo
             FROM productos WHERE codigo = ?
         ");
 
@@ -299,9 +311,17 @@ class ProductosImportController {
             if ($row === null || $this->filaVacia($row)) continue;
             $numFila = $i + 1;
 
-            $codigo = trim((string)($row[$cols['codigo']] ?? ''));
+            $codigoRaw = $row[$cols['codigo']] ?? '';
+            // Celdas numéricas en Excel pierden ceros iniciales; si el valor es float sin
+            // parte decimal significativa (123.0) lo normalizamos a entero string (123).
+            if (is_float($codigoRaw) && fmod($codigoRaw, 1.0) === 0.0) $codigoRaw = (int)$codigoRaw;
+            $codigo = preg_replace('/[\x00-\x1F\x7F]+/', '', trim((string)$codigoRaw));
             if ($codigo === '') {
                 $errores[] = ['fila' => $numFila, 'codigo' => null, 'mensaje' => 'Falta el código'];
+                continue;
+            }
+            if (strlen($codigo) > 50) {
+                $errores[] = ['fila' => $numFila, 'codigo' => substr($codigo, 0, 50) . '…', 'mensaje' => 'Código demasiado largo (máximo 50 caracteres)'];
                 continue;
             }
             if (isset($vistos[$codigo])) {
@@ -313,8 +333,11 @@ class ProductosImportController {
             $valores = [];
             foreach (self::CAMPOS_TEXTO as $campo) {
                 $idx = $cols[$campo] ?? null;
-                $valores[$campo] = ($idx !== null && $idx !== '') ? trim((string)($row[$idx] ?? '')) : null;
-                if ($valores[$campo] === '') $valores[$campo] = null;
+                $raw = ($idx !== null && $idx !== '') ? trim((string)($row[$idx] ?? '')) : '';
+                // Eliminar caracteres de control embebidos (tabs, saltos de línea, null bytes)
+                $raw = preg_replace('/[\x00-\x1F\x7F]+/', ' ', $raw);
+                $raw = trim(preg_replace('/  +/', ' ', $raw));
+                $valores[$campo] = $raw !== '' ? $raw : null;
             }
             foreach (self::CAMPOS_NUM as $campo) {
                 $idx = $cols[$campo] ?? null;
@@ -347,6 +370,11 @@ class ProductosImportController {
                 continue;
             }
 
+            if ($valores['nombre'] !== null && strlen($valores['nombre']) > 255) {
+                $errores[] = ['fila' => $numFila, 'codigo' => $codigo, 'mensaje' => 'Nombre demasiado largo (máximo 255 caracteres)'];
+                continue;
+            }
+
             if (!$existente) {
                 if (!$valores['nombre']) {
                     $errores[] = ['fila' => $numFila, 'codigo' => $codigo, 'mensaje' => 'Falta el nombre (requerido para crear un producto nuevo)'];
@@ -355,7 +383,8 @@ class ProductosImportController {
                 $crear[] = [
                     'fila' => $numFila, 'codigo' => $codigo,
                     'nombre' => $valores['nombre'], 'marca' => $valores['marca'], 'categoria' => $valores['categoria'],
-                    'subcategoria' => $valores['subcategoria'], 'proveedor' => $proveedor,
+                    'subcategoria' => $valores['subcategoria'], 'codigo_secundario' => $valores['codigo_secundario'] ?? null,
+                    'proveedor' => $proveedor,
                     'costo_actual' => $valores['costo_actual'] ?? 0, 'precio_venta' => $valores['precio_venta'] ?? 0,
                     'stock_minimo' => $valores['stock_minimo'] ?? 0,
                 ];

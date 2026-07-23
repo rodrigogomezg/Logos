@@ -179,11 +179,18 @@ class DevolucionesController {
             }
 
             // 3. Acreditar en CC del cliente
+            $obsItems    = implode(', ', array_map(
+                fn($it) => $it['nombre'] . ' ×' . rtrim(rtrim(number_format((float)$it['cantidad'], 3), '0'), '.'),
+                $itemsValidados
+            ));
+            $obsNumVenta  = str_pad((string)$venta_id, 5, '0', STR_PAD_LEFT);
+            $observaciones = "Devolución Venta N°{$obsNumVenta} — {$obsItems}";
+
             $db->prepare("
                 INSERT INTO cuenta_corriente_movimientos
-                    (entidad_tipo, entidad_id, tipo, monto, referencia_id, fecha)
-                VALUES ('cliente', ?, 'pago', ?, ?, CURDATE())
-            ")->execute([$cliente_id, $monto_total, $dev_id]);
+                    (entidad_tipo, entidad_id, tipo, monto, referencia_id, observaciones, fecha)
+                VALUES ('cliente', ?, 'pago', ?, ?, ?, CURDATE())
+            ")->execute([$cliente_id, $monto_total, $dev_id, $observaciones]);
 
             $db->prepare("UPDATE clientes SET saldo_cuenta_corriente = saldo_cuenta_corriente - ? WHERE id = ?")
                ->execute([$monto_total, $cliente_id]);
@@ -206,5 +213,41 @@ class DevolucionesController {
             'monto_total' => $monto_total,
             'items'       => count($itemsValidados),
         ]);
+    }
+
+    /** GET /devoluciones/{id} */
+    public function listarUno(int $id): void {
+        $db  = DB::get();
+        $row = $db->prepare("
+            SELECT d.id, d.venta_id, d.cliente_id, d.motivo, d.monto_total, d.creado_en,
+                   u.nombre  AS usuario_nombre,
+                   v.tipo_comprobante
+            FROM devoluciones d
+            LEFT JOIN usuarios u ON u.id  = d.usuario_id
+            LEFT JOIN ventas   v ON v.id  = d.venta_id
+            WHERE d.id = ?
+        ");
+        $row->execute([$id]);
+        $dev = $row->fetch();
+        if (!$dev) json(404, ['error' => 'Devolución no encontrada']);
+
+        $dev['id']          = (int)$dev['id'];
+        $dev['venta_id']    = (int)$dev['venta_id'];
+        $dev['cliente_id']  = (int)$dev['cliente_id'];
+        $dev['monto_total'] = (float)$dev['monto_total'];
+
+        $items = $db->prepare("
+            SELECT producto_id, nombre, cantidad, precio_unitario
+            FROM devolucion_items WHERE devolucion_id = ?
+        ");
+        $items->execute([$id]);
+        $dev['items'] = array_map(fn($r) => [
+            'producto_id'     => (int)$r['producto_id'],
+            'nombre'          => $r['nombre'],
+            'cantidad'        => (float)$r['cantidad'],
+            'precio_unitario' => (float)$r['precio_unitario'],
+        ], $items->fetchAll());
+
+        json(200, $dev);
     }
 }

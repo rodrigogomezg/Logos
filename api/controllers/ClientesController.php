@@ -41,6 +41,8 @@ class ClientesController {
         $perPag = min(100, max(10, (int)($_GET['per_page'] ?? 50)));
         $q      = trim($_GET['q'] ?? '');
         $activo = $_GET['activo'] ?? null;
+        $orden  = $_GET['orden']  ?? 'nombre';
+        $ccOnly = !empty($_GET['cc_only']);
         $offset = ($pagina - 1) * $perPag;
 
         $where  = [];
@@ -55,8 +57,17 @@ class ClientesController {
             $where[]  = 'c.activo = ?';
             $params[] = (int)$activo;
         }
+        if ($ccOnly) {
+            $where[] = 'c.cc_habilitada = 1';
+        }
 
         $whereStr = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        $orderBy = match($orden) {
+            'saldo'         => 'ABS(c.saldo_cuenta_corriente) DESC, c.nombre',
+            'ultima_compra' => 'uv.ult_fecha DESC, c.nombre',
+            default         => 'c.nombre',
+        };
 
         $cs = $db->prepare("SELECT COUNT(*) FROM clientes c $whereStr");
         $cs->execute($params);
@@ -70,11 +81,14 @@ class ClientesController {
                    c.domicilios_envio,
                    c.activo, c.cc_habilitada, c.limite_credito, c.plazo_pago_dias, c.saldo_cuenta_corriente,
                    c.descuento_extra, c.solo_remito, c.lista_precio_id, c.creado_en,
-                   lp.nombre AS lista_precio_nombre
+                   lp.nombre AS lista_precio_nombre,
+                   uv.ult_fecha
             FROM clientes c
             LEFT JOIN listas_precio lp ON c.lista_precio_id = lp.id
+            LEFT JOIN (SELECT cliente_id, MAX(fecha) AS ult_fecha FROM ventas GROUP BY cliente_id) AS uv
+                   ON uv.cliente_id = c.id
             $whereStr
-            ORDER BY c.nombre
+            ORDER BY $orderBy
             LIMIT ? OFFSET ?
         ");
         $stmt->execute($params);

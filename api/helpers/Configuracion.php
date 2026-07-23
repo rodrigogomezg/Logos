@@ -39,6 +39,7 @@ class Configuracion {
             'clave_autorizacion_hash' => null,
             'color_tema'              => 'azul',
             'backup_auto_cierre'      => 0,
+            'ventas_sin_stock'        => 0,
             'mp_access_token'         => '',
             'mp_webhook_secret'       => '',
             'wa_phone_id'             => '',

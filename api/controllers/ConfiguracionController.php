@@ -68,6 +68,9 @@ class ConfiguracionController {
         $waToken   = trim($body['wa_token']           ?? '') ?: null;
         $waTemplate = trim($body['wa_template_name'] ?? '') ?: 'envio_comprobante';
 
+        $backupAutoCierre = isset($body['backup_auto_cierre']) ? (int)(bool)$body['backup_auto_cierre'] : 0;
+        $ventasSinStock   = isset($body['ventas_sin_stock'])   ? (int)(bool)$body['ventas_sin_stock']   : 0;
+
         DB::get()->prepare("
             INSERT INTO configuracion
                 (id, razon_social, nombre_fantasia, cuit, condicion_iva, domicilio, iibb, telefono, website,
@@ -75,8 +78,9 @@ class ConfiguracionController {
                  carpeta_backups_secundaria,
                  clave_autorizacion_hash, color_tema, tipos_habilitados,
                  mp_access_token, mp_webhook_secret, wa_phone_id, wa_token, wa_template_name,
+                 backup_auto_cierre, ventas_sin_stock,
                  actualizado_en)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ON DUPLICATE KEY UPDATE
                 razon_social         = VALUES(razon_social),
                 nombre_fantasia      = VALUES(nombre_fantasia),
@@ -101,6 +105,8 @@ class ConfiguracionController {
                 wa_phone_id          = VALUES(wa_phone_id),
                 wa_token             = COALESCE(VALUES(wa_token), wa_token),
                 wa_template_name     = COALESCE(VALUES(wa_template_name), wa_template_name),
+                backup_auto_cierre   = VALUES(backup_auto_cierre),
+                ventas_sin_stock     = VALUES(ventas_sin_stock),
                 actualizado_en       = NOW()
         ")->execute([
             $razonSocial,
@@ -126,6 +132,8 @@ class ConfiguracionController {
             $waPhoneId,
             $waToken,
             $waTemplate,
+            $backupAutoCierre,
+            $ventasSinStock,
             $claveHash,         // UPDATE COALESCE clave_autorizacion_hash
             $colorTema,         // UPDATE COALESCE color_tema
         ]);
