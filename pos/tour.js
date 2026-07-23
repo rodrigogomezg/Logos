@@ -77,15 +77,15 @@
 .tt-prev { background:#eee; color:#555; }
 .tt-prev:hover { background:#ddd; }
 .tt-prev:disabled { opacity:.35; cursor:default; }
-.tt-next { background:#1a4a8a; color:#fff; margin-left:auto; }
-.tt-next:hover { background:#153a6e; }
+.tt-next { background:var(--color-primary,#163B66); color:#fff; margin-left:auto; }
+.tt-next:hover { background:var(--color-primary-dark,#0F2A4A); }
 .nav-tour-btn {
-  background:none; border:1px solid rgba(163,177,198,.4); border-radius:50%;
+  background:none; border:1px solid rgba(255,255,255,.28); border-radius:50%;
   width:26px; height:26px; display:flex; align-items:center; justify-content:center;
-  cursor:pointer; font-size:13px; font-weight:700; color:var(--neo-text-2,#666);
+  cursor:pointer; font-size:13px; font-weight:700; color:rgba(255,255,255,.62);
   flex-shrink:0; transition: border-color .15s, color .15s;
 }
-.nav-tour-btn:hover { border-color:var(--neo-accent,#4f8ef7); color:var(--neo-accent,#4f8ef7); }
+.nav-tour-btn:hover { border-color:rgba(255,255,255,.7); color:#fff; }
     `;
     document.head.appendChild(s);
   }

@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Cierres históricos</title>
 <script src="config.js"></script>
@@ -33,16 +34,16 @@
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 920px; }
-thead th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); padding: 12px 14px; border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap; background: var(--neo-bg-deep); }
+thead th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-ink); padding: 12px 14px; border-bottom: 1px solid var(--borde-fuerte); white-space: nowrap; background: var(--neo-bg-deep); }
 thead th.r { text-align: right; }
-tbody td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); white-space: nowrap; color: var(--neo-text); }
+tbody td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--borde); white-space: nowrap; color: var(--neo-text); }
 tbody td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover { background: rgba(255,255,255,.4); }
+tbody tr:hover { background: var(--color-bg-alt); }
 
 .estado-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--neo-r-pill); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; box-shadow: var(--neo-e1); }
 .estado-pill.abierto { background: rgba(39,174,96,.1); color: var(--neo-success); }
-.estado-pill.cerrado { background: rgba(163,177,198,.15); color: var(--neo-text-3); }
+.estado-pill.cerrado { background: var(--color-bg-alt); color: var(--neo-text-3); }
 .estado-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
 .dif-ok    { color: var(--neo-success); }
@@ -70,12 +71,12 @@ tbody tr:hover .btn-del-mov { opacity: 1; }
   transition: opacity 200ms cubic-bezier(0.23,1,0.32,1), transform 200ms cubic-bezier(0.23,1,0.32,1);
 }
 .overlay.abierto .modal { opacity: 1; transform: scale(1) translateY(0); }
-.modal-head { padding: 16px 20px; border-bottom: 1px solid rgba(163,177,198,.3); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.modal-head { padding: 16px 20px; border-bottom: 1px solid var(--borde-fuerte); display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
 .modal-head h2 { flex: 1; font-size: 16px; font-weight: 700; color: var(--neo-text); }
 .modal-close { background: none; border: none; cursor: pointer; color: var(--neo-text-3); font-size: 22px; line-height: 1; padding: 4px 8px; border-radius: var(--neo-r-xs); }
-.modal-close:hover { background: rgba(163,177,198,.2); color: var(--neo-text); }
+.modal-close:hover { background: var(--color-bg-alt); color: var(--neo-text); }
 .modal-body { padding: 20px; font-size: 13px; line-height: 1.6; color: var(--neo-text); }
-.modal-footer { padding: 14px 20px; border-top: 1px solid rgba(163,177,198,.3); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid var(--borde-fuerte); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
 .btn-sec { padding: 10px 20px; border: none; border-radius: var(--neo-r-sm); background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; cursor: pointer; font-family: inherit; transition: box-shadow var(--neo-t-fast); }
 .btn-sec:hover { box-shadow: var(--neo-e3); }
 .btn-danger { padding: 10px 20px; background: var(--neo-danger); color: white; border: none; border-radius: var(--neo-r-sm); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; cursor: pointer; font-family: inherit; box-shadow: 4px 4px 10px var(--neo-danger-glow); }

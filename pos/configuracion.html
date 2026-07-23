@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Configuración</title>
 <script src="config.js"></script>
@@ -21,7 +22,7 @@
 /* ── Tab bar ── */
 .tab-bar {
   background: var(--neo-bg);
-  border-bottom: 1px solid rgba(163,177,198,.3);
+  border-bottom: 1px solid var(--borde-fuerte);
   display: flex; padding: 0 clamp(20px,4vw,48px); flex-shrink: 0;
   overflow-x: auto; scrollbar-width: none;
 }
@@ -52,7 +53,7 @@
 .card-titulo {
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
   color: var(--neo-text-3); padding: 10px 20px;
-  border-bottom: 1px solid rgba(163,177,198,.25);
+  border-bottom: 1px solid var(--borde);
 }
 .card-body { padding: 20px; }
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px,1fr)); gap: 16px; align-items: stretch; margin-bottom: 16px; }
@@ -111,12 +112,12 @@
 table.cajas { width: 100%; border-collapse: collapse; min-width: 480px; }
 table.cajas th {
   text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px;
-  color: var(--neo-text-3); padding: 9px 12px;
-  border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap;
+  color: var(--color-ink); padding: 9px 12px;
+  border-bottom: 1px solid var(--borde-fuerte); white-space: nowrap;
   background: var(--neo-bg-deep);
 }
-table.cajas td { padding: 9px 12px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); vertical-align: middle; color: var(--neo-text); }
-table.cajas tbody tr:hover { background: rgba(255,255,255,.45); }
+table.cajas td { padding: 9px 12px; font-size: 13px; border-bottom: 1px solid var(--borde); vertical-align: middle; color: var(--neo-text); }
+table.cajas tbody tr:hover { background: var(--color-bg-alt); }
 table.cajas input[type="text"] {
   padding: 7px 10px; border: none; border-radius: var(--neo-r-xs);
   font-size: 13px; font-family: inherit; outline: none; width: 100%;
@@ -141,7 +142,7 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 
 .fila-nueva {
   display: flex; gap: 8px; padding-top: 14px; margin-top: 14px;
-  border-top: 1px solid rgba(163,177,198,.3); flex-wrap: wrap;
+  border-top: 1px solid var(--borde-fuerte); flex-wrap: wrap;
 }
 .fila-nueva input { flex: 1; min-width: 160px; }
 
@@ -180,7 +181,7 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 .card-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(163,177,198,.25);
+  border-bottom: 1px solid var(--borde);
 }
 .card-header h3 {
   font-size: 10px; font-weight: 700; text-transform: uppercase;
@@ -206,17 +207,17 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 .tabla th {
   text-align: left; font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .6px;
-  color: var(--neo-text-3); padding: 9px 16px;
-  border-bottom: 1px solid rgba(163,177,198,.4);
+  color: var(--color-ink); padding: 9px 16px;
+  border-bottom: 1px solid var(--borde-fuerte);
   background: var(--neo-bg-deep); white-space: nowrap;
 }
 .tabla td {
   padding: 9px 16px; font-size: 13px;
-  border-bottom: 1px solid rgba(163,177,198,.15);
+  border-bottom: 1px solid var(--borde);
   vertical-align: middle; color: var(--neo-text);
 }
 .tabla tbody tr:last-child td { border-bottom: none; }
-.tabla tbody tr:hover { background: rgba(163,177,198,.07); }
+.tabla tbody tr:hover { background: var(--color-bg-alt); }
 .tabla td.empty { color: var(--neo-text-3); font-style: italic; text-align: center; padding: 24px; }
 .tabla td.acciones { text-align: right; white-space: nowrap; }
 .tabla td.acciones .btn-mini + .btn-mini { margin-left: 4px; }
@@ -226,7 +227,7 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
   display: inline-flex; align-items: center; gap: 4px;
   padding: 3px 8px; border-radius: 4px;
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
-  background: rgba(163,177,198,.2); color: var(--neo-text-2);
+  background: var(--color-bg-alt); color: var(--neo-text-2);
 }
 .badge.ok   { background: rgba(39,174,96,.12); color: var(--neo-success, #27ae60); }
 .badge.warn { background: rgba(243,156,18,.12); color: var(--neo-warning, #f39c12); }
@@ -312,6 +313,20 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
             <option value="compra">Compra</option>
           </select>
           <button class="btn btn-sec" id="btn-caja-agregar">Agregar caja</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Comportamiento de ventas</div>
+      <div class="card-body">
+        <label class="checkbox-item" style="font-size:13px;gap:10px;cursor:pointer">
+          <input type="checkbox" id="cfg-ventas_sin_stock">
+          Permitir ventas sin stock suficiente (el stock puede quedar negativo)
+        </label>
+        <div class="form-hint" style="margin-top:8px">Si está activo, el POS permite confirmar una venta aunque el producto no tenga stock disponible. El stock resultante quedará en negativo.</div>
+        <div class="btn-row">
+          <button class="btn btn-ok" id="btn-guardar-ventas">Guardar</button>
         </div>
       </div>
     </div>
@@ -497,8 +512,8 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 
     <!-- ═══ Modal de permisos granulares (estilo plano) ═══ -->
     <div id="perm-overlay" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
-      <div style="background:#fff;border:1px solid #D5D0CA;width:min(94vw,560px);max-height:88vh;display:flex;flex-direction:column">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #D5D0CA;background:#F0EEEB;flex-shrink:0">
+      <div style="background:#fff;border:1px solid var(--borde-fuerte);width:min(94vw,560px);max-height:88vh;display:flex;flex-direction:column">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--borde-fuerte);background:var(--color-bg-alt);flex-shrink:0">
           <h3 id="perm-titulo" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9B9590;margin:0">Permisos</h3>
           <button id="perm-cerrar" style="background:none;border:none;cursor:pointer;color:#9B9590;font-size:16px;line-height:1;padding:2px 6px">✕</button>
         </div>
@@ -509,7 +524,7 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
           </div>
           <div id="perm-checks" style="display:flex;flex-direction:column;gap:2px"></div>
         </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #D5D0CA;flex-shrink:0">
+        <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--borde-fuerte);flex-shrink:0">
           <button class="btn btn-sec" id="perm-cancelar">Cancelar</button>
           <button class="btn btn-ok" id="perm-guardar">Guardar permisos</button>
         </div>
@@ -517,7 +532,7 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
     </div>
     <style>
       #perm-overlay .btn { border-radius:0 !important; box-shadow:none !important; }
-      .perm-item { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; cursor:pointer; border-bottom:1px solid #EDEAE6; }
+      .perm-item { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--color-bg-alt); }
       .perm-item:last-child { border-bottom:none; }
       .perm-item:hover { background:#FAFAF9; }
       .perm-item input { margin-top:3px; flex-shrink:0; }
@@ -817,7 +832,8 @@ async function cargarConfig() {
   $('cfg-carpeta_comprobantes').value = configActual.carpeta_comprobantes || '';
   $('cfg-carpeta_backups').value      = configActual.carpeta_backups || '';
   $('cfg-carpeta_backups_secundaria').value = configActual.carpeta_backups_secundaria || '';
-  $('cfg-backup_auto_cierre').checked = !!(configActual.backup_auto_cierre);
+  $('cfg-backup_auto_cierre').checked  = !!(configActual.backup_auto_cierre);
+  $('cfg-ventas_sin_stock').checked    = !!(configActual.ventas_sin_stock);
   $('cfg-clave_autorizacion').value   = '';
   $('rf-clave-grupo').style.display   = configActual.clave_autorizacion_configurada ? '' : 'none';
   $('cfg-clave-hint').textContent = (configActual.clave_autorizacion_configurada
@@ -885,6 +901,7 @@ function recolectarConfig() {
     carpeta_backups:      $('cfg-carpeta_backups').value.trim(),
     carpeta_backups_secundaria: $('cfg-carpeta_backups_secundaria').value.trim(),
     backup_auto_cierre:   $('cfg-backup_auto_cierre').checked ? 1 : 0,
+    ventas_sin_stock:     $('cfg-ventas_sin_stock').checked   ? 1 : 0,
     clave_autorizacion:   $('cfg-clave_autorizacion').value,
     wa_phone_id:          $('cfg-wa_phone_id').value.trim(),
     wa_template_name:     $('cfg-wa_template_name').value.trim(),
@@ -915,6 +932,7 @@ async function guardarConfig() {
 $('btn-guardar').addEventListener('click', guardarConfig);
 $('btn-guardar-carpeta-backups').addEventListener('click', guardarConfig);
 $('btn-guardar-clave').addEventListener('click', guardarConfig);
+$('btn-guardar-ventas').addEventListener('click', guardarConfig);
 
 // ── MercadoPago ───────────────────────────────────────────────
 $('btn-guardar-mp').addEventListener('click', async () => {

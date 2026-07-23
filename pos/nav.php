@@ -5,14 +5,15 @@ $nav_activo = $nav_activo ?? '';
 function nav_clase(string $clave, string $actual): string {
     return $clave === $actual ? ' activo' : '';
 }
-$caja_activo      = in_array($nav_activo, ['caja', 'movimientos', 'operaciones', 'cierres'], true);
+$caja_activo      = in_array($nav_activo, ['caja', 'movimientos', 'operaciones', 'cierres', 'cheques'], true);
+$vendedores_activo = $nav_activo === 'vendedores';
 $reportes_activo  = in_array($nav_activo, ['dashboard', 'rentabilidad', 'iva', 'reportes'], true);
-$productos_activo = in_array($nav_activo, ['productos', 'stock', 'importar'], true);
+$productos_activo = in_array($nav_activo, ['productos', 'stock', 'importar', 'taxonomias'], true);
 $cc_tipo   = $nav_activo === 'cuentacorriente' && ($_GET['tipo'] ?? 'cliente') === 'proveedor' ? 'proveedor' : 'cliente';
 $cont_tipo = $nav_activo === 'contactos'       && ($_GET['tipo'] ?? 'cliente') === 'proveedor' ? 'proveedor' : 'cliente';
 ?>
 <nav class="app-nav">
-  <a href="/Logos/pos/" class="nav-brand"><img src="/Logos/logo_background.png?v=<?= @filemtime(__DIR__ . '/../logo_background.png') ?: 0 ?>" alt="Logos"></a>
+  <a href="/Logos/pos/" class="nav-brand"><img src="/Logos/logos_logo.png?v=<?= @filemtime(__DIR__ . '/../logos_logo.png') ?: 0 ?>" alt=""><span class="nav-wordmark">Logos</span></a>
   <a href="/Logos/pos/" class="nav-link<?= nav_clase('pos', $nav_activo) ?>">POS</a>
   <div class="nav-sep"></div>
   <a href="/Logos/pos/ventas.html" class="nav-link<?= nav_clase('ventas', $nav_activo) ?>">Ventas</a>
@@ -24,10 +25,11 @@ $cont_tipo = $nav_activo === 'contactos'       && ($_GET['tipo'] ?? 'cliente') =
     </div>
   </div>
   <div class="nav-drop">
-    <a href="/Logos/pos/contactos.html" class="nav-link nav-drop-toggle<?= nav_clase('contactos', $nav_activo) ?>">Contactos</a>
+    <a href="/Logos/pos/contactos.html" class="nav-link nav-drop-toggle<?= ($nav_activo === 'contactos' || $vendedores_activo) ? ' activo' : '' ?>">Contactos</a>
     <div class="nav-drop-menu">
       <a href="/Logos/pos/contactos.html?tipo=cliente"   class="<?= $nav_activo === 'contactos' && $cont_tipo === 'cliente'   ? 'activo' : '' ?>">Clientes</a>
       <a href="/Logos/pos/contactos.html?tipo=proveedor" class="<?= $nav_activo === 'contactos' && $cont_tipo === 'proveedor' ? 'activo' : '' ?>">Proveedores</a>
+      <a href="/Logos/pos/vendedores.html" id="nav-vendedores-link" class="<?= $vendedores_activo ? 'activo' : '' ?>">Vendedores</a>
     </div>
   </div>
   <div class="nav-drop">
@@ -35,6 +37,8 @@ $cont_tipo = $nav_activo === 'contactos'       && ($_GET['tipo'] ?? 'cliente') =
     <div class="nav-drop-menu">
       <a href="/Logos/pos/productos.html" class="<?= trim(nav_clase('productos', $nav_activo)) ?>">Productos</a>
       <a href="/Logos/pos/importar.html" id="nav-importar-link" class="<?= trim(nav_clase('importar',  $nav_activo)) ?>">Importar</a>
+      <a href="/Logos/pos/taxonomias.html?tipo=rubros" class="<?= $nav_activo === 'taxonomias' && ($_GET['tipo'] ?? '') === 'rubros' ? 'activo' : '' ?>">Rubros</a>
+      <a href="/Logos/pos/taxonomias.html?tipo=marcas" class="<?= $nav_activo === 'taxonomias' && ($_GET['tipo'] ?? '') === 'marcas' ? 'activo' : '' ?>">Marcas</a>
     </div>
   </div>
   <a href="/Logos/pos/compras.html" id="nav-compras-link" class="nav-link<?= nav_clase('compras', $nav_activo) ?>">Compras</a>
@@ -45,6 +49,7 @@ $cont_tipo = $nav_activo === 'contactos'       && ($_GET['tipo'] ?? 'cliente') =
       <a href="/Logos/pos/movimientos.html"  class="<?= trim(nav_clase('movimientos', $nav_activo)) ?>">Movimientos</a>
       <a href="/Logos/pos/operaciones.html"  class="<?= trim(nav_clase('operaciones', $nav_activo)) ?>">Operaciones</a>
       <a href="/Logos/pos/cierres.html"      class="<?= trim(nav_clase('cierres',     $nav_activo)) ?>">Cierres Históricos</a>
+      <a href="/Logos/pos/cheques.html"     class="<?= trim(nav_clase('cheques',     $nav_activo)) ?>">Cheques</a>
     </div>
   </div>
   <div class="nav-drop" id="nav-reportes-drop">

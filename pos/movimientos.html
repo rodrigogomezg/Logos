@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Movimientos de caja</title>
 <script src="config.js"></script>
@@ -91,7 +92,7 @@
 }
 .modal-sm { width: min(420px,95vw); }
 .modal-head {
-  padding: 14px 20px; border-bottom: 1px solid rgba(163,177,198,.3);
+  padding: 14px 20px; border-bottom: 1px solid var(--borde-fuerte);
   display: flex; align-items: center; gap: 12px; flex-shrink: 0;
 }
 .modal-head h2 { flex: 1; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); }
@@ -100,22 +101,22 @@
   background: none; border: none; cursor: pointer; color: var(--neo-text-3);
   font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: var(--neo-r-xs);
 }
-.modal-close:hover { background: rgba(163,177,198,.2); color: var(--neo-text); }
+.modal-close:hover { background: var(--color-bg-alt); color: var(--neo-text); }
 .modal-body { overflow-y: auto; padding: 20px; flex: 1; }
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; min-width: 680px; }
-thead th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); padding: 12px 16px; border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap; background: var(--neo-bg-deep); }
+thead th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-ink); padding: 12px 16px; border-bottom: 1px solid var(--borde-fuerte); white-space: nowrap; background: var(--neo-bg-deep); }
 thead th.r { text-align: right; }
-tbody td { padding: 10px 16px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); white-space: nowrap; color: var(--neo-text); }
+tbody td { padding: 10px 16px; font-size: 13px; border-bottom: 1px solid var(--borde); white-space: nowrap; color: var(--neo-text); }
 tbody td.r { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover { background: rgba(255,255,255,.4); }
+tbody tr:hover { background: var(--color-bg-alt); }
 
 .tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; padding: 3px 9px; border-radius: var(--neo-r-pill); box-shadow: var(--neo-e1); }
 .tag.ingreso      { background: rgba(39,174,96,.1);  color: var(--neo-success); }
 .tag.retiro       { background: rgba(231,76,60,.1);  color: var(--neo-danger);  }
-.tag.transferencia { background: rgba(79,142,247,.1); color: var(--neo-accent);  }
+.tag.transferencia { background: var(--primary-soft-2); color: var(--neo-accent);  }
 
 .transf-medios { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
 .transf-medios .form-group { flex: 1; margin-bottom: 0; }
@@ -132,7 +133,7 @@ tbody tr:hover .btn-del-mov { opacity: 1; }
 .btn-sec:hover { box-shadow: var(--neo-e3); }
 .btn-danger { padding: 10px 20px; background: var(--neo-danger); color: white; border: none; border-radius: var(--neo-r-sm); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; cursor: pointer; font-family: inherit; box-shadow: 4px 4px 10px var(--neo-danger-glow); }
 .btn-danger:hover { background: var(--neo-danger-h); }
-.modal-footer { padding: 14px 20px; border-top: 1px solid rgba(163,177,198,.3); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
+.modal-footer { padding: 14px 20px; border-top: 1px solid var(--borde-fuerte); display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0; }
 
 @media (max-width: 640px) {
   .page-header h1 { font-size: 19px; }
@@ -141,26 +142,26 @@ tbody tr:hover .btn-del-mov { opacity: 1; }
 /* ── Flat modal — igual a contacto-modal ── */
 .overlay .modal {
   background: #fff;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   box-shadow: 0 4px 24px rgba(0,0,0,.13);
 }
 .overlay .modal-head {
-  background: #F0EEEB;
-  border-bottom-color: #D5D0CA;
+  background: var(--color-bg-alt);
+  border-bottom-color: var(--borde-fuerte);
 }
 .overlay .modal-footer {
-  border-top-color: #D5D0CA;
+  border-top-color: var(--borde-fuerte);
 }
 .overlay .form-input {
   box-shadow: none;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   background: #fff;
 }
 .overlay .form-input:focus {
   box-shadow: none;
-  border-color: #111;
+  border-color: var(--color-primary);
 }
 .overlay .btn-ok {
   box-shadow: none;
@@ -185,14 +186,14 @@ tbody tr:hover .btn-del-mov { opacity: 1; }
 .overlay .btn-danger:hover { background: #fff; }
 .overlay .mov-tipo-btn {
   background: #fff;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   box-shadow: none;
   color: #9B9590;
 }
 .overlay .mov-tipo-btn.activo.ingreso       { border-color: var(--neo-success); color: var(--neo-success); background: rgba(39,174,96,.05);  box-shadow: none; }
 .overlay .mov-tipo-btn.activo.retiro        { border-color: var(--neo-danger);  color: var(--neo-danger);  background: rgba(231,76,60,.05);  box-shadow: none; }
-.overlay .mov-tipo-btn.activo.transferencia { border-color: var(--neo-accent);  color: var(--neo-accent);  background: rgba(79,142,247,.05); box-shadow: none; }
+.overlay .mov-tipo-btn.activo.transferencia { border-color: var(--neo-accent);  color: var(--neo-accent);  background: var(--primary-soft); box-shadow: none; }
 .overlay .ef-aviso {
   border-radius: 0;
   box-shadow: none;

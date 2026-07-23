@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Contactos — Logos</title>
 <script src="config.js"></script>
@@ -20,7 +21,7 @@
 .toolbar .tab-grupo { display: flex; border-radius: var(--neo-r-sm); overflow: hidden; box-shadow: var(--neo-e1); }
 .tab-tipo { padding: 7px 18px; background: var(--neo-bg); border: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; cursor: pointer; color: var(--neo-text-3); font-family: inherit; transition: color var(--neo-t-fast), box-shadow var(--neo-t-fast); }
 .tab-tipo.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
-.toolbar-sep { width: 1px; background: rgba(163,177,198,.35); height: 30px; margin: 0 4px; }
+.toolbar-sep { width: 1px; background: var(--color-bg-alt); height: 30px; margin: 0 4px; }
 .busqueda {
   flex: 1; min-width: 180px; max-width: 360px; padding: 7px 11px; border: none;
   border-radius: var(--neo-r-xs); font-size: 13px; font-family: inherit; outline: none;
@@ -41,18 +42,18 @@
 .tabla-wrap::-webkit-scrollbar-track { background: var(--neo-bg-deep); }
 .tabla-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead th { position: sticky; top: 0; background: var(--neo-bg-deep); padding: 9px 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap; }
-tbody tr { border-bottom: 1px solid rgba(163,177,198,.18); cursor: pointer; }
-tbody tr:hover { background: rgba(255,255,255,.4); }
+thead th { position: sticky; top: 0; background: var(--neo-bg-deep); padding: 9px 12px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--color-ink); border-bottom: 1px solid var(--borde-fuerte); white-space: nowrap; }
+tbody tr { border-bottom: 1px solid var(--borde); cursor: pointer; }
+tbody tr:hover { background: var(--color-bg-alt); }
 tbody tr.inactivo { opacity: .5; }
 tbody td { padding: 9px 12px; vertical-align: middle; color: var(--neo-text); }
 .badge { display: inline-block; padding: 2px 7px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1); }
 .badge-verde { background: rgba(39,174,96,.1);  color: var(--neo-success); }
-.badge-gris  { background: rgba(163,177,198,.2); color: var(--neo-text-3); }
-.badge-azul  { background: rgba(79,142,247,.1); color: var(--neo-accent);  }
+.badge-gris  { background: var(--color-bg-alt); color: var(--neo-text-3); }
+.badge-azul  { background: var(--primary-soft-2); color: var(--neo-accent);  }
 
 /* ── pagination ─────────────────────────────────────────── */
-.pagination { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 10px 14px; border-top: 1px solid rgba(163,177,198,.3); background: var(--neo-bg-deep); font-size: 12px; color: var(--neo-text-3); }
+.pagination { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 10px 14px; border-top: 1px solid var(--borde-fuerte); background: var(--neo-bg-deep); font-size: 12px; color: var(--neo-text-3); }
 .pagination button { padding: 4px 10px; border: none; background: var(--neo-bg); color: var(--neo-text); font-size: 11px; cursor: pointer; font-family: inherit; border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1); transition: box-shadow var(--neo-t-fast); }
 .pagination button:disabled { opacity: .4; cursor: default; }
 .pagination button.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
@@ -69,15 +70,15 @@ tbody td { padding: 9px 12px; vertical-align: middle; color: var(--neo-text); }
 
 /* ── import modal ────────────────────────────────────────── */
 .drop-zone {
-  border: 1px dashed #D5D0CA; padding: 32px; text-align: center;
+  border: 1px dashed var(--borde-fuerte); padding: 32px; text-align: center;
   cursor: pointer; font-size: 13px; color: #9B9590; background: #FAFAF9;
   transition: border-color 120ms, background 120ms;
 }
-.drop-zone:hover, .drop-zone.drag-over { border-color: var(--azul, #2563eb); background: #f0f4ff; color: #111; }
+.drop-zone:hover, .drop-zone.drag-over { border-color: var(--color-primary); background: var(--primary-soft); color: #111; }
 .import-result { font-size: 13px; line-height: 1.7; color: #111; }
 .import-result .ok  { color: #15803d; font-weight: 600; }
 .import-result .err { color: #B91C1C; }
-.errores-lista { max-height: 120px; overflow-y: auto; background: #fff; border: 1px solid #D5D0CA; padding: 8px 10px; font-size: 12px; color: #B91C1C; margin-top: 6px; }
+.errores-lista { max-height: 120px; overflow-y: auto; background: #fff; border: 1px solid var(--borde-fuerte); padding: 8px 10px; font-size: 12px; color: #B91C1C; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -124,7 +125,7 @@ tbody td { padding: 9px 12px; vertical-align: middle; color: var(--neo-text); }
     <div class="cm-col" style="gap:12px">
       <p style="font-size:13px;color:#9B9590;margin:0">
         <span id="import-desc">Subí un archivo CSV con los datos.</span> Si ya existe un registro con el mismo CUIT se actualizan sus datos.
-        <a href="#" id="link-plantilla" style="color:var(--azul,#2563eb)">Descargar plantilla</a>.
+        <a href="#" id="link-plantilla" style="color:var(--color-primary)">Descargar plantilla</a>.
       </p>
       <div class="drop-zone" id="drop-zone">
         <div>Arrastrá el archivo aquí o hacé click para seleccionar</div>

@@ -2,9 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — POS</title>
 <script src="config.js"></script>
+<script>if(typeof fmtFecha==='undefined'){var fmtFecha=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};var fechaHoy=function(){return fmtFecha(new Date());}}</script>
 <script src="helpers.js"></script>
 <link rel="stylesheet" href="pos-base.css">
 <style>
@@ -42,10 +44,10 @@
 .dd-item {
   padding: 9px 14px; cursor: pointer;
   display: grid; grid-template-columns: 110px 1fr auto; gap: 8px;
-  align-items: center; border-bottom: 1px solid rgba(163,177,198,.18); font-size: 12px;
+  align-items: center; border-bottom: 1px solid var(--borde); font-size: 12px;
 }
 .dd-item:last-child { border-bottom: none; }
-.dd-item:hover, .dd-item.activo { background: rgba(155,27,46,.05); }
+.dd-item:hover, .dd-item.activo { background: var(--primary-soft); }
 .dd-item .cod { color: var(--neo-text-3); font-family: monospace; font-size: 12px; white-space: nowrap; }
 .dd-item .nom { font-weight: 500; color: var(--neo-text); }
 .dd-item .pre { font-weight: 700; color: var(--neo-accent); }
@@ -56,7 +58,7 @@
   display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; border: none !important;
 }
 .items-header {
-  padding: 9px 14px; border-bottom: 1px solid rgba(163,177,198,.3);
+  padding: 9px 14px; border-bottom: 1px solid var(--borde-fuerte);
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3);
   display: grid; grid-template-columns: 24px 1fr 116px 100px 84px 32px; gap: 8px; align-items: center;
   background: var(--neo-bg-deep);
@@ -67,9 +69,9 @@
 .items-lista::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
 .item-row {
   display: grid; grid-template-columns: 24px 1fr 116px 100px 84px 32px; gap: 8px;
-  align-items: center; padding: 7px 14px; border-bottom: 1px solid rgba(163,177,198,.18);
+  align-items: center; padding: 7px 14px; border-bottom: 1px solid var(--borde);
 }
-.item-row:hover { background: rgba(255,255,255,.4); }
+.item-row:hover { background: var(--color-bg-alt); }
 .item-row .nom { font-weight: 500; line-height: 1.3; min-width: 0; overflow-wrap: break-word; color: var(--neo-text); }
 .item-row .nom small { display: block; color: var(--neo-text-3); font-size: 11px; font-weight: 400; }
 .item-row .sub { text-align: right; font-weight: 600; color: var(--neo-text); }
@@ -106,7 +108,7 @@
 .sel-bar.activo .sel-count { color: var(--neo-accent); }
 .sel-acciones { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; opacity: .25; pointer-events: none; transition: opacity var(--neo-t-base); }
 .sel-bar.activo .sel-acciones { opacity: 1; pointer-events: auto; }
-.sel-sep { width: 1px; height: 18px; background: rgba(163,177,198,.35); flex-shrink: 0; }
+.sel-sep { width: 1px; height: 18px; background: var(--color-bg-alt); flex-shrink: 0; }
 .sel-btn {
   display: flex; align-items: center; gap: 4px; padding: 4px 10px; border: none;
   border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1);
@@ -197,7 +199,7 @@ label.envio-toggle {
 
 .cliente-sel {
   display: none; flex: 1; min-width: 0;
-  background: rgba(155,27,46,.06); border-radius: var(--neo-r-sm);
+  background: var(--primary-soft); border-radius: var(--neo-r-sm);
   box-shadow: var(--neo-e1), 0 0 0 2px var(--neo-accent); padding: 8px 10px; font-size: 12px;
 }
 .cliente-sel .cnombre { font-weight: 600; color: var(--neo-text); }
@@ -209,8 +211,8 @@ label.envio-toggle {
 .t-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--neo-text-2); }
 .t-total {
   display: flex; justify-content: space-between; font-size: 28px; font-weight: 800;
-  color: var(--neo-text); margin-top: 6px; padding-top: 10px;
-  border-top: 1px solid rgba(163,177,198,.3);
+  color: var(--color-primary); margin-top: 6px; padding-top: 10px;
+  border-top: 1px solid var(--borde-fuerte);
 }
 
 .btn {
@@ -237,13 +239,14 @@ label.envio-toggle {
 .pago-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
 .pago-tile {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 5px; padding: 9px 4px 8px; cursor: pointer; font-family: inherit; border: none;
-  background: var(--neo-bg); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1);
-  color: var(--neo-text-2); transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
+  gap: 5px; padding: 9px 4px 8px; cursor: pointer; font-family: inherit;
+  border: 1px solid var(--borde-fuerte);
+  background: #fff; border-radius: var(--neo-r-sm); box-shadow: none;
+  color: var(--neo-text-2); transition: border-color var(--neo-t-fast), color var(--neo-t-fast);
   user-select: none;
 }
-.pago-tile:hover { box-shadow: var(--neo-e2); color: var(--neo-accent); }
-.pago-tile.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
+.pago-tile:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.pago-tile.activo { border-color: var(--color-primary); box-shadow: inset 0 0 0 1px var(--color-primary); color: var(--color-primary); }
 .pago-tile svg { width: 20px; height: 20px; flex-shrink: 0; }
 .pago-tile-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; line-height: 1.25; text-align: center; }
 .pago-mixto-footer { display: flex; justify-content: flex-end; margin-top: 7px; }
@@ -257,12 +260,12 @@ label.envio-toggle {
 
 /* Modal Pago Mixto */
 .pm-modal { width: min(440px,95vw) !important; }
-.pm-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 14px; border-bottom: 1px solid rgba(163,177,198,.3); flex-shrink: 0; }
+.pm-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 14px; border-bottom: 1px solid var(--borde-fuerte); flex-shrink: 0; }
 .pm-head h2 { font-size: 16px; font-weight: 700; color: var(--neo-text); }
 .pm-close { background: none; border: none; cursor: pointer; color: var(--neo-text-3); font-size: 22px; line-height: 1; padding: 4px 8px; border-radius: var(--neo-r-xs); }
-.pm-close:hover { background: rgba(163,177,198,.2); color: var(--neo-text); }
+.pm-close:hover { background: var(--color-bg-alt); color: var(--neo-text); }
 .pm-body { padding: 16px 20px; flex: 1; overflow-y: auto; }
-.pm-total { font-size: 12px; color: var(--neo-text-3); margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid rgba(163,177,198,.3); }
+.pm-total { font-size: 12px; color: var(--neo-text-3); margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--borde-fuerte); }
 .pm-total strong { color: var(--neo-text); font-size: 22px; font-weight: 800; margin-left: 4px; }
 .pm-lineas { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
 .pm-linea { display: flex; gap: 6px; align-items: center; }
@@ -294,7 +297,7 @@ label.envio-toggle {
 .pm-del-btn:hover { background: rgba(231,76,60,.1); color: var(--neo-danger); }
 .pm-add-btn {
   display: flex; align-items: center; gap: 5px; width: 100%; padding: 7px;
-  background: none; border: 2px dashed rgba(163,177,198,.4); border-radius: var(--neo-r-sm);
+  background: none; border: 2px dashed var(--borde-fuerte); border-radius: var(--neo-r-sm);
   font-size: 12px; font-weight: 600; color: var(--neo-text-3); cursor: pointer; margin-bottom: 10px;
   transition: border-color var(--neo-t-fast), color var(--neo-t-fast);
 }
@@ -308,7 +311,7 @@ label.envio-toggle {
 .pm-estado-val { font-weight: 700; color: var(--neo-text); }
 .pm-estado-val.neg { color: var(--neo-danger); }
 .pm-estado-val.ok  { color: var(--neo-success); }
-.pm-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid rgba(163,177,198,.3); flex-shrink: 0; }
+.pm-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--borde-fuerte); flex-shrink: 0; }
 .pm-btn { padding: 8px 18px; border-radius: var(--neo-r-sm); font-size: 12px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
 .pm-btn-ghost { background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); transition: box-shadow var(--neo-t-fast); }
 .pm-btn-ghost:hover { box-shadow: var(--neo-e3); }
@@ -340,7 +343,7 @@ label.envio-toggle {
   box-shadow: 0 4px 16px var(--neo-sd), 0 -2px 6px var(--neo-sl);
   padding: 12px 16px; display: flex; align-items: flex-end;
   gap: 14px; flex-shrink: 0;
-  border-bottom: 1px solid rgba(155,27,46,.12);
+  border-bottom: 1px solid var(--primary-soft-2);
 }
 .tb-cliente { flex: 1; min-width: 0; }
 .tb-comp    { width: 148px; flex-shrink: 0; }
@@ -400,11 +403,11 @@ label.envio-toggle {
 }
 
 /* Cabecera modal */
-.modal-head { padding: 14px 20px 12px; border-bottom: 1px solid rgba(163,177,198,.3); flex-shrink: 0; flex-direction: column; align-items: stretch; }
+.modal-head { padding: 14px 20px 12px; border-bottom: 1px solid var(--borde-fuerte); flex-shrink: 0; flex-direction: column; align-items: stretch; }
 .modal-head-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
 .modal-head-top h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; flex: 1; color: var(--neo-text-3); }
 .modal-close { background: none; border: none; cursor: pointer; color: var(--neo-text-3); font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: var(--neo-r-xs); }
-.modal-close:hover { background: rgba(163,177,198,.2); color: var(--neo-text); }
+.modal-close:hover { background: var(--color-bg-alt); color: var(--neo-text); }
 
 /* Búsqueda dentro del modal */
 .modal-search input {
@@ -437,11 +440,11 @@ label.envio-toggle {
 /* Switch exacto/similar */
 .switch-wrap { display: flex; border-radius: var(--neo-r-sm); overflow: hidden; margin-left: auto; box-shadow: var(--neo-e1); }
 .switch-wrap button { padding: 6px 14px; border: none; background: var(--neo-bg); font-size: 12px; font-family: inherit; cursor: pointer; color: var(--neo-text-3); font-weight: 500; }
-.switch-wrap button:first-child { border-right: 1px solid rgba(163,177,198,.3); }
+.switch-wrap button:first-child { border-right: 1px solid var(--borde-fuerte); }
 .switch-wrap button.activo { background: var(--neo-accent); color: white; font-weight: 700; }
 
 /* Contador de resultados */
-.modal-count { padding: 6px 20px; font-size: 12px; color: var(--neo-text-3); background: var(--neo-bg-deep); border-bottom: 1px solid rgba(163,177,198,.3); flex-shrink: 0; }
+.modal-count { padding: 6px 20px; font-size: 12px; color: var(--neo-text-3); background: var(--neo-bg-deep); border-bottom: 1px solid var(--borde-fuerte); flex-shrink: 0; }
 
 /* Tabla de resultados */
 .modal-tabla { overflow-y: auto; flex: 1; }
@@ -451,12 +454,12 @@ label.envio-toggle {
 .modal-tabla thead th {
   position: sticky; top: 0; background: var(--neo-bg-deep); padding: 8px 12px;
   text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4);
+  letter-spacing: .5px; color: var(--color-ink); border-bottom: 1px solid var(--borde-fuerte);
 }
 .modal-tabla thead th.r { text-align: right; }
-.modal-tabla tbody tr { cursor: pointer; border-bottom: 1px solid rgba(163,177,198,.18); transition: background var(--neo-t-fast); }
+.modal-tabla tbody tr { cursor: pointer; border-bottom: 1px solid var(--borde); transition: background var(--neo-t-fast); }
 .modal-tabla tbody tr:hover,
-.modal-tabla tbody tr.activo { background: rgba(79,142,247,.07); }
+.modal-tabla tbody tr.activo { background: var(--primary-soft); }
 .modal-tabla tbody td { padding: 9px 12px; vertical-align: middle; color: var(--neo-text); }
 .modal-tabla tbody td.r { text-align: right; white-space: nowrap; }
 .modal-tabla tbody td .codigo { font-family: monospace; color: var(--neo-text-3); font-size: 12px; }
@@ -475,27 +478,27 @@ label.envio-toggle {
 .modal-tabla table td.check-col { width: 36px; padding: 0 8px; text-align: center; }
 .check-mark {
   display: inline-flex; align-items: center; justify-content: center;
-  width: 17px; height: 17px; border: 1.5px solid rgba(163,177,198,.4); border-radius: var(--neo-r-xs);
+  width: 17px; height: 17px; border: 1.5px solid var(--borde-fuerte); border-radius: var(--neo-r-xs);
   font-size: 11px; font-weight: 700; color: transparent; transition: all .1s; pointer-events: none;
 }
 .modal-tabla tbody tr:hover .check-mark { border-color: var(--neo-accent); }
 .modal-tabla tbody tr.seleccionado .check-mark { background: var(--neo-accent); border-color: var(--neo-accent); color: white; }
-.modal-tabla tbody tr.seleccionado { background: rgba(79,142,247,.08) !important; }
-.modal-tabla tbody tr.seleccionado:hover { background: rgba(79,142,247,.14) !important; }
+.modal-tabla tbody tr.seleccionado { background: var(--primary-soft) !important; }
+.modal-tabla tbody tr.seleccionado:hover { background: var(--primary-soft-2) !important; }
 
 .sel-panel {
-  border-top: 2px solid var(--neo-accent); background: rgba(79,142,247,.06);
+  border-top: 2px solid var(--neo-accent); background: var(--primary-soft);
   flex-shrink: 0; max-height: 190px; overflow-y: auto;
 }
 .sel-panel-head {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 7px 16px; border-bottom: 1px solid rgba(79,142,247,.2);
-  position: sticky; top: 0; background: rgba(79,142,247,.08); z-index: 1;
+  padding: 7px 16px; border-bottom: 1px solid var(--primary-line);
+  position: sticky; top: 0; background: var(--primary-soft); z-index: 1;
 }
 .sel-panel-head-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-accent); }
 .sel-btn-limpiar { font-size: 11px; color: var(--neo-text-3); background: none; border: none; cursor: pointer; padding: 2px 8px; border-radius: var(--neo-r-xs); }
-.sel-btn-limpiar:hover { background: rgba(79,142,247,.1); color: var(--neo-accent); }
-.sel-item { display: flex; align-items: center; gap: 8px; padding: 6px 16px; border-bottom: 1px solid rgba(79,142,247,.15); font-size: 13px; color: var(--neo-text); }
+.sel-btn-limpiar:hover { background: var(--primary-soft-2); color: var(--neo-accent); }
+.sel-item { display: flex; align-items: center; gap: 8px; padding: 6px 16px; border-bottom: 1px solid var(--primary-soft-2); font-size: 13px; color: var(--neo-text); }
 .sel-item:last-child { border-bottom: none; }
 .sel-item-nombre { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sel-item-precio { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--neo-text-3); font-size: 12px; white-space: nowrap; }
@@ -504,7 +507,7 @@ label.envio-toggle {
 
 .sel-footer {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 11px 20px; border-top: 1px solid rgba(163,177,198,.3);
+  padding: 11px 20px; border-top: 1px solid var(--borde-fuerte);
   background: var(--neo-bg); flex-shrink: 0; gap: 12px;
 }
 .sel-footer-info { font-size: 13px; color: var(--neo-text-3); }
@@ -533,10 +536,10 @@ label.envio-toggle {
 }
 .nc-overlay.abierto { display: flex; }
 .nc-modal { background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e4); width: 560px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; }
-.nc-head { padding: 14px 20px; border-bottom: 1px solid rgba(163,177,198,.3); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.nc-head { padding: 14px 20px; border-bottom: 1px solid var(--borde-fuerte); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
 .nc-head h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); }
 .nc-cerrar { background: none; border: none; cursor: pointer; color: var(--neo-text-3); font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: var(--neo-r-xs); }
-.nc-cerrar:hover { background: rgba(163,177,198,.2); color: var(--neo-text); }
+.nc-cerrar:hover { background: var(--color-bg-alt); color: var(--neo-text); }
 .nc-body { padding: 20px; overflow-y: auto; flex: 1; }
 .nc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
 .nc-full { grid-column: 1 / -1; }
@@ -550,7 +553,7 @@ label.envio-toggle {
 }
 .nc-input:focus, .nc-select:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
 .nc-select { cursor: pointer; }
-.nc-foot { padding: 14px 20px; border-top: 1px solid rgba(163,177,198,.3); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
+.nc-foot { padding: 14px 20px; border-top: 1px solid var(--borde-fuerte); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
 .nc-btn-sec { padding: 9px 18px; border: none; border-radius: var(--neo-r-sm); background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); font-size: 13px; font-weight: 500; cursor: pointer; transition: box-shadow var(--neo-t-fast); }
 .nc-btn-sec:hover { box-shadow: var(--neo-e3); }
 .nc-btn-pri { padding: 9px 18px; border: none; border-radius: var(--neo-r-sm); background: var(--neo-accent); color: white; box-shadow: 4px 4px 10px var(--neo-accent-glow); font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -607,20 +610,20 @@ label.envio-toggle {
 /* Buscar productos modal */
 .overlay .modal {
   background: #fff;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   box-shadow: 0 4px 24px rgba(0,0,0,.13);
   width: min(1760px,98vw);
   max-width: min(1760px,98vw);
 }
 .overlay .modal-head {
-  background: #F0EEEB;
-  border-bottom-color: #D5D0CA;
+  background: var(--color-bg-alt);
+  border-bottom-color: var(--borde-fuerte);
 }
 .modal-search input {
   box-shadow: none;
   border: none;
-  border-bottom: 1px solid #D5D0CA;
+  border-bottom: 1px solid var(--borde-fuerte);
   border-radius: 0;
   background: #fff;
 }
@@ -630,13 +633,13 @@ label.envio-toggle {
 }
 .modal-filtros select {
   box-shadow: none;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   background: #fff;
 }
 .modal-filtros select:focus {
   box-shadow: none;
-  border-color: #111;
+  border-color: var(--color-primary);
 }
 .sel-btn-ok {
   box-shadow: none;
@@ -647,28 +650,28 @@ label.envio-toggle {
 /* Nuevo cliente modal */
 .nc-modal {
   background: #fff;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   box-shadow: 0 4px 24px rgba(0,0,0,.13);
 }
 .nc-head {
-  background: #F0EEEB;
-  border-bottom-color: #D5D0CA;
+  background: var(--color-bg-alt);
+  border-bottom-color: var(--borde-fuerte);
 }
 .nc-foot {
-  border-top-color: #D5D0CA;
+  border-top-color: var(--borde-fuerte);
 }
 .nc-input,
 .nc-select {
   box-shadow: none;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   background: #fff;
 }
 .nc-input:focus,
 .nc-select:focus {
   box-shadow: none;
-  border-color: #111;
+  border-color: var(--color-primary);
 }
 .nc-btn-pri {
   box-shadow: none;
@@ -725,6 +728,13 @@ label.envio-toggle {
     <label>Fecha</label>
     <input type="date" id="fecha-venta">
   </div>
+  <!-- Vendedor -->
+  <div class="tb-obs" id="tb-vendedor-wrap">
+    <label>Vendedor</label>
+    <select id="sel-vendedor" style="font-family:inherit;font-size:var(--fs-sm);border:none;border-radius:4px;padding:5px 8px;background:var(--input-bg,#fff);box-shadow:var(--neo-i1,inset 2px 2px 5px rgba(0,0,0,.07));outline:none;width:100%;">
+      <option value="">— Sin vendedor —</option>
+    </select>
+  </div>
   <!-- Observaciones -->
   <div class="tb-obs">
     <label>Observaciones</label>
@@ -734,7 +744,7 @@ label.envio-toggle {
 </div>
 
 <!-- Banner modo edición -->
-<div id="edit-banner" style="display:none; background:#1d4ed8; color:white; padding:7px 16px; font-size:var(--fs-sm); font-weight:600; display:none; align-items:center; gap:10px; flex-shrink:0;">
+<div id="edit-banner" style="display:none; background:var(--color-primary-dark); color:white; padding:7px 16px; font-size:var(--fs-sm); font-weight:600; display:none; align-items:center; gap:10px; flex-shrink:0;">
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
   <span id="edit-banner-txt">Editando venta</span>
   <button id="edit-banner-cancel" style="margin-left:auto; background:rgba(255,255,255,.2); border:none; color:white; border-radius:4px; padding:3px 10px; cursor:pointer; font-size:12px; font-weight:600;">Cancelar edición</button>
@@ -1070,6 +1080,23 @@ label.envio-toggle {
 'use strict';
 
 const API = '/Logos/api';
+
+// ── Vendedores: cargar lista activa ──
+(async function cargarVendedores() {
+  try {
+    const r = await fetch(`${API}/vendedores`);
+    if (!r.ok) return;
+    const lista = await r.json();
+    const sel   = $('sel-vendedor');
+    lista.forEach(v => {
+      const opt   = document.createElement('option');
+      opt.value   = v.id;
+      opt.textContent = v.nombre;
+      sel.appendChild(opt);
+    });
+    if (!lista.length) $('tb-vendedor-wrap').style.display = 'none';
+  } catch {}
+})();
 
 // ── Tipos de comprobante habilitados (según configuración del negocio) ──
 (async function filtrarTiposComprobante() {
@@ -2141,6 +2168,7 @@ async function confirmarVenta() {
       : undefined,
     fecha:            $('fecha-venta').value || null,
     observaciones:    $('observaciones').value.trim() || null,
+    vendedor_id:      parseInt($('sel-vendedor').value) || null,
     envio_precio:     $('chk-envio').checked ? (parseFloat($('envio-precio').value) || null) : null,
     envio_direccion:  $('chk-envio').checked ? ($('envio-dir').value.trim() || null) : null,
     items: items.map(i => ({
@@ -2233,7 +2261,7 @@ function nuevaVenta() {
   $('pago-mixto-resumen').style.display = 'none';
   renderPagoTiles();
   $('observaciones').value = '';
-  $('fecha-venta').value   = new Date().toISOString().split('T')[0];
+  $('fecha-venta').value   = fechaHoy();
   $('fecha-venta').classList.remove('fecha-modificada');
   $('chk-envio').checked   = false;
   $('envio-precio').value  = '';
@@ -2251,10 +2279,9 @@ function nuevaVenta() {
 btnNueva.addEventListener('click', nuevaVenta);
 
 // ── Fecha ──────────────────────────────────────────────
-$('fecha-venta').value = new Date().toISOString().split('T')[0];
+$('fecha-venta').value = fechaHoy();
 $('fecha-venta').addEventListener('input', () => {
-  const hoy = new Date().toISOString().split('T')[0];
-  $('fecha-venta').classList.toggle('fecha-modificada', $('fecha-venta').value !== hoy);
+  $('fecha-venta').classList.toggle('fecha-modificada', $('fecha-venta').value !== fechaHoy());
 });
 
 // ════════ ATAJOS GLOBALES ══════════════════════════════

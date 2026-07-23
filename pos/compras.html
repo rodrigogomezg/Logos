@@ -2,9 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Compras</title>
 <script src="config.js"></script>
+<script>if(typeof fmtFecha==='undefined'){var fmtFecha=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};var fechaHoy=function(){return fmtFecha(new Date());}}</script>
 <script src="helpers.js"></script>
 <link rel="stylesheet" href="pos-base.css">
 <style>
@@ -26,38 +28,37 @@
 .filtros-bar input[type=date] { width: 130px; }
 .filtros-bar input[type=text] { width: 200px; }
 
-.btn-buscar {
-  padding: 7px 18px; border: none; border-radius: var(--neo-r-xs);
+.btn-buscar-sec {
+  padding: 7px 18px; border: 1px solid var(--color-primary); border-radius: var(--neo-r-xs);
   font-size: 12px; font-weight: 700; cursor: pointer; height: 34px; font-family: inherit;
-  background: var(--neo-accent); color: white;
-  box-shadow: 3px 3px 7px var(--neo-accent-glow), -1px -1px 4px rgba(255,255,255,.2);
-  transition: box-shadow var(--neo-t-fast);
+  background: #fff; color: var(--color-primary);
+  transition: background var(--neo-t-fast);
 }
-.btn-buscar:hover { background: var(--neo-accent-h); }
+.btn-buscar-sec:hover { background: var(--primary-soft); }
 
 .btn-nueva {
   padding: 7px 18px; border: none; border-radius: var(--neo-r-xs);
   font-size: 12px; font-weight: 700; cursor: pointer; height: 34px;
   margin-left: auto; text-decoration: none; display: inline-flex; align-items: center;
-  background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2);
-  transition: box-shadow var(--neo-t-fast);
+  background: var(--color-accent); color: var(--color-primary-dark);
+  transition: background var(--neo-t-fast);
 }
-.btn-nueva:hover { box-shadow: var(--neo-e3); }
+.btn-nueva:hover { background: var(--color-accent-h); }
 
 .contenido { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; background: var(--neo-bg-deep); }
 .table-wrap { background: var(--neo-bg-deep); border-radius: var(--neo-r-lg); box-shadow: var(--neo-i2); overflow: hidden; border: none !important; }
 table.compras { width: 100%; border-collapse: collapse; }
 table.compras th {
   text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
-  color: var(--neo-text-3); padding: 11px 14px; border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap;
+  color: var(--color-ink); padding: 11px 14px; border-bottom: 1px solid var(--borde-fuerte); white-space: nowrap;
   background: var(--neo-bg-deep);
 }
-table.compras td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); color: var(--neo-text); }
-table.compras tbody tr:hover { background: rgba(255,255,255,.45); }
+table.compras td { padding: 10px 14px; font-size: 13px; border-bottom: 1px solid var(--borde); color: var(--neo-text); }
+table.compras tbody tr:hover { background: var(--color-bg-alt); }
 table.compras tbody tr.anulada { opacity: .55; }
 table.compras .num { font-family: monospace; color: var(--neo-text-3); }
 table.compras .total { font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; color: var(--neo-accent); }
-.tipo-pill { display: inline-block; padding: 2px 8px; border-radius: var(--neo-r-pill); font-size: 11px; font-weight: 600; background: rgba(163,177,198,.15); color: var(--neo-text-2); box-shadow: var(--neo-e1); }
+.tipo-pill { display: inline-block; padding: 2px 8px; border-radius: var(--neo-r-pill); font-size: 11px; font-weight: 600; background: var(--color-bg-alt); color: var(--neo-text-2); box-shadow: var(--neo-e1); }
 .pill-anulada { background: rgba(231,76,60,.1); color: var(--neo-danger); }
 .vacio { padding: 40px; text-align: center; color: var(--neo-text-3); }
 .btn-editar {
@@ -110,7 +111,7 @@ table.compras .total { font-weight: 700; text-align: right; font-variant-numeric
     <label>Sucursal</label>
     <select id="f-sucursal"></select>
   </div>
-  <button class="btn-buscar" id="btn-filtrar">Buscar</button>
+  <button class="btn-buscar-sec" id="btn-filtrar">Buscar</button>
   <a class="btn-nueva" href="compras-nueva.html">+ Nueva compra</a>
 </div>
 
@@ -232,8 +233,8 @@ $('btn-filtrar').addEventListener('click', cargarCompras);
 (function initFechas() {
   const hoy = new Date();
   const hace30 = new Date(); hace30.setDate(hace30.getDate() - 30);
-  $('f-hasta').value = hoy.toISOString().split('T')[0];
-  $('f-desde').value = hace30.toISOString().split('T')[0];
+  $('f-hasta').value = fmtFecha(hoy);
+  $('f-desde').value = fmtFecha(hace30);
 })();
 
 cargarCompras();

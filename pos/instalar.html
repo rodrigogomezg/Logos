@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Configuración inicial</title>
 <script src="config.js"></script>
@@ -22,7 +23,7 @@
 
   .titulo { color: var(--neo-text); font-size: 20px; font-weight: 700; letter-spacing: -.2px; }
   .sub { color: var(--neo-text-2); font-size: 13px; line-height: 1.5; margin-top: -8px; }
-  .badge-opcional { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; background: rgba(163,177,198,.2); color: var(--neo-text-3); border-radius: var(--neo-r-xs); padding: 2px 7px; margin-left: 8px; vertical-align: middle; }
+  .badge-opcional { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; background: var(--color-bg-alt); color: var(--neo-text-3); border-radius: var(--neo-r-xs); padding: 2px 7px; margin-left: 8px; vertical-align: middle; }
 
   .modo-row { display: flex; gap: 10px; }
   .modo-btn {
@@ -58,7 +59,7 @@
   .aviso { font-size: 13px; border-radius: var(--neo-r-sm); padding: 11px 13px; line-height: 1.5; border: none; box-shadow: var(--neo-e1); }
   .aviso.ok   { background: rgba(39,174,96,.08);  color: var(--neo-success);  box-shadow: var(--neo-e1), 0 0 0 1px rgba(39,174,96,.25); }
   .aviso.err  { background: rgba(231,76,60,.08);  color: var(--neo-danger);   box-shadow: var(--neo-e1), 0 0 0 1px rgba(231,76,60,.25); }
-  .aviso.info { background: rgba(79,142,247,.08); color: var(--neo-accent);   box-shadow: var(--neo-e1), 0 0 0 1px rgba(79,142,247,.25); }
+  .aviso.info { background: var(--primary-soft); color: var(--neo-accent);   box-shadow: var(--neo-e1), 0 0 0 1px var(--primary-line); }
 
   .credenciales { background: var(--neo-bg-deep); border-radius: var(--neo-r-sm); box-shadow: var(--neo-i1); padding: 14px; font-size: 13px; color: var(--neo-text); line-height: 1.7; border: none; }
   .credenciales b { color: var(--neo-warning); }
@@ -69,28 +70,28 @@
   .item-row .del { background: none; border: none; color: var(--neo-text-3); cursor: pointer; font-size: 15px; padding: 0 2px; margin-left: 6px; }
   .item-row .del:hover { color: var(--neo-danger); }
 
-  .sep { border: none; border-top: 1px solid rgba(163,177,198,.2); margin: 2px 0; }
+  .sep { border: none; border-top: 1px solid var(--borde); margin: 2px 0; }
 
   .afip-pasos { display: flex; flex-direction: column; gap: 10px; }
   .afip-paso { display: flex; gap: 12px; background: var(--neo-bg); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); padding: 12px 14px; border: none; }
-  .afip-paso-num { width: 22px; height: 22px; border-radius: 50%; background: rgba(79,142,247,.15); color: var(--neo-accent); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .afip-paso-num { width: 22px; height: 22px; border-radius: 50%; background: var(--primary-soft-2); color: var(--neo-accent); font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
   .afip-paso-body { font-size: 12px; color: var(--neo-text-2); line-height: 1.55; }
   .afip-paso-body strong { color: var(--neo-text); font-weight: 700; display: block; margin-bottom: 2px; }
   .afip-paso-body code { font-weight: 700; font-size: inherit; font-family: inherit; color: var(--neo-text); }
-  .afip-sep { border: none; border-top: 1px solid rgba(163,177,198,.2); margin: 2px 0; }
+  .afip-sep { border: none; border-top: 1px solid var(--borde); margin: 2px 0; }
 
   /* Progreso del commit */
   .prog-lista { display: flex; flex-direction: column; gap: 4px; }
   .prog-item { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--neo-text-2); padding: 5px 0; }
   .prog-icono { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; font-weight: 700; }
   .prog-item.esperando .prog-icono { background: var(--neo-bg-deep); color: var(--neo-text-3); box-shadow: var(--neo-i1); }
-  .prog-item.ejecutando .prog-icono { background: rgba(79,142,247,.15); color: var(--neo-accent); box-shadow: var(--neo-e1); animation: giro .9s linear infinite; }
+  .prog-item.ejecutando .prog-icono { background: var(--primary-soft-2); color: var(--neo-accent); box-shadow: var(--neo-e1); animation: giro .9s linear infinite; }
   .prog-item.ok  .prog-icono { background: rgba(39,174,96,.12); color: var(--neo-success); box-shadow: var(--neo-e1); }
   .prog-item.err .prog-icono { background: rgba(231,76,60,.12); color: var(--neo-danger);  box-shadow: var(--neo-e1); }
   @keyframes giro { to { transform: rotate(360deg); } }
 
   /* Resumen */
-  .resumen-fila { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid rgba(163,177,198,.2); }
+  .resumen-fila { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--borde); }
   .resumen-fila:last-child { border: none; }
   .resumen-lbl { color: var(--neo-text-3); min-width: 130px; flex-shrink: 0; }
   .resumen-val { color: var(--neo-text); }

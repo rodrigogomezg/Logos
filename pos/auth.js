@@ -1,34 +1,9 @@
-// Paleta de temas de color del sistema
-window.LOGOS_TEMAS = {
-  azul:      { label: 'Azul',      primary: '#2563eb', hover: '#1d4ed8' },
-  verde:     { label: 'Verde',     primary: '#16a34a', hover: '#15803d' },
-  rojo:      { label: 'Rojo',      primary: '#dc2626', hover: '#b91c1c' },
-  naranja:   { label: 'Naranja',   primary: '#ea580c', hover: '#c2410c' },
-  violeta:   { label: 'Violeta',   primary: '#7c3aed', hover: '#6d28d9' },
-  rosa:      { label: 'Rosa',      primary: '#db2777', hover: '#be185d' },
-  indigo:    { label: 'Índigo',    primary: '#4f46e5', hover: '#4338ca' },
-  teal:      { label: 'Teal',      primary: '#0d9488', hover: '#0f766e' },
-  gris:      { label: 'Gris',      primary: '#4b5563', hover: '#374151' },
-  negro:     { label: 'Negro',     primary: '#1f2937', hover: '#111827' },
-};
-
-window.LOGOS_aplicarTema = function (key) {
-  var t = window.LOGOS_TEMAS[key] || window.LOGOS_TEMAS.azul;
-  document.documentElement.style.setProperty('--azul',   t.primary);
-  document.documentElement.style.setProperty('--azul-h', t.hover);
-  try { localStorage.setItem('logos_tema', JSON.stringify([t.primary, t.hover])); } catch(e) {}
-};
-
-// Aplica el tema cacheado sincrónicamente para evitar el flash al navegar entre páginas
-(function () {
-  try {
-    var c = JSON.parse(localStorage.getItem('logos_tema') || 'null');
-    if (c && c[0] && c[1]) {
-      document.documentElement.style.setProperty('--azul',   c[0]);
-      document.documentElement.style.setProperty('--azul-h', c[1]);
-    }
-  } catch(e) {}
-})();
+// Identidad de marca fija (navy/dorado): el sistema de temas por color
+// quedó desactivado. Se conserva la API por compatibilidad y se limpia
+// el tema cacheado de versiones anteriores para que no pise la paleta.
+window.LOGOS_TEMAS = {};
+window.LOGOS_aplicarTema = function () {};
+try { localStorage.removeItem('logos_tema'); } catch(e) {}
 
 (function () {
   var raw = localStorage.getItem('logos_sesion');
@@ -185,6 +160,7 @@ window.LOGOS_aplicarTema = function (key) {
       var el = document.getElementById(id);
       if (el && !window.puede(permiso)) el.style.display = 'none';
     }
+    ocultarSi('nav-vendedores-link',     'gestionar_vendedores');
     ocultarSi('nav-cc-drop',            'cc_ver');
     ocultarSi('nav-importar-link',      'importar');
     ocultarSi('nav-dashboard-link',     'reportes');

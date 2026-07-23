@@ -335,14 +335,30 @@ if ($tieneCae && $tieneQrMp) {
       </td>
       <td style="width:72mm; vertical-align:top;">
         <table class="tot" style="margin:0; width:100%;">
+          <?php
+            $enviosDetalle = !empty($venta['envios_detalle']) && count($venta['envios_detalle']) > 1
+                             ? $venta['envios_detalle'] : null;
+          ?>
           <?php if ($esFacturaA): ?>
             <tr><td>Subtotal productos</td><td class="r"><?= cp_fmt($subtotalProdNeto) ?></td></tr>
-            <?php if ($envioGross > 0): ?><tr><td>Envío</td><td class="r"><?= cp_fmt($envioNeto) ?></td></tr><?php endif; ?>
+            <?php if ($enviosDetalle): ?>
+              <?php foreach ($enviosDetalle as $env): ?>
+                <tr><td>Envío <?= cp_esc($env['fecha_corta']) ?></td><td class="r"><?= cp_fmt((float)$env['precio']) ?></td></tr>
+              <?php endforeach; ?>
+            <?php elseif ($envioGross > 0): ?>
+              <tr><td>Envío</td><td class="r"><?= cp_fmt($envioNeto) ?></td></tr>
+            <?php endif; ?>
             <tr><td>IVA <?= cp_esc(cp_iva_pct((float)$config['iva_porcentaje'])) ?>%</td><td class="r"><?= cp_fmt($iva) ?></td></tr>
             <tr class="final"><td>TOTAL</td><td class="r"><?= cp_fmt($totalGross) ?></td></tr>
           <?php else: ?>
             <tr><td>Subtotal productos</td><td class="r"><?= cp_fmt($subtotalProductosGross) ?></td></tr>
-            <?php if ($envioGross > 0): ?><tr><td>Envío</td><td class="r"><?= cp_fmt($envioGross) ?></td></tr><?php endif; ?>
+            <?php if ($enviosDetalle): ?>
+              <?php foreach ($enviosDetalle as $env): ?>
+                <tr><td>Envío <?= cp_esc($env['fecha_corta']) ?></td><td class="r"><?= cp_fmt((float)$env['precio']) ?></td></tr>
+              <?php endforeach; ?>
+            <?php elseif ($envioGross > 0): ?>
+              <tr><td>Envío</td><td class="r"><?= cp_fmt($envioGross) ?></td></tr>
+            <?php endif; ?>
             <tr class="final"><td>TOTAL</td><td class="r"><?= cp_fmt($totalGross) ?></td></tr>
           <?php endif; ?>
         </table>

@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <title>Logos — Ingresar</title>
 <script src="config.js"></script>
 <script src="helpers.js"></script>
@@ -10,9 +11,9 @@
   body { align-items:center; justify-content:center; }
 
   .login-wrap {
-    background: var(--neo-bg);
-    border-radius: var(--neo-r-xl);
-    box-shadow: var(--neo-e4);
+    background: #fff;
+    border: 1px solid var(--borde-fuerte);
+    border-radius: var(--neo-r-lg);
     padding: 40px 36px 36px;
     width: 380px;
   }
@@ -34,9 +35,9 @@
   /* Botones de usuario */
   .usuarios-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; width:100%; }
   .usuario-btn {
-    background: var(--neo-bg);
+    background: #fff;
     color: var(--neo-text);
-    border: none;
+    border: 1px solid var(--borde-fuerte);
     border-radius: var(--neo-r-md);
     padding: 16px 20px;
     font-size: 14px;
@@ -44,11 +45,10 @@
     cursor: pointer;
     font-family: inherit;
     min-width: 110px;
-    box-shadow: var(--neo-e2);
-    transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
+    transition: border-color var(--neo-t-fast), color var(--neo-t-fast), background var(--neo-t-fast);
   }
-  .usuario-btn:hover  { box-shadow: var(--neo-e3); }
-  .usuario-btn:active { box-shadow: var(--neo-i2); transform: scale(0.97); }
+  .usuario-btn:hover  { border-color: var(--color-primary); color: var(--color-primary); }
+  .usuario-btn:active { background: var(--primary-soft); }
 
   /* PIN dots */
   .pin-dots { display:flex; gap:12px; height:20px; align-items:center; }
@@ -56,33 +56,32 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: var(--neo-bg);
-    box-shadow: var(--neo-i1);
-    transition: background var(--neo-t-fast), box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
+    background: var(--color-bg-alt);
+    border: 1px solid var(--borde-fuerte);
+    transition: background var(--neo-t-fast), border-color var(--neo-t-fast), transform var(--neo-t-fast);
   }
   .pin-dot.lleno {
-    background: var(--neo-accent);
-    box-shadow: 2px 2px 5px var(--neo-accent-glow), -1px -1px 3px rgba(255,255,255,0.3);
+    background: var(--color-primary);
+    border-color: var(--color-primary);
     transform: scale(1.1);
   }
 
   /* PIN pad */
   .pin-pad { display:grid; grid-template-columns:repeat(3, 72px); gap:12px; }
   .pin-tecla {
-    background: var(--neo-bg);
+    background: #fff;
     color: var(--neo-text);
-    border: none;
+    border: 1px solid var(--borde-fuerte);
     border-radius: var(--neo-r-md);
     height: 64px;
     font-size: 20px;
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
-    box-shadow: var(--neo-e2);
-    transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast), color var(--neo-t-fast);
+    transition: border-color var(--neo-t-fast), background var(--neo-t-fast), color var(--neo-t-fast);
   }
-  .pin-tecla:hover  { box-shadow: var(--neo-e3); }
-  .pin-tecla:active { box-shadow: var(--neo-i2); transform: scale(0.96); }
+  .pin-tecla:hover  { border-color: var(--color-primary); color: var(--color-primary); }
+  .pin-tecla:active { background: var(--primary-soft); }
   .pin-tecla.secundaria { font-size: 13px; font-weight: 600; color: var(--neo-text-2); }
 
   /* Volver */
@@ -108,9 +107,9 @@
   /* Selector de caja */
   .caja-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; width:100%; }
   .caja-btn {
-    background: var(--neo-bg);
+    background: #fff;
     color: var(--neo-text);
-    border: none;
+    border: 1px solid var(--borde-fuerte);
     border-radius: var(--neo-r-md);
     padding: 18px 24px;
     font-size: 14px;
@@ -118,11 +117,10 @@
     cursor: pointer;
     font-family: inherit;
     min-width: 140px;
-    box-shadow: var(--neo-e2);
-    transition: box-shadow var(--neo-t-fast), transform var(--neo-t-fast);
+    transition: border-color var(--neo-t-fast), color var(--neo-t-fast), background var(--neo-t-fast);
   }
-  .caja-btn:hover  { box-shadow: var(--neo-e3); }
-  .caja-btn:active { box-shadow: var(--neo-i2); transform: scale(0.97); }
+  .caja-btn:hover  { border-color: var(--color-primary); color: var(--color-primary); }
+  .caja-btn:active { background: var(--primary-soft); }
 
   /* Sin conexión */
   .sin-conexion-text {
@@ -137,7 +135,7 @@
 
 <div class="login-wrap">
 <div class="login-box">
-  <img src="/Logos/logo_background.png" alt="Logos" id="login-logo">
+  <img src="/Logos/logo_background.png" alt="Logos" id="login-logo" onerror="this.onerror=null;this.src='/Logos/logos_logo.png';">
 
   <div class="paso activo" id="paso-usuarios">
     <div class="titulo">¿Quién está usando la caja?</div>
@@ -169,38 +167,15 @@
 </div>
 
 <script>
-// Aplica el tema cacheado sincrónicamente antes del primer paint
-(function () {
-  try {
-    var c = JSON.parse(localStorage.getItem('logos_tema') || 'null');
-    if (c && c[0] && c[1]) {
-      document.documentElement.style.setProperty('--azul',   c[0]);
-      document.documentElement.style.setProperty('--azul-h', c[1]);
-    }
-  } catch(e) {}
-})();
+// Identidad de marca fija (navy/dorado): el tema por color quedó
+// desactivado; limpiar el cache de versiones anteriores.
+try { localStorage.removeItem('logos_tema'); } catch(e) {}
 
 const API = '/Logos/api';
 let usuarioActual  = null;
 let pin            = '';
 let tokenSesion    = null;
 let sucursalesData = [];
-
-const LOGOS_TEMAS_LOGIN = {
-  azul:    ['#2563eb','#1d4ed8'], verde:   ['#16a34a','#15803d'],
-  rojo:    ['#dc2626','#b91c1c'], naranja: ['#ea580c','#c2410c'],
-  violeta: ['#7c3aed','#6d28d9'], rosa:    ['#db2777','#be185d'],
-  indigo:  ['#4f46e5','#4338ca'], teal:    ['#0d9488','#0f766e'],
-  gris:    ['#4b5563','#374151'], negro:   ['#1f2937','#111827'],
-};
-fetch(`${API}/configuracion`).then(r => r.ok ? r.json() : null).then(cfg => {
-  const t = cfg && LOGOS_TEMAS_LOGIN[cfg.color_tema];
-  if (t) {
-    document.documentElement.style.setProperty('--azul',   t[0]);
-    document.documentElement.style.setProperty('--azul-h', t[1]);
-    try { localStorage.setItem('logos_tema', JSON.stringify(t)); } catch(e) {}
-  }
-}).catch(() => {});
 
 function mostrarPaso(id) {
   document.querySelectorAll('.paso').forEach(p => p.classList.remove('activo'));

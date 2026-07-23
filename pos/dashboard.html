@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Dashboard</title>
 <script src="config.js"></script>
@@ -75,7 +76,9 @@
     "ven   ven   prod"
     "caja  caja  caja"
     "feed  tend  tend"
-    "feed  usrs  usrs";
+    "feed  usrs  usrs"
+    "vxv   vxv   dmp"
+    "com   com   com";
   max-width: 1700px; width: 100%; margin: 0 auto;
 }
 
@@ -88,7 +91,7 @@
 }
 .bh {
   padding: 12px 16px 11px;
-  border-bottom: 1px solid rgba(163,177,198,0.3);
+  border-bottom: 1px solid var(--borde-fuerte);
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
 .bt { font-size: 11px; font-weight: 700; color: var(--neo-text); text-transform: uppercase; letter-spacing: .4px; }
@@ -113,7 +116,7 @@
 }
 .kcard:hover { box-shadow: var(--neo-e3); transform: translateY(-1px); }
 .klbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--neo-text-3); }
-.kval { font-size: 20px; font-weight: 800; color: var(--neo-text); letter-spacing: -.5px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.kval { font-size: 20px; font-weight: 800; color: var(--color-primary); letter-spacing: -.5px; line-height: 1.1; font-variant-numeric: tabular-nums; }
 .kval.g { color: var(--neo-success); }
 .kval.r { color: var(--neo-danger); }
 .kdtl { font-size: 10px; color: var(--neo-text-3); margin-top: 1px; }
@@ -124,7 +127,7 @@
   box-shadow: var(--neo-e1);
 }
 .badge-open   { background: rgba(39,174,96,.12);  color: var(--neo-success); }
-.badge-closed { background: rgba(163,177,198,.18); color: var(--neo-text-3); }
+.badge-closed { background: var(--color-bg-alt); color: var(--neo-text-3); }
 
 /* ── Ventas chart ── */
 .block-ven  { grid-area: ven; }
@@ -132,7 +135,7 @@
 .chart-pad  { padding: 10px 10px 10px 14px; position: relative; overflow: hidden; }
 .torta-col  {
   padding: 12px 14px 12px 4px; display: flex; flex-direction: column; gap: 8px;
-  border-left: 1px solid rgba(163,177,198,0.3);
+  border-left: 1px solid var(--borde-fuerte);
 }
 .torta-canvas { flex: 1; max-height: 120px; }
 .tleg    { display: flex; flex-direction: column; gap: 5px; }
@@ -143,7 +146,7 @@
 
 /* ── Productos ── */
 .block-prod { grid-area: prod; display: flex; flex-direction: column; }
-.ptabs { display: flex; border-bottom: 1px solid rgba(163,177,198,0.3); }
+.ptabs { display: flex; border-bottom: 1px solid var(--borde-fuerte); }
 .ptab {
   flex: 1; padding: 9px 4px; font-size: 10px; font-weight: 700; letter-spacing: .3px;
   text-align: center; cursor: pointer; color: var(--neo-text-3);
@@ -154,7 +157,7 @@
 .ptab.activo { color: var(--neo-accent); border-bottom-color: var(--neo-accent); }
 .ppanel { display: none; padding: 8px 12px; flex: 1; overflow-y: auto; max-height: 280px; }
 .ppanel.activo { display: block; }
-.prow { display: flex; align-items: center; gap: 7px; padding: 7px 0; border-bottom: 1px solid rgba(163,177,198,0.2); }
+.prow { display: flex; align-items: center; gap: 7px; padding: 7px 0; border-bottom: 1px solid var(--borde); }
 .prow:last-child { border-bottom: none; }
 .prank  { width: 16px; font-size: 10px; font-weight: 700; color: var(--neo-text-3); text-align: right; flex-shrink: 0; }
 .pname  { flex: 1; color: var(--neo-text); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
@@ -172,7 +175,7 @@
 /* ── Caja (full width) ── */
 .block-caja { grid-area: caja; }
 .caja-inner { display: grid; grid-template-columns: 300px 1fr; }
-.caja-izq   { padding: 14px; border-right: 1px solid rgba(163,177,198,0.3); }
+.caja-izq   { padding: 14px; border-right: 1px solid var(--borde-fuerte); }
 .caja-der   { overflow-x: auto; background: var(--neo-bg-deep); border-radius: 0 0 var(--neo-r-lg) 0; }
 .caja-est-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ced { display: flex; flex-direction: column; gap: 3px; }
@@ -181,8 +184,8 @@
 .ced-val.g { color: var(--neo-success); font-weight: 700; }
 
 .ct      { width: 100%; border-collapse: collapse; font-size: 11px; }
-.ct th   { padding: 8px 12px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.35); background: var(--neo-bg-deep); white-space: nowrap; }
-.ct td   { padding: 8px 12px; border-bottom: 1px solid rgba(163,177,198,.18); color: var(--neo-text-2); font-variant-numeric: tabular-nums; }
+.ct th   { padding: 8px 12px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); border-bottom: 1px solid var(--borde-fuerte); background: var(--neo-bg-deep); white-space: nowrap; }
+.ct td   { padding: 8px 12px; border-bottom: 1px solid var(--borde); color: var(--neo-text-2); font-variant-numeric: tabular-nums; }
 .ct tr:last-child td { border-bottom: none; }
 .ct tr:hover td { background: rgba(255,255,255,0.42); }
 .dp { color: var(--neo-success); font-weight: 700; }
@@ -192,7 +195,7 @@
 /* ── Feed ── */
 .block-feed { grid-area: feed; display: flex; flex-direction: column; }
 .feed-list  { padding: 2px 14px; flex: 1; overflow-y: auto; max-height: 440px; }
-.fi         { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(163,177,198,0.2); }
+.fi         { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--borde); }
 .fi:last-child { border-bottom: none; }
 .fdot       { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; box-shadow: var(--neo-e1); }
 .fdot.v     { background: var(--neo-success); }
@@ -208,9 +211,9 @@
 
 /* ── Tendencia ── */
 .block-tend { grid-area: tend; display: flex; flex-direction: column; }
-.tend-stats { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid rgba(163,177,198,0.3); }
+.tend-stats { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid var(--borde-fuerte); }
 .ts         { padding: 13px 15px; }
-.ts:not(:last-child) { border-right: 1px solid rgba(163,177,198,0.3); }
+.ts:not(:last-child) { border-right: 1px solid var(--borde-fuerte); }
 .ts-lbl     { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 5px; }
 .ts-val     { font-size: 18px; font-weight: 800; color: var(--neo-text); font-variant-numeric: tabular-nums; }
 .ts-val.g   { color: var(--neo-success); }
@@ -220,8 +223,8 @@
 /* ── Usuarios ── */
 .block-usrs { grid-area: usrs; }
 .ut      { width: 100%; border-collapse: collapse; font-size: 11px; }
-.ut th   { padding: 8px 12px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.35); background: var(--neo-bg-deep); }
-.ut td   { padding: 8px 12px; border-bottom: 1px solid rgba(163,177,198,.18); color: var(--neo-text-2); }
+.ut th   { padding: 8px 12px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid var(--borde-fuerte); background: var(--neo-bg-deep); }
+.ut td   { padding: 8px 12px; border-bottom: 1px solid var(--borde); color: var(--neo-text-2); }
 .ut tr:last-child td { border-bottom: none; }
 .ut tr:hover td { background: rgba(255,255,255,0.42); }
 .udot       { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; box-shadow: var(--neo-e1); }
@@ -232,9 +235,64 @@
 .chip   { padding: 2px 8px; border-radius: var(--neo-r-pill); font-size: 10px; font-weight: 700; box-shadow: var(--neo-e1); }
 .chip-g { background: rgba(39,174,96,.12); color: var(--neo-success); }
 
+/* ── Vendedores cards ── */
+.block-vxv { grid-area: vxv; display: flex; flex-direction: column; }
+.block-dmp { grid-area: dmp; display: flex; flex-direction: column; }
+
+.vxv-tb, .dmp-tb {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 10px 14px; border-bottom: 1px solid var(--borde);
+}
+.vxv-tb .tb-btn, .dmp-tb .tb-btn { font-size: 10px; padding: 4px 10px; }
+.vxv-tb .tb-date, .dmp-tb .tb-date { font-size: 11px; }
+.vxv-tb select, .dmp-tb select {
+  padding: 4px 8px; border: none; border-radius: var(--neo-r-xs);
+  font-size: 11px; font-family: inherit; outline: none;
+  background: var(--neo-bg); color: var(--neo-text);
+  box-shadow: var(--neo-i1); cursor: pointer;
+}
+.vxv-body { flex: 1; display: flex; flex-direction: column; padding: 12px 14px; gap: 10px; }
+.dmp-body  { flex: 1; display: flex; flex-direction: column; padding: 12px 14px; gap: 10px; }
+.vxv-chart-wrap { position: relative; height: 200px; }
+.dmp-chart-wrap { position: relative; flex: 1; min-height: 160px; }
+.vxv-table-wrap { overflow-x: auto; }
+table.vxv-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.vxv-tbl th { padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--color-ink); border-bottom: 1px solid var(--borde-fuerte); }
+table.vxv-tbl td { padding: 7px 8px; border-bottom: 1px solid var(--borde-fuerte); color: var(--neo-text); vertical-align: middle; }
+table.vxv-tbl tr:last-child td { border-bottom: none; }
+table.vxv-tbl .meta-bar { height: 4px; border-radius: 2px; background: var(--color-bg-alt); position: relative; margin-top: 3px; }
+table.vxv-tbl .meta-fill { height: 100%; border-radius: 2px; background: var(--neo-accent); transition: width .4s; }
+
+.dmp-kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+.dmp-kpi  { background: var(--neo-bg-deep); border-radius: var(--neo-r-sm); padding: 8px 10px; box-shadow: var(--neo-i1); }
+.dmp-kpi-val  { font-size: 16px; font-weight: 700; color: var(--color-primary); line-height: 1; }
+.dmp-kpi-lbl  { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); margin-top: 3px; }
+.dmp-meta     { font-size: 11px; color: var(--neo-text-2); display: flex; align-items: center; gap: 6px; }
+.dmp-meta-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--color-bg-alt); }
+.dmp-meta-fill { height: 100%; border-radius: 3px; background: var(--neo-accent); transition: width .5s; }
+
+.block-com { grid-area: com; display: flex; flex-direction: column; }
+.com-tb {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 9px 14px; border-bottom: 1px solid var(--borde);
+}
+.com-body { padding: 12px 14px; overflow-x: auto; }
+table.com-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.com-tbl th { padding: 6px 8px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--color-ink); border-bottom: 1px solid var(--borde-fuerte); }
+table.com-tbl td { padding: 7px 8px; border-bottom: 1px solid var(--borde-fuerte); color: var(--neo-text); }
+table.com-tbl tr:last-child td { border-bottom: none; }
+.com-badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: .3px; }
+.com-badge-abierto { background: rgba(39,174,96,.12); color: var(--neo-success); }
+.com-badge-cerrado { background: var(--color-bg-alt); color: var(--neo-text-3); }
+.com-btn-exp { height: 28px; padding: 0 12px; border: none; border-radius: var(--neo-r-xs); background: var(--neo-success); color: #fff; font-size: 11px; font-weight: 600; font-family: inherit; cursor: pointer; }
+.com-btn-cerrar { height: 28px; padding: 0 12px; border: none; border-radius: var(--neo-r-xs); background: var(--neo-bg); color: var(--neo-text-2); font-size: 11px; font-family: inherit; cursor: pointer; box-shadow: var(--neo-e1); }
+.com-btn-cerrar:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+.com-ver-ventas { font-size: 11px; color: var(--neo-accent); font-weight: 600; background: none; border: none; cursor: pointer; padding: 0; font-family: inherit; }
+.com-ver-ventas:hover { text-decoration: underline; }
+
 /* ── responsive ── */
 @media (max-width:900px) {
-  .dash-main  { grid-template-columns: 1fr; grid-template-areas: "kpis""ven""prod""caja""feed""tend""usrs"; padding: 10px; }
+  .dash-main  { grid-template-columns: 1fr; grid-template-areas: "kpis""ven""prod""caja""feed""tend""usrs""vxv""dmp""com"; padding: 10px; }
   .kpis-row   { grid-template-columns: 1fr 1fr; }
   .ven-inner  { grid-template-columns: 1fr; }
   .torta-col  { display: none; }
@@ -402,6 +460,88 @@
     </div>
   </section>
 
+  <!-- ── B8: Ventas por vendedor ── -->
+  <section class="block block-vxv" id="sec-vxv">
+    <div class="bh">
+      <span class="bt">Ventas por vendedor</span>
+    </div>
+    <div class="vxv-tb">
+      <span class="tb-lbl">Período</span>
+      <button class="tb-btn" id="vxv-hoy">Hoy</button>
+      <button class="tb-btn" id="vxv-semana">Semana</button>
+      <button class="tb-btn activo" id="vxv-mes">Mes</button>
+      <button class="tb-btn" id="vxv-anio">Año</button>
+      <span class="tb-sep"></span>
+      <input class="tb-date" type="date" id="vxv-desde">
+      <span style="font-size:11px;color:var(--neo-text-3)">—</span>
+      <input class="tb-date" type="date" id="vxv-hasta">
+    </div>
+    <div class="vxv-body">
+      <div class="vxv-chart-wrap"><canvas id="ch-vxv"></canvas></div>
+      <div class="vxv-table-wrap">
+        <table class="vxv-tbl">
+          <thead><tr><th>Vendedor</th><th>Total</th><th>Comisionado</th><th>Tickets</th><th>Ticket prom.</th><th>Meta</th><th></th></tr></thead>
+          <tbody id="vxv-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── B9: Desempeño individual ── -->
+  <section class="block block-dmp" id="sec-dmp">
+    <div class="bh">
+      <span class="bt">Desempeño individual</span>
+    </div>
+    <div class="dmp-tb">
+      <select id="dmp-vendedor"><option value="">— Vendedor —</option></select>
+      <span class="tb-sep"></span>
+      <span class="tb-lbl">Vista</span>
+      <button class="tb-btn" id="dmp-diario">Diario</button>
+      <button class="tb-btn" id="dmp-semanal">Semanal</button>
+      <button class="tb-btn activo" id="dmp-mensual">Mensual</button>
+      <button class="tb-btn" id="dmp-anual">Anual</button>
+      <span class="tb-sep"></span>
+      <input class="tb-date" type="date" id="dmp-desde">
+      <span style="font-size:11px;color:var(--neo-text-3)">—</span>
+      <input class="tb-date" type="date" id="dmp-hasta">
+    </div>
+    <div class="dmp-body">
+      <div class="dmp-kpis" style="grid-template-columns:repeat(4,1fr)">
+        <div class="dmp-kpi"><div class="dmp-kpi-val" id="dmp-kpi-total">—</div><div class="dmp-kpi-lbl">Total vendido</div></div>
+        <div class="dmp-kpi"><div class="dmp-kpi-val" id="dmp-kpi-com">—</div><div class="dmp-kpi-lbl">Comisión</div></div>
+        <div class="dmp-kpi"><div class="dmp-kpi-val" id="dmp-kpi-tickets">—</div><div class="dmp-kpi-lbl">Tickets</div></div>
+        <div class="dmp-kpi"><div class="dmp-kpi-val" id="dmp-kpi-prom">—</div><div class="dmp-kpi-lbl">Ticket prom.</div></div>
+      </div>
+      <div class="dmp-meta" id="dmp-meta-row" style="display:none">
+        <span id="dmp-meta-txt"></span>
+        <div class="dmp-meta-bar"><div class="dmp-meta-fill" id="dmp-meta-fill" style="width:0%"></div></div>
+        <span id="dmp-meta-pct"></span>
+      </div>
+      <div class="dmp-chart-wrap"><canvas id="ch-dmp"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ── B10: Comisiones ── -->
+  <section class="block block-com" id="sec-com">
+    <div class="bh">
+      <span class="bt">Comisiones por período</span>
+      <span class="bs" id="com-estado-badge"></span>
+    </div>
+    <div class="com-tb">
+      <span class="tb-lbl">Período</span>
+      <input type="month" id="com-periodo" class="tb-date">
+      <span class="tb-sep"></span>
+      <button class="com-btn-cerrar" id="com-btn-cerrar">Cerrar mes</button>
+      <button class="com-btn-exp" id="com-btn-exp">Exportar CSV</button>
+    </div>
+    <div class="com-body">
+      <table class="com-tbl">
+        <thead><tr><th>Vendedor</th><th>Total vendido</th><th>Comisionado</th><th>Ventas</th></tr></thead>
+        <tbody id="com-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
 </div><!-- /.dash-main -->
 </div><!-- /.dash-scroll -->
 
@@ -451,12 +591,12 @@ const setHtml = (id, v) => { const el = document.getElementById(id); if (el) el.
 const ok = r => r.status === 'fulfilled' && r.value && !r.value.error ? r.value : null;
 
 // ── Chart defaults ────────────────────────────────────────
-Chart.defaults.color = '#9ba3b2';
-Chart.defaults.borderColor = 'rgba(163,177,198,0.3)';
+Chart.defaults.color = '#9B9590';
+Chart.defaults.borderColor = '#E4DFD3';
 Chart.defaults.font.family = 'system-ui,-apple-system,sans-serif';
 Chart.defaults.font.size = 11;
 
-const C = {azul:'#4f8ef7',verde:'#27ae60',rojo:'#e74c3c',bajo:'#f39c12',morado:'#7c3aed',gris:'#9ba3b2',borde:'rgba(163,177,198,0.3)'};
+const C = {azul:'#163B66',verde:'#27ae60',rojo:'#e74c3c',bajo:'#f39c12',morado:'#7c3aed',gris:'#9B9590',borde:'#E4DFD3'};
 
 const TIPO_LABELS = {efectivo:'Efectivo',tarjeta:'Tarjeta',transferencia:'Transf.',cc:'Cta. Cte.',cheque:'Cheque',mercado_pago:'Mercado Pago'};
 const TIPO_COLORS = {efectivo:C.verde,tarjeta:C.azul,transferencia:C.morado,cc:C.bajo,cheque:'#0d9488',mercado_pago:'#db2777'};
@@ -691,7 +831,7 @@ function renderVentas(dash) {
         labels,
         datasets: [
           { type:'bar', label: labelSerie, data: valores,
-            backgroundColor:'rgba(79,142,247,.18)', borderColor:C.azul, borderWidth:1.5, borderRadius:4 },
+            backgroundColor:'rgba(22,59,102,.18)', borderColor:C.azul, borderWidth:1.5, borderRadius:4 },
         ]
       },
       options: {
@@ -938,7 +1078,7 @@ function renderTendencia(meses, results) {
       labels: meses.map(m => m.label),
       datasets: [
         { label:'Ventas', data: datos.map(d => d?.total_ventas ?? 0),
-          borderColor:C.azul, backgroundColor:'rgba(79,142,247,.1)', fill:true,
+          borderColor:C.azul, backgroundColor:'rgba(22,59,102,.1)', fill:true,
           tension:.35, borderWidth:2, pointRadius:3, pointBackgroundColor:C.azul },
       ]
     },
@@ -1063,6 +1203,338 @@ window.TOUR_STEPS = [
     body: 'Compara el mes actual con los últimos 6 meses. Incluye una proyección de cierre de mes basada en el ritmo actual de ventas.',
   },
 ];
+
+// ══════════════════════════════════════════════════════════════════
+// B8 — Ventas por vendedor
+// ══════════════════════════════════════════════════════════════════
+(function () {
+  const secVxv = document.getElementById('sec-vxv');
+  if (!secVxv) return;
+
+  let chVxv = null;
+
+  // Ocultar si el usuario no tiene permiso
+  if (window.puede && !window.puede('gestionar_vendedores')) {
+    secVxv.style.display = 'none';
+    document.getElementById('sec-dmp')?.style && (document.getElementById('sec-dmp').style.display = 'none');
+    return;
+  }
+
+  function rangoMes() {
+    const h = new Date(); h.setDate(1);
+    return { desde: fmtD(h), hasta: hoyFecha() };
+  }
+
+  let vxvDesde = rangoMes().desde, vxvHasta = rangoMes().hasta;
+  document.getElementById('vxv-desde').value = vxvDesde;
+  document.getElementById('vxv-hasta').value = vxvHasta;
+
+  function setRangoVxv(desde, hasta) {
+    vxvDesde = desde; vxvHasta = hasta;
+    document.getElementById('vxv-desde').value = desde;
+    document.getElementById('vxv-hasta').value = hasta;
+    cargarVxv();
+  }
+
+  ['vxv-hoy','vxv-semana','vxv-mes','vxv-anio'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => {
+      ['vxv-hoy','vxv-semana','vxv-mes','vxv-anio'].forEach(i => document.getElementById(i)?.classList.remove('activo'));
+      document.getElementById(id)?.classList.add('activo');
+      const h = new Date();
+      if (id === 'vxv-hoy')    setRangoVxv(hoyFecha(), hoyFecha());
+      if (id === 'vxv-semana') { const l=new Date(h); l.setDate(h.getDate()-h.getDay()+1); setRangoVxv(fmtD(l),hoyFecha()); }
+      if (id === 'vxv-mes')    { const l=new Date(h.getFullYear(),h.getMonth(),1); setRangoVxv(fmtD(l),hoyFecha()); }
+      if (id === 'vxv-anio')   { setRangoVxv(h.getFullYear()+'-01-01',hoyFecha()); }
+    });
+  });
+  document.getElementById('vxv-desde').addEventListener('change', e => { vxvDesde = e.target.value; ['vxv-hoy','vxv-semana','vxv-mes','vxv-anio'].forEach(i=>document.getElementById(i)?.classList.remove('activo')); cargarVxv(); });
+  document.getElementById('vxv-hasta').addEventListener('change', e => { vxvHasta = e.target.value; ['vxv-hoy','vxv-semana','vxv-mes','vxv-anio'].forEach(i=>document.getElementById(i)?.classList.remove('activo')); cargarVxv(); });
+
+  async function cargarVxv() {
+    if (!vxvDesde || !vxvHasta) return;
+    const r = await fetch(`${API}/vendedores/reporte/ventas?desde=${vxvDesde}&hasta=${vxvHasta}`);
+    if (!r.ok) return;
+    const data = await r.json();
+    renderVxv(data);
+  }
+
+  function renderVxv(data) {
+    const colores = data.map((_, i) => `hsl(${(i * 47 + 200) % 360},60%,55%)`);
+    if (chVxv) chVxv.destroy();
+    const ctx = document.getElementById('ch-vxv').getContext('2d');
+    chVxv = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: data.map(d => d.nombre),
+        datasets: [{ label: 'Total vendido', data: data.map(d => d.total), backgroundColor: colores, borderRadius: 4 }],
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { x: { ticks: { callback: v => '$'+Math.round(v).toLocaleString('es-AR') } } },
+      },
+    });
+
+    const tbody = document.getElementById('vxv-tbody');
+    tbody.innerHTML = data.map((v, i) => {
+      const pct = v.meta_monto ? Math.min(100, Math.round(v.total / v.meta_monto * 100)) : null;
+      const metaHtml = pct !== null
+        ? `<div class="meta-bar"><div class="meta-fill" style="width:${pct}%;background:${colores[i]}"></div></div><span style="font-size:10px;color:var(--neo-text-3)">${pct}%</span>`
+        : '—';
+      return `<tr>
+        <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${colores[i]};margin-right:5px;vertical-align:middle"></span>${esc(v.nombre)}</td>
+        <td><strong>${$m(v.total)}</strong></td>
+        <td>${v.monto_comisionado > 0 ? $m(v.monto_comisionado) : '—'}</td>
+        <td>${v.cant_ventas}</td>
+        <td>${$m(v.ticket_promedio)}</td>
+        <td style="min-width:100px">${metaHtml}</td>
+        <td><button class="com-ver-ventas" onclick="irAVentasVendedor(${v.id},'${vxvDesde}','${vxvHasta}')">Ver</button></td>
+      </tr>`;
+    }).join('');
+    if (!data.length) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--neo-text-3);padding:20px">Sin datos en el período</td></tr>';
+  }
+
+  cargarVxv();
+  window._recargarVxv = cargarVxv;
+})();
+
+function irAVentasVendedor(vendedorId, desde, hasta) {
+  sessionStorage.setItem('logos_filtro_ventas', JSON.stringify({ vendedor_id: vendedorId, fecha_desde: desde, fecha_hasta: hasta }));
+  location.href = 'ventas.html';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// B9 — Desempeño individual por vendedor
+// ══════════════════════════════════════════════════════════════════
+(function () {
+  const secDmp = document.getElementById('sec-dmp');
+  if (!secDmp || (window.puede && !window.puede('gestionar_vendedores'))) return;
+
+  let chDmp = null;
+  let dmpGran = 'mensual';
+
+  // Cargar lista de vendedores en el selector
+  fetch(`${API}/vendedores`)
+    .then(r => r.ok ? r.json() : [])
+    .then(lista => {
+      const sel = document.getElementById('dmp-vendedor');
+      lista.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.id; o.textContent = v.nombre;
+        sel.appendChild(o);
+      });
+    });
+
+  // Rango inicial = mes actual
+  function rangoDefault(gran) {
+    const h = new Date();
+    if (gran === 'diario')   return { desde: hoyFecha(),                              hasta: hoyFecha() };
+    if (gran === 'semanal')  { const l=new Date(h); l.setDate(h.getDate()-h.getDay()+1); return { desde: fmtD(l), hasta: hoyFecha() }; }
+    if (gran === 'mensual')  { return { desde: h.getFullYear()+'-'+pad(h.getMonth()+1)+'-01', hasta: hoyFecha() }; }
+    if (gran === 'anual')    { return { desde: h.getFullYear()+'-01-01', hasta: hoyFecha() }; }
+    return { desde: hoyFecha(), hasta: hoyFecha() };
+  }
+
+  function setGran(g) {
+    dmpGran = g;
+    ['dmp-diario','dmp-semanal','dmp-mensual','dmp-anual'].forEach(i => document.getElementById(i)?.classList.remove('activo'));
+    document.getElementById('dmp-'+g)?.classList.add('activo');
+    const r = rangoDefault(g);
+    document.getElementById('dmp-desde').value = r.desde;
+    document.getElementById('dmp-hasta').value = r.hasta;
+    cargarDmp();
+  }
+
+  ['dmp-diario','dmp-semanal','dmp-mensual','dmp-anual'].forEach(id => {
+    document.getElementById(id)?.addEventListener('click', () => setGran(id.replace('dmp-','')) );
+  });
+  document.getElementById('dmp-vendedor').addEventListener('change', cargarDmp);
+  document.getElementById('dmp-desde').addEventListener('change', cargarDmp);
+  document.getElementById('dmp-hasta').addEventListener('change', cargarDmp);
+
+  // Init
+  const r0 = rangoDefault('mensual');
+  document.getElementById('dmp-desde').value = r0.desde;
+  document.getElementById('dmp-hasta').value = r0.hasta;
+
+  async function cargarDmp() {
+    const vid   = document.getElementById('dmp-vendedor').value;
+    const desde = document.getElementById('dmp-desde').value;
+    const hasta = document.getElementById('dmp-hasta').value;
+    if (!vid || !desde || !hasta) { limpiarDmp(); return; }
+
+    const r = await fetch(`${API}/vendedores/${vid}/reporte?desde=${desde}&hasta=${hasta}&granularidad=${dmpGran}`);
+    if (!r.ok) { limpiarDmp(); return; }
+    const d = await r.json();
+    renderDmp(d);
+  }
+
+  function limpiarDmp() {
+    if (chDmp) { chDmp.destroy(); chDmp = null; }
+    document.getElementById('dmp-kpi-total').textContent   = '—';
+    document.getElementById('dmp-kpi-com').textContent     = '—';
+    document.getElementById('dmp-kpi-tickets').textContent = '—';
+    document.getElementById('dmp-kpi-prom').textContent    = '—';
+    document.getElementById('dmp-meta-row').style.display  = 'none';
+  }
+
+  function renderDmp(d) {
+    // KPIs
+    document.getElementById('dmp-kpi-total').textContent   = $m(d.kpi.total);
+    document.getElementById('dmp-kpi-com').textContent     = d.kpi.comision > 0 ? $m(d.kpi.comision) : '—';
+    document.getElementById('dmp-kpi-tickets').textContent = d.kpi.cant;
+    document.getElementById('dmp-kpi-prom').textContent    = $m(d.kpi.ticket_promedio);
+
+    // Meta
+    const metaRow = document.getElementById('dmp-meta-row');
+    if (d.vendedor.meta_monto) {
+      const pct = Math.min(100, Math.round(d.kpi.total / d.vendedor.meta_monto * 100));
+      document.getElementById('dmp-meta-txt').textContent  = `Meta: ${$m(d.vendedor.meta_monto)}`;
+      document.getElementById('dmp-meta-fill').style.width = pct + '%';
+      document.getElementById('dmp-meta-pct').textContent  = pct + '%';
+      metaRow.style.display = 'flex';
+    } else {
+      metaRow.style.display = 'none';
+    }
+
+    // Chart
+    if (chDmp) chDmp.destroy();
+    const ctx = document.getElementById('ch-dmp').getContext('2d');
+    const accentRgb = '99,125,255';
+
+    if (dmpGran === 'semanal') {
+      // Dos series: mañana / tarde agrupadas por día
+      const dias   = [...new Set(d.series.map(s => s.dia))].sort();
+      const mañana = dias.map(dia => { const s = d.series.find(x => x.dia === dia && x.turno === 'mañana'); return s ? s.total : 0; });
+      const tarde  = dias.map(dia => { const s = d.series.find(x => x.dia === dia && x.turno === 'tarde');  return s ? s.total : 0; });
+      chDmp = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dias.map(d => { const p=d.split('-'); return p[2]+'/'+p[1]; }),
+          datasets: [
+            { label: 'Mañana (0-12h)', data: mañana, backgroundColor: `rgba(${accentRgb},.7)`, borderRadius: 3 },
+            { label: 'Tarde (12-24h)', data: tarde,  backgroundColor: `rgba(${accentRgb},.35)`, borderRadius: 3 },
+          ],
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom',labels:{font:{size:11}}}}, scales:{y:{ticks:{callback:v=>'$'+Math.round(v).toLocaleString('es-AR')}}} },
+      });
+    } else {
+      const labels = dmpGran === 'diario'
+        ? d.series.map(s => s.label)
+        : d.series.map(s => s.label || s.periodo);
+      chDmp = new Chart(ctx, {
+        type: dmpGran === 'diario' ? 'bar' : 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Total vendido',
+            data: d.series.map(s => s.total),
+            backgroundColor: `rgba(${accentRgb},.25)`,
+            borderColor: `rgb(${accentRgb})`,
+            borderWidth: 2,
+            pointRadius: 3,
+            fill: dmpGran !== 'diario',
+            tension: 0.3,
+            borderRadius: 4,
+          }],
+        },
+        options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{ticks:{callback:v=>'$'+Math.round(v).toLocaleString('es-AR')}}} },
+      });
+    }
+  }
+
+  cargarDmp();
+})();
+
+// ══════════════════════════════════════════════════════════════════
+// B10 — Comisiones por período
+// ══════════════════════════════════════════════════════════════════
+(function () {
+  const secCom = document.getElementById('sec-com');
+  if (!secCom || (window.puede && !window.puede('gestionar_vendedores'))) {
+    if (secCom) secCom.style.display = 'none';
+    return;
+  }
+
+  const periodoInput = document.getElementById('com-periodo');
+  const btnCerrar    = document.getElementById('com-btn-cerrar');
+  const btnExp       = document.getElementById('com-btn-exp');
+  const badge        = document.getElementById('com-estado-badge');
+  const tbody        = document.getElementById('com-tbody');
+
+  // Inicializar al mes actual
+  const hoy = new Date();
+  periodoInput.value = hoy.getFullYear() + '-' + pad(hoy.getMonth() + 1);
+
+  let estadoCerrado = false;
+
+  async function cargarCom() {
+    const periodo = periodoInput.value;
+    if (!periodo) return;
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--neo-text-3);padding:14px">Cargando…</td></tr>';
+    try {
+      const r = await fetch(`${API}/vendedores/comisiones?periodo=${periodo}`);
+      if (!r.ok) return;
+      const d = await r.json();
+      estadoCerrado = d.cerrado;
+      badge.innerHTML = d.cerrado
+        ? `<span class="com-badge com-badge-cerrado">Cerrado ${d.cerrado_en ? d.cerrado_en.slice(0,10) : ''}</span>`
+        : `<span class="com-badge com-badge-abierto">Abierto</span>`;
+      btnCerrar.textContent = d.cerrado ? 'Reabrir y actualizar' : 'Cerrar mes';
+      renderCom(d.filas);
+    } catch(e) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--neo-danger);padding:14px">Error al cargar</td></tr>';
+    }
+  }
+
+  function renderCom(filas) {
+    if (!filas.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--neo-text-3);padding:14px">Sin datos en el período</td></tr>';
+      return;
+    }
+    tbody.innerHTML = filas.map(f => `
+      <tr>
+        <td>${esc(f.vendedor_nombre)}</td>
+        <td><strong>${$m(f.total_ventas)}</strong></td>
+        <td>${f.total_comision > 0 ? $m(f.total_comision) : '—'}</td>
+        <td>${f.cant_ventas}</td>
+      </tr>`).join('');
+    // Fila total
+    const totV = filas.reduce((s, f) => s + f.total_ventas, 0);
+    const totC = filas.reduce((s, f) => s + f.total_comision, 0);
+    tbody.innerHTML += `<tr style="font-weight:700;border-top:2px solid var(--borde-fuerte)">
+      <td>Total</td><td>${$m(totV)}</td><td>${totC > 0 ? $m(totC) : '—'}</td><td></td>
+    </tr>`;
+  }
+
+  btnCerrar.addEventListener('click', async () => {
+    const periodo = periodoInput.value;
+    if (!periodo) return;
+    btnCerrar.disabled = true;
+    const prev = btnCerrar.textContent;
+    btnCerrar.textContent = 'Guardando…';
+    try {
+      const r = await fetch(`${API}/vendedores/comisiones/cerrar`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ periodo }),
+      });
+      if (!r.ok) throw new Error('Error al cerrar');
+      await cargarCom();
+    } catch(e) {
+      btnCerrar.textContent = prev;
+    } finally {
+      btnCerrar.disabled = false;
+    }
+  });
+
+  btnExp.addEventListener('click', () => {
+    const periodo = periodoInput.value;
+    if (periodo) window.location.href = `${API}/vendedores/comisiones/exportar?periodo=${periodo}`;
+  });
+
+  periodoInput.addEventListener('change', cargarCom);
+  cargarCom();
+})();
 </script>
 </body>
 </html>

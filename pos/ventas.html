@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Ventas</title>
 <script src="config.js"></script>
@@ -117,7 +118,7 @@ select.fbar-ctrl { cursor: pointer; }
   z-index: 200; max-height: 220px; overflow-y: auto; display: none;
 }
 .f-cli-dd.visible { display: block; }
-.f-cli-dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid rgba(163,177,198,.2); font-size: 12px; }
+.f-cli-dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--borde); font-size: 12px; }
 .f-cli-dd-item:last-child { border-bottom: none; }
 .f-cli-dd-item:hover, .f-cli-dd-item.activo { background: rgba(255,255,255,.5); }
 .f-cli-dd-item .cn { font-weight: 600; color: var(--neo-text); }
@@ -138,15 +139,16 @@ select.fbar-ctrl { cursor: pointer; }
 }
 .mes-chip:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
 .mes-chip.activo { box-shadow: var(--neo-i1); color: var(--neo-accent); }
+.mes-chip.futuro { opacity: .35; cursor: not-allowed; pointer-events: none; }
 
 /* ── Barra de selección ── */
 .seleccion-bar {
   display: flex; flex-shrink: 0;
-  background: var(--neo-text);
+  background: var(--color-primary-dark);
   color: white;
   padding: 0 16px;
   align-items: center; gap: 0;
-  box-shadow: 0 3px 10px rgba(49,52,75,.35);
+  border-bottom: 1px solid var(--borde-fuerte);
 }
 .selec-left { flex: 1; min-width: 0; overflow: hidden; }
 .selec-placeholder {
@@ -233,13 +235,13 @@ table { width: 100%; border-collapse: collapse; }
 thead th {
   position: sticky; top: 0; background: var(--neo-bg-deep);
   padding: 10px 14px; text-align: left;
-  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3);
-  border-bottom: 1px solid rgba(163,177,198,.4);
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-ink);
+  border-bottom: 1px solid var(--borde-fuerte);
 }
 thead th.r { text-align: right; }
-tbody tr { cursor: pointer; transition: background 80ms ease-out; border-bottom: 1px solid rgba(163,177,198,.18); }
-tbody tr:hover { background: rgba(255,255,255,.45); }
-tbody tr.seleccionada { background: rgba(79,142,247,.12) !important; outline: 2px solid var(--neo-accent); outline-offset: -1px; }
+tbody tr { cursor: pointer; transition: background 80ms ease-out; border-bottom: 1px solid var(--borde); }
+tbody tr:hover { background: var(--color-bg-alt); }
+tbody tr.seleccionada { background: var(--primary-soft-2) !important; outline: 2px solid var(--neo-accent); outline-offset: -1px; }
 tbody td { padding: 9px 14px; color: var(--neo-text); }
 tbody td.r { text-align: right; }
 .fecha-cell { font-family: monospace; font-size: 12px; white-space: nowrap; color: var(--neo-text); }
@@ -256,7 +258,7 @@ tbody td.r { text-align: right; }
 .tipo-REMITO { background: rgba(243,156,18,.12); color: var(--neo-warning); }
 .tipo-FC     { background: rgba(231,76,60,.1);  color: var(--neo-danger); }
 .tipo-NC     { background: rgba(236,72,153,.1); color: #ec4899; }
-.tipo-PRES   { background: rgba(163,177,198,.18); color: var(--neo-text-2); }
+.tipo-PRES   { background: var(--color-bg-alt); color: var(--neo-text-2); }
 .pago-badge  { font-size: 11px; color: var(--neo-text-3); }
 .total-cell  { font-weight: 700; color: var(--neo-accent); font-variant-numeric: tabular-nums; }
 .fila-anulada td { opacity: .5; }
@@ -265,14 +267,14 @@ tbody td.r { text-align: right; }
 .cae-badge { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; font-size: 10px; font-weight: 800; margin-left: 5px; vertical-align: middle; flex-shrink: 0; }
 .cae-ok   { background: rgba(39,174,96,.15);  color: var(--neo-success); }
 .cae-err  { background: rgba(231,76,60,.15);  color: var(--neo-danger);  }
-.cae-pend { background: rgba(163,177,198,.2); color: var(--neo-text-3);  }
+.cae-pend { background: var(--color-bg-alt); color: var(--neo-text-3);  }
 
 /* Grupos */
 .grupo-sep td { height: 8px; background: var(--neo-bg-deep); border: none !important; padding: 0; }
 .grupo-header-row td {
   padding: 7px 14px; background: var(--neo-bg); font-weight: 700; font-size: 11px;
   text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-2);
-  border-top: 1px solid rgba(163,177,198,.3); border-bottom: 1px solid rgba(163,177,198,.3);
+  border-top: 1px solid var(--borde-fuerte); border-bottom: 1px solid var(--borde-fuerte);
   position: sticky; top: 38px;
 }
 .g-stats { margin-left: 10px; font-size: 11px; color: var(--neo-text-3); font-weight: 500; text-transform: none; letter-spacing: 0; }
@@ -282,11 +284,11 @@ tbody td.r { text-align: right; }
 /* Color de fila por comprobante (versiones neo suaves) */
 tr.comp-remito      td { background: rgba(243,156,18,.06); }
 tr.comp-factura     td { background: rgba(231,76,60,.05);  }
-tr.comp-presupuesto td { background: rgba(163,177,198,.08); }
+tr.comp-presupuesto td { background: var(--color-bg-alt); }
 tr.comp-nc          td { background: rgba(236,72,153,.05); }
 tr.comp-remito.seleccionada      td { background: rgba(243,156,18,.14); }
 tr.comp-factura.seleccionada     td { background: rgba(231,76,60,.12); }
-tr.comp-presupuesto.seleccionada td { background: rgba(163,177,198,.18); }
+tr.comp-presupuesto.seleccionada td { background: var(--color-bg-alt); }
 tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
 .estado-vacio { padding: 60px 20px; text-align: center; color: var(--neo-text-3); }
 
@@ -314,7 +316,7 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
 .overlay.abierto .modal { opacity: 1; transform: scale(1) translateY(0); }
 .modal-sm { width: min(480px,95vw); }
 .modal-head {
-  padding: 16px 22px; border-bottom: 1px solid rgba(163,177,198,.3);
+  padding: 16px 22px; border-bottom: 1px solid var(--borde-fuerte);
   display: flex; align-items: center; gap: 12px; flex-shrink: 0;
 }
 .modal-head h2 { flex: 1; font-size: 15px; font-weight: 700; color: var(--neo-text); }
@@ -334,12 +336,12 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
 .comp-bloque label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); display: block; margin-bottom: 4px; }
 .comp-bloque .val { font-size: 14px; font-weight: 500; color: var(--neo-text); }
 .comp-items { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-.comp-items th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4); }
+.comp-items th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-ink); border-bottom: 1px solid var(--borde-fuerte); }
 .comp-items th.r { text-align: right; }
-.comp-items td { padding: 9px 10px; border-bottom: 1px solid rgba(163,177,198,.2); font-size: 13px; color: var(--neo-text); }
+.comp-items td { padding: 9px 10px; border-bottom: 1px solid var(--borde); font-size: 13px; color: var(--neo-text); }
 .comp-items td.r { text-align: right; font-variant-numeric: tabular-nums; }
 .comp-items .cod { font-family: monospace; font-size: 11px; color: var(--neo-text-3); }
-.comp-total { display: flex; justify-content: flex-end; align-items: center; gap: 16px; padding-top: 14px; border-top: 1px solid rgba(163,177,198,.4); }
+.comp-total { display: flex; justify-content: flex-end; align-items: center; gap: 16px; padding-top: 14px; border-top: 1px solid var(--borde-fuerte); }
 .comp-total .label { font-size: 12px; color: var(--neo-text-3); }
 .comp-total .monto { font-size: 26px; font-weight: 800; color: var(--neo-accent); font-variant-numeric: tabular-nums; }
 
@@ -368,18 +370,18 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
 .uni-fila .uni-cli   { flex: 1; color: var(--neo-text-2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .uni-fila .r         { font-weight: 700; margin-left: auto; flex-shrink: 0; color: var(--neo-text); font-variant-numeric: tabular-nums; }
 .uni-resumen {
-  background: rgba(79,142,247,.08); border-radius: var(--neo-r-md);
+  background: var(--primary-soft); border-radius: var(--neo-r-md);
   box-shadow: var(--neo-i1); padding: 12px 14px; margin-bottom: 14px;
 }
 .uni-resumen-titulo { font-size: 13px; font-weight: 700; color: var(--neo-accent); margin-bottom: 6px; }
 .uni-resumen-fila   { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--neo-text-2); padding: 2px 0; }
 .uni-resumen-fila .lbl { color: var(--neo-text-3); font-size: 12px; }
 .uni-resumen-fila .val { font-weight: 600; color: var(--neo-text); }
-.uni-resumen-total  { border-top: 1px solid rgba(79,142,247,.25); margin-top: 8px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--neo-accent); font-variant-numeric: tabular-nums; }
+.uni-resumen-total  { border-top: 1px solid var(--primary-line); margin-top: 8px; padding-top: 8px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; color: var(--neo-accent); font-variant-numeric: tabular-nums; }
 .uni-pago-wrap { margin-top: 14px; }
 .uni-pago-wrap label { display: block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 6px; }
 .uni-pago-wrap select { width: 100%; padding: 9px 10px; border: none; border-radius: var(--neo-r-sm); box-shadow: var(--neo-i1); font-size: 13px; font-family: inherit; outline: none; background: var(--neo-bg); color: var(--neo-text); }
-.origen-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--neo-accent); background: rgba(79,142,247,.1); border-radius: var(--neo-r-xs); padding: 2px 7px; white-space: nowrap; }
+.origen-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--neo-accent); background: var(--primary-soft-2); border-radius: var(--neo-r-xs); padding: 2px 7px; white-space: nowrap; }
 
 /* Modal edición */
 .ef-row { margin-bottom: 14px; }
@@ -398,7 +400,7 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
 }
 .ef-aviso.visible { display: block; }
 .modal-footer {
-  padding: 14px 22px; border-top: 1px solid rgba(163,177,198,.3);
+  padding: 14px 22px; border-top: 1px solid var(--borde-fuerte);
   display: flex; gap: 8px; align-items: center; justify-content: flex-end; flex-shrink: 0;
 }
 .btn-modal-link {
@@ -498,6 +500,11 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
     <option value="PRESUPUESTO">Presup.</option>
   </select>
 
+  <!-- Vendedor -->
+  <select id="f-vendedor" class="fbar-ctrl" title="Vendedor" style="width:120px;display:none">
+    <option value="">Vendedor</option>
+  </select>
+
   <!-- Cliente -->
   <div class="f-cli-wrap">
     <input type="text" id="f-cli-input" class="fbar-ctrl" placeholder="Cliente…" autocomplete="off" spellcheck="false">
@@ -567,6 +574,10 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg>
       Reintentar AFIP
     </button>
+    <button class="selec-btn sbtn-ghost" id="sac-modificar">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Editar
+    </button>
     <div class="comp-dd-wrap">
       <button class="selec-btn sbtn-ghost" id="sac-comprobante">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
@@ -611,10 +622,6 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
     <button class="selec-btn sbtn-ghost" id="sac-devolver">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.38"/></svg>
       Devolver
-    </button>
-    <button class="selec-btn sbtn-ghost" id="sac-modificar">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      Editar
     </button>
     <button class="selec-btn sbtn-danger" id="sac-eliminar">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
@@ -885,64 +892,71 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
 #ne-overlay.ne-oculto { display: none; }
 
 #ne-overlay .ne-modal {
-  background: #fff; border: 1px solid #D5D0CA; border-radius: 0;
+  background: #fff; border: 1px solid var(--borde-fuerte); border-radius: 0;
   width: min(96vw, 700px); max-height: 90vh;
   display: flex; flex-direction: column;
 }
 .ne-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 20px; border-bottom: 1px solid #D5D0CA; background: #F0EEEB; flex-shrink: 0;
+  padding: 12px 20px; border-bottom: 1px solid var(--borde-fuerte); background: var(--color-bg-alt); flex-shrink: 0;
 }
 .ne-header h3 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: #9B9590; margin: 0; }
 .ne-header-cerrar { background: none; border: none; cursor: pointer; color: #9B9590; font-size: 18px; line-height: 1; padding: 2px 6px; }
 .ne-header-cerrar:hover { color: #111; }
 .ne-body { padding: 18px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 14px; }
 .ne-footer {
-  padding: 12px 20px; border-top: 1px solid #D5D0CA;
+  padding: 12px 20px; border-top: 1px solid var(--borde-fuerte);
   display: flex; gap: 8px; justify-content: flex-end; flex-shrink: 0;
 }
 
 .ne-section {
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px;
-  color: #9B9590; padding-bottom: 6px; border-bottom: 1px solid #D5D0CA; display: block;
+  color: #9B9590; padding-bottom: 6px; border-bottom: 1px solid var(--borde-fuerte); display: block;
 }
 .ne-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .ne-group { display: flex; flex-direction: column; gap: 4px; }
 .ne-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #9B9590; }
 .ne-input, .ne-textarea {
-  padding: 8px 10px; border: 1px solid #D5D0CA; border-radius: 0;
+  padding: 8px 10px; border: 1px solid var(--borde-fuerte); border-radius: 0;
   font-size: 13px; font-family: inherit; outline: none; background: #fff; width: 100%; box-sizing: border-box;
 }
-.ne-input:focus, .ne-textarea:focus { border-color: #111; }
+.ne-input:focus, .ne-textarea:focus { border-color: var(--color-primary); }
 .ne-textarea { resize: vertical; min-height: 52px; }
 
 .ne-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
 .ne-tabla th {
-  padding: 6px 8px; background: #F0EEEB; border: 1px solid #D5D0CA;
+  padding: 6px 8px; background: var(--color-bg-alt); border: 1px solid var(--borde-fuerte);
   font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
   color: #9B9590; text-align: left; white-space: nowrap;
 }
 .ne-tabla th.r, .ne-tabla td.r { text-align: right; }
-.ne-tabla td { padding: 7px 8px; border: 1px solid #D5D0CA; vertical-align: middle; font-size: 13px; color: #111; }
+.ne-tabla td { padding: 7px 8px; border: 1px solid var(--borde-fuerte); vertical-align: middle; font-size: 13px; color: #111; }
 .ne-tabla tbody tr:nth-child(even) td { background: #FAFAF9; }
 .ne-tabla td.ne-entregado { color: #9B9590; font-style: italic; }
 .ne-cant-input {
   width: 74px; text-align: right; padding: 4px 7px;
-  border: 1px solid #D5D0CA; border-radius: 0;
+  border: 1px solid var(--borde-fuerte); border-radius: 0;
   font-size: 13px; font-family: inherit; background: #fff;
 }
-.ne-cant-input:focus { outline: none; border-color: #111; }
+.ne-cant-input:focus { outline: none; border-color: var(--color-primary); }
 
 .ne-previas-bloque {
-  border: 1px solid #D5D0CA; padding: 8px 12px; margin-bottom: 6px;
+  border: 1px solid var(--borde-fuerte); padding: 8px 12px; margin-bottom: 6px;
   background: #FAFAF9; font-size: 12px;
 }
 .ne-previas-bloque strong { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: #9B9590; }
 .ne-previas-items { margin: 5px 0 0 0; padding-left: 14px; color: #555; font-size: 12px; }
 
 .ne-btn { padding: 9px 18px; border: 1.5px solid transparent; border-radius: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; cursor: pointer; font-family: inherit; }
-.ne-btn-ok  { background: var(--azul, #2563eb); color: #fff; border-color: var(--azul, #2563eb); }
-.ne-btn-sec { background: #fff; color: #111; border-color: #888; }
+.ne-btn-ok  { background: var(--color-primary); color: #fff; border-color: var(--color-primary); }
+.ne-btn-sec { background: #fff; color: var(--color-primary); border-color: var(--color-primary); }
+.ne-billing { margin-top: 14px; padding: 12px; background: #F7F6F4; border: 1px solid #E5E3E0; display: none; }
+.ne-billing.visible { display: block; }
+.ne-billing-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #9B9590; display: block; margin-bottom: 8px; }
+.ne-billing-radios { display: flex; gap: 6px; flex-wrap: wrap; }
+.ne-radio-lbl { display: flex; align-items: center; gap: 5px; font-size: 12px; cursor: pointer; padding: 5px 10px; border: 1px solid var(--borde-fuerte); background: #fff; }
+.ne-radio-lbl.activo { border-color: var(--color-primary); background: color-mix(in srgb, var(--color-primary) 8%, #fff); color: var(--color-primary); font-weight: 600; }
+.ne-billing-sub { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
 </style>
 
 <div id="ne-overlay" class="ne-oculto">
@@ -984,6 +998,40 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
         </div>
       </div>
 
+      <!-- Registrar costo de envío -->
+      <div id="ne-billing" class="ne-billing">
+        <span class="ne-billing-label">Registrar costo de envío como</span>
+        <div class="ne-billing-radios">
+          <label class="ne-radio-lbl activo"><input type="radio" name="ne-accion" value=""> Sin registrar</label>
+          <label class="ne-radio-lbl"><input type="radio" name="ne-accion" value="caja"> Agregar a caja</label>
+          <label class="ne-radio-lbl"><input type="radio" name="ne-accion" value="cc"> Cuenta corriente</label>
+        </div>
+        <div id="ne-billing-sub" class="ne-billing-sub" style="display:none">
+          <div class="ne-group">
+            <label class="ne-label">Medio de pago</label>
+            <select id="ne-medio-pago" class="ne-input">
+              <option value="efectivo">Efectivo</option>
+              <option value="transferencia">Transferencia</option>
+              <option value="tarjeta">Tarjeta</option>
+              <option value="mercado_pago">Mercado Pago</option>
+            </select>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding-bottom:2px">
+            <input type="checkbox" id="ne-generar-afip"> Generar comprobante AFIP (CAE)
+          </label>
+          <div id="ne-afip-tipo-wrap" style="display:none">
+            <div class="ne-group">
+              <label class="ne-label">Tipo comprobante</label>
+              <select id="ne-tipo-cbte" class="ne-input">
+                <option value="FC B-ELECT">FC B-ELECT</option>
+                <option value="FC A-ELECT">FC A-ELECT</option>
+                <option value="FC C-ELECT">FC C-ELECT</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Artículos -->
       <div>
         <span class="ne-section">Artículos a entregar</span>
@@ -1014,32 +1062,35 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
 .cp-section { margin-bottom: 18px; }
 .cp-section label.cp-lbl { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #9B9590; margin-bottom: 8px; }
 .cp-tipo-grid { display: flex; gap: 8px; flex-wrap: wrap; }
-.cp-tipo-btn { flex: 1; min-width: 100px; padding: 8px 10px; border: 1px solid #D5D0CA; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; text-align: center; border-radius: 0; transition: border-color .15s, background .15s; }
+.cp-tipo-btn { flex: 1; min-width: 100px; padding: 8px 10px; border: 1px solid var(--borde-fuerte); background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; text-align: center; border-radius: 0; transition: border-color .15s, background .15s; }
 .cp-tipo-btn.activo { border-color: var(--neo-accent); background: color-mix(in srgb, var(--neo-accent) 8%, #fff); color: var(--neo-accent); }
 .cp-cli-row { display: flex; gap: 8px; align-items: center; }
-.cp-cli-nombre { flex: 1; padding: 7px 10px; border: 1px solid #D5D0CA; background: #F7F6F4; font-size: 13px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cp-cli-btn { padding: 7px 12px; border: 1px solid #D5D0CA; background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; border-radius: 0; white-space: nowrap; }
-.cp-cli-btn:hover { background: #F0EEEB; }
+.cp-cli-nombre { flex: 1; padding: 7px 10px; border: 1px solid var(--borde-fuerte); background: #F7F6F4; font-size: 13px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cp-cli-btn { padding: 7px 12px; border: 1px solid var(--borde-fuerte); background: #fff; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; border-radius: 0; white-space: nowrap; }
+.cp-cli-btn:hover { background: var(--color-bg-alt); }
 .cp-cli-search-wrap { position: relative; margin-top: 8px; }
-.cp-cli-search-wrap input { width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid #D5D0CA; font-size: 13px; font-family: inherit; outline: none; }
-.cp-cli-dd { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #D5D0CA; border-top: none; z-index: 10; max-height: 180px; overflow-y: auto; display: none; }
+.cp-cli-search-wrap input { width: 100%; box-sizing: border-box; padding: 7px 10px; border: 1px solid var(--borde-fuerte); font-size: 13px; font-family: inherit; outline: none; }
+.cp-cli-dd { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid var(--borde-fuerte); border-top: none; z-index: 10; max-height: 180px; overflow-y: auto; display: none; }
 .cp-cli-dd.visible { display: block; }
-.cp-cli-dd-item { padding: 7px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid #F0EEEB; }
-.cp-cli-dd-item:hover { background: #F0EEEB; }
+.cp-cli-dd-item { padding: 7px 10px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--color-bg-alt); }
+.cp-cli-dd-item:hover { background: var(--color-bg-alt); }
 .cp-pago-grid { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
-.cp-pago-btn { flex: 1; min-width: 90px; padding: 7px 8px; border: 1px solid #D5D0CA; background: #fff; cursor: pointer; font-size: 12px; font-family: inherit; border-radius: 0; }
+.cp-pago-btn { flex: 1; min-width: 90px; padding: 7px 8px; border: 1px solid var(--borde-fuerte); background: #fff; cursor: pointer; font-size: 12px; font-family: inherit; border-radius: 0; }
 .cp-pago-btn.activo { border-color: var(--neo-accent); background: color-mix(in srgb, var(--neo-accent) 8%, #fff); color: var(--neo-accent); font-weight: 600; }
 .cp-mixto-wrap { display: none; }
 .cp-mixto-wrap.visible { display: block; }
 .cp-mixto-linea { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; }
-.cp-mixto-linea select, .cp-mixto-linea input { padding: 6px 8px; border: 1px solid #D5D0CA; font-size: 13px; font-family: inherit; outline: none; border-radius: 0; }
+.cp-mixto-linea select, .cp-mixto-linea input { padding: 6px 8px; border: 1px solid var(--borde-fuerte); font-size: 13px; font-family: inherit; outline: none; border-radius: 0; }
 .cp-mixto-linea select { flex: 1; }
 .cp-mixto-linea input { width: 110px; }
-.cp-mixto-linea button { padding: 6px 9px; border: 1px solid #D5D0CA; background: #fff; cursor: pointer; font-size: 14px; font-family: inherit; border-radius: 0; color: #9B9590; }
+.cp-mixto-linea button { padding: 6px 9px; border: 1px solid var(--borde-fuerte); background: #fff; cursor: pointer; font-size: 14px; font-family: inherit; border-radius: 0; color: #9B9590; }
 .cp-mixto-linea button:hover { color: var(--rojo); }
 .cp-mixto-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #9B9590; margin-top: 4px; }
 .cp-mixto-footer button { background: none; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--neo-accent); padding: 0; font-family: inherit; }
 .cp-mixto-estado { font-weight: 700; }
+.cp-chq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.cp-chq-grid .form-input { font-size: 12px; width: 100%; box-sizing: border-box; }
+.cp-chq-lbl  { font-size: 10px; color: var(--neo-text-3); margin-bottom: 2px; display: block; }
 .cp-mixto-estado.ok { color: #166534; }
 .cp-mixto-estado.err { color: var(--rojo); }
 .cp-mixto-link { background: none; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--neo-accent); padding: 0; font-family: inherit; text-decoration: underline; text-underline-offset: 2px; }
@@ -1078,6 +1129,14 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
         </div>
       </div>
 
+      <!-- Vendedor -->
+      <div class="cp-section" id="cp-vendedor-wrap">
+        <label class="cp-lbl">Vendedor <span style="font-weight:400;font-size:10px;color:var(--neo-text-3)">(opcional)</span></label>
+        <select id="cp-vendedor" style="width:100%;padding:8px 10px;border:none;border-radius:var(--neo-r-sm);box-shadow:var(--neo-i1);font-size:13px;font-family:inherit;outline:none;background:var(--neo-bg);color:var(--neo-text);">
+          <option value="">— Sin vendedor —</option>
+        </select>
+      </div>
+
       <!-- Forma de pago -->
       <div class="cp-section">
         <label class="cp-lbl">Forma de pago</label>
@@ -1095,6 +1154,37 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
           <div class="cp-mixto-footer">
             <button id="cp-mixto-agregar">+ Agregar forma de pago</button>
             <span class="cp-mixto-estado" id="cp-mixto-estado"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Datos del cheque (visible solo cuando medio = cheque) -->
+      <div class="cp-section" id="cp-cheque-wrap" style="display:none">
+        <label class="cp-lbl">Datos del cheque</label>
+        <div class="cp-chq-grid">
+          <div>
+            <span class="cp-chq-lbl">N° de cheque *</span>
+            <input type="text" id="cp-chq-numero" class="form-input" placeholder="00123456" autocomplete="off">
+          </div>
+          <div>
+            <span class="cp-chq-lbl">Banco *</span>
+            <input type="text" id="cp-chq-banco" class="form-input" placeholder="Ej: Galicia" autocomplete="off">
+          </div>
+          <div>
+            <span class="cp-chq-lbl">Librador</span>
+            <input type="text" id="cp-chq-librador" class="form-input" placeholder="Nombre del firmante" autocomplete="off">
+          </div>
+          <div>
+            <span class="cp-chq-lbl">CUIT</span>
+            <input type="text" id="cp-chq-cuit" class="form-input" placeholder="20-12345678-9" autocomplete="off">
+          </div>
+          <div>
+            <span class="cp-chq-lbl">Fecha de emisión</span>
+            <input type="date" id="cp-chq-emision" class="form-input">
+          </div>
+          <div>
+            <span class="cp-chq-lbl">Fecha de vencimiento *</span>
+            <input type="date" id="cp-chq-venc" class="form-input">
           </div>
         </div>
       </div>
@@ -1143,7 +1233,7 @@ function actualizarFecha() {
 }
 actualizarFecha(); setInterval(actualizarFecha, 30000);
 
-const fmtDate = d => d.toISOString().split('T')[0];
+const fmtDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 
 const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
@@ -1199,11 +1289,15 @@ function setPeriodo(tipo) {
 function mostrarMeses(anio, mesActivo) {
   const strip = $('meses-strip');
   strip.classList.add('visible');
+  const hoy = new Date();
+  const mesLimite = (anio === hoy.getFullYear()) ? hoy.getMonth() : 11;
   strip.innerHTML = `<span class="mes-sep">${anio} /</span>` +
-    MESES.map((nm, i) =>
-      `<button class="mes-chip${mesActivo === i ? ' activo' : ''}" data-mes="${i}">${nm}</button>`
-    ).join('');
-  strip.querySelectorAll('.mes-chip').forEach(btn =>
+    MESES.map((nm, i) => {
+      const futuro = i > mesLimite;
+      const clases = ['mes-chip', mesActivo === i ? 'activo' : '', futuro ? 'futuro' : ''].filter(Boolean).join(' ');
+      return `<button class="${clases}" data-mes="${i}">${nm}</button>`;
+    }).join('');
+  strip.querySelectorAll('.mes-chip:not(.futuro)').forEach(btn =>
     btn.addEventListener('click', () => setPeriodo({ mes: +btn.dataset.mes })));
 }
 
@@ -1211,7 +1305,7 @@ $('pc-select').addEventListener('change', () => setPeriodo($('pc-select').value)
 
 const fmt = n => '$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 });
 const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const fmtFecha = s => s ? s.slice(8,10) + '/' + s.slice(5,7) : '—';
+const fmtFechaCorta = s => s ? s.slice(8,10) + '/' + s.slice(5,7) : '—';
 
 const TIPO_PAGO_LBL = { efectivo:'Efectivo', transferencia:'Transferencia', cc:'Cta. Corriente', tarjeta:'Tarjeta', cheque:'Cheque', mixto:'Mixto' };
 function lblTipoPago(v) {
@@ -1334,6 +1428,8 @@ async function buscar() {
   if ($('f-mostrar-anuladas').checked) params.set('mostrar_anuladas', '1');
   const sucFiltro = $('f-sucursal').value;
   if (sucFiltro) params.set('sucursal_id', sucFiltro);
+  const venFiltro = $('f-vendedor').value;
+  if (venFiltro) params.set('vendedor_id', venFiltro);
 
   $('tabla-wrap').innerHTML = '<div class="estado-vacio">Buscando...</div>';
   $('count-label').textContent = '';
@@ -1362,7 +1458,7 @@ function filaVenta(v) {
     : `<td class="chk-col"></td>`;
   const fechaCell = v.origen_descripcion
     ? `<span class="origen-tag" title="${esc(v.origen_descripcion)}">⊕ Agrupado</span>`
-    : fmtFecha(v.fecha);
+    : fmtFechaCorta(v.fecha);
   const anulada = v.estado === 'anulado';
   return `
     <tr data-id="${v.id}" data-json='${JSON.stringify(v).replace(/'/g,"&#39;")}' class="${compRowClass(v.tipo_comprobante)}${anulada ? ' fila-anulada' : ''}">
@@ -1550,7 +1646,10 @@ function renderDetalle(v) {
       <div class="comp-bloque"><label>Estado</label><div class="val">${esc(v.estado ?? '—')}</div></div>
       ${v.cliente_cuit ? `<div class="comp-bloque"><label>CUIT</label><div class="val">${esc(v.cliente_cuit)}</div></div>` : ''}
       ${v.observaciones ? `<div class="comp-bloque"><label>Observaciones</label><div class="val">${esc(v.observaciones)}</div></div>` : ''}
-      ${v.envio_precio  ? `<div class="comp-bloque"><label>Envío</label><div class="val">${fmt(v.envio_precio)}</div></div>` : ''}
+      ${v.envios_detalle?.length > 1
+        ? v.envios_detalle.map(e => `<div class="comp-bloque"><label>Envío ${esc(e.fecha_corta)}</label><div class="val">${fmt(e.precio)}</div></div>`).join('')
+        : (v.envio_precio ? `<div class="comp-bloque"><label>Envío</label><div class="val">${fmt(v.envio_precio)}</div></div>` : '')
+      }
       ${v.envio_direccion ? `<div class="comp-bloque"><label>Dirección de entrega</label><div class="val">${esc(v.envio_direccion)}</div></div>` : ''}
       ${v.origen_descripcion ? `<div class="comp-bloque" style="flex-basis:100%"><label>Origen</label><div class="val" style="font-size:12px;color:var(--gris3)">${esc(v.origen_descripcion)}</div></div>` : ''}
       ${v.cae ? `<div class="comp-bloque"><label>CAE</label><div class="val">${esc(v.cae)}${v.numero_afip ? ` <span style="font-size:11px;color:var(--gris3)">· N° AFIP ${esc(String(v.numero_afip).padStart(8, '0'))}</span>` : ''}</div></div>` : ''}
@@ -1823,6 +1922,15 @@ async function abrirModalNotaEnvio(v) {
   $('ne-fecha-entrega').value = '';
   $('ne-observaciones').value = '';
 
+  // Reset billing section
+  const precioInicial = parseFloat($('ne-envio-precio').value) || 0;
+  $('ne-billing').classList.toggle('visible', precioInicial > 0);
+  document.querySelectorAll('[name="ne-accion"]').forEach((r, i) => { r.checked = i === 0; });
+  document.querySelectorAll('.ne-radio-lbl').forEach((el, i) => el.classList.toggle('activo', i === 0));
+  $('ne-billing-sub').style.display = 'none';
+  $('ne-generar-afip').checked = false;
+  $('ne-afip-tipo-wrap').style.display = 'none';
+
   renderNePrevias();
   renderNeTabla();
   $('ne-overlay').classList.remove('ne-oculto');
@@ -1840,10 +1948,21 @@ function renderNePrevias() {
       `<li>${esc(it.nombre)}${it.codigo ? ` <small>(${esc(it.codigo)})</small>` : ''} — <strong>${fmtCant(it.cantidad)}</strong></li>`
     ).join('');
     return `<div class="ne-previas-bloque">
-      <strong>Entrega N° ${nota.numero} — ${fechaEm}${fechaEnt ? ' · entrega: ' + fechaEnt : ''}${nota.transportista ? ' · ' + esc(nota.transportista) : ''}</strong>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <strong>Entrega N° ${nota.numero} — ${fechaEm}${fechaEnt ? ' · entrega: ' + fechaEnt : ''}${nota.transportista ? ' · ' + esc(nota.transportista) : ''}</strong>
+        <button onclick="verPdfNotaEnvio(${nota.id})" style="font-size:11px;padding:3px 9px;border:1px solid var(--borde-fuerte);background:#fff;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0">Ver PDF</button>
+      </div>
       <ul class="ne-previas-items">${itemsHtml}</ul>
     </div>`;
   }).join('');
+}
+
+async function verPdfNotaEnvio(id) {
+  try {
+    const r = await fetch(`${API}/notas-envio/${id}/pdf`);
+    if (!r.ok) { toast_('No se pudo obtener el PDF', 'err'); return; }
+    abrirPdfModal(await r.blob());
+  } catch { toast_('Error de conexión', 'err'); }
 }
 
 function renderNeTabla() {
@@ -1917,6 +2036,31 @@ $('ne-close').addEventListener('click',    cerrarModalNE);
 $('ne-cancelar').addEventListener('click', cerrarModalNE);
 overlayAutoClose($('ne-overlay'), cerrarModalNE);
 
+// Show/hide billing section when precio changes
+$('ne-envio-precio').addEventListener('input', () => {
+  const v = parseFloat($('ne-envio-precio').value) || 0;
+  $('ne-billing').classList.toggle('visible', v > 0);
+  if (!v) {
+    document.querySelectorAll('[name="ne-accion"]').forEach((r, i) => { r.checked = i === 0; });
+    document.querySelectorAll('.ne-radio-lbl').forEach((el, i) => el.classList.toggle('activo', i === 0));
+    $('ne-billing-sub').style.display = 'none';
+  }
+});
+
+// Billing radio buttons
+document.querySelectorAll('[name="ne-accion"]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('.ne-radio-lbl').forEach(el => el.classList.remove('activo'));
+    r.closest('.ne-radio-lbl').classList.add('activo');
+    $('ne-billing-sub').style.display = r.value === 'caja' ? '' : 'none';
+  });
+});
+
+// AFIP comprobante toggle
+$('ne-generar-afip').addEventListener('change', () => {
+  $('ne-afip-tipo-wrap').style.display = $('ne-generar-afip').checked ? '' : 'none';
+});
+
 $('ne-generar').addEventListener('click', async () => {
   if (!neVenta) return;
 
@@ -1941,14 +2085,20 @@ $('ne-generar').addEventListener('click', async () => {
 
   if (!items.length) { toast_('Seleccioná al menos un artículo con cantidad mayor a 0', 'err'); return; }
 
+  const accionPrecio = document.querySelector('[name="ne-accion"]:checked')?.value || null;
   const body = {
-    venta_id:        neVenta.id,
-    transportista:   $('ne-transportista').value.trim() || null,
-    fecha_entrega:   $('ne-fecha-entrega').value || null,
-    envio_precio:    parseFloat($('ne-envio-precio').value) || null,
-    envio_direccion: $('ne-envio-dir').value.trim() || null,
-    observaciones:   $('ne-observaciones').value.trim() || null,
+    venta_id:               neVenta.id,
+    transportista:          $('ne-transportista').value.trim() || null,
+    fecha_entrega:          $('ne-fecha-entrega').value || null,
+    envio_precio:           parseFloat($('ne-envio-precio').value) || null,
+    envio_direccion:        $('ne-envio-dir').value.trim() || null,
+    observaciones:          $('ne-observaciones').value.trim() || null,
     items,
+    accion_precio:          accionPrecio || null,
+    medio_pago:             $('ne-medio-pago').value,
+    generar_afip:           $('ne-generar-afip').checked,
+    tipo_comprobante_envio: $('ne-tipo-cbte').value,
+    caja_id:                window.cajaOperativaId?.() ?? window.LOGOS_SESION?.caja_id ?? null,
   };
 
   const btn = $('ne-generar');
@@ -1964,7 +2114,10 @@ $('ne-generar').addEventListener('click', async () => {
     if (!rc.ok) { toast_(dc.error || 'Error al crear nota', 'err'); return; }
 
     cerrarModalNE();
-    toast_(`Nota de envío N° ${dc.numero} creada`, 'ok');
+    let toastMsg = `Nota de envío N° ${dc.numero} creada`;
+    if (dc.cae)       toastMsg += ` — CAE: ${dc.cae}`;
+    if (dc.cae_error) toastMsg += ` — Error AFIP: ${dc.cae_error}`;
+    toast_(toastMsg, dc.cae_error ? 'warn' : 'ok');
 
     // Abrir PDF en nueva pestaña
     const rp = await fetch(`${API}/notas-envio/${dc.id}/pdf`);
@@ -2313,6 +2466,7 @@ $('btn-exportar').addEventListener('click', async () => {
   }
 });
 $('f-tipo').addEventListener('change', buscar);
+$('f-vendedor').addEventListener('change', buscar);
 ['f-desde','f-hasta'].forEach(id => $(id).addEventListener('change', () => {
   $('pc-select').selectedIndex = -1;
   $('meses-strip').classList.remove('visible');
@@ -2370,15 +2524,15 @@ function abrirModalUnificar() {
   const lista   = [...multiSel.values()].sort((a, b) => a.fecha < b.fecha ? -1 : 1);
   const total   = lista.reduce((s, v) => s + (parseFloat(v.total) || 0), 0);
   const cliente = lista[0]?.cliente_nombre ?? '— Consumidor final —';
-  const fDesde  = fmtFecha(lista[0].fecha);
-  const fHasta  = fmtFecha(lista[lista.length - 1].fecha);
+  const fDesde  = fmtFechaCorta(lista[0].fecha);
+  const fHasta  = fmtFechaCorta(lista[lista.length - 1].fecha);
   const rango   = fDesde === fHasta ? fDesde : `${fDesde} → ${fHasta}`;
 
   const filas = lista.map(v => `
     <div class="uni-fila">
       <span class="tipo-badge ${tipoBadgeClass(v.tipo_comprobante)}">${esc(v.tipo_comprobante)}</span>
       <span>N° ${esc(v.numero)}</span>
-      <span class="uni-fecha">${fmtFecha(v.fecha)}</span>
+      <span class="uni-fecha">${fmtFechaCorta(v.fecha)}</span>
       <span class="uni-cli">${esc(v.cliente_nombre ?? '— Consumidor final —')}</span>
       <span class="r">${fmt(v.total)}</span>
     </div>`).join('');
@@ -2558,6 +2712,34 @@ $('wa-confirmar').addEventListener('click', async () => {
     sel.addEventListener('change', buscar);
   } catch(e) {}
 })();
+// Cargar vendedores para el filtro y aplicar filtro pendiente desde dashboard
+(async function initVendedorFiltro() {
+  try {
+    const r = await fetch(`${API}/vendedores`);
+    if (!r.ok) return;
+    const lista = await r.json();
+    if (!lista.length) return;
+    const sel = $('f-vendedor');
+    lista.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v.id; o.textContent = v.nombre;
+      sel.appendChild(o);
+    });
+    sel.style.display = '';
+
+    // Filtro pendiente desde dashboard (sessionStorage)
+    const raw = sessionStorage.getItem('logos_filtro_ventas');
+    if (raw) {
+      sessionStorage.removeItem('logos_filtro_ventas');
+      const f = JSON.parse(raw);
+      if (f.fecha_desde) $('f-desde').value = f.fecha_desde;
+      if (f.fecha_hasta) $('f-hasta').value = f.fecha_hasta;
+      if (f.vendedor_id) sel.value = String(f.vendedor_id);
+      buscar();
+    }
+  } catch(e) {}
+})();
+
 cargarIntegConfig().then(actualizarBotonesInteg);
 setPeriodo('hoy');
 </script>
@@ -2810,6 +2992,9 @@ function cpAbrirModal(v) {
   $('cp-mixto-wrap').classList.remove('visible');
   $('cp-mixto-link').style.display = '';
   $('cp-pago-grid').style.display = '';
+  $('cp-cheque-wrap').style.display = 'none';
+  ['cp-chq-numero','cp-chq-banco','cp-chq-librador','cp-chq-cuit','cp-chq-emision','cp-chq-venc']
+    .forEach(id => { const el = $(id); if (el) el.value = ''; });
 
   $('cp-aviso-fc').style.display = 'none';
   $('cp-guardar-txt').textContent = 'Confirmar';
@@ -2896,6 +3081,7 @@ document.querySelectorAll('.cp-pago-btn').forEach(btn => {
     $('cp-mixto-wrap').classList.remove('visible');
     $('cp-mixto-link').style.display = '';
     $('cp-pago-grid').style.display = '';
+    $('cp-cheque-wrap').style.display = cpPago === 'cheque' ? '' : 'none';
   });
 });
 
@@ -2910,6 +3096,7 @@ $('cp-mixto-link').addEventListener('click', () => {
   $('cp-pago-grid').style.display = 'none';
   $('cp-mixto-link').style.display = 'none';
   $('cp-mixto-wrap').classList.add('visible');
+  $('cp-cheque-wrap').style.display = 'none';
   cpRenderMixto();
 });
 
@@ -2994,6 +3181,17 @@ $('cp-guardar').addEventListener('click', async () => {
     }
   }
 
+  // Validar campos del cheque
+  if (!cpEsMixto && cpPago === 'cheque') {
+    const num  = $('cp-chq-numero').value.trim();
+    const ban  = $('cp-chq-banco').value.trim();
+    const venc = $('cp-chq-venc').value;
+    if (!num || !ban || !venc) {
+      toast_('Completá N° de cheque, banco y fecha de vencimiento', 'err');
+      return;
+    }
+  }
+
   btn.disabled = true;
   txt.textContent = 'Guardando...';
 
@@ -3014,6 +3212,35 @@ $('cp-guardar').addEventListener('click', async () => {
     });
     const d = await r.json();
     if (!r.ok) { toast_(d.error ?? 'Error al confirmar', 'err'); btn.disabled = false; txt.textContent = 'Confirmar'; return; }
+
+    // Registrar cheque recibido
+    if (!cpEsMixto && cpPago === 'cheque') {
+      const chqBody = {
+        tipo:              'recibido',
+        numero:            $('cp-chq-numero').value.trim(),
+        banco:             $('cp-chq-banco').value.trim(),
+        librador:          $('cp-chq-librador').value.trim() || null,
+        cuit:              $('cp-chq-cuit').value.trim()     || null,
+        monto:             cpTotal,
+        fecha_emision:     $('cp-chq-emision').value         || null,
+        fecha_vencimiento: $('cp-chq-venc').value,
+        venta_id:          d.id,
+        cliente_id:        cpClienteId,
+      };
+      try {
+        const rc = await fetch(`${API}/cheques`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(chqBody),
+        });
+        if (!rc.ok) {
+          const dc = await rc.json();
+          toast_(`Venta confirmada pero no se pudo registrar el cheque: ${dc.error ?? ''}`, 'err');
+        }
+      } catch {
+        toast_('Venta confirmada. No se pudo registrar el cheque (error de conexión)', 'err');
+      }
+    }
 
     // Si es factura electrónica, pedir CAE
     const esFC = ['FC A-ELECT', 'FC B-ELECT', 'FC C-ELECT'].includes(cpTipoComp);

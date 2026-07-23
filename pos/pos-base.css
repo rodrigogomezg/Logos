@@ -1,5 +1,5 @@
 /* Logos POS — Loader de estilos globales
-   Orden: core primero, neo encima (override neomórfico)
+   Orden: core primero, neo encima (tokens de marca + sistema plano)
 */
 @import url('./pos-base-core.css');
 @import url('./neo.css');
@@ -7,8 +7,8 @@
 /* ════════════════════════════════════════════════════════════════════
    Modales planos — override global
    Todos los modales de la app usan el lenguaje plano y recto de
-   contacto-modal: caja blanca, borde #D5D0CA, sin radios ni sombras,
-   header gris con título uppercase. Cada página define sus modales en
+   contacto-modal: caja blanca, borde fuerte, sin radios ni sombras,
+   header con título uppercase. Cada página define sus modales en
    su <style> propio (que gana por orden de carga), por eso esta capa
    usa !important: es deliberado, es la única forma de pisar 7 páginas
    sin editarlas una por una.
@@ -18,8 +18,8 @@
    ════════════════════════════════════════════════════════════════════ */
 
 /* Overlays: oscurecido simple, sin blur */
-.overlay, .modal-overlay, .cmodal-overlay, .cierre-overlay {
-  background: rgba(0, 0, 0, .45) !important;
+.overlay, .modal-overlay, .cmodal-overlay, .cierre-overlay, .chq-overlay {
+  background: rgba(15, 42, 74, .45) !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
@@ -27,7 +27,7 @@
 /* Contenedor del modal */
 .modal, .cmodal-box, .cierre-modal, #logos-device-modal > div {
   background: #fff !important;
-  border: 1px solid #D5D0CA !important;
+  border: 1px solid var(--borde-fuerte) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
   animation: none !important;
@@ -35,8 +35,8 @@
 
 /* Header */
 .modal-head, .modal-header, .m-head, .cierre-head, .modal-head-top {
-  background: #F0EEEB !important;
-  border-bottom: 1px solid #D5D0CA !important;
+  background: var(--color-bg-alt) !important;
+  border-bottom: 1px solid var(--borde-fuerte) !important;
   padding: 12px 20px !important;
   border-radius: 0 !important;
 }
@@ -64,12 +64,12 @@
   height: auto !important;
   padding: 2px 6px !important;
 }
-.modal-close:hover, .modal-cerrar:hover, .modal-cierre:hover, .cierre-cerrar:hover { color: #111 !important; }
+.modal-close:hover, .modal-cerrar:hover, .modal-cierre:hover, .cierre-cerrar:hover { color: var(--color-ink) !important; }
 
 /* Footer */
 .modal-footer, .cmodal-btns, .cierre-footer {
   background: #fff !important;
-  border-top: 1px solid #D5D0CA !important;
+  border-top: 1px solid var(--borde-fuerte) !important;
   padding: 12px 20px !important;
   border-radius: 0 !important;
 }
@@ -85,19 +85,84 @@
 .modal select, .modal textarea,
 .cierre-modal input:not([type=checkbox]):not([type=radio]) {
   background: #fff !important;
-  border: 1px solid #D5D0CA !important;
+  border: 1px solid var(--borde-fuerte) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 .modal input:focus, .modal select:focus, .modal textarea:focus,
 .cierre-modal input:focus {
-  border-color: #111 !important;
+  border-color: var(--color-primary) !important;
   outline: none !important;
 }
 #logos-device-modal input {
   background: #fff !important;
-  border: 1px solid #D5D0CA !important;
+  border: 1px solid var(--borde-fuerte) !important;
   border-radius: 0 !important;
   box-shadow: none !important;
 }
 #pdf-modal-close { border-radius: 0 !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   Inputs planos — override global
+   Las páginas heredan campos neomórficos (sin borde, con sombra
+   interior que las variables neutralizaron). Esta capa les da a todos
+   los campos el lenguaje plano: fondo blanco, borde fino, foco navy.
+   Mismo criterio de !important que la capa de modales.
+   ════════════════════════════════════════════════════════════════════ */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not(.nav-caja-select),
+select:not(.nav-caja-select),
+textarea {
+  background: #fff !important;
+  border: 1px solid var(--borde-fuerte) !important;
+  box-shadow: none !important;
+  color: var(--color-ink);
+}
+input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]):not(.nav-caja-select):focus,
+select:not(.nav-caja-select):focus,
+textarea:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: none !important;
+  outline: none;
+}
+/* El selector de caja/sucursal vive en la barra navy: se estila aparte */
+.nav-caja-select { background: transparent !important; }
+
+/* Validación visual de campos (re-asertada después de la capa plana) */
+.cod-ok  { border-color: var(--color-success) !important; box-shadow: 0 0 0 1px var(--color-success) !important; }
+.cod-err { border-color: var(--color-danger) !important;  box-shadow: 0 0 0 1px var(--color-danger) !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   Acción principal dorada — override global
+   El dorado de marca se reserva para EL botón de acción principal de
+   cada pantalla. Las páginas definen estos botones en sus <style>
+   locales con el acento viejo; esta capa los unifica sin editar
+   página por página. Texto navy oscuro sobre dorado (contraste AA).
+   ════════════════════════════════════════════════════════════════════ */
+.neo-btn-primary, .btn-ok, .pm-btn-primary, .sel-btn-ok, .btn-nuevo-cli,
+.nc-btn-pri, .btn-buscar, .btn-nuevo-entidad, .btn-reg-pago, .btn-pri,
+.btn-prim, .btn-accion, .chq-btn-pri, .ne-btn-ok {
+  background: var(--color-accent) !important;
+  border-color: var(--color-accent) !important;
+  color: var(--color-primary-dark) !important;
+  box-shadow: none !important;
+}
+.neo-btn-primary:hover:not(:disabled), .btn-ok:hover:not(:disabled),
+.pm-btn-primary:hover:not(:disabled), .sel-btn-ok:hover:not(:disabled),
+.btn-nuevo-cli:hover:not(:disabled), .nc-btn-pri:hover:not(:disabled),
+.btn-buscar:hover:not(:disabled), .btn-nuevo-entidad:hover:not(:disabled),
+.btn-reg-pago:hover:not(:disabled), .btn-pri:hover:not(:disabled),
+.btn-prim:hover:not(:disabled), .btn-accion:hover:not(:disabled),
+.chq-btn-pri:hover:not(:disabled), .ne-btn-ok:hover:not(:disabled) {
+  background: var(--color-accent-h) !important;
+  border-color: var(--color-accent-h) !important;
+  color: var(--color-primary-dark) !important;
+}
+.neo-btn-primary:disabled, .btn-ok:disabled, .pm-btn-primary:disabled,
+.sel-btn-ok:disabled, .btn-nuevo-cli:disabled, .nc-btn-pri:disabled,
+.btn-buscar:disabled, .btn-nuevo-entidad:disabled, .btn-reg-pago:disabled,
+.btn-pri:disabled, .btn-prim:disabled, .btn-accion:disabled,
+.chq-btn-pri:disabled, .ne-btn-ok:disabled {
+  background: var(--color-bg-alt) !important;
+  border-color: var(--borde-fuerte) !important;
+  color: var(--neo-text-3) !important;
+}

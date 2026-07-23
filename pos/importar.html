@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Importar productos</title>
 <script src="config.js"></script>
@@ -13,7 +14,7 @@
 .page-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; color: var(--neo-text); }
 .page-header p  { font-size: 12px; color: var(--neo-text-3); margin-top: 3px; }
 
-.tab-bar { background: var(--neo-bg); border-bottom: 1px solid rgba(163,177,198,.3); display: flex; padding: 0 clamp(16px,4vw,48px); flex-shrink: 0; }
+.tab-bar { background: var(--neo-bg); border-bottom: 1px solid var(--borde-fuerte); display: flex; padding: 0 clamp(16px,4vw,48px); flex-shrink: 0; }
 .tab-btn { padding: 9px 20px; font-size: 12px; font-weight: 600; border: none; background: none; cursor: pointer; color: var(--neo-text-3); border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color var(--neo-t-fast), border-color var(--neo-t-fast); }
 .tab-btn:hover { color: var(--neo-text); }
 .tab-btn.activo { color: var(--neo-accent); border-bottom-color: var(--neo-accent); }
@@ -44,7 +45,7 @@
 .btn-sec:hover { box-shadow: var(--neo-e3); }
 .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
 
-.aviso-plantilla { background: rgba(79,142,247,.08); border: none; box-shadow: var(--neo-e1), 0 0 0 1px rgba(79,142,247,.2); color: var(--neo-accent); border-radius: var(--neo-r-sm); padding: 10px 14px; font-size: 12px; margin-bottom: 16px; }
+.aviso-plantilla { background: var(--primary-soft); border: none; box-shadow: var(--neo-e1), 0 0 0 1px var(--primary-line); color: var(--neo-accent); border-radius: var(--neo-r-sm); padding: 10px 14px; font-size: 12px; margin-bottom: 16px; }
 
 .map-grid { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 18px; }
 .map-col { flex: 0 0 170px; border: none; border-radius: var(--neo-r-md); padding: 10px; background: var(--neo-bg); box-shadow: var(--neo-e1); }
@@ -80,14 +81,14 @@ details.seccion summary .car { margin-left: auto; font-weight: 800; }
 .table-wrap::-webkit-scrollbar { height: 5px; }
 .table-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
 table.tbl-prev { width: 100%; border-collapse: collapse; }
-table.tbl-prev th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); padding: 8px 14px; border-bottom: 1px solid rgba(163,177,198,.4); white-space: nowrap; background: var(--neo-bg-deep); }
-table.tbl-prev td { padding: 8px 14px; font-size: 12px; border-bottom: 1px solid rgba(163,177,198,.18); vertical-align: top; color: var(--neo-text); }
+table.tbl-prev th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--color-ink); padding: 8px 14px; border-bottom: 1px solid var(--borde-fuerte); white-space: nowrap; background: var(--neo-bg-deep); }
+table.tbl-prev td { padding: 8px 14px; font-size: 12px; border-bottom: 1px solid var(--borde); vertical-align: top; color: var(--neo-text); }
 table.tbl-prev tr:last-child td { border-bottom: none; }
 .diff-line { white-space: nowrap; }
 .diff-campo { color: var(--neo-text-3); font-weight: 600; }
 .diff-antes { color: var(--neo-danger); text-decoration: line-through; }
 .diff-despues { color: var(--neo-success); font-weight: 700; }
-.badge-reactiva { display: inline-block; background: rgba(79,142,247,.1); color: var(--neo-accent); font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: var(--neo-r-xs); margin-left: 6px; }
+.badge-reactiva { display: inline-block; background: var(--primary-soft-2); color: var(--neo-accent); font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: var(--neo-r-xs); margin-left: 6px; }
 .vacio-mini { padding: 14px; text-align: center; color: var(--neo-text-3); font-size: 12px; }
 
 .pag-bar { padding: 10px 0; display: flex; align-items: center; justify-content: center; gap: 12px; }
@@ -99,7 +100,7 @@ table.tbl-prev tr:last-child td { border-bottom: none; }
 .m-overlay { position: fixed; inset: 0; z-index: 1000; display: none; align-items: center; justify-content: center; background: rgba(49,52,75,.48); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
 .m-overlay.abierto { display: flex; }
 .modal { background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e4); max-height: 85vh; width: min(720px,95vw); display: flex; flex-direction: column; overflow: hidden; }
-.m-head { padding: 16px 20px; border-bottom: 1px solid rgba(163,177,198,.3); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+.m-head { padding: 16px 20px; border-bottom: 1px solid var(--borde-fuerte); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0; }
 .m-head h3 { font-size: 15px; font-weight: 800; color: var(--neo-text); }
 .m-head .sub { font-size: 12px; color: var(--neo-text-3); margin-top: 2px; }
 .m-cerrar { width: 28px; height: 28px; border: none; border-radius: var(--neo-r-xs); background: var(--neo-bg); box-shadow: var(--neo-e1); font-size: 16px; cursor: pointer; flex-shrink: 0; color: var(--neo-text-2); transition: box-shadow var(--neo-t-fast); }
@@ -330,12 +331,12 @@ function esc(s) {
 }
 
 const CAMPO_LABEL = {
-  codigo:'Código', nombre:'Nombre', marca:'Marca', categoria:'Categoría', subcategoria:'Subcategoría',
+  codigo:'Código', codigo_secundario:'Cód. secundario', nombre:'Nombre', marca:'Marca', categoria:'Categoría', subcategoria:'Subcategoría',
   proveedor:'Proveedor', costo_actual:'Costo', precio_venta:'Precio venta', stock_minimo:'Stock mínimo',
   iva_porcentaje:'IVA %', unidad_medida:'Unidad', activo:'Activo',
 };
-const CAMPOS_MAPEABLES = ['codigo','nombre','marca','categoria','subcategoria','costo_actual','precio_venta','stock_minimo','iva_porcentaje','unidad_medida'];
-const CAMPOS_ACTUALIZABLES = ['nombre','marca','categoria','subcategoria','proveedor','costo_actual','precio_venta','stock_minimo','iva_porcentaje','unidad_medida'];
+const CAMPOS_MAPEABLES = ['codigo','codigo_secundario','nombre','marca','categoria','subcategoria','costo_actual','precio_venta','stock_minimo','iva_porcentaje','unidad_medida'];
+const CAMPOS_ACTUALIZABLES = ['nombre','codigo_secundario','marca','categoria','subcategoria','proveedor','costo_actual','precio_venta','stock_minimo','iva_porcentaje','unidad_medida'];
 
 // ── Estado del wizard ──────────────────────────────────────────
 let estado = {

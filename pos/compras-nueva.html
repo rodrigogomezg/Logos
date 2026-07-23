@@ -2,9 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Nueva compra</title>
 <script src="config.js"></script>
+<script>if(typeof fmtFecha==='undefined'){var fmtFecha=function(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};var fechaHoy=function(){return fmtFecha(new Date());}}</script>
 <script src="helpers.js"></script>
 <link rel="stylesheet" href="pos-base.css">
 <style>
@@ -82,13 +84,13 @@
 
 /* Proveedor */
 .prov-wrap { position: relative; max-width: 360px; }
-.prov-tag { display: none; align-items: center; gap: 8px; border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); background: rgba(79,142,247,.1); padding: 9px 12px; }
+.prov-tag { display: none; align-items: center; gap: 8px; border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1); background: var(--primary-soft-2); padding: 9px 12px; }
 .prov-tag.visible { display: flex; }
 .prov-tag .nom { font-weight: 700; flex: 1; color: var(--neo-accent); }
 .prov-tag .x { background: none; border: none; cursor: pointer; color: var(--neo-danger); font-size: 18px; line-height: 1; }
 .prov-dd { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--neo-bg); border-radius: var(--neo-r-md); box-shadow: var(--neo-e3); z-index: 100; max-height: 240px; overflow-y: auto; display: none; }
 .prov-dd.visible { display: block; }
-.prov-dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid rgba(163,177,198,.2); font-size: 13px; color: var(--neo-text); transition: background var(--neo-t-fast); }
+.prov-dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--borde); font-size: 13px; color: var(--neo-text); transition: background var(--neo-t-fast); }
 .prov-dd-item:last-child { border-bottom: none; }
 .prov-dd-item:hover, .prov-dd-item.dd-activo { background: rgba(255,255,255,.55); }
 .prov-dd-item .cuit { font-size: 11px; color: var(--neo-text-3); margin-top: 1px; }
@@ -99,7 +101,7 @@
 .busq-wrap { position: relative; max-width: 420px; margin-bottom: 10px; }
 .dropdown { position: absolute; top: calc(100% + 6px); left: 0; right: 0; background: var(--neo-bg); border-radius: var(--neo-r-md); box-shadow: var(--neo-e3); z-index: 100; max-height: 240px; overflow-y: auto; display: none; }
 .dropdown.visible { display: block; }
-.dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid rgba(163,177,198,.2); font-size: 13px; display: flex; gap: 10px; color: var(--neo-text); transition: background var(--neo-t-fast); }
+.dd-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid var(--borde); font-size: 13px; display: flex; gap: 10px; color: var(--neo-text); transition: background var(--neo-t-fast); }
 .dd-item:last-child { border-bottom: none; }
 .dd-item:hover, .dd-item.dd-activo { background: rgba(255,255,255,.55); }
 .dd-item .cod { font-family: monospace; color: var(--neo-text-3); font-size: 12px; }
@@ -111,8 +113,8 @@
 /* Tabla de items */
 .table-wrap { overflow-x: auto; border-radius: var(--neo-r-md); box-shadow: var(--neo-i1); margin-bottom: 16px; background: var(--neo-bg-deep); }
 table.items { width: 100%; border-collapse: collapse; table-layout: fixed; }
-table.items th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--neo-text-3); padding: 9px 10px; border-bottom: 1px solid rgba(163,177,198,.35); white-space: nowrap; overflow: hidden; background: var(--neo-bg-deep); }
-table.items td { padding: 6px 10px; font-size: 13px; border-bottom: 1px solid rgba(163,177,198,.18); vertical-align: middle; white-space: nowrap; overflow: hidden; color: var(--neo-text); }
+table.items th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; color: var(--color-ink); padding: 9px 10px; border-bottom: 1px solid var(--borde-fuerte); white-space: nowrap; overflow: hidden; background: var(--neo-bg-deep); }
+table.items td { padding: 6px 10px; font-size: 13px; border-bottom: 1px solid var(--borde); vertical-align: middle; white-space: nowrap; overflow: hidden; color: var(--neo-text); }
 table.items input {
   width: 100%; padding: 5px 7px; border: none; border-radius: var(--neo-r-xs);
   font-size: 13px; font-family: inherit; text-align: right;
@@ -238,6 +240,14 @@ table.items input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent)
       </div>
     </div>
 
+    <div id="c1-filtrar-wrap" style="display:none;margin-bottom:14px;padding:10px 14px;background:var(--neo-bg-deep);border-radius:var(--neo-r-sm);box-shadow:var(--neo-i1)">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--neo-text);user-select:none">
+        <input type="checkbox" id="c1-filtrar-prov" style="accent-color:var(--neo-accent);width:15px;height:15px;cursor:pointer">
+        Filtrar productos de esta compra por proveedor
+      </label>
+      <p class="form-hint" style="margin:5px 0 0 23px">Solo mostrará y aceptará productos cuyo proveedor registrado sea <strong id="c1-filtrar-prov-nombre"></strong></p>
+    </div>
+
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Tipo de comprobante</label>
@@ -279,6 +289,9 @@ table.items input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent)
     <div class="busq-wrap">
       <input type="text" id="p2-busq" class="form-input" style="width:100%" placeholder="Buscar producto por nombre o código..." autocomplete="off">
       <div class="dropdown" id="p2-dd"></div>
+    </div>
+    <div id="p2-filtro-banner" style="display:none;margin-bottom:10px;padding:8px 12px;background:var(--primary-soft);border-radius:var(--neo-r-sm);font-size:12px;color:var(--neo-accent)">
+      Filtro activo: solo productos de <strong id="p2-filtro-nombre"></strong>
     </div>
 
     <div class="excel-row">
@@ -433,6 +446,7 @@ function irPaso(n) {
 const editId = parseInt(new URLSearchParams(location.search).get('id')) || null;
 
 let proveedorSel = null;
+let filtrarPorProveedor = false;
 let items = [];
 let pagoModo = 'simple';
 let pagosMixto = []; // [{tipo, monto}]
@@ -505,12 +519,23 @@ function seleccionarProveedor(p) {
   $('prov-tag-nombre').textContent = p.nombre;
   $('prov-tag').classList.add('visible');
   $('prov-nuevo-form').classList.remove('visible');
+  $('c1-filtrar-wrap').style.display = '';
+  $('c1-filtrar-prov-nombre').textContent = p.nombre;
+  $('c1-filtrar-prov').checked = false;
+  filtrarPorProveedor = false;
 }
 $('prov-tag-quitar').addEventListener('click', () => {
   proveedorSel = null;
+  filtrarPorProveedor = false;
   $('prov-input').value = '';
   $('prov-input').style.display = '';
   $('prov-tag').classList.remove('visible');
+  $('c1-filtrar-wrap').style.display = 'none';
+  $('c1-filtrar-prov').checked = false;
+});
+
+$('c1-filtrar-prov').addEventListener('change', function () {
+  filtrarPorProveedor = this.checked;
 });
 
 $('btn-prov-nuevo').addEventListener('click', () => {
@@ -565,11 +590,21 @@ $('btn-paso1-continuar').addEventListener('click', async () => {
       }
     } catch { /* si falla la consulta dejamos pasar */ }
   }
+  activarBannerFiltro();
   irPaso(2);
 });
 
+function activarBannerFiltro() {
+  const activo = filtrarPorProveedor && !!proveedorSel;
+  $('p2-filtro-banner').style.display = activo ? '' : 'none';
+  if (activo) $('p2-filtro-nombre').textContent = proveedorSel.nombre;
+  $('p2-busq').placeholder = activo
+    ? `Buscar producto de ${proveedorSel.nombre}...`
+    : 'Buscar producto por nombre o código...';
+}
+
 $('btn-dup-cancelar').addEventListener('click', resetDupWarn);
-$('btn-dup-forzar').addEventListener('click', () => { resetDupWarn(); irPaso(2); });
+$('btn-dup-forzar').addEventListener('click', () => { resetDupWarn(); activarBannerFiltro(); irPaso(2); });
 
 // Resetear aviso cuando cambia el proveedor o el comprobante
 $('prov-tag-quitar').addEventListener('click', resetDupWarn);
@@ -610,7 +645,9 @@ document.addEventListener('click', e => { if (!e.target.closest('.busq-wrap')) c
 
 async function buscarProductos(q) {
   try {
-    const res = await fetch(`${API}/stock?q=${encodeURIComponent(q)}`);
+    let url = `${API}/stock?q=${encodeURIComponent(q)}`;
+    if (filtrarPorProveedor && proveedorSel) url += `&proveedor=${encodeURIComponent(proveedorSel.nombre)}`;
+    const res = await fetch(url);
     const data = await res.json();
     const lista = (data.items || []).slice(0, 8);
     if (!lista.length) { cerrarDD(); return; }
@@ -627,6 +664,14 @@ async function buscarProductos(q) {
 function cerrarDD() { $('p2-dd').classList.remove('visible'); $('p2-dd').innerHTML = ''; busqDDIdx = -1; }
 
 function agregarItem(p, cantidad, costo) {
+  if (filtrarPorProveedor && proveedorSel) {
+    const pProv = (p.proveedor || '').trim().toLowerCase();
+    const sProv = proveedorSel.nombre.trim().toLowerCase();
+    if (pProv !== sProv) {
+      toast(`"${p.nombre || p.codigo}" no pertenece a ${proveedorSel.nombre} — su proveedor es "${p.proveedor || 'ninguno'}"`, 'err');
+      return;
+    }
+  }
   const idx = items.findIndex(i => i.producto_id === p.id);
   if (idx !== -1 && cantidad === undefined) {
     items[idx].cantidad += 1;
@@ -659,6 +704,7 @@ $('btn-leer-excel').addEventListener('click', async () => {
 
     (data.filas || []).forEach(f => agregarItem({
       id: f.producto_id, nombre: f.producto_nombre, codigo: f.codigo,
+      proveedor: f.proveedor,
       costo_actual: f.costo_unitario, iva_porcentaje: f.iva_porcentaje,
     }, f.cantidad, f.costo_unitario));
 
@@ -1042,7 +1088,7 @@ async function cargarModoEdicion(id) {
     seleccionarProveedor({ id: data.proveedor_id, nombre: data.proveedor_nombre });
     $('c1-tipo').value   = data.tipo_comprobante || 'factura_a';
     $('c1-numero').value = data.numero_comprobante || '';
-    $('c1-fecha').value  = data.fecha || new Date().toISOString().split('T')[0];
+    $('c1-fecha').value  = data.fecha || fechaHoy();
 
     // Paso 2 — ítems
     items = (data.items || []).map(it => ({
@@ -1105,7 +1151,7 @@ $('btn-anular-si').addEventListener('click', async () => {
 });
 
 // ── Init ──────────────────────────────────────────────────────────
-$('c1-fecha').value = new Date().toISOString().split('T')[0];
+$('c1-fecha').value = fechaHoy();
 if (editId) cargarModoEdicion(editId);
 </script>
 

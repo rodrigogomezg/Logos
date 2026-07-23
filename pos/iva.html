@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Libro IVA — Logos</title>
 <script src="config.js"></script>
@@ -18,7 +19,7 @@
 .tab-grupo { display: flex; border-radius: var(--neo-r-sm); overflow: hidden; box-shadow: var(--neo-e1); }
 .tab-tipo  { padding: 7px 20px; background: var(--neo-bg); border: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; cursor: pointer; color: var(--neo-text-3); font-family: inherit; transition: color var(--neo-t-fast), box-shadow var(--neo-t-fast); }
 .tab-tipo.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
-.tb-sep { width: 1px; background: rgba(163,177,198,.35); height: 30px; margin: 0 4px; }
+.tb-sep { width: 1px; background: var(--color-bg-alt); height: 30px; margin: 0 4px; }
 .tb-input {
   padding: 7px 11px; border: none; border-radius: var(--neo-r-xs); font-size: 13px;
   font-family: inherit; outline: none; background: var(--neo-bg); color: var(--neo-text);
@@ -43,7 +44,7 @@
   background: var(--neo-bg); border-radius: var(--neo-r-md);
   padding: 10px 16px; box-shadow: var(--neo-e2);
 }
-.total-item { display: flex; flex-direction: column; gap: 2px; padding: 0 12px; border-right: 1px solid rgba(163,177,198,.3); }
+.total-item { display: flex; flex-direction: column; gap: 2px; padding: 0 12px; border-right: 1px solid var(--borde-fuerte); }
 .total-item:last-child { border: none; }
 .total-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
 .total-val { font-size: 15px; font-weight: 800; color: var(--neo-text); font-variant-numeric: tabular-nums; }
@@ -56,16 +57,16 @@
 .tabla-wrap::-webkit-scrollbar-track { background: var(--neo-bg-deep); }
 .tabla-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
 table { width: 100%; border-collapse: collapse; font-size: 11px; white-space: nowrap; }
-thead th { position: sticky; top: 0; background: var(--neo-bg-deep); padding: 9px 10px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4); }
+thead th { position: sticky; top: 0; background: var(--neo-bg-deep); padding: 9px 10px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--color-ink); border-bottom: 1px solid var(--borde-fuerte); }
 thead th.r { text-align: right; }
-tbody tr { border-bottom: 1px solid rgba(163,177,198,.15); }
-tbody tr:hover { background: rgba(255,255,255,.4); }
+tbody tr { border-bottom: 1px solid var(--borde); }
+tbody tr:hover { background: var(--color-bg-alt); }
 tbody tr.fila-nc { background: rgba(231,76,60,.04); }
 tbody td { padding: 7px 10px; vertical-align: middle; color: var(--neo-text); }
 tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
 tbody td.muted { color: var(--neo-text-3); }
 .badge-nc { display: inline-block; padding: 1px 6px; font-size: 9px; font-weight: 700; border-radius: var(--neo-r-xs); background: rgba(231,76,60,.12); color: var(--neo-danger); margin-left: 4px; }
-.tfoot-row td { font-weight: 700; background: var(--neo-bg-deep); border-top: 2px solid rgba(163,177,198,.4); color: var(--neo-text); }
+.tfoot-row td { font-weight: 700; background: var(--neo-bg-deep); border-top: 2px solid var(--borde-fuerte); color: var(--neo-text); }
 
 .empty { padding: 32px; text-align: center; color: var(--neo-text-3); font-size: 13px; font-style: italic; }
 </style>

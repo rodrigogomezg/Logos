@@ -3,6 +3,13 @@
  * Se carga en config.js o inmediatamente después
  */
 
+// Formatea un Date como YYYY-MM-DD usando hora LOCAL (evita el bug de UTC con toISOString)
+function fmtFecha(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function fechaHoy() { return fmtFecha(new Date()); }
+
+
 function toast_(mensaje, tipo = 'info') {
   const tipos = {
     'ok': { bg: '#4ade80', color: '#15803d' },

@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reportes — Logos</title>
 <script src="config.js"></script>
@@ -19,7 +20,7 @@
 .tab-grupo { display: flex; border-radius: var(--neo-r-sm); overflow: hidden; box-shadow: var(--neo-e1); }
 .tab-vista { padding: 7px 16px; background: var(--neo-bg); border: none; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; cursor: pointer; color: var(--neo-text-3); font-family: inherit; transition: color var(--neo-t-fast), box-shadow var(--neo-t-fast); }
 .tab-vista.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
-.tb-sep { width: 1px; background: rgba(163,177,198,.35); height: 30px; margin: 0 4px; }
+.tb-sep { width: 1px; background: var(--color-bg-alt); height: 30px; margin: 0 4px; }
 .tb-input { padding: 7px 11px; border: none; border-radius: var(--neo-r-xs); font-size: 13px; font-family: inherit; outline: none; background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast); }
 .tb-input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
 .tb-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); white-space: nowrap; }
@@ -42,7 +43,7 @@
 .content-scroll::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
 
 .bloque { background: var(--neo-bg); border-radius: var(--neo-r-lg); box-shadow: var(--neo-e2); overflow: hidden; }
-.bh { padding: 12px 16px; border-bottom: 1px solid rgba(163,177,198,.3); display: flex; align-items: center; justify-content: space-between; }
+.bh { padding: 12px 16px; border-bottom: 1px solid var(--borde-fuerte); display: flex; align-items: center; justify-content: space-between; }
 .bt { font-size: 11px; font-weight: 700; color: var(--neo-text); text-transform: uppercase; letter-spacing: .4px; }
 .bs { font-size: 11px; color: var(--neo-text-3); }
 .chart-pad { padding: 14px; height: 240px; position: relative; }
@@ -53,23 +54,23 @@
 .tabla-wrap::-webkit-scrollbar { width: 5px; }
 .tabla-wrap::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
 table { width: 100%; border-collapse: collapse; font-size: 11px; }
-thead th { position: sticky; top: 0; background: var(--neo-bg); padding: 8px 12px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.3); }
+thead th { position: sticky; top: 0; background: var(--neo-bg); padding: 8px 12px; text-align: left; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-ink); border-bottom: 1px solid var(--borde-fuerte); }
 thead th.r { text-align: right; }
-tbody tr { border-bottom: 1px solid rgba(163,177,198,.12); }
-tbody tr:hover { background: rgba(255,255,255,.4); }
+tbody tr { border-bottom: 1px solid var(--borde-fuerte); }
+tbody tr:hover { background: var(--color-bg-alt); }
 tbody td { padding: 7px 12px; color: var(--neo-text); }
 tbody td.r { text-align: right; font-variant-numeric: tabular-nums; }
 tbody td.muted { color: var(--neo-text-3); font-size: 10px; }
 
 .rot-bar { display: flex; align-items: center; gap: 6px; }
-.rot-track { flex: 1; height: 4px; background: rgba(163,177,198,.25); border-radius: 2px; min-width: 60px; }
+.rot-track { flex: 1; height: 4px; background: var(--color-bg-alt); border-radius: 2px; min-width: 60px; }
 .rot-fill  { height: 4px; border-radius: 2px; background: var(--neo-accent); }
 .rot-val   { font-size: 10px; font-weight: 700; color: var(--neo-text-3); min-width: 32px; text-align: right; }
 
 .badge { display: inline-block; padding: 2px 7px; font-size: 9px; font-weight: 800; border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1); }
 .badge-ok    { background: rgba(39,174,96,.12);  color: var(--neo-success); }
 .badge-warn  { background: rgba(245,158,11,.12); color: #B7791F; }
-.badge-zero  { background: rgba(163,177,198,.2); color: var(--neo-text-3); }
+.badge-zero  { background: var(--color-bg-alt); color: var(--neo-text-3); }
 
 .empty { padding: 24px; text-align: center; color: var(--neo-text-3); font-size: 12px; font-style: italic; }
 .pago-tipo { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px; }
@@ -150,7 +151,7 @@ function num(n) { return Number(n).toLocaleString('es-AR', {minimumFractionDigit
 function destroyCharts() { Object.values(charts).forEach(c => c.destroy()); charts = {}; }
 
 function colorSet(n) {
-  const p = ['#4F8EF7','#27AE60','#E74C3C','#F39C12','#9B59B6','#1ABC9C','#E67E22','#2980B9','#C0392B','#16A085'];
+  const p = ['#163B66','#27AE60','#E74C3C','#F39C12','#9B59B6','#1ABC9C','#E67E22','#2980B9','#C0392B','#16A085'];
   return Array.from({length: n}, (_, i) => p[i % p.length]);
 }
 
@@ -234,7 +235,7 @@ async function cargarResumen(cnt, desde, hasta) {
       <div class="bloque">
         <div class="bh"><span class="bt">Cobros por medio de pago</span></div>
         <div class="pago-tipo">${chipsHtml || '<span class="empty" style="padding:8px">Sin datos</span>'}</div>
-        <div class="bh" style="border-top:1px solid rgba(163,177,198,.3);border-bottom:none;margin-top:8px">
+        <div class="bh" style="border-top:1px solid var(--borde-fuerte);border-bottom:none;margin-top:8px">
           <span class="bt">Detalle diario</span>
         </div>
         <div class="tabla-wrap">
@@ -253,15 +254,15 @@ async function cargarResumen(cnt, desde, hasta) {
         labels: porDia.map(d => d.dia),
         datasets: [{
           label: 'Ventas', data: porDia.map(d => d.monto),
-          backgroundColor: 'rgba(155,27,46,.65)', borderRadius: 3,
+          backgroundColor: 'rgba(22,59,102,.75)', borderRadius: 3,
         }]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { font:{size:9}, color:'#a3b1c6', maxRotation:45 }, grid:{display:false} },
-          y: { ticks: { font:{size:9}, color:'#a3b1c6', callback: v => pesos(v,true) }, grid:{color:'rgba(163,177,198,.15)'} },
+          x: { ticks: { font:{size:9}, color:'#9B9590', maxRotation:45 }, grid:{display:false} },
+          y: { ticks: { font:{size:9}, color:'#9B9590', callback: v => pesos(v,true) }, grid:{color:'#E4DFD3'} },
         }
       }
     });
@@ -456,18 +457,18 @@ async function cargarFlujo(cnt, desde, hasta) {
         {
           type: 'line', label: 'Saldo acum.',
           data: serie.map(s => s.saldo_acum),
-          borderColor: '#4F8EF7', backgroundColor: 'rgba(79,142,247,.12)',
-          fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#4F8EF7',
+          borderColor: '#163B66', backgroundColor: 'rgba(22,59,102,.12)',
+          fill: true, tension: 0.3, pointRadius: 3, pointBackgroundColor: '#163B66',
           yAxisID: 'y',
         },
       ]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { labels: { font:{size:10}, color:'#a3b1c6' } } },
+      plugins: { legend: { labels: { font:{size:10}, color:'#9B9590' } } },
       scales: {
-        x: { ticks: { font:{size:9}, color:'#a3b1c6', maxRotation:45 }, grid:{display:false} },
-        y: { ticks: { font:{size:9}, color:'#a3b1c6', callback: v => pesos(v,true) }, grid:{color:'rgba(163,177,198,.15)'} },
+        x: { ticks: { font:{size:9}, color:'#9B9590', maxRotation:45 }, grid:{display:false} },
+        y: { ticks: { font:{size:9}, color:'#9B9590', callback: v => pesos(v,true) }, grid:{color:'#E4DFD3'} },
       }
     }
   });

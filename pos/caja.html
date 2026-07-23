@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Logos — Caja</title>
 <script src="config.js"></script>
@@ -39,7 +40,7 @@
 }
 .card-header {
   display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  padding: 11px 18px; border-bottom: 1px solid rgba(163,177,198,.25);
+  padding: 11px 18px; border-bottom: 1px solid var(--borde);
   border-radius: var(--neo-r-lg) var(--neo-r-lg) 0 0;
 }
 .card-header h2 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); }
@@ -48,16 +49,16 @@
 /* ── pill estado ── */
 .estado-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: var(--neo-r-pill); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; box-shadow: var(--neo-e1); }
 .estado-pill.abierto { background: rgba(39,174,96,.12); color: var(--neo-success); }
-.estado-pill.cerrado { background: rgba(163,177,198,.18); color: var(--neo-text-3); }
+.estado-pill.cerrado { background: var(--color-bg-alt); color: var(--neo-text-3); }
 .estado-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
 /* ── ledger ── */
 .ledger      { display: table; width: 100%; border-collapse: collapse; }
 .ledger-row  { display: table-row; }
-.ledger-row.sep > * { border-top: 1px solid rgba(163,177,198,.3); padding-top: 9px; margin-top: 5px; }
+.ledger-row.sep > * { border-top: 1px solid var(--borde-fuerte); padding-top: 9px; margin-top: 5px; }
 .ledger-lbl  { display: table-cell; padding: 5px 0; font-size: 12px; color: var(--neo-text-2); white-space: nowrap; }
 .ledger-fill { display: table-cell; width: 100%; padding: 5px 10px; vertical-align: bottom; }
-.ledger-fill::after { content: ''; display: block; border-bottom: 1px dotted rgba(163,177,198,.5); margin-bottom: 3px; }
+.ledger-fill::after { content: ''; display: block; border-bottom: 1px dotted var(--borde-fuerte); margin-bottom: 3px; }
 .ledger-val  { display: table-cell; padding: 5px 0 5px 16px; text-align: right; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--neo-text); }
 .ledger-row.bold .ledger-lbl { font-weight: 700; color: var(--neo-text); font-size: 13px; }
 .ledger-row.bold .ledger-val { font-size: 14px; font-weight: 700; }
@@ -132,11 +133,11 @@
   background: var(--neo-bg); box-shadow: var(--neo-e2); border-radius: var(--neo-r-lg);
 }
 .stat { padding: 14px 16px; min-width: 0; }
-.stat + .stat { border-left: 1px solid rgba(163,177,198,.25); }
+.stat + .stat { border-left: 1px solid var(--borde); }
 .stat-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); white-space: nowrap; }
 .stat-val { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 3px; white-space: nowrap; color: var(--neo-text); }
 .stat-sub { font-size: 10px; color: var(--neo-text-3); margin-top: 1px; white-space: nowrap; }
-@media (max-width:1400px) { .stats-strip { grid-template-columns: repeat(2,1fr); } .stat:nth-child(3) { border-left: none; } .stat:nth-child(n+3) { border-top: 1px solid rgba(163,177,198,.25); } }
+@media (max-width:1400px) { .stats-strip { grid-template-columns: repeat(2,1fr); } .stat:nth-child(3) { border-left: none; } .stat:nth-child(n+3) { border-top: 1px solid var(--borde); } }
 
 /* ── donut medios de cobro ── */
 .mix-grid { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 10px 28px; align-items: center; }
@@ -152,17 +153,17 @@
 .hora-col { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 0; height: 100%; }
 .hora-val { font-size: 9px; color: var(--neo-text-3); font-variant-numeric: tabular-nums; white-space: nowrap; margin-bottom: 3px; }
 .hora-bar { width: 100%; max-width: 44px; background: var(--neo-accent); border-radius: var(--neo-r-xs) var(--neo-r-xs) 0 0; }
-.hora-bar.vacia { background: rgba(163,177,198,.3); height: 2px !important; }
+.hora-bar.vacia { background: var(--color-bg-alt); height: 2px !important; }
 .hora-lbl { font-size: 10px; color: var(--neo-text-3); margin-top: 5px; font-variant-numeric: tabular-nums; }
 .chart-vacio { padding: 36px 20px; text-align: center; color: var(--neo-text-3); font-size: 12px; }
 
 /* ── cierres parciales tabla ── */
 .hist-tabla { width: 100%; border-collapse: collapse; font-size: 12px; }
-.hist-tabla th { text-align: left; padding: 7px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.3); white-space: nowrap; }
+.hist-tabla th { text-align: left; padding: 7px 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-ink); border-bottom: 1px solid var(--borde-fuerte); white-space: nowrap; }
 .hist-tabla th.r, .hist-tabla td.r { text-align: right; }
-.hist-tabla td { padding: 8px 12px; border-bottom: 1px solid rgba(163,177,198,.18); font-variant-numeric: tabular-nums; color: var(--neo-text); }
+.hist-tabla td { padding: 8px 12px; border-bottom: 1px solid var(--borde); font-variant-numeric: tabular-nums; color: var(--neo-text); }
 .hist-tabla tbody tr:last-child td { border-bottom: none; }
-.hist-tabla tbody tr:hover { background: rgba(255,255,255,.45); }
+.hist-tabla tbody tr:hover { background: var(--color-bg-alt); }
 .badge-parcial { display: inline-block; padding: 1px 7px; border-radius: var(--neo-r-pill); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; background: rgba(243,156,18,.12); color: var(--neo-warning); box-shadow: var(--neo-e1); }
 .no-aplica { text-align: center; padding: 40px 20px; color: var(--neo-text-3); font-size: 13px; }
 
@@ -186,7 +187,7 @@
 
 .modal-header {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 14px 22px; border-bottom: 1px solid rgba(163,177,198,.3);
+  padding: 14px 22px; border-bottom: 1px solid var(--borde-fuerte);
   border-radius: var(--neo-r-xl) var(--neo-r-xl) 0 0; flex-shrink: 0;
 }
 .modal-header-txt h2 { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); }
@@ -196,12 +197,12 @@
   color: var(--neo-text-3); font-size: 18px; line-height: 1; padding: 2px 6px;
   border-radius: var(--neo-r-xs);
 }
-.modal-close:hover { background: rgba(163,177,198,.2); color: var(--neo-text); }
+.modal-close:hover { background: var(--color-bg-alt); color: var(--neo-text); }
 
 .modal-body { flex: 1; overflow-y: auto; min-height: 0; padding: 22px; display: flex; flex-direction: column; gap: 20px; }
 
 .modal-footer {
-  padding: 12px 22px; border-top: 1px solid rgba(163,177,198,.3);
+  padding: 12px 22px; border-top: 1px solid var(--borde-fuerte);
   display: flex; gap: 10px; justify-content: flex-end; align-items: center; flex-shrink: 0;
   border-radius: 0 0 var(--neo-r-xl) var(--neo-r-xl);
 }
@@ -209,12 +210,12 @@
 /* Stepper */
 .stepper {
   display: flex; align-items: center; padding: 12px 22px;
-  border-bottom: 1px solid rgba(163,177,198,.3); flex-shrink: 0;
+  border-bottom: 1px solid var(--borde-fuerte); flex-shrink: 0;
 }
 .step { display: flex; align-items: center; gap: 8px; }
 .step-circle {
   width: 26px; height: 26px; border-radius: 50%;
-  border: 2px solid rgba(163,177,198,.4); background: var(--neo-bg);
+  border: 2px solid var(--borde-fuerte); background: var(--neo-bg);
   box-shadow: var(--neo-e1);
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 700; color: var(--neo-text-3); flex-shrink: 0;
@@ -225,10 +226,10 @@
 .step-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); white-space: nowrap; }
 .step.active .step-lbl { color: var(--neo-text); }
 .step.done   .step-lbl { color: var(--neo-success); }
-.step-line { flex: 1; height: 1px; background: rgba(163,177,198,.35); margin: 0 10px; }
+.step-line { flex: 1; height: 1px; background: var(--color-bg-alt); margin: 0 10px; }
 
 /* Titulos de sección modal */
-.ms-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); padding-bottom: 6px; border-bottom: 1px solid rgba(163,177,198,.3); margin-bottom: 12px; }
+.ms-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--neo-text-3); padding-bottom: 6px; border-bottom: 1px solid var(--borde-fuerte); margin-bottom: 12px; }
 
 /* Inputs del modal */
 .mf-group { display: flex; flex-direction: column; gap: 5px; }
@@ -260,9 +261,9 @@
 
 /* Tabla comparacion */
 .cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.cmp-table th { text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); border-bottom: 1px solid rgba(163,177,198,.4); }
+.cmp-table th { text-align: left; padding: 8px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-ink); border-bottom: 1px solid var(--borde-fuerte); }
 .cmp-table th.r { text-align: right; }
-.cmp-table td { padding: 9px 10px; border-bottom: 1px solid rgba(163,177,198,.18); font-variant-numeric: tabular-nums; color: var(--neo-text); }
+.cmp-table td { padding: 9px 10px; border-bottom: 1px solid var(--borde); font-variant-numeric: tabular-nums; color: var(--neo-text); }
 .cmp-table td.r { text-align: right; font-weight: 600; }
 .cmp-table tbody tr:last-child td { border-bottom: none; }
 .cmp-ok    { color: var(--neo-success); }
@@ -290,7 +291,7 @@
 .fondo-sig-card .val { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* Filas de reporte (paso 3) */
-.rep-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-bottom: 1px solid rgba(163,177,198,.2); }
+.rep-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--borde); }
 .rep-row:last-child { border-bottom: none; }
 .rep-lbl { font-size: 12px; color: var(--neo-text-2); }
 .rep-val { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--neo-text); }
@@ -308,11 +309,11 @@
 
 /* Tabla de arqueo */
 .arqueo-table { width: 100%; border-collapse: collapse; border-radius: var(--neo-r-md); overflow: hidden; box-shadow: var(--neo-i1); }
-.arqueo-table thead th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); padding: 10px 16px; border-bottom: 1px solid rgba(163,177,198,.35); background: var(--neo-bg-deep); white-space: nowrap; }
+.arqueo-table thead th { text-align: left; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--color-ink); padding: 10px 16px; border-bottom: 1px solid var(--borde-fuerte); background: var(--neo-bg-deep); white-space: nowrap; }
 .arqueo-table thead th.r { text-align: right; }
-.arqueo-table tbody tr { border-bottom: 1px solid rgba(163,177,198,.2); }
+.arqueo-table tbody tr { border-bottom: 1px solid var(--borde); }
 .arqueo-table tbody tr:last-child { border-bottom: none; }
-.arqueo-table tbody tr:not(.arqueo-group):hover { background: rgba(255,255,255,.45); }
+.arqueo-table tbody tr:not(.arqueo-group):hover { background: var(--color-bg-alt); }
 .arqueo-table td { padding: 12px 16px; vertical-align: middle; }
 .arqueo-table td.r { text-align: right; }
 .arqueo-group { background: var(--neo-bg-deep) !important; }
@@ -340,37 +341,37 @@
 /* ── Flat modal — igual a contacto-modal ── */
 .modal-cierre {
   background: #fff;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   box-shadow: 0 4px 28px rgba(0,0,0,.14);
 }
 .modal-header {
-  background: #F0EEEB;
-  border-bottom-color: #D5D0CA;
+  background: var(--color-bg-alt);
+  border-bottom-color: var(--borde-fuerte);
   border-radius: 0;
 }
 .modal-footer {
-  border-top-color: #D5D0CA;
+  border-top-color: var(--borde-fuerte);
   border-radius: 0;
 }
 .stepper {
-  background: #F0EEEB;
-  border-bottom-color: #D5D0CA;
+  background: var(--color-bg-alt);
+  border-bottom-color: var(--borde-fuerte);
 }
 .step-circle {
   background: #fff;
-  border-color: #D5D0CA;
+  border-color: var(--borde-fuerte);
   box-shadow: none;
 }
 .step.active .step-circle { box-shadow: none; }
 .step.done   .step-circle { box-shadow: none; }
-.ms-titulo { border-bottom-color: #D5D0CA; }
+.ms-titulo { border-bottom-color: var(--borde-fuerte); }
 .modal-cierre .arqueo-input,
 .modal-cierre .mf-input,
 .modal-cierre .posnet-input,
 .modal-cierre textarea {
   box-shadow: none;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   background: #fff;
 }
@@ -379,24 +380,24 @@
 .modal-cierre .posnet-input:focus,
 .modal-cierre textarea:focus {
   box-shadow: none;
-  border-color: #111;
+  border-color: var(--color-primary);
   outline: none;
 }
 .arqueo-table {
   box-shadow: none;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   overflow: visible;
 }
 .arqueo-table thead th {
-  background: #F0EEEB;
-  border-bottom-color: #D5D0CA;
+  background: var(--color-bg-alt);
+  border-bottom-color: var(--borde-fuerte);
 }
 .arqueo-table tbody tr { border-bottom-color: #E8E4E0; }
 .arqueo-group { background: #F8F7F5 !important; }
 .fondo-wrap {
   box-shadow: none;
-  border: 1px solid #D5D0CA;
+  border: 1px solid var(--borde-fuerte);
   border-radius: 0;
   background: #fff;
 }
@@ -447,6 +448,24 @@
 <div class="contenido">
   <div class="contenido-inner" id="contenido-inner">
     <div class="card"><div class="card-body"><p class="form-hint">Cargando…</p></div></div>
+  </div>
+</div>
+
+<!-- Modal alerta: facturas sin CAE -->
+<div class="modal-overlay" id="alerta-cae-overlay" role="dialog" aria-modal="true">
+  <div class="modal-cierre" style="max-width:580px;width:min(96vw,580px)">
+    <div class="modal-header">
+      <div class="modal-header-txt">
+        <h2 style="font-size:13px;font-weight:800;color:#B91C1C;text-transform:none;letter-spacing:0">Facturas pendientes de autorización ARCA</h2>
+        <p style="font-size:12px;color:#666;margin-top:4px">Este turno tiene facturas electrónicas sin CAE aprobado. Autorizalas antes de cerrar para mantener los comprobantes válidos.</p>
+      </div>
+    </div>
+    <div id="alerta-cae-body" style="padding:16px 18px;overflow-y:auto;max-height:52vh"></div>
+    <div style="padding:12px 18px;border-top:1px solid var(--borde-fuerte);display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+      <button class="btn btn-sec" id="alerta-cae-cancelar">Cancelar</button>
+      <button class="btn btn-danger" id="alerta-cae-forzar">Cerrar de todas formas</button>
+      <button class="btn btn-ok" id="alerta-cae-ir-ventas">Ir a Ventas</button>
+    </div>
   </div>
 </div>
 
@@ -618,7 +637,7 @@ function cnt(n) { return n > 0 ? `<span style="font-size:10px;color:var(--gris3)
 // ── Visualizaciones del turno ──────────────────────────────
 const MEDIOS_COBRO = [
   { k: 'efectivo',      lbl: 'Efectivo',      color: '#15803D' },
-  { k: 'tarjeta',       lbl: 'Tarjeta',       color: '#2563EB' },
+  { k: 'tarjeta',       lbl: 'Tarjeta',       color: 'var(--color-primary)' },
   { k: 'transferencia', lbl: 'Transferencia', color: '#7C3AED' },
   { k: 'mercado_pago',  lbl: 'Mercado Pago',  color: '#0891B2' },
   { k: 'cheque',        lbl: 'Cheque',        color: '#B45309' },
@@ -926,11 +945,78 @@ function renderTurnoAbierto(data) {
   $('btn-z').addEventListener('click', () => abrirModal('total'));
 }
 
+// ── Alerta facturas sin CAE ─────────────────────────────────
+let _alertaCaeTipo = null;
+
+async function verificarFacturasSinCae() {
+  if (!turnoActualId) return [];
+  try {
+    const r = await fetch(`${API}/ventas?turno_id=${turnoActualId}&sin_cae=1&limit=50`);
+    const d = await r.json();
+    return Array.isArray(d) ? d : [];
+  } catch { return []; }
+}
+
+function mostrarAlertaCae(facturas, tipoCierre) {
+  _alertaCaeTipo = tipoCierre;
+
+  const filas = facturas.map(f => {
+    const estado = f.afip_error
+      ? `<span style="color:#B91C1C;font-size:11px">${esc(String(f.afip_error).substring(0, 80))}${f.afip_error.length > 80 ? '…' : ''}</span>`
+      : `<span style="color:#9B9590;font-size:11px">Sin intentar</span>`;
+    return `<tr>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--color-bg-alt);font-size:12px">${esc(f.tipo_comprobante)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--color-bg-alt);font-size:12px;font-variant-numeric:tabular-nums">N°${f.numero}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--color-bg-alt);font-size:12px;text-align:right;font-variant-numeric:tabular-nums">${fmt(f.total)}</td>
+      <td style="padding:6px 10px;border-bottom:1px solid var(--color-bg-alt)">${estado}</td>
+    </tr>`;
+  }).join('');
+
+  $('alerta-cae-body').innerHTML = `
+    <table style="width:100%;border-collapse:collapse">
+      <thead>
+        <tr style="background:var(--color-bg-alt)">
+          <th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#666;border-bottom:1px solid var(--borde-fuerte)">Tipo</th>
+          <th style="padding:7px 10px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#666;border-bottom:1px solid var(--borde-fuerte)">Número</th>
+          <th style="padding:7px 10px;text-align:right;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#666;border-bottom:1px solid var(--borde-fuerte)">Total</th>
+          <th style="padding:7px 10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#666;border-bottom:1px solid var(--borde-fuerte)">Estado AFIP</th>
+        </tr>
+      </thead>
+      <tbody>${filas}</tbody>
+    </table>`;
+
+  $('alerta-cae-overlay').classList.add('visible');
+}
+
+function cerrarAlertaCae() {
+  $('alerta-cae-overlay').classList.remove('visible');
+  _alertaCaeTipo = null;
+}
+
+$('alerta-cae-cancelar').addEventListener('click', cerrarAlertaCae);
+$('alerta-cae-ir-ventas').addEventListener('click', () => {
+  window.location.href = window.APP_CONFIG.POS_BASE + '/ventas.html';
+});
+$('alerta-cae-forzar').addEventListener('click', () => {
+  const tipo = _alertaCaeTipo || 'total';
+  cerrarAlertaCae();
+  _abrirModalSinCheck(tipo);
+});
+
 // ── Modal de cierre ────────────────────────────────────────
 let pasoActual = 1;
 let datosIngresados = {};
 
 async function abrirModal(tipo) {
+  const pendientes = await verificarFacturasSinCae();
+  if (pendientes.length > 0) {
+    mostrarAlertaCae(pendientes, tipo);
+    return;
+  }
+  _abrirModalSinCheck(tipo);
+}
+
+async function _abrirModalSinCheck(tipo) {
   modalTipo       = tipo;
   periodoData     = null;
   pasoActual      = 1;
@@ -1079,7 +1165,7 @@ function renderPaso1() {
         placeholder="Notas del cajero, incidentes, diferencias&hellip;">${esc(datosIngresados.observaciones || '')}</textarea>
     </div>
     ${modalTipo !== 'parcial' ? `
-    <div style="margin-top:14px;padding:12px 14px;border:1px solid #D5D0CA;border-radius:0;background:#fff">
+    <div style="margin-top:14px;padding:12px 14px;border:1px solid var(--borde-fuerte);border-radius:0;background:#fff">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--neo-text-3);margin-bottom:8px">Fondo para próximo turno</div>
       <div style="display:flex;align-items:center;gap:10px">
         <input class="arqueo-input" id="fondo-siguiente-input" type="number" min="0" step="0.01"
