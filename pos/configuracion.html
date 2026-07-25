@@ -40,13 +40,27 @@
 
 /* ── Content layout ── */
 .contenido { flex: 1; min-height: 0; overflow-y: auto; padding: 24px clamp(20px,4vw,48px); background: var(--neo-bg-deep); }
-.contenido-inner { max-width: 1280px; margin: 0 auto; }
+.contenido-inner { max-width: 1600px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; }
 .panel { display: none; }
-.panel.activo { display: block; }
+.panel.activo { display: flex; flex-direction: column; flex: 1; }
+
+/* ── Columnas por panel: ocupan todo el alto y ancho disponibles.
+   Las columnas se igualan en altura y las cards se estiran para
+   que no queden huecos en la pantalla. ── */
+.cols { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: stretch; margin-bottom: 16px; flex: 1; }
+.cols .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.cols .card { margin-bottom: 0; flex: 1 1 auto; }
+@media (min-width: 1100px) {
+  .cols-3 { grid-template-columns: 1fr 1fr; }
+  .cols-negocio { grid-template-columns: 1.6fr 1fr; }
+}
+@media (min-width: 1750px) {
+  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+}
 
 /* ── Cards ── */
 .card {
-  background: var(--neo-bg); border: none !important;
+  background: var(--neo-bg); border: 1px solid #000;
   border-radius: var(--neo-r-lg); box-shadow: var(--neo-e2);
   margin-bottom: 16px; overflow: hidden;
 }
@@ -56,14 +70,17 @@
   border-bottom: 1px solid var(--borde);
 }
 .card-body { padding: 20px; }
-.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px,1fr)); gap: 16px; align-items: stretch; margin-bottom: 16px; }
-.grid-2 .card { margin-bottom: 0; }
 .btn-cell { display: flex; gap: 5px; align-items: center; }
 
 /* ── Form elements ── */
 .form-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px 20px; }
 @media (max-width: 900px) { .form-grid { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+/* Con multicolumna las cards son más angostas que el viewport:
+   la cantidad de columnas del form se decide por el ancho de la card. */
+.card { container-type: inline-size; }
+@container (max-width: 720px) { .form-grid { grid-template-columns: repeat(2,1fr); } }
+@container (max-width: 470px) { .form-grid { grid-template-columns: 1fr; } }
 .form-group { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
 .form-group.full { grid-column: 1 / -1; }
 .form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--neo-text-3); }
@@ -159,6 +176,23 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 .afip-estado.ok   .afip-dot { background: var(--neo-success); }
 .afip-estado.warn .afip-dot { background: var(--neo-warning); }
 
+/* ── Títulos de sección dentro del panel avanzado ── */
+.avz-seccion {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--neo-text-3);
+  padding: 8px 0 10px;
+  border-bottom: 1px solid var(--borde);
+  margin-bottom: 16px;
+}
+.avz-seccion + .cols,
+.avz-seccion + .card { margin-top: 0; }
+.avz-seccion-danger { color: var(--neo-danger); border-color: rgba(231,76,60,.25); margin-top: 8px; }
+
+/* Grid 2 columnas para la sección Configuración */
+.cols-avz { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; margin-bottom: 16px; }
+.cols-avz .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+@media (min-width: 900px) { .cols-avz { grid-template-columns: 1fr 1fr; } }
+
 /* ── Danger zone ── */
 .danger-card { box-shadow: var(--neo-e2), 0 0 0 2px rgba(231,76,60,.3) !important; }
 .danger-card .card-titulo { color: var(--neo-danger); border-bottom-color: rgba(231,76,60,.2); }
@@ -169,13 +203,23 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 }
 #btn-reset-fabrica:disabled { background: var(--neo-text-3); box-shadow: none; cursor: not-allowed; opacity: .5; }
 
+/* ── Guardar flotante (aparece con cambios sin guardar) ── */
+#guardar-flotante {
+  position: fixed; right: 28px; bottom: 24px; z-index: 300;
+  padding: 13px 26px;
+  opacity: 0; visibility: hidden; transform: translateY(14px);
+  transition: opacity var(--neo-t-fast), transform var(--neo-t-fast), visibility var(--neo-t-fast);
+  box-shadow: 0 8px 24px var(--neo-accent-glow);
+}
+#guardar-flotante.visible { opacity: 1; visibility: visible; transform: none; }
+
 @media (max-width: 640px) {
   .page-header h1 { font-size: 12px; }
   .card-body { padding: 16px; }
   .fila-nueva { flex-direction: column; }
 }
 
-/* ── Sucursales / Depósitos tab ── */
+/* ── Sucursales / Depósitos — card unificada con sub-tabs ── */
 
 /* Card con header + botón de acción */
 .card-header {
@@ -188,19 +232,56 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
   letter-spacing: 1px; color: var(--neo-text-3); margin: 0;
 }
 
-/* Botón acción primario (+ Nueva sucursal, Guardar, etc.) */
+/* Sub-tabs de sucursales */
+.suc-tabs { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.suc-tab {
+  padding: 5px 13px; border: 1px solid transparent; border-radius: var(--neo-r-xs);
+  background: none; font-size: 12px; font-weight: 500; color: var(--neo-text-2);
+  cursor: pointer; font-family: inherit;
+  transition: background var(--neo-t-fast), color var(--neo-t-fast), border-color var(--neo-t-fast);
+}
+.suc-tab:hover { background: var(--neo-bg-deep); color: var(--neo-text); }
+.suc-tab.activo { background: var(--neo-bg-deep); color: var(--neo-accent); font-weight: 700; border-color: var(--borde-fuerte); }
+.suc-tab-add {
+  padding: 4px 10px; border: 1px dashed var(--borde-fuerte); border-radius: var(--neo-r-xs);
+  background: none; font-size: 16px; line-height: 1; cursor: pointer; font-family: inherit;
+  color: var(--neo-text-3); margin-left: 4px;
+  transition: border-color var(--neo-t-fast), color var(--neo-t-fast);
+}
+.suc-tab-add:hover { border-color: var(--neo-accent); color: var(--neo-accent); }
+
+/* Panel del tab activo */
+.suc-form-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px;
+  padding: 16px 20px;
+}
+.suc-form-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px; border-top: 1px solid var(--borde);
+}
+.suc-form-footer label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
+.suc-form-footer input[type=checkbox] { accent-color: var(--neo-accent); width: 15px; height: 15px; }
+.suc-dep-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-top: 2px solid var(--borde-fuerte);
+  background: var(--neo-bg-deep);
+}
+.suc-dep-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--neo-text-3); }
+.suc-empty-state { padding: 32px 20px; text-align: center; color: var(--neo-text-3); font-size: 13px; }
+
+/* Botón acción primario */
 .btn-accion {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 7px 14px; border: none; border-radius: var(--neo-r-xs);
   background: var(--neo-accent); color: #fff;
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
   cursor: pointer; font-family: inherit;
-  transition: background var(--neo-t-fast), box-shadow var(--neo-t-fast);
+  transition: background var(--neo-t-fast);
 }
 .btn-accion:hover  { background: var(--neo-accent-h); }
 .btn-accion:active { transform: scale(.97); }
 
-/* Tabla genérica del tab */
+/* Tabla genérica */
 .tabla {
   width: 100%; border-collapse: collapse;
 }
@@ -232,16 +313,6 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 .badge.ok   { background: rgba(39,174,96,.12); color: var(--neo-success, #27ae60); }
 .badge.warn { background: rgba(243,156,18,.12); color: var(--neo-warning, #f39c12); }
 
-/* Botón × dentro de un badge/chip */
-.btn-mini-x {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 14px; height: 14px; padding: 0; border: none;
-  background: none; color: inherit; cursor: pointer;
-  font-size: 12px; line-height: 1; font-family: inherit;
-  opacity: .6;
-}
-.btn-mini-x:hover { opacity: 1; }
-
 /* Checkbox en forma de check-label dentro de form-group */
 .form-group.form-check { flex-direction: row; align-items: center; gap: 8px; }
 .form-group.form-check label { font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 7px; }
@@ -264,13 +335,19 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .6px; color: var(--neo-text-3); margin-bottom: 2px;
 }
-/* select de asignación de sucursales a usuarios */
-#body-usuarios-suc select {
-  padding: 5px 9px; border: none; border-radius: var(--neo-r-xs);
-  font-size: 12px; font-family: inherit; cursor: pointer;
-  background: var(--neo-bg); color: var(--neo-text);
-  box-shadow: var(--neo-i1); outline: none;
+/* Desplegable de sucursales en la tabla de usuarios */
+.suc-menu {
+  /* fixed + coordenadas al abrir: escapa del overflow de .table-wrap */
+  position: fixed; z-index: 60;
+  background: var(--neo-bg); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e3);
+  padding: 10px 12px; min-width: 180px;
+  display: flex; flex-direction: column; gap: 7px;
 }
+.suc-menu label { display: flex; gap: 7px; align-items: center; font-size: 12px; cursor: pointer; white-space: nowrap; color: var(--neo-text); }
+.suc-menu label input { accent-color: var(--neo-accent); cursor: pointer; }
+.suc-menu label input:disabled { cursor: default; }
+.suc-menu label:has(input:disabled) { opacity: .45; cursor: default; }
+.suc-sep { border-top: 1px solid var(--borde); margin: 1px 0; }
 
 </style>
 </head>
@@ -280,81 +357,22 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 
 <div class="page-header">
   <h1>Configuración</h1>
-  <p>Datos fiscales, impresión y cajas del negocio</p>
+  <p>Datos del negocio y sucursales, datos contables y configuración avanzada</p>
 </div>
 
 <div class="tab-bar">
-  <button class="tab-btn activo" data-tab="contables">Datos contables</button>
-  <button class="tab-btn" data-tab="negocio">Datos del negocio</button>
+  <button class="tab-btn activo" data-tab="negocio">Datos del negocio</button>
+  <button class="tab-btn" data-tab="contables">Datos contables</button>
   <button class="tab-btn" data-tab="avanzado">Configuración avanzada</button>
-  <button class="tab-btn" data-tab="sucursales">Sucursales y Depósitos</button>
 </div>
 
 <div class="contenido">
 <div class="contenido-inner">
 
   <!-- ── Panel: Datos contables ── -->
-  <div class="panel activo" id="panel-contables">
-
-    <div class="card">
-      <div class="card-titulo">Cajas</div>
-      <div class="card-body">
-        <div class="form-hint" style="margin-bottom:14px">El tipo define quién puede usar cada caja: los usuarios "Admin" pueden usar cualquiera, los usuarios "User" solo las de tipo Venta.</div>
-        <div class="table-wrap">
-          <table class="cajas">
-            <thead><tr><th>Nombre</th><th style="width:130px">Tipo</th><th style="width:90px">Activa</th><th style="width:110px"></th></tr></thead>
-            <tbody id="cajas-tbody"></tbody>
-          </table>
-        </div>
-        <div class="fila-nueva">
-          <input type="text" id="caja-nueva-nombre" class="form-input" placeholder="Nombre de la nueva caja">
-          <select class="form-select" id="caja-nueva-tipo" style="flex:0 0 130px">
-            <option value="venta">Venta</option>
-            <option value="compra">Compra</option>
-          </select>
-          <button class="btn btn-sec" id="btn-caja-agregar">Agregar caja</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Comportamiento de ventas</div>
-      <div class="card-body">
-        <label class="checkbox-item" style="font-size:13px;gap:10px;cursor:pointer">
-          <input type="checkbox" id="cfg-ventas_sin_stock">
-          Permitir ventas sin stock suficiente (el stock puede quedar negativo)
-        </label>
-        <div class="form-hint" style="margin-top:8px">Si está activo, el POS permite confirmar una venta aunque el producto no tenga stock disponible. El stock resultante quedará en negativo.</div>
-        <div class="btn-row">
-          <button class="btn btn-ok" id="btn-guardar-ventas">Guardar</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Terminales Posnet</div>
-      <div class="card-body">
-        <div class="form-hint" style="margin-bottom:14px">Cada terminal aparecerá como un campo de cierre en la pantalla de Caja (X / Z). Ingresá el nombre o número que identifica cada dispositivo.</div>
-        <div class="table-wrap">
-          <table class="cajas">
-            <thead><tr><th>Nombre / Identificación</th><th style="width:90px"></th></tr></thead>
-            <tbody id="posnet-tbody"></tbody>
-          </table>
-        </div>
-        <div class="fila-nueva">
-          <input type="text" id="posnet-nueva-nombre" class="form-input" placeholder="Ej: Terminal 1, Naranja X, etc.">
-          <button class="btn btn-sec" id="btn-posnet-agregar">Agregar terminal</button>
-        </div>
-        <div class="btn-row">
-          <button class="btn btn-ok" id="btn-posnet-guardar">Guardar terminales</button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ── Panel: Datos del negocio ── -->
-  <div class="panel" id="panel-negocio">
+  <div class="panel" id="panel-contables">
+  <div class="cols cols-3">
+  <div class="col">
 
     <div class="card">
       <div class="card-titulo">Datos fiscales</div>
@@ -411,6 +429,9 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
       </div>
     </div>
 
+  </div><!-- /col -->
+  <div class="col">
+
     <div class="card">
       <div class="card-titulo">Facturación electrónica AFIP</div>
       <div class="card-body">
@@ -439,53 +460,49 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
       </div>
     </div>
 
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-titulo">Logo</div>
-        <div class="card-body">
-          <div class="logo-row">
-            <div class="logo-preview" id="logo-preview">
-              <img src="/Logos/logo_background.png?t=0" id="logo-preview-img" alt="">
-            </div>
-            <div>
-              <input type="file" id="logo-file" accept="image/png,image/jpeg,image/gif,image/webp">
-              <div class="form-hint" style="margin-top:8px">Se usa en el menú de todas las páginas y en los comprobantes PDF.</div>
-            </div>
-          </div>
-        </div>
-      </div>
+  </div><!-- /col -->
+  <div class="col">
 
-      <div class="card">
-        <div class="card-titulo">Impresión</div>
-        <div class="card-body">
-          <div class="form-grid">
-            <div class="form-group full">
-              <label class="form-label">Impresora por defecto</label>
-              <select class="form-select" id="cfg-impresora_nombre">
-                <option value="">Cargando impresoras…</option>
-              </select>
-            </div>
-            <div class="form-group full">
-              <label class="form-label">Carpeta donde guardar copia de cada comprobante</label>
-              <input class="form-input" id="cfg-carpeta_comprobantes" placeholder="C:\Logos\comprobantes">
-              <div class="form-hint">Ruta en este servidor. Se guarda una copia automática de cada comprobante generado.</div>
-            </div>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-sec" id="btn-probar-impresion">Probar impresión</button>
-          </div>
+    <div class="card">
+      <div class="card-titulo">Comportamiento de ventas</div>
+      <div class="card-body">
+        <label class="checkbox-item" style="font-size:13px;gap:10px;cursor:pointer">
+          <input type="checkbox" id="cfg-ventas_sin_stock">
+          Permitir ventas sin stock suficiente (el stock puede quedar negativo)
+        </label>
+        <div class="form-hint" style="margin-top:8px">Si está activo, el POS permite confirmar una venta aunque el producto no tenga stock disponible. El stock resultante quedará en negativo.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Terminales Posnet</div>
+      <div class="card-body">
+        <div class="form-hint" style="margin-bottom:14px">Cada terminal aparecerá como un campo de cierre en la pantalla de Caja (X / Z). Ingresá el nombre o número que identifica cada dispositivo.</div>
+        <div class="table-wrap">
+          <table class="cajas">
+            <thead><tr><th>Nombre / Identificación</th><th style="width:90px"></th></tr></thead>
+            <tbody id="posnet-tbody"></tbody>
+          </table>
+        </div>
+        <div class="fila-nueva">
+          <input type="text" id="posnet-nueva-nombre" class="form-input" placeholder="Ej: Terminal 1, Naranja X, etc.">
+          <button class="btn btn-sec" id="btn-posnet-agregar">Agregar terminal</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ok" id="btn-posnet-guardar">Guardar terminales</button>
         </div>
       </div>
     </div>
 
-    <div class="btn-row">
-      <button class="btn btn-ok" id="btn-guardar">Guardar cambios</button>
-    </div>
+  </div><!-- /col -->
+  </div><!-- /cols -->
 
   </div>
 
-  <!-- ── Panel: Configuración avanzada ── -->
-  <div class="panel" id="panel-avanzado">
+  <!-- ── Panel: Datos del negocio ── -->
+  <div class="panel activo" id="panel-negocio">
+  <div class="cols cols-negocio">
+  <div class="col">
 
     <div class="card">
       <div class="card-titulo">Usuarios</div>
@@ -493,7 +510,7 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
         <div class="form-hint" style="margin-bottom:14px">"Admin" tiene acceso total y entra directo a la caja de tipo Compra. "Vendedor" y "Encargado" son plantillas de permisos sobre el rol User: el usuario nace con esos accesos y podés afinarlos cuando quieras con el botón <b>Permisos</b>.</div>
         <div class="table-wrap">
           <table class="cajas">
-            <thead><tr><th>Nombre</th><th style="width:120px">Rol</th><th style="width:140px">Nuevo PIN</th><th style="width:90px">Activo</th><th style="width:110px"></th></tr></thead>
+            <thead><tr><th>Nombre</th><th style="width:120px">Rol</th><th style="width:150px">Sucursales</th><th style="width:140px">Nuevo PIN</th><th style="width:90px">Activo</th><th style="width:110px"></th></tr></thead>
             <tbody id="usuarios-tbody"></tbody>
           </table>
         </div>
@@ -510,164 +527,270 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
       </div>
     </div>
 
-    <!-- ═══ Modal de permisos granulares (estilo plano) ═══ -->
-    <div id="perm-overlay" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
-      <div style="background:#fff;border:1px solid var(--borde-fuerte);width:min(94vw,560px);max-height:88vh;display:flex;flex-direction:column">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--borde-fuerte);background:var(--color-bg-alt);flex-shrink:0">
-          <h3 id="perm-titulo" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9B9590;margin:0">Permisos</h3>
-          <button id="perm-cerrar" style="background:none;border:none;cursor:pointer;color:#9B9590;font-size:16px;line-height:1;padding:2px 6px">✕</button>
-        </div>
-        <div style="flex:1;overflow-y:auto;padding:16px 20px">
-          <div style="display:flex;gap:8px;margin-bottom:14px">
-            <button class="btn btn-sec" id="perm-tpl-vendedor" style="font-size:12px">Plantilla Vendedor</button>
-            <button class="btn btn-sec" id="perm-tpl-encargado" style="font-size:12px">Plantilla Encargado</button>
-          </div>
-          <div id="perm-checks" style="display:flex;flex-direction:column;gap:2px"></div>
-        </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--borde-fuerte);flex-shrink:0">
-          <button class="btn btn-sec" id="perm-cancelar">Cancelar</button>
-          <button class="btn btn-ok" id="perm-guardar">Guardar permisos</button>
+    <!-- Sucursales y Depósitos — card unificada con sub-tabs -->
+    <div class="card" id="card-suc-deps">
+      <div class="card-header">
+        <h3>Sucursales y Depósitos</h3>
+        <div class="suc-tabs" id="suc-tabs">
+          <button class="suc-tab-add" id="btn-nueva-sucursal" title="Agregar sucursal">+</button>
         </div>
       </div>
-    </div>
-    <style>
-      #perm-overlay .btn { border-radius:0 !important; box-shadow:none !important; }
-      .perm-item { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--color-bg-alt); }
-      .perm-item:last-child { border-bottom:none; }
-      .perm-item:hover { background:#FAFAF9; }
-      .perm-item input { margin-top:3px; flex-shrink:0; }
-      .perm-item span { display:flex; flex-direction:column; gap:1px; }
-      .perm-item b { font-size:13px; color:#111; font-weight:600; }
-      .perm-item small { font-size:11px; color:#9B9590; line-height:1.4; }
-    </style>
-
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-titulo">Seguridad</div>
-        <div class="card-body">
-          <div class="form-grid">
-            <div class="form-group full">
-              <label class="form-label">Clave de autorización para eliminar ventas</label>
-              <input class="form-input" type="password" id="cfg-clave_autorizacion" placeholder="(sin cambios)" autocomplete="new-password">
-              <div class="form-hint" id="cfg-clave-hint">Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.</div>
-            </div>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-ok" id="btn-guardar-clave">Guardar clave</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-titulo">Este equipo</div>
-        <div class="card-body">
-          <div class="form-hint" style="margin-bottom:14px">El nombre de este equipo aparece en el log de acciones para identificar desde qué PC se realizó cada operación. Se guarda solo en este navegador.</div>
-          <div class="form-grid">
-            <div class="form-group full">
-              <label class="form-label">Nombre del equipo</label>
-              <input class="form-input" id="cfg-device-name" placeholder="Ej: Caja 1, Administración…" maxlength="100">
-            </div>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-ok" id="btn-guardar-device">Guardar nombre</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-titulo">Backup de la base de datos</div>
-        <div class="card-body">
-          <div class="form-grid">
-            <div class="form-group full">
-              <label class="form-label">Carpeta de backups</label>
-              <input class="form-input" id="cfg-carpeta_backups" placeholder="C:\Logos\backups">
-            </div>
-            <div class="form-group full">
-              <label class="form-label">Carpeta secundaria (copia externa)</label>
-              <input class="form-input" id="cfg-carpeta_backups_secundaria" placeholder="Unidad de red o carpeta sincronizada a la nube (Drive, Dropbox)">
-            </div>
-          </div>
-          <div class="form-group full" style="margin-top:10px">
-            <label class="check-label">
-              <input type="checkbox" id="cfg-backup_auto_cierre">
-              Hacer backup automáticamente al cerrar el turno diario (Z)
-            </label>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-ok" id="btn-guardar-carpeta-backups">Guardar configuración</button>
-            <button class="btn btn-sec" id="btn-backup-ahora">Backup ahora</button>
-          </div>
-        </div>
-      </div>
+      <div id="suc-panel"><div class="suc-empty-state">Cargando…</div></div>
     </div>
 
-    <!-- ── Integraciones ── -->
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-titulo">MercadoPago</div>
-        <div class="card-body">
-          <div class="form-hint" style="margin-bottom:14px">Generá links de pago QR desde Ventas para que el cliente pague con MercadoPago.</div>
-          <div class="form-grid">
-            <div class="form-group full">
-              <label class="form-label">Access Token de producción</label>
-              <input class="form-input" type="password" id="cfg-mp_access_token" placeholder="APP_USR-..." autocomplete="new-password">
-            </div>
-          </div>
-          <div id="cfg-mp-estado" style="margin:8px 0 4px;font-size:13px"></div>
-          <div class="btn-row">
-            <button class="btn btn-ok" id="btn-guardar-mp">Guardar MercadoPago</button>
-          </div>
+  </div><!-- /col -->
+  <div class="col">
 
-          <!-- Webhook — pendiente hasta versión servidor -->
-          <div style="margin-top:18px;padding:14px;background:#f5f5f5;border-radius:8px;border:1.5px dashed #ccc;opacity:.6;pointer-events:none">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
-              <span style="font-size:12px;font-weight:700;background:#888;color:#fff;padding:2px 8px;border-radius:4px;letter-spacing:.5px">PRÓXIMAMENTE</span>
-              <span style="font-size:13px;font-weight:600;color:#555">Confirmación automática de pagos (Webhook)</span>
+      <div class="card">
+        <div class="card-titulo">Cajas</div>
+        <div class="card-body">
+          <div class="form-hint" style="margin-bottom:14px">El tipo define quién puede usar cada caja: los usuarios "Admin" pueden usar cualquiera, los usuarios "User" solo las de tipo Venta.</div>
+          <div id="cajas-aviso-venta" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:var(--neo-r-sm);background:rgba(243,156,18,.12);color:var(--neo-warning);font-size:13px;font-weight:600">
+            ⚠ No hay ninguna caja de tipo Venta activa: los usuarios no administradores no van a poder iniciar sesión.
+          </div>
+          <div class="table-wrap">
+            <table class="cajas">
+              <thead><tr><th>Nombre</th><th style="width:130px">Tipo</th><th style="width:90px">Activa</th><th style="width:110px"></th></tr></thead>
+              <tbody id="cajas-tbody"></tbody>
+            </table>
+          </div>
+          <div class="fila-nueva">
+            <input type="text" id="caja-nueva-nombre" class="form-input" placeholder="Nombre de la nueva caja">
+            <select class="form-select" id="caja-nueva-tipo" style="flex:0 0 130px">
+              <option value="venta">Venta</option>
+              <option value="compra">Compra</option>
+            </select>
+            <button class="btn btn-sec" id="btn-caja-agregar">Agregar caja</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Logo</div>
+        <div class="card-body">
+          <div class="logo-row">
+            <div class="logo-preview" id="logo-preview">
+              <img src="/Logos/logo_background.png?t=0" id="logo-preview-img" alt="">
             </div>
-            <div style="font-size:12px;color:#777;margin-bottom:10px">Cuando el sistema esté en un servidor con URL pública, MercadoPago podrá notificar automáticamente cada pago aprobado y registrarlo en caja sin intervención del cajero.</div>
+            <div>
+              <input type="file" id="logo-file" accept="image/png,image/jpeg,image/gif,image/webp">
+              <div class="form-hint" style="margin-top:8px">Se usa en los comprobantes PDF.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+  </div><!-- /col -->
+  </div><!-- /cols -->
+
+  </div>
+
+  <!-- ── Panel: Configuración avanzada ── -->
+  <div class="panel" id="panel-avanzado">
+
+    <!-- ── Sección 1: Configuración ── -->
+    <div class="avz-seccion">Configuración</div>
+    <div class="cols cols-avz">
+      <div class="col">
+        <div class="card">
+          <div class="card-titulo">Seguridad</div>
+          <div class="card-body">
             <div class="form-grid">
               <div class="form-group full">
-                <label class="form-label" style="color:#999">Webhook Secret</label>
-                <input class="form-input" type="password" id="cfg-mp_webhook_secret" placeholder="Disponible con servidor público" disabled>
-              </div>
-              <div class="form-group full">
-                <label class="form-label" style="color:#999">URL del webhook</label>
-                <input class="form-input" id="cfg-mp_webhook_url" readonly disabled placeholder="—" style="font-size:12px">
+                <label class="form-label">Clave de autorización para eliminar ventas</label>
+                <input class="form-input" type="password" id="cfg-clave_autorizacion" placeholder="(sin cambios)" autocomplete="new-password">
+                <div class="form-hint" id="cfg-clave-hint">Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.</div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="card-titulo">WhatsApp Business</div>
-        <div class="card-body">
-          <div class="form-hint" style="margin-bottom:14px">Enviá comprobantes PDF al cliente directamente desde Ventas. Requiere cuenta Meta Business con número verificado y plantilla aprobada.</div>
-          <div class="form-grid">
-            <div class="form-group full">
-              <label class="form-label">Phone Number ID</label>
-              <input class="form-input" id="cfg-wa_phone_id" placeholder="123456789012345">
+        <div class="card">
+          <div class="card-titulo">Este equipo</div>
+          <div class="card-body">
+            <div class="form-hint" style="margin-bottom:14px">El nombre de este equipo aparece en el log de acciones para identificar desde qué PC se realizó cada operación. Se guarda solo en este navegador.</div>
+            <div class="form-grid">
+              <div class="form-group full">
+                <label class="form-label">Nombre del equipo</label>
+                <input class="form-input" id="cfg-device-name" placeholder="Ej: Caja 1, Administración…" maxlength="100">
+              </div>
             </div>
-            <div class="form-group full">
-              <label class="form-label">Access Token permanente</label>
-              <input class="form-input" type="password" id="cfg-wa_token" placeholder="EAAxxxxx..." autocomplete="new-password">
-            </div>
-            <div class="form-group full">
-              <label class="form-label">Nombre de la plantilla aprobada</label>
-              <input class="form-input" id="cfg-wa_template_name" placeholder="envio_comprobante">
-              <div class="form-hint">La plantilla debe tener un header de tipo documento (PDF) y 4 variables en el cuerpo: nombre, tipo comprobante, número y total.</div>
+            <div class="btn-row">
+              <button class="btn btn-ok" id="btn-guardar-device">Guardar nombre</button>
             </div>
           </div>
-          <div id="cfg-wa-estado" style="margin:8px 0 4px;font-size:13px"></div>
-          <div class="btn-row">
-            <button class="btn btn-ok" id="btn-guardar-wa">Guardar WhatsApp</button>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-titulo">Impresión</div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group full">
+                <label class="form-label">Impresora por defecto</label>
+                <select class="form-select" id="cfg-impresora_nombre">
+                  <option value="">Cargando impresoras…</option>
+                </select>
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Carpeta donde guardar copia de cada comprobante</label>
+                <input class="form-input" id="cfg-carpeta_comprobantes" placeholder="C:\Logos\comprobantes">
+                <div class="form-hint">Ruta en este servidor. Se guarda una copia automática de cada comprobante generado.</div>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-sec" id="btn-probar-impresion">Probar impresión</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-titulo">Backup de la base de datos</div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group full">
+                <label class="form-label">Carpeta de backups</label>
+                <input class="form-input" id="cfg-carpeta_backups" placeholder="C:\Logos\backups">
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Carpeta secundaria (copia externa)</label>
+                <input class="form-input" id="cfg-carpeta_backups_secundaria" placeholder="Unidad de red o carpeta sincronizada a la nube (Drive, Dropbox)">
+              </div>
+            </div>
+            <div class="form-group full" style="margin-top:10px">
+              <label class="check-label">
+                <input type="checkbox" id="cfg-backup_auto_cierre">
+                Hacer backup automáticamente al cerrar el turno diario (Z)
+              </label>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-sec" id="btn-backup-ahora">Backup ahora</button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- ── Sección 2: Integraciones ── -->
+    <div class="avz-seccion">Integraciones</div>
+    <div class="cols cols-3">
+      <div class="col">
+        <div class="card">
+          <div class="card-titulo">MercadoPago</div>
+          <div class="card-body">
+            <div class="form-hint" style="margin-bottom:14px">Generá links de pago QR desde Ventas para que el cliente pague con MercadoPago.</div>
+            <div class="form-grid">
+              <div class="form-group full">
+                <label class="form-label">Access Token de producción</label>
+                <input class="form-input" type="password" id="cfg-mp_access_token" placeholder="APP_USR-..." autocomplete="new-password">
+              </div>
+            </div>
+            <div id="cfg-mp-estado" style="margin:8px 0 4px;font-size:13px"></div>
+            <div class="btn-row">
+              <button class="btn btn-ok" id="btn-guardar-mp">Guardar MercadoPago</button>
+            </div>
+            <div style="margin-top:18px;padding:14px;background:#f5f5f5;border-radius:8px;border:1.5px dashed #ccc;opacity:.6;pointer-events:none">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                <span style="font-size:12px;font-weight:700;background:#888;color:#fff;padding:2px 8px;border-radius:4px;letter-spacing:.5px">PRÓXIMAMENTE</span>
+                <span style="font-size:13px;font-weight:600;color:#555">Confirmación automática de pagos (Webhook)</span>
+              </div>
+              <div style="font-size:12px;color:#777;margin-bottom:10px">Cuando el sistema esté en un servidor con URL pública, MercadoPago podrá notificar automáticamente cada pago aprobado y registrarlo en caja sin intervención del cajero.</div>
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label class="form-label" style="color:#999">Webhook Secret</label>
+                  <input class="form-input" type="password" id="cfg-mp_webhook_secret" placeholder="Disponible con servidor público" disabled>
+                </div>
+                <div class="form-group full">
+                  <label class="form-label" style="color:#999">URL del webhook</label>
+                  <input class="form-input" id="cfg-mp_webhook_url" readonly disabled placeholder="—" style="font-size:12px">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-titulo">WhatsApp Business</div>
+          <div class="card-body">
+            <div class="form-hint" style="margin-bottom:14px">Enviá comprobantes PDF al cliente directamente desde Ventas. Requiere cuenta Meta Business con número verificado y plantilla aprobada.</div>
+            <div class="form-grid">
+              <div class="form-group full">
+                <label class="form-label">Phone Number ID</label>
+                <input class="form-input" id="cfg-wa_phone_id" placeholder="123456789012345">
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Access Token permanente</label>
+                <input class="form-input" type="password" id="cfg-wa_token" placeholder="EAAxxxxx..." autocomplete="new-password">
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Nombre de la plantilla aprobada</label>
+                <input class="form-input" id="cfg-wa_template_name" placeholder="envio_comprobante">
+                <div class="form-hint">La plantilla debe tener un header de tipo documento (PDF) y 4 variables en el cuerpo: nombre, tipo comprobante, número y total.</div>
+              </div>
+            </div>
+            <div id="cfg-wa-estado" style="margin:8px 0 4px;font-size:13px"></div>
+            <div class="btn-row">
+              <button class="btn btn-ok" id="btn-guardar-wa">Guardar WhatsApp</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card">
+          <div class="card-titulo">Email SMTP</div>
+          <div class="card-body">
+            <div class="form-hint" style="margin-bottom:14px">Enviá comprobantes PDF por mail directamente desde Ventas. Funciona en el sistema de escritorio sin depender de ningún cliente de correo instalado. Para Gmail necesitás activar verificación en dos pasos y generar una <em>App Password</em> de 16 caracteres.</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Servidor SMTP</label>
+                <input class="form-input" id="cfg-smtp_host" placeholder="smtp.gmail.com">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Puerto</label>
+                <input class="form-input" id="cfg-smtp_puerto" type="number" value="587" placeholder="587">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Seguridad</label>
+                <select class="form-input" id="cfg-smtp_seguridad">
+                  <option value="tls">TLS (recomendado · puerto 587)</option>
+                  <option value="ssl">SSL (puerto 465)</option>
+                  <option value="none">Sin cifrado</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Usuario SMTP</label>
+                <input class="form-input" id="cfg-smtp_usuario" placeholder="ventas@miempresa.com" autocomplete="off">
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Contraseña / App Password</label>
+                <input class="form-input" id="cfg-smtp_clave" type="password" placeholder="Dejar vacío para no cambiar" autocomplete="new-password">
+                <div class="form-hint">Para Gmail: generá una App Password en myaccount.google.com/apppasswords (requiere 2FA activo).</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Nombre del remitente</label>
+                <input class="form-input" id="cfg-smtp_de_nombre" placeholder="Ferretería López">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Email remitente (From)</label>
+                <input class="form-input" id="cfg-smtp_de_email" type="email" placeholder="ventas@ferreteria.com">
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Reply-To (opcional)</label>
+                <input class="form-input" id="cfg-smtp_reply_to" type="email" placeholder="Dirección a donde responden los clientes, si es distinta al remitente">
+              </div>
+            </div>
+            <div id="cfg-smtp-estado" style="margin:8px 0 4px;font-size:13px"></div>
+            <div class="btn-row" style="gap:8px">
+              <button class="btn btn-ok" id="btn-guardar-smtp">Guardar Email</button>
+              <button class="btn btn-sec" id="btn-probar-smtp">Probar conexión</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Sección 3: Zona de peligro ── -->
+    <div class="avz-seccion avz-seccion-danger">Zona de peligro</div>
     <div class="card danger-card">
-      <div class="card-titulo">Zona de peligro</div>
       <div class="card-body">
         <div class="form-hint" style="margin-bottom:16px">
           Restablecer de fábrica borra <b>todos</b> los datos operativos (productos, clientes, ventas,
@@ -685,75 +808,47 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
           </div>
         </div>
         <div class="btn-row">
-          <button class="btn" id="btn-reset-fabrica" disabled>
-            Restablecer de fábrica
-          </button>
+          <button class="btn" id="btn-reset-fabrica" disabled>Restablecer de fábrica</button>
         </div>
       </div>
     </div>
 
   </div>
 
-  <!-- ── Panel: Sucursales y Depósitos ── -->
-  <div class="panel" id="panel-sucursales">
-
-    <!-- Bloque 1: Sucursales -->
-    <div class="card">
-      <div class="card-header">
-        <h3>Sucursales</h3>
-        <button class="btn-accion" id="btn-nueva-sucursal">+ Nueva sucursal</button>
-      </div>
-      <table class="tabla" id="tabla-sucursales">
-        <thead><tr><th>#</th><th>Nombre</th><th>Domicilio</th><th>Teléfono</th><th>P. Venta</th><th>Activa</th><th></th></tr></thead>
-        <tbody id="body-sucursales"><tr><td colspan="7" class="empty">Cargando…</td></tr></tbody>
-      </table>
-    </div>
-
-    <!-- Bloque 2: Depósitos (accordion por sucursal) -->
-    <div class="card" id="card-depositos" style="display:none;">
-      <div class="card-header">
-        <h3 id="dep-titulo">Depósitos</h3>
-        <button class="btn-accion" id="btn-nuevo-deposito">+ Nuevo depósito</button>
-      </div>
-      <table class="tabla" id="tabla-depositos">
-        <thead><tr><th>#</th><th>Nombre</th><th>Descripción</th><th>Principal</th><th>Activo</th><th></th></tr></thead>
-        <tbody id="body-depositos"><tr><td colspan="6" class="empty">Seleccioná una sucursal</td></tr></tbody>
-      </table>
-    </div>
-
-    <!-- Bloque 3: Usuarios → sucursales -->
-    <div class="card">
-      <div class="card-header"><h3>Acceso de usuarios por sucursal</h3></div>
-      <table class="tabla" id="tabla-usuarios-suc">
-        <thead><tr><th>Usuario</th><th>Rol</th><th>Sucursales permitidas</th><th></th></tr></thead>
-        <tbody id="body-usuarios-suc"><tr><td colspan="4" class="empty">Cargando…</td></tr></tbody>
-      </table>
-    </div>
-
-  </div>
-
 </div>
 </div>
 
-<!-- Modal: Sucursal -->
-<div class="modal-overlay" id="modal-sucursal" style="display:none;">
-  <div class="modal" style="max-width:480px;">
-    <div class="modal-header"><h3 id="ms-titulo">Nueva sucursal</h3><button class="modal-close" id="ms-cerrar">✕</button></div>
-    <div class="modal-body">
-      <div class="form-group"><label>Nombre *</label><input id="ms-nombre" type="text" class="form-input" placeholder="Ej: Sucursal Central"></div>
-      <div class="form-group"><label>Nombre fantasia</label><input id="ms-fantasia" type="text" class="form-input"></div>
-      <div class="form-group"><label>Domicilio</label><input id="ms-domicilio" type="text" class="form-input"></div>
-      <div class="form-group"><label>Teléfono</label><input id="ms-telefono" type="text" class="form-input"></div>
-      <div class="form-group"><label>Email</label><input id="ms-email" type="email" class="form-input"></div>
-      <div class="form-group"><label>Punto de venta AFIP (override)</label><input id="ms-pto-venta" type="number" class="form-input" placeholder="Dejar vacío para usar el global"></div>
-      <div class="form-group form-check"><label><input id="ms-activo" type="checkbox" checked> Activa</label></div>
+<!-- ═══ Modal de permisos granulares (estilo plano) ═══ -->
+<div id="perm-overlay" style="display:none;position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+  <div style="background:#fff;border:1px solid var(--borde-fuerte);width:min(94vw,560px);max-height:88vh;display:flex;flex-direction:column">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--borde-fuerte);background:var(--color-bg-alt);flex-shrink:0">
+      <h3 id="perm-titulo" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#9B9590;margin:0">Permisos</h3>
+      <button id="perm-cerrar" style="background:none;border:none;cursor:pointer;color:#9B9590;font-size:16px;line-height:1;padding:2px 6px">✕</button>
     </div>
-    <div class="modal-footer">
-      <button class="btn-sec" id="ms-cancelar">Cancelar</button>
-      <button class="btn-accion" id="ms-guardar">Guardar</button>
+    <div style="flex:1;overflow-y:auto;padding:16px 20px">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-sec" id="perm-tpl-vendedor" style="font-size:12px">Plantilla Vendedor</button>
+        <button class="btn btn-sec" id="perm-tpl-encargado" style="font-size:12px">Plantilla Encargado</button>
+      </div>
+      <div id="perm-checks" style="display:flex;flex-direction:column;gap:2px"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid var(--borde-fuerte);flex-shrink:0">
+      <button class="btn btn-sec" id="perm-cancelar">Cancelar</button>
+      <button class="btn btn-ok" id="perm-guardar">Guardar permisos</button>
     </div>
   </div>
 </div>
+<div id="suc-floating" class="suc-menu" style="display:none"></div>
+<style>
+  #perm-overlay .btn { border-radius:0 !important; box-shadow:none !important; }
+  .perm-item { display:flex; gap:10px; align-items:flex-start; padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--color-bg-alt); }
+  .perm-item:last-child { border-bottom:none; }
+  .perm-item:hover { background:#FAFAF9; }
+  .perm-item input { margin-top:3px; flex-shrink:0; }
+  .perm-item span { display:flex; flex-direction:column; gap:1px; }
+  .perm-item b { font-size:13px; color:#111; font-weight:600; }
+  .perm-item small { font-size:11px; color:#9B9590; line-height:1.4; }
+</style>
 
 <!-- Modal: Depósito -->
 <div class="modal-overlay" id="modal-deposito" style="display:none;">
@@ -770,6 +865,8 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
     </div>
   </div>
 </div>
+
+<button class="btn btn-ok" id="guardar-flotante">Guardar cambios</button>
 
 <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
@@ -792,12 +889,6 @@ function esc(s) {
     ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 }
 
-function actualizarFecha() {
-  const f = $('fecha-hora');
-  if (f) f.textContent = new Date().toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' });
-}
-actualizarFecha();
-setInterval(actualizarFecha, 30000);
 
 // ── Tabs ─────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -853,6 +944,7 @@ async function cargarConfig() {
   const waEst = $('cfg-wa-estado');
   waEst.textContent  = configActual.wa_configurado ? '✓ WhatsApp configurado' : 'Sin configurar';
   waEst.style.color  = configActual.wa_configurado ? 'var(--neo-ok)' : '#888';
+  cargarSmtpUI(configActual);
 }
 
 function renderAfipEstado(cfg) {
@@ -923,16 +1015,58 @@ async function guardarConfig() {
       ? 'Clave configurada. '
       : 'Todavía no hay clave configurada — los usuarios no Admin podrán eliminar libremente. ')
       + 'Los usuarios sin rol Admin deberán ingresar esta clave para eliminar remitos/presupuestos/facturas en Ventas.';
+    limpiarCambios();
     toast('Configuración guardada', 'ok');
   } catch {
     toast('Error de conexión', 'err');
   }
 }
 
-$('btn-guardar').addEventListener('click', guardarConfig);
-$('btn-guardar-carpeta-backups').addEventListener('click', guardarConfig);
-$('btn-guardar-clave').addEventListener('click', guardarConfig);
-$('btn-guardar-ventas').addEventListener('click', guardarConfig);
+$('guardar-flotante').addEventListener('click', guardarConfig);
+
+// ── Cambios sin guardar: botón flotante + aviso al salir ─────
+// Solo los campos que persiste guardarConfig() (recolectarConfig). Los que
+// tienen guardado propio (cajas, usuarios, posnet, tokens MP/WA, certificado,
+// logo, sucursales, nombre de equipo) no marcan el estado sucio.
+const CAMPOS_CONFIG = new Set([
+  'cfg-razon_social', 'cfg-cuit', 'cfg-condicion_iva', 'cfg-domicilio', 'cfg-iibb',
+  'cfg-telefono', 'cfg-website', 'cfg-punto_venta', 'cfg-iva_porcentaje',
+  'cfg-impresora_nombre', 'cfg-carpeta_comprobantes', 'cfg-carpeta_backups',
+  'cfg-carpeta_backups_secundaria', 'cfg-backup_auto_cierre', 'cfg-ventas_sin_stock',
+  'cfg-clave_autorizacion', 'cfg-wa_phone_id', 'cfg-wa_template_name',
+]);
+let hayCambios = false;
+
+function esCampoConfig(el) {
+  return el && el.id && (CAMPOS_CONFIG.has(el.id) || el.id.startsWith('tipo-'));
+}
+function marcarCambio()   { hayCambios = true;  $('guardar-flotante').classList.add('visible'); }
+function limpiarCambios() { hayCambios = false; $('guardar-flotante').classList.remove('visible'); }
+
+document.addEventListener('input',  e => { if (esCampoConfig(e.target)) marcarCambio(); });
+document.addEventListener('change', e => { if (esCampoConfig(e.target)) marcarCambio(); });
+
+// Links que salen de la página (el menú de navegación): confirmación propia,
+// porque en Electron el diálogo nativo de beforeunload no se muestra.
+// Las pestañas internas son <button>, así que nunca pasan por acá.
+document.addEventListener('click', (e) => {
+  if (!hayCambios) return;
+  const a = e.target.closest('a[href]');
+  if (!a || a.target === '_blank' || a.getAttribute('href').startsWith('#')) return;
+  e.preventDefault();
+  confirmarModal('Hay cambios sin guardar en la configuración. ¿Salir igualmente?', {
+    titulo: 'Cambios sin guardar', confirmLabel: 'Salir sin guardar', danger: true,
+  }).then(ok => {
+    if (ok) { hayCambios = false; location.href = a.href; }
+  });
+});
+
+// Respaldo para recarga/cierre en navegador común
+window.addEventListener('beforeunload', (e) => {
+  if (!hayCambios) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
 
 // ── MercadoPago ───────────────────────────────────────────────
 $('btn-guardar-mp').addEventListener('click', async () => {
@@ -956,6 +1090,7 @@ $('btn-guardar-mp').addEventListener('click', async () => {
     const est = $('cfg-mp-estado');
     est.textContent = data.mp_configurado ? '✓ MercadoPago configurado' : 'Sin configurar';
     est.style.color = data.mp_configurado ? 'var(--neo-ok)' : '#888';
+    limpiarCambios();
     toast('MercadoPago guardado', 'ok');
   } catch { toast('Error de conexión', 'err'); }
   finally { btn.disabled = false; btn.textContent = 'Guardar MercadoPago'; }
@@ -981,9 +1116,63 @@ $('btn-guardar-wa').addEventListener('click', async () => {
     const est = $('cfg-wa-estado');
     est.textContent = data.wa_configurado ? '✓ WhatsApp configurado' : 'Sin configurar';
     est.style.color = data.wa_configurado ? 'var(--neo-ok)' : '#888';
+    limpiarCambios();
     toast('WhatsApp guardado', 'ok');
   } catch { toast('Error de conexión', 'err'); }
   finally { btn.disabled = false; btn.textContent = 'Guardar WhatsApp'; }
+});
+
+// ── Email SMTP ───────────────────────────────────────────────
+function cargarSmtpUI(cfg) {
+  $('cfg-smtp_host').value      = cfg.smtp_host      || '';
+  $('cfg-smtp_puerto').value    = cfg.smtp_puerto     || 587;
+  $('cfg-smtp_seguridad').value = cfg.smtp_seguridad  || 'tls';
+  $('cfg-smtp_usuario').value   = cfg.smtp_usuario    || '';
+  $('cfg-smtp_de_nombre').value = cfg.smtp_de_nombre  || '';
+  $('cfg-smtp_de_email').value  = cfg.smtp_de_email   || '';
+  $('cfg-smtp_reply_to').value  = cfg.smtp_reply_to   || '';
+  const est = $('cfg-smtp-estado');
+  est.textContent = cfg.smtp_configurado ? '✓ Email configurado' : 'Sin configurar';
+  est.style.color = cfg.smtp_configurado ? 'var(--neo-ok)' : '#888';
+}
+
+$('btn-guardar-smtp').addEventListener('click', async () => {
+  const btn = $('btn-guardar-smtp');
+  btn.disabled = true; btn.textContent = 'Guardando...';
+  try {
+    const res = await apiFetch(`${API}/configuracion/smtp`, {
+      method: 'POST',
+      body: JSON.stringify({
+        smtp_host:       $('cfg-smtp_host').value.trim(),
+        smtp_puerto:     parseInt($('cfg-smtp_puerto').value) || 587,
+        smtp_seguridad:  $('cfg-smtp_seguridad').value,
+        smtp_usuario:    $('cfg-smtp_usuario').value.trim(),
+        smtp_clave:      $('cfg-smtp_clave').value,
+        smtp_de_nombre:  $('cfg-smtp_de_nombre').value.trim(),
+        smtp_de_email:   $('cfg-smtp_de_email').value.trim(),
+        smtp_reply_to:   $('cfg-smtp_reply_to').value.trim(),
+      }),
+    });
+    if (!res) return;
+    configActual = res;
+    $('cfg-smtp_clave').value = '';
+    cargarSmtpUI(res);
+    toast('Configuración de email guardada', 'ok');
+  } finally { btn.disabled = false; btn.textContent = 'Guardar Email'; }
+});
+
+$('btn-probar-smtp').addEventListener('click', async () => {
+  const destino = $('cfg-smtp_de_email').value.trim() || $('cfg-smtp_usuario').value.trim();
+  if (!destino) { toast('Completá el email remitente antes de probar', 'err'); return; }
+  const btn = $('btn-probar-smtp');
+  btn.disabled = true; btn.textContent = 'Probando...';
+  try {
+    const res = await apiFetch(`${API}/mail/probar`, {
+      method: 'POST',
+      body: JSON.stringify({ para: destino }),
+    });
+    if (res?.ok) toast(`Mail de prueba enviado a ${destino}`, 'ok');
+  } finally { btn.disabled = false; btn.textContent = 'Probar conexión'; }
 });
 
 // ── Nombre de equipo (localStorage) ──────────────────────────
@@ -1064,6 +1253,15 @@ async function cargarCajas() {
       <td class="btn-cell"><button class="btn-mini caja-guardar">Guardar</button> <button class="btn-mini danger caja-borrar">Borrar</button></td>
     </tr>
   `).join('') || '<tr><td colspan="4" style="color:var(--gris3)">Sin cajas todavía.</td></tr>';
+  actualizarAvisoVenta();
+}
+
+// Aviso si ninguna caja activa es de tipo Venta (los users no podrían loguearse).
+// Se lee del DOM para reflejar también los cambios guardados fila por fila.
+function actualizarAvisoVenta() {
+  const hayVenta = [...document.querySelectorAll('#cajas-tbody tr[data-id]')].some(tr =>
+    tr.querySelector('.caja-tipo').value === 'venta' && tr.querySelector('.caja-activa').checked);
+  $('cajas-aviso-venta').style.display = hayVenta ? 'none' : '';
 }
 
 $('cajas-tbody').addEventListener('click', async (e) => {
@@ -1083,6 +1281,7 @@ $('cajas-tbody').addEventListener('click', async (e) => {
     });
     if (!res.ok) { toast('Error al guardar la caja', 'err'); return; }
     toast('Caja guardada', 'ok');
+    actualizarAvisoVenta();
   }
 
   if (e.target.classList.contains('caja-borrar')) {
@@ -1158,15 +1357,29 @@ $('btn-posnet-guardar').addEventListener('click', async () => {
     configActual = d;
     posnetTerminales = Array.isArray(d.posnet_terminales) ? d.posnet_terminales : [];
     renderPosnetTabla();
+    limpiarCambios();
     toast('Terminales guardadas', 'ok');
   } catch { toast('Error de conexión', 'err'); }
 });
 
 // ── Usuarios ─────────────────────────────────────────────────
-function opcionesRol(actual) {
-  return ['user', 'admin'].map(r =>
-    `<option value="${r}" ${r === actual ? 'selected' : ''}>${r === 'user' ? 'User' : 'Admin'}</option>`
-  ).join('');
+// Perfil visible: 'Admin', o el nombre de la plantilla cuya matriz de
+// permisos coincide exactamente ('Vendedor'/'Encargado'), o 'Personalizado'
+// si fue afinada a mano. El rol real en la base sigue siendo user/admin.
+function perfilUsuario(u) {
+  if (u.rol === 'admin') return 'Admin';
+  const p = u.permisos || {};
+  const claves = PERMISOS_DEF.map(d => d[0]);
+  const coincide = tpl => claves.every(k => !!tpl[k] === !!p[k]);
+  if (coincide(PERM_TPL.vendedor))  return 'Vendedor';
+  if (coincide(PERM_TPL.encargado)) return 'Encargado';
+  return 'Personalizado';
+}
+function opcionesRol(u) {
+  // Para un admin, degradar con el select lo deja sin permisos (= Vendedor)
+  const etiquetaUser = u.rol === 'admin' ? 'Vendedor' : perfilUsuario(u);
+  return `<option value="user" ${u.rol === 'user' ? 'selected' : ''}>${etiquetaUser}</option>` +
+         `<option value="admin" ${u.rol === 'admin' ? 'selected' : ''}>Admin</option>`;
 }
 
 let usuariosCache = [];
@@ -1177,13 +1390,98 @@ async function cargarUsuarios() {
   $('usuarios-tbody').innerHTML = usuarios.map(u => `
     <tr data-id="${u.id}">
       <td><input type="text" value="${esc(u.nombre)}" class="usuario-nombre"></td>
-      <td><select class="form-select usuario-rol">${opcionesRol(u.rol)}</select></td>
+      <td><select class="form-select usuario-rol">${opcionesRol(u)}</select></td>
+      <td>${celdaSucursales(u)}</td>
       <td><input type="text" class="usuario-pin" placeholder="(sin cambios)" inputmode="numeric"></td>
       <td><label class="check-label"><input type="checkbox" class="usuario-activo" ${u.activo ? 'checked' : ''}></label></td>
       <td class="btn-cell">${u.rol === 'user' ? '<button class="btn-mini usuario-permisos">Permisos</button> ' : ''}<button class="btn-mini usuario-guardar">Guardar</button> <button class="btn-mini danger usuario-borrar">Borrar</button></td>
     </tr>
-  `).join('') || '<tr><td colspan="5" style="color:var(--gris3)">Sin usuarios todavía.</td></tr>';
+  `).join('') || '<tr><td colspan="6" style="color:var(--gris3)">Sin usuarios todavía.</td></tr>';
 }
+
+// ── Sucursales por usuario: desplegable con "Todas" o un subconjunto ─────────
+function resumenSucursales(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) return 'Todas';
+  if (ids.length === 1) {
+    const s = _sucursales.find(x => x.id === ids[0]);
+    return s ? s.nombre : '1 sucursal';
+  }
+  return ids.length + ' sucursales';
+}
+
+function celdaSucursales(u) {
+  if (u.rol === 'admin') return '<span class="badge ok">Todas</span>';
+  const ids = Array.isArray(u.sucursal_ids) ? u.sucursal_ids : null;
+  return `<button type="button" class="btn-mini suc-toggle">${esc(resumenSucursales(ids))} ▾</button>`;
+}
+
+async function guardarSucursalesUsuario(id, ids) {
+  const r = await fetch(`${API}/usuarios/${id}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sucursal_ids: ids }),
+  });
+  if (!r.ok) { toast('Error al actualizar el acceso', 'err'); cargarUsuarios(); return; }
+  const u = usuariosCache.find(x => String(x.id) === String(id));
+  if (u) u.sucursal_ids = ids;
+  toast('Acceso actualizado', 'ok');
+}
+
+// Desplegable de sucursales: un único menú flotante en <body>
+// para evitar que transformaciones de ancestros rompan position:fixed.
+let _sucActiveToggle = null;
+let _sucActiveUid    = null;
+
+function abrirSucFloating(toggle) {
+  _sucActiveToggle = toggle;
+  _sucActiveUid    = toggle.closest('tr').dataset.id;
+  const u   = usuariosCache.find(x => String(x.id) === String(_sucActiveUid));
+  const ids = u && Array.isArray(u.sucursal_ids) ? u.sucursal_ids : null;
+  const menu = $('suc-floating');
+  menu.innerHTML =
+    `<label><input type="checkbox" class="suc-todas" ${ids === null ? 'checked' : ''}> Todas</label>` +
+    `<div class="suc-sep"></div>` +
+    _sucursales.map(s =>
+      `<label><input type="checkbox" class="suc-una" value="${s.id}" ` +
+      `${ids && ids.includes(s.id) ? 'checked' : ''} ${ids === null ? 'disabled' : ''}> ${esc(s.nombre)}</label>`
+    ).join('');
+  const r = toggle.getBoundingClientRect();
+  menu.style.top  = (r.bottom + 4) + 'px';
+  menu.style.left = r.left + 'px';
+  menu.style.display = '';
+}
+
+function ocultarSucFloating() {
+  $('suc-floating').style.display = 'none';
+  _sucActiveToggle = null;
+  _sucActiveUid    = null;
+}
+
+$('suc-floating').addEventListener('change', (e) => {
+  const menu  = $('suc-floating');
+  const todas = menu.querySelector('.suc-todas');
+  const unas  = [...menu.querySelectorAll('.suc-una')];
+  if (e.target === todas && !todas.checked) {
+    unas.forEach(c => { c.disabled = false; });
+    return;
+  }
+  const ids = todas.checked ? null : unas.filter(c => c.checked).map(c => parseInt(c.value));
+  if (ids !== null && ids.length === 0) return;
+  if (ids === null) unas.forEach(c => { c.checked = false; c.disabled = true; });
+  if (_sucActiveToggle) _sucActiveToggle.textContent = resumenSucursales(ids) + ' ▾';
+  guardarSucursalesUsuario(_sucActiveUid, ids);
+});
+
+document.addEventListener('click', (e) => {
+  const toggle = e.target.closest('.suc-toggle');
+  const menu   = $('suc-floating');
+  if (toggle) {
+    if (_sucActiveToggle === toggle) { ocultarSucFloating(); return; }
+    abrirSucFloating(toggle);
+    return;
+  }
+  if (!menu.contains(e.target)) ocultarSucFloating();
+});
+document.addEventListener('scroll', ocultarSucFloating, true);
 
 // ── Modal de permisos granulares ─────────────────────────────
 const PERMISOS_DEF = [
@@ -1197,6 +1495,7 @@ const PERMISOS_DEF = [
   ['anular',           'Anular sin clave',                       'Anular ventas y movimientos de caja sin clave de autorización'],
   ['log',              'Ver bitácora',                           'Registro de acciones de todos los usuarios'],
   ['cajas_todas',      'Operar todas las cajas',                 'Vender y filtrar reportes de cualquier caja, no solo la propia'],
+  ['gestionar_vendedores', 'Gestionar vendedores',               'Crear/editar vendedores y ver sus reportes y comisiones'],
 ];
 const PERM_TPL = {
   vendedor:  {},
@@ -1372,49 +1671,85 @@ $('btn-subir-cert').addEventListener('click', async () => {
 });
 
 // ── Init ─────────────────────────────────────────────────────
+// (usuarios se renderiza desde cargarSucursales, que necesita cargarse antes)
 (async () => {
   await cargarConfig();
   await cargarImpresoras();
   await cargarCajas();
-  await cargarUsuarios();
 })();
 
-// ── Sucursales y Depósitos ─────────────────────────────────
+// ── Sucursales y Depósitos — card con sub-tabs ────────────
 let _sucursales  = [];
-let _sucActualId = null;
+let _sucActivaId = null; // id de la sucursal activa en los sub-tabs (null = nueva)
+let _sucActualId = null; // alias para el modal de depósito
 
-async function cargarSucursales() {
-  const data = await apiFetch(`${API}/sucursales?todas=1`);
-  _sucursales = data || [];
-  const tbody = document.getElementById('body-sucursales');
-  if (!_sucursales.length) {
-    tbody.innerHTML = '<tr><td colspan="7" class="empty">Sin sucursales</td></tr>';
-    return;
-  }
-  tbody.innerHTML = _sucursales.map(s => `
-    <tr>
-      <td>${s.id}</td>
-      <td><strong>${esc(s.nombre)}</strong>${s.nombre_fantasia ? '<br><small>'+esc(s.nombre_fantasia)+'</small>' : ''}</td>
-      <td>${esc(s.domicilio||'—')}</td>
-      <td>${esc(s.telefono||'—')}</td>
-      <td>${s.punto_venta||'<em>Global</em>'}</td>
-      <td><span class="badge ${s.activo?'ok':'warn'}">${s.activo?'Sí':'No'}</span></td>
-      <td class="acciones">
-        <button class="btn-mini" onclick="editarSucursal(${s.id})">Editar</button>
-        <button class="btn-mini" onclick="verDepositos(${s.id}, '${esc(s.nombre).replace(/'/g,'&#39;')}')">Depósitos</button>
-      </td>
-    </tr>`).join('');
-  await cargarUsuariosSucursales();
+function renderSucTabs() {
+  const container = $('suc-tabs');
+  const tabs = _sucursales.map(s =>
+    `<button class="suc-tab${s.id === _sucActivaId ? ' activo' : ''}" data-id="${s.id}">${esc(s.nombre)}</button>`
+  ).join('');
+  const nueva = _sucActivaId === null
+    ? `<button class="suc-tab activo">Nueva sucursal</button>` : '';
+  container.innerHTML = tabs + nueva +
+    `<button class="suc-tab-add" id="btn-nueva-sucursal" title="Agregar sucursal">+</button>`;
+
+  container.querySelectorAll('.suc-tab[data-id]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _sucActivaId = parseInt(btn.dataset.id);
+      _sucActualId = _sucActivaId;
+      renderSucTabs();
+      renderSucPanel(_sucursales.find(s => s.id === _sucActivaId));
+    });
+  });
+  $('btn-nueva-sucursal').onclick = () => {
+    _sucActivaId = null;
+    _sucActualId = null;
+    renderSucTabs();
+    renderSucPanelNueva();
+  };
 }
 
-async function verDepositos(sucursal_id, nombre) {
-  _sucActualId = sucursal_id;
-  document.getElementById('dep-titulo').textContent = `Depósitos de "${nombre}"`;
-  document.getElementById('card-depositos').style.display = '';
+function camposSucForm(s) {
+  const v = k => esc(s?.[k] || '');
+  return `
+    <div class="suc-form-grid">
+      <div class="form-group"><label>Nombre *</label><input id="suc-f-nombre" type="text" class="form-input" value="${v('nombre')}" placeholder="Ej: Casa Central"></div>
+      <div class="form-group"><label>Nombre fantasía</label><input id="suc-f-fantasia" type="text" class="form-input" value="${v('nombre_fantasia')}"></div>
+      <div class="form-group"><label>Domicilio</label><input id="suc-f-domicilio" type="text" class="form-input" value="${v('domicilio')}"></div>
+      <div class="form-group"><label>Teléfono</label><input id="suc-f-telefono" type="text" class="form-input" value="${v('telefono')}"></div>
+      <div class="form-group"><label>Email</label><input id="suc-f-email" type="email" class="form-input" value="${v('email')}"></div>
+      <div class="form-group"><label>Punto de venta AFIP (override)</label><input id="suc-f-pto" type="number" class="form-input" value="${v('punto_venta')}" placeholder="Dejar vacío para el global"></div>
+    </div>
+    <div class="suc-form-footer">
+      <label><input id="suc-f-activo" type="checkbox" ${s === null || s.activo ? 'checked' : ''}> Activa</label>
+      <button class="btn-accion" onclick="guardarSucursal()">Guardar sucursal</button>
+    </div>`;
+}
+
+function renderSucPanel(s) {
+  _sucActualId = s.id;
+  $('suc-panel').innerHTML = camposSucForm(s) + `
+    <div class="suc-dep-header">
+      <span class="suc-dep-titulo">Depósitos</span>
+      <button class="btn-accion" onclick="abrirModalDeposito()">+ Nuevo depósito</button>
+    </div>
+    <table class="tabla">
+      <thead><tr><th>#</th><th>Nombre</th><th>Descripción</th><th>Principal</th><th>Activo</th><th></th></tr></thead>
+      <tbody id="body-deps"><tr><td colspan="6" class="empty">Cargando…</td></tr></tbody>
+    </table>`;
+  cargarDepositos(s.id);
+}
+
+function renderSucPanelNueva() {
+  $('suc-panel').innerHTML = camposSucForm(null);
+}
+
+async function cargarDepositos(sucursal_id) {
   const data = await apiFetch(`${API}/sucursales/depositos?sucursal_id=${sucursal_id}`);
-  const tbody = document.getElementById('body-depositos');
+  const tbody = $('body-deps');
+  if (!tbody) return;
   if (!data || !data.length) {
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">Sin depósitos</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">Sin depósitos — agregá el primero</td></tr>';
     return;
   }
   tbody.innerHTML = data.map(d => `
@@ -1422,7 +1757,9 @@ async function verDepositos(sucursal_id, nombre) {
       <td>${d.id}</td>
       <td>${esc(d.nombre)}</td>
       <td>${esc(d.descripcion||'—')}</td>
-      <td>${d.es_principal ? '<span class="badge ok">Principal</span>' : `<button class="btn-mini" onclick="setPrincipal(${d.id})">Establecer</button>`}</td>
+      <td>${d.es_principal
+        ? '<span class="badge ok">Principal</span>'
+        : `<button class="btn-mini" onclick="setPrincipal(${d.id})">Establecer</button>`}</td>
       <td><span class="badge ${d.activo?'ok':'warn'}">${d.activo?'Sí':'No'}</span></td>
       <td class="acciones"><button class="btn-mini" onclick="editarDeposito(${d.id},'${esc(d.nombre).replace(/'/g,'&#39;')}','${esc(d.descripcion||'').replace(/'/g,'&#39;')}',${d.activo?1:0})">Editar</button></td>
     </tr>`).join('');
@@ -1430,116 +1767,81 @@ async function verDepositos(sucursal_id, nombre) {
 
 async function setPrincipal(deposito_id) {
   await apiFetch(`${API}/sucursales/deposito/${deposito_id}`, { method:'PUT', body: JSON.stringify({ es_principal: true }) });
-  if (_sucActualId) verDepositos(_sucActualId, document.getElementById('dep-titulo').textContent.replace('Depósitos de "','').replace('"',''));
+  if (_sucActualId) cargarDepositos(_sucActualId);
   toast('Depósito principal actualizado');
 }
 
-// Modal Sucursal
-let _editSucId = null;
-function abrirModalSucursal(s = null) {
-  _editSucId = s ? s.id : null;
-  document.getElementById('ms-titulo').textContent = s ? 'Editar sucursal' : 'Nueva sucursal';
-  document.getElementById('ms-nombre').value    = s?.nombre    || '';
-  document.getElementById('ms-fantasia').value  = s?.nombre_fantasia || '';
-  document.getElementById('ms-domicilio').value = s?.domicilio || '';
-  document.getElementById('ms-telefono').value  = s?.telefono  || '';
-  document.getElementById('ms-email').value     = s?.email     || '';
-  document.getElementById('ms-pto-venta').value = s?.punto_venta || '';
-  document.getElementById('ms-activo').checked  = s ? !!s.activo : true;
-  document.getElementById('modal-sucursal').style.display = 'flex';
-}
-function editarSucursal(id) {
-  abrirModalSucursal(_sucursales.find(s => s.id === id));
-}
-document.getElementById('btn-nueva-sucursal').onclick = () => abrirModalSucursal();
-document.getElementById('ms-cerrar').onclick   = () => document.getElementById('modal-sucursal').style.display='none';
-document.getElementById('ms-cancelar').onclick = () => document.getElementById('modal-sucursal').style.display='none';
-document.getElementById('ms-guardar').onclick  = async () => {
+async function guardarSucursal() {
   const body = {
-    nombre:          document.getElementById('ms-nombre').value.trim(),
-    nombre_fantasia: document.getElementById('ms-fantasia').value.trim()  || null,
-    domicilio:       document.getElementById('ms-domicilio').value.trim() || null,
-    telefono:        document.getElementById('ms-telefono').value.trim()  || null,
-    email:           document.getElementById('ms-email').value.trim()     || null,
-    punto_venta:     document.getElementById('ms-pto-venta').value        || null,
-    activo:          document.getElementById('ms-activo').checked,
+    nombre:          $('suc-f-nombre').value.trim(),
+    nombre_fantasia: $('suc-f-fantasia').value.trim()  || null,
+    domicilio:       $('suc-f-domicilio').value.trim() || null,
+    telefono:        $('suc-f-telefono').value.trim()  || null,
+    email:           $('suc-f-email').value.trim()     || null,
+    punto_venta:     $('suc-f-pto').value              || null,
+    activo:          $('suc-f-activo').checked,
   };
-  if (!body.nombre) { toast('Nombre es requerido', 'err'); return; }
-  const url    = _editSucId ? `${API}/sucursales/${_editSucId}` : `${API}/sucursales`;
-  const method = _editSucId ? 'PUT' : 'POST';
+  if (!body.nombre) { toast('El nombre de la sucursal es requerido', 'err'); return; }
+  const url    = _sucActivaId ? `${API}/sucursales/${_sucActivaId}` : `${API}/sucursales`;
+  const method = _sucActivaId ? 'PUT' : 'POST';
   const r = await apiFetch(url, { method, body: JSON.stringify(body) });
-  if (r?.ok !== undefined || r?.id) {
-    document.getElementById('modal-sucursal').style.display = 'none';
-    await cargarSucursales();
-    toast('Sucursal guardada');
+  if (!r) return;
+  const nuevoId = _sucActivaId || r.id;
+  _sucActivaId = nuevoId;
+  _sucActualId = nuevoId;
+  await cargarSucursales();
+  toast('Sucursal guardada');
+}
+
+async function cargarSucursales() {
+  const data = await apiFetch(`${API}/sucursales?todas=1`);
+  _sucursales = data || [];
+  if (!_sucursales.find(s => s.id === _sucActivaId)) {
+    _sucActivaId = _sucursales[0]?.id ?? null;
+    _sucActualId = _sucActivaId;
   }
-};
+  renderSucTabs();
+  const activa = _sucursales.find(s => s.id === _sucActivaId);
+  if (activa) renderSucPanel(activa);
+  else renderSucPanelNueva();
+  await cargarUsuarios();
+}
 
 // Modal Depósito
 let _editDepId = null;
 function abrirModalDeposito(dep = null) {
   _editDepId = dep ? dep.id : null;
-  document.getElementById('md-titulo').textContent    = dep ? 'Editar depósito' : 'Nuevo depósito';
-  document.getElementById('md-nombre').value          = dep?.nombre || '';
-  document.getElementById('md-descripcion').value     = dep?.descripcion || '';
-  document.getElementById('md-activo').checked        = dep ? !!dep.activo : true;
-  document.getElementById('modal-deposito').style.display = 'flex';
+  $('md-titulo').textContent    = dep ? 'Editar depósito' : 'Nuevo depósito';
+  $('md-nombre').value          = dep?.nombre || '';
+  $('md-descripcion').value     = dep?.descripcion || '';
+  $('md-activo').checked        = dep ? !!dep.activo : true;
+  $('modal-deposito').style.display = 'flex';
 }
 function editarDeposito(id, nombre, descripcion, activo) {
   abrirModalDeposito({ id, nombre, descripcion, activo });
 }
-document.getElementById('btn-nuevo-deposito').onclick = () => abrirModalDeposito();
-document.getElementById('md-cerrar').onclick   = () => document.getElementById('modal-deposito').style.display='none';
-document.getElementById('md-cancelar').onclick = () => document.getElementById('modal-deposito').style.display='none';
-document.getElementById('md-guardar').onclick  = async () => {
+$('md-cerrar').onclick   = () => $('modal-deposito').style.display = 'none';
+$('md-cancelar').onclick = () => $('modal-deposito').style.display = 'none';
+$('md-guardar').onclick  = async () => {
   const body = {
-    nombre:       document.getElementById('md-nombre').value.trim(),
-    descripcion:  document.getElementById('md-descripcion').value.trim() || null,
-    activo:       document.getElementById('md-activo').checked,
-    sucursal_id:  _sucActualId,
+    nombre:      $('md-nombre').value.trim(),
+    descripcion: $('md-descripcion').value.trim() || null,
+    activo:      $('md-activo').checked,
+    sucursal_id: _sucActualId,
   };
-  if (!body.nombre) { toast('Nombre es requerido', 'err'); return; }
+  if (!body.nombre) { toast('El nombre del depósito es requerido', 'err'); return; }
   const url    = _editDepId ? `${API}/sucursales/deposito/${_editDepId}` : `${API}/sucursales/deposito`;
   const method = _editDepId ? 'PUT' : 'POST';
   await apiFetch(url, { method, body: JSON.stringify(body) });
-  document.getElementById('modal-deposito').style.display = 'none';
-  if (_sucActualId) verDepositos(_sucActualId, document.getElementById('dep-titulo').textContent.replace('Depósitos de "','').replace('"',''));
+  $('modal-deposito').style.display = 'none';
+  if (_sucActualId) cargarDepositos(_sucActualId);
   toast('Depósito guardado');
 };
 
-// Acceso de usuarios por sucursal
-async function cargarUsuariosSucursales() {
-  const data = await apiFetch(`${API}/usuarios/todos`);
-  const tbody = document.getElementById('body-usuarios-suc');
-  if (!data || !data.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty">Sin usuarios</td></tr>'; return; }
-  tbody.innerHTML = data.map(u => {
-    const ids      = Array.isArray(u.sucursal_ids) ? u.sucursal_ids : null;
-    const etiqueta = !ids || u.rol === 'admin'
-      ? '<span class="badge ok">Todas</span>'
-      : (ids.map(id => { const s = _sucursales.find(x => x.id === id); return s ? `<span class="badge">${esc(s.nombre)}<button class="btn-mini-x" onclick="quitarSucursalUsuario(${u.id},[${ids.filter(x=>x!==id).join(',')}])">×</button></span>` : ''; }).join('') || '<em>Sin acceso</em>');
-    const addBtn   = u.rol !== 'admin' ? `<select onchange="agregarSucursalUsuario(${u.id}, this.value, ${JSON.stringify(ids||[])})"><option value="">+ Agregar sucursal</option>${_sucursales.filter(s=>!ids||!ids.includes(s.id)).map(s=>`<option value="${s.id}">${esc(s.nombre)}</option>`).join('')}</select>` : '';
-    const resetBtn = u.rol !== 'admin' && ids ? `<button class="btn-mini" onclick="quitarSucursalUsuario(${u.id},[])">Dar acceso a todas</button>` : '';
-    return `<tr><td>${esc(u.nombre)}</td><td><span class="badge ${u.rol==='admin'?'ok':''}">${u.rol}</span></td><td>${etiqueta}</td><td class="acciones">${addBtn} ${resetBtn}</td></tr>`;
-  }).join('');
-}
-
-async function agregarSucursalUsuario(usuario_id, sucursal_id_str, actual) {
-  if (!sucursal_id_str) return;
-  const nueva = [...actual, parseInt(sucursal_id_str)];
-  await apiFetch(`${API}/usuarios/${usuario_id}`, { method:'PUT', body: JSON.stringify({ sucursal_ids: nueva }) });
-  await cargarSucursales();
-  toast('Acceso actualizado');
-}
-async function quitarSucursalUsuario(usuario_id, restantes) {
-  await apiFetch(`${API}/usuarios/${usuario_id}`, { method:'PUT', body: JSON.stringify({ sucursal_ids: restantes.length ? restantes : null }) });
-  await cargarSucursales();
-  toast('Acceso actualizado');
-}
-
-// Cargar sucursales al activar la pestaña
+cargarSucursales();
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    if (btn.dataset.tab === 'sucursales') cargarSucursales();
+    if (btn.dataset.tab === 'negocio') cargarSucursales();
   });
 });
 </script>

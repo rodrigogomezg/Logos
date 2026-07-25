@@ -111,6 +111,55 @@ try { localStorage.removeItem('logos_tema'); } catch(e) {}
   };
 
   var fetchOriginal = window.fetch;
+
+  // ── Detección de servidor caído ───────────────────────────────────────────
+  var _netFails = 0;
+  var _OV_ID    = 'logos-sin-servidor-ov';
+
+  function _mostrarSinServidor() {
+    if (document.getElementById(_OV_ID)) return;
+    var ov = document.createElement('div');
+    ov.id = _OV_ID;
+    ov.style.cssText = [
+      'position:fixed;inset:0;z-index:99999',
+      'background:#0f1117',
+      'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px',
+      'font-family:inherit',
+    ].join(';');
+    ov.innerHTML =
+      '<div style="font-size:40px">⚠️</div>' +
+      '<div style="font-size:17px;font-weight:700;color:#f87171">Servidor desconectado</div>' +
+      '<div style="font-size:13px;color:#9ca3af;text-align:center;max-width:380px;line-height:1.7">' +
+        'No se puede conectar al servidor.<br>' +
+        'Verificá que la PC servidor esté encendida y conectada a la red.' +
+      '</div>' +
+      '<button id="' + _OV_ID + '-btn" style="' +
+        'background:#4f8ef7;color:#fff;border:none;border-radius:8px;' +
+        'padding:11px 28px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit' +
+      '">Reintentar</button>';
+    function _pintar() {
+      document.body.appendChild(ov);
+      document.getElementById(_OV_ID + '-btn').addEventListener('click', function () {
+        var btn = document.getElementById(_OV_ID + '-btn');
+        btn.textContent = 'Conectando…';
+        btn.disabled = true;
+        fetchOriginal(window.API + '/instalacion/estado')
+          .then(function (r) {
+            if (r.status < 500) {
+              _netFails = 0;
+              var el = document.getElementById(_OV_ID);
+              if (el) el.remove();
+              location.reload();
+            } else { btn.textContent = 'Reintentar'; btn.disabled = false; }
+          })
+          .catch(function () { btn.textContent = 'Reintentar'; btn.disabled = false; });
+      });
+    }
+    if (document.body) _pintar();
+    else document.addEventListener('DOMContentLoaded', _pintar);
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   window.fetch = function (url, opciones) {
     opciones = opciones || {};
     var esApi = typeof url === 'string' && url.indexOf(window.APP_CONFIG.API_BASE) !== -1;
@@ -122,12 +171,16 @@ try { localStorage.removeItem('logos_tema'); } catch(e) {}
     var promesa = fetchOriginal.call(this, url, opciones);
     if (!esApi) return promesa;
     return promesa.then(function (r) {
-      // Sesión vencida o inválida: volver al login limpiando la sesión local
+      _netFails = 0; // servidor respondió: limpiar contador
       if (r.status === 401) {
         localStorage.removeItem('logos_sesion');
         location.href = window.APP_CONFIG.POS_BASE + '/login.html';
       }
       return r;
+    }).catch(function (err) {
+      // Error de red (no HTTP): el servidor no responde
+      if (++_netFails >= 2) _mostrarSinServidor();
+      throw err;
     });
   };
 
@@ -142,9 +195,13 @@ try { localStorage.removeItem('logos_tema'); } catch(e) {}
   document.addEventListener('DOMContentLoaded', function () {
     var elUsuario = document.getElementById('nav-usuario');
     function actualizarEtiquetaUsuario(nombreCaja) {
-      if (elUsuario) elUsuario.innerHTML = esc(sesion.nombre) + ' <span>· ' + esc(nombreCaja) + '</span>';
+      if (!elUsuario) return;
+      elUsuario.innerHTML = nombreCaja
+        ? esc(sesion.nombre) + ' <span>· ' + esc(nombreCaja) + '</span>'
+        : esc(sesion.nombre);
     }
-    actualizarEtiquetaUsuario(sesion.caja_nombre);
+    // Si el selector de cajas va a estar visible, la caja no se repite en el nombre.
+    actualizarEtiquetaUsuario(window.puede('cajas_todas') ? null : sesion.caja_nombre);
 
     var elConfig = document.getElementById('nav-config-link');
     if (elConfig && sesion.rol !== 'admin') elConfig.style.display = 'none';
@@ -178,7 +235,15 @@ try { localStorage.removeItem('logos_tema'); } catch(e) {}
     var elSucursalOp = document.getElementById('nav-sucursal-op');
     if (elSucursalOp) {
       function montarSelectorSucursal(suxList) {
-        if (!suxList || suxList.length <= 1) { elSucursalOp.remove(); return; }
+        if (!suxList || suxList.length === 0) { elSucursalOp.remove(); return; }
+        if (suxList.length === 1) {
+          var lbl = document.createElement('span');
+          lbl.className = 'nav-sucursal-label';
+          lbl.title = 'Sucursal en la que estás trabajando';
+          lbl.textContent = suxList[0].nombre;
+          elSucursalOp.parentNode.replaceChild(lbl, elSucursalOp);
+          return;
+        }
         // Actualizar sesión con datos frescos
         sesion.sucursales = suxList;
         try { localStorage.setItem('logos_sesion', JSON.stringify(sesion)); } catch (e) {}
@@ -215,10 +280,9 @@ try { localStorage.removeItem('logos_tema'); } catch(e) {}
         window.fetch(window.API + '/cajas').then(function (r) { return r.json(); }).then(function (cajas) {
           var activa = window.cajaOperativaId();
           elCajaOp.innerHTML = cajas.map(function (c) {
-            var etiqueta = c.id === sesion.caja_id ? c.nombre + ' (mi caja)' : c.nombre;
+            var etiqueta = c.nombre;
             return '<option value="' + Number(c.id) + '"' + (c.id === activa ? ' selected' : '') + '>' + esc(etiqueta) + '</option>';
           }).join('');
-          actualizarEtiquetaUsuario(elCajaOp.options[elCajaOp.selectedIndex].text.replace(' (mi caja)', ''));
         });
         elCajaOp.addEventListener('change', function () {
           if (Number(elCajaOp.value) === sesion.caja_id) {
@@ -226,7 +290,6 @@ try { localStorage.removeItem('logos_tema'); } catch(e) {}
           } else {
             sessionStorage.setItem('logos_caja_override', elCajaOp.value);
           }
-          actualizarEtiquetaUsuario(elCajaOp.options[elCajaOp.selectedIndex].text.replace(' (mi caja)', ''));
         });
       } else {
         elCajaOp.remove();
@@ -282,6 +345,15 @@ try { localStorage.removeItem('logos_tema'); } catch(e) {}
       document.getElementById('logos-device-input').addEventListener('keydown', function (e) {
         if (e.key === 'Enter') document.getElementById('logos-device-guardar').click();
       });
+    }
+
+    var elFecha = document.getElementById('fecha-hora');
+    if (elFecha) {
+      function _tickFecha() {
+        elFecha.textContent = new Date().toLocaleDateString('es-AR', { dateStyle: 'short' });
+      }
+      _tickFecha();
+      setInterval(_tickFecha, 60000);
     }
   });
 })();

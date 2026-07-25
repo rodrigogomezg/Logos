@@ -60,7 +60,7 @@
 .items-header {
   padding: 9px 14px; border-bottom: 1px solid var(--borde-fuerte);
   font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3);
-  display: grid; grid-template-columns: 24px 1fr 116px 100px 84px 32px; gap: 8px; align-items: center;
+  display: grid; grid-template-columns: 24px 1fr 90px 96px 108px 32px; gap: 8px; align-items: center;
   background: var(--neo-bg-deep);
 }
 .items-header .r { text-align: right; }
@@ -68,13 +68,13 @@
 .items-lista::-webkit-scrollbar { width: 5px; }
 .items-lista::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 3px; }
 .item-row {
-  display: grid; grid-template-columns: 24px 1fr 116px 100px 84px 32px; gap: 8px;
+  display: grid; grid-template-columns: 24px 1fr 90px 96px 108px 32px; gap: 8px;
   align-items: center; padding: 7px 14px; border-bottom: 1px solid var(--borde);
 }
 .item-row:hover { background: var(--color-bg-alt); }
 .item-row .nom { font-weight: 500; line-height: 1.3; min-width: 0; overflow-wrap: break-word; color: var(--neo-text); }
 .item-row .nom small { display: block; color: var(--neo-text-3); font-size: 11px; font-weight: 400; }
-.item-row .sub { text-align: right; font-weight: 600; color: var(--neo-text); }
+.item-row .sub { text-align: right; font-weight: 600; color: var(--neo-text); white-space: nowrap; }
 
 .cant-wrap { display: flex; align-items: center; gap: 2px; }
 .cant-btn {
@@ -236,10 +236,10 @@ label.envio-toggle {
 .btn-sec:hover { box-shadow: var(--neo-e3); }
 
 /* ── PAGO ── */
-.pago-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.pago-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 5px; }
 .pago-tile {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 5px; padding: 9px 4px 8px; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: center;
+  padding: 8px 2px; cursor: pointer; font-family: inherit;
   border: 1px solid var(--borde-fuerte);
   background: #fff; border-radius: var(--neo-r-sm); box-shadow: none;
   color: var(--neo-text-2); transition: border-color var(--neo-t-fast), color var(--neo-t-fast);
@@ -247,8 +247,13 @@ label.envio-toggle {
 }
 .pago-tile:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .pago-tile.activo { border-color: var(--color-primary); box-shadow: inset 0 0 0 1px var(--color-primary); color: var(--color-primary); }
-.pago-tile svg { width: 20px; height: 20px; flex-shrink: 0; }
-.pago-tile-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; line-height: 1.25; text-align: center; }
+.pago-tile svg { width: 16px; height: 16px; flex-shrink: 0; }
+.pago-tile-lbl { display: none; }
+.pos-cheque-wrap { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--borde); }
+.pos-cheque-wrap .pos-chq-titulo { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 6px; }
+.pos-chq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.pos-chq-grid input { font-size: 12px; width: 100%; box-sizing: border-box; padding: 5px 8px; border-radius: var(--neo-r-sm); }
+.pos-chq-lbl { font-size: 10px; color: var(--neo-text-3); margin-bottom: 2px; display: block; }
 .pago-mixto-footer { display: flex; justify-content: flex-end; margin-top: 7px; }
 .pago-mixto-link { background: none; border: none; cursor: pointer; padding: 0; font-size: 12px; font-weight: 600; color: var(--neo-accent); white-space: nowrap; text-decoration: underline; text-underline-offset: 2px; }
 .pago-mixto-link:hover { color: var(--neo-accent-h); }
@@ -842,7 +847,7 @@ label.envio-toggle {
 
     <!-- Pago -->
     <div class="card" style="border-top:3px solid var(--azul)">
-      <label>Forma de pago</label>
+      <label>Forma de pago — <span id="pago-lbl-sel" style="color:var(--color-primary)"></span></label>
       <select id="tipo-pago-sel" style="display:none">
         <option value="efectivo">Efectivo</option>
         <option value="transferencia">Transferencia</option>
@@ -852,6 +857,35 @@ label.envio-toggle {
         <option value="mercado_pago">Mercado Pago</option>
       </select>
       <div class="pago-grid" id="pago-simple"></div>
+      <div class="pos-cheque-wrap" id="pos-cheque-wrap" style="display:none">
+        <div class="pos-chq-titulo">Datos del cheque</div>
+        <div class="pos-chq-grid">
+          <div>
+            <span class="pos-chq-lbl">N° de cheque *</span>
+            <input type="text" id="pos-chq-numero" placeholder="00123456" autocomplete="off">
+          </div>
+          <div>
+            <span class="pos-chq-lbl">Banco *</span>
+            <input type="text" id="pos-chq-banco" placeholder="Ej: Galicia" autocomplete="off">
+          </div>
+          <div>
+            <span class="pos-chq-lbl">Librador</span>
+            <input type="text" id="pos-chq-librador" placeholder="Nombre del firmante" autocomplete="off">
+          </div>
+          <div>
+            <span class="pos-chq-lbl">CUIT</span>
+            <input type="text" id="pos-chq-cuit" placeholder="20-12345678-9" autocomplete="off">
+          </div>
+          <div>
+            <span class="pos-chq-lbl">Fecha de emisión</span>
+            <input type="date" id="pos-chq-emision">
+          </div>
+          <div>
+            <span class="pos-chq-lbl">Fecha de vencimiento *</span>
+            <input type="date" id="pos-chq-venc">
+          </div>
+        </div>
+      </div>
       <div class="pago-mixto-footer">
         <button class="pago-mixto-link" id="btn-pago-mixto">+ Pago mixto</button>
       </div>
@@ -917,9 +951,6 @@ label.envio-toggle {
       <span style="font-size:11px;font-weight:500;opacity:.75;font-family:monospace;background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px;margin-left:2px">F10</span>
     </button>
     <div id="cc-alerta" style="display:none;background:#fef2f2;border:1px solid #fecaca;padding:9px 12px;font-size:12px;line-height:1.55;color:#991b1b"></div>
-    <button class="btn btn-sec" id="btn-nueva">
-      <span>↺  Nueva venta</span>
-    </button>
 
     <!-- Última venta -->
     <div class="ultima-venta" id="ultima-venta" aria-label="Última venta confirmada">
@@ -1134,7 +1165,17 @@ const API = '/Logos/api';
 const CARRITO_ID = (() => {
   const k = 'logos_carrito_id';
   let id = sessionStorage.getItem(k);
-  if (!id) { id = crypto.randomUUID(); sessionStorage.setItem(k, id); }
+  if (!id) {
+    // crypto.randomUUID() requiere contexto seguro (HTTPS/localhost); usar
+    // getRandomValues como fallback para acceso por HTTP desde otra PC.
+    if (crypto.randomUUID) {
+      id = crypto.randomUUID();
+    } else {
+      id = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+        (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+    }
+    sessionStorage.setItem(k, id);
+  }
   return id;
 })();
 
@@ -1160,11 +1201,13 @@ const TIPOS_PAGO = [
 function renderPagoTiles() {
   const current = $('tipo-pago-sel').value;
   $('pago-simple').innerHTML = TIPOS_PAGO.map(t =>
-    `<button type="button" class="pago-tile${t.val === current ? ' activo' : ''}" data-val="${t.val}">
+    `<button type="button" class="pago-tile${t.val === current ? ' activo' : ''}" data-val="${t.val}" title="${t.lbl}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${t.icon}</svg>
-      <span class="pago-tile-lbl">${t.lbl}</span>
     </button>`
   ).join('');
+  const sel = TIPOS_PAGO.find(t => t.val === current);
+  const lblSel = document.getElementById('pago-lbl-sel');
+  if (lblSel && sel) lblSel.textContent = sel.lbl;
   $('pago-simple').querySelectorAll('.pago-tile').forEach(btn => {
     btn.addEventListener('click', () => {
       $('tipo-pago-sel').value = btn.dataset.val;
@@ -1172,6 +1215,7 @@ function renderPagoTiles() {
       actualizarBtnConfirmar();
     });
   });
+  $('pos-cheque-wrap').style.display = (current === 'cheque' && !esMixto) ? '' : 'none';
 }
 
 let esMixto       = false;
@@ -1273,6 +1317,7 @@ function confirmarPM() {
     return `${lbl}: <strong>${fmt(parseFloat(p.monto))}</strong>`;
   }).join('<br>');
   $('pago-simple').style.display = 'none';
+  $('pos-cheque-wrap').style.display = 'none';
   $('pago-mixto-resumen').style.display = '';
 }
 
@@ -1306,7 +1351,6 @@ const tItems        = $('t-items');
 const tUnid         = $('t-unid');
 const tMonto        = $('t-monto');
 const btnConfirmar  = $('btn-confirmar');
-const btnNueva      = $('btn-nueva');
 const toast         = $('toast');
 
 const overlay       = $('overlay');
@@ -1335,15 +1379,6 @@ function toast_(msg, tipo = 'ok') {
   toastTimer = setTimeout(() => toast.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
 }
 
-// ── Fecha ─────────────────────────────────────────────
-function actualizarFecha() {
-  const d = new Date();
-  $('fecha-hora').textContent =
-    d.toLocaleDateString('es-AR', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' })
-    + '  ' + d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-}
-actualizarFecha();
-setInterval(actualizarFecha, 30000);
 
 // ── Envío ─────────────────────────────────────────────
 function actualizarTotalConEnvio(subtotalProductos) {
@@ -2153,6 +2188,13 @@ function sincronizarReservas() {
 
 async function confirmarVenta() {
   if (!items.length || afipGuardActivo) return;
+
+  if (!esMixto && $('tipo-pago-sel').value === 'cheque') {
+    if (!$('pos-chq-numero').value.trim()) { toast_('Ingresá el número de cheque', 'err'); return; }
+    if (!$('pos-chq-banco').value.trim())  { toast_('Ingresá el banco del cheque', 'err'); return; }
+    if (!$('pos-chq-venc').value)          { toast_('Ingresá la fecha de vencimiento del cheque', 'err'); return; }
+  }
+
   btnConfirmar.disabled   = true;
   btnConfirmar.innerHTML  = '<span>Guardando...</span>';
 
@@ -2193,6 +2235,34 @@ async function confirmarVenta() {
     });
     const d = await r.json();
     if (!r.ok) { toast_(d.error ?? 'Error al guardar', 'err'); return; }
+
+    // Registrar cheque recibido (solo en ventas nuevas, no en ediciones)
+    if (!esModoEdicion && !esMixto && body.tipo_pago === 'cheque') {
+      try {
+        const rc = await fetch(`${API}/cheques`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tipo:              'recibido',
+            numero:            $('pos-chq-numero').value.trim(),
+            banco:             $('pos-chq-banco').value.trim(),
+            librador:          $('pos-chq-librador').value.trim() || null,
+            cuit:              $('pos-chq-cuit').value.trim()     || null,
+            monto:             d.total,
+            fecha_emision:     $('pos-chq-emision').value         || null,
+            fecha_vencimiento: $('pos-chq-venc').value,
+            venta_id:          d.id,
+            cliente_id:        clienteActual?.id ?? null,
+          }),
+        });
+        if (!rc.ok) {
+          const dc = await rc.json();
+          toast_(`Venta confirmada pero no se pudo registrar el cheque: ${dc.error ?? ''}`, 'err');
+        }
+      } catch {
+        toast_('Venta confirmada. No se pudo registrar el cheque (error de conexión)', 'err');
+      }
+    }
 
     const uvData = { id: d.id, tipo_comprobante: body.tipo_comprobante, numero: d.numero, total: d.total };
     const volverA = sessionStorage.getItem('logos_volver_tras_editar');
@@ -2259,6 +2329,9 @@ function nuevaVenta() {
   $('tipo-pago-sel').value = 'efectivo';
   $('pago-simple').style.display = '';
   $('pago-mixto-resumen').style.display = 'none';
+  $('pos-cheque-wrap').style.display = 'none';
+  ['pos-chq-numero','pos-chq-banco','pos-chq-librador','pos-chq-cuit','pos-chq-emision','pos-chq-venc']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   renderPagoTiles();
   $('observaciones').value = '';
   $('fecha-venta').value   = fechaHoy();
@@ -2276,7 +2349,6 @@ function nuevaVenta() {
   inputCodigo.focus();
 }
 
-btnNueva.addEventListener('click', nuevaVenta);
 
 // ── Fecha ──────────────────────────────────────────────
 $('fecha-venta').value = fechaHoy();

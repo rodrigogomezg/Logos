@@ -906,14 +906,6 @@ function toast_(msg, tipo = 'ok') {
   toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
 }
 
-function actualizarFecha() {
-  const d = new Date();
-  $('fecha-hora').textContent =
-    d.toLocaleDateString('es-AR', { weekday:'short', day:'2-digit', month:'2-digit', year:'numeric' })
-    + '  ' + d.toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
-}
-actualizarFecha();
-setInterval(actualizarFecha, 30000);
 
 // ── Búsqueda de clientes ────────────────────────────────────
 $('input-busq').addEventListener('input', () => {

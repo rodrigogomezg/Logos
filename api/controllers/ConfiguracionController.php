@@ -25,9 +25,10 @@ class ConfiguracionController {
         unset($config['afip_cert'], $config['afip_key']);
         $config['clave_autorizacion_configurada'] = !empty($config['clave_autorizacion_hash']);
         unset($config['clave_autorizacion_hash']);
-        $config['mp_configurado'] = !empty($config['mp_access_token']);
-        $config['wa_configurado'] = !empty($config['wa_phone_id']) && !empty($config['wa_token']);
-        unset($config['mp_access_token'], $config['mp_webhook_secret'], $config['wa_token']);
+        $config['mp_configurado']   = !empty($config['mp_access_token']);
+        $config['wa_configurado']   = !empty($config['wa_phone_id']) && !empty($config['wa_token']);
+        $config['smtp_configurado'] = !empty($config['smtp_host']) && !empty($config['smtp_de_email']) && !empty($config['smtp_clave']);
+        unset($config['mp_access_token'], $config['mp_webhook_secret'], $config['wa_token'], $config['smtp_clave']);
         // Decodificar columnas JSON
         if (isset($config['posnet_terminales']) && is_string($config['posnet_terminales'])) {
             $config['posnet_terminales'] = json_decode($config['posnet_terminales'], true) ?? [];
@@ -137,6 +138,47 @@ class ConfiguracionController {
             $claveHash,         // UPDATE COALESCE clave_autorizacion_hash
             $colorTema,         // UPDATE COALESCE color_tema
         ]);
+
+        Configuracion::invalidar();
+        json(200, $this->sanitizar(Configuracion::get()));
+    }
+
+    public function guardarSmtp(): void {
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+
+        $host      = trim($body['smtp_host']      ?? '');
+        $usuario   = trim($body['smtp_usuario']   ?? '');
+        $clave     = trim($body['smtp_clave']      ?? '');
+        $deEmail   = trim($body['smtp_de_email']  ?? '');
+        $deNombre  = trim($body['smtp_de_nombre'] ?? '');
+        $replyTo   = trim($body['smtp_reply_to']  ?? '') ?: null;
+        $puerto    = (int)($body['smtp_puerto']   ?? 587);
+        $seguridad = in_array($body['smtp_seguridad'] ?? '', ['tls','ssl','none'], true)
+                     ? $body['smtp_seguridad'] : 'tls';
+
+        if ($host === '' || $usuario === '' || $deEmail === '') {
+            json(400, ['error' => 'Servidor, usuario y email remitente son requeridos']);
+        }
+        if (!filter_var($deEmail, FILTER_VALIDATE_EMAIL)) {
+            json(400, ['error' => 'El email remitente no es válido']);
+        }
+
+        $db = DB::get();
+        $db->prepare("
+            INSERT INTO configuracion (id, smtp_host, smtp_puerto, smtp_seguridad, smtp_usuario,
+                smtp_clave, smtp_de_nombre, smtp_de_email, smtp_reply_to, actualizado_en)
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ON DUPLICATE KEY UPDATE
+                smtp_host       = VALUES(smtp_host),
+                smtp_puerto     = VALUES(smtp_puerto),
+                smtp_seguridad  = VALUES(smtp_seguridad),
+                smtp_usuario    = VALUES(smtp_usuario),
+                smtp_clave      = CASE WHEN VALUES(smtp_clave) != '' THEN VALUES(smtp_clave) ELSE smtp_clave END,
+                smtp_de_nombre  = VALUES(smtp_de_nombre),
+                smtp_de_email   = VALUES(smtp_de_email),
+                smtp_reply_to   = VALUES(smtp_reply_to),
+                actualizado_en  = NOW()
+        ")->execute([$host, $puerto, $seguridad, $usuario, $clave, $deNombre, $deEmail, $replyTo]);
 
         Configuracion::invalidar();
         json(200, $this->sanitizar(Configuracion::get()));

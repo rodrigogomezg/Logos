@@ -1,5 +1,6 @@
 'use strict';
 const { app, BrowserWindow, ipcMain, Menu, Tray, net, nativeImage } = require('electron');
+const { execFileSync } = require('child_process');
 const path = require('path');
 const os = require('os');
 
@@ -27,6 +28,51 @@ const serverManager = new ServerManager(RESOURCES, WWW_DIR, APP_DIR);
 let mainWindow   = null;
 let overlayWin   = null;
 let tray         = null;
+
+// ── Client health-check ───────────────────────────────────────────────────────
+let healthTimer = null;
+let healthFails = 0;
+
+function pingUrl(url) {
+  return new Promise(resolve => {
+    const timer = setTimeout(() => resolve(false), 4000);
+    try {
+      const req = net.request({ url, method: 'HEAD' });
+      req.on('response', r => { clearTimeout(timer); resolve(r.statusCode < 500); });
+      req.on('error',    () => { clearTimeout(timer); resolve(false); });
+      req.end();
+    } catch { clearTimeout(timer); resolve(false); }
+  });
+}
+
+function stopHealthCheck() {
+  if (healthTimer) { clearInterval(healthTimer); healthTimer = null; }
+  healthFails = 0;
+}
+
+function startHealthCheck(base, serverIp) {
+  stopHealthCheck();
+  healthTimer = setInterval(async () => {
+    const ok = await pingUrl(`${base}/Logos/ping`);
+    if (ok) { healthFails = 0; return; }
+    if (++healthFails < 3) return;
+    stopHealthCheck();
+    showClientDisconnectedError(serverIp);
+  }, 8000);
+}
+
+function showClientDisconnectedError(serverIp) {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  mainWindow.loadFile(path.join(__dirname, 'renderer', 'error.html'));
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (mainWindow.isDestroyed()) return;
+    mainWindow.webContents.send('show-error', {
+      message: `No se puede conectar al servidor en ${serverIp}.\n\nVerificá que la PC servidor esté encendida y conectada a la red.`,
+      isServer: false,
+      serverIp,
+    });
+  });
+}
 
 const PRELOAD  = path.join(__dirname, 'preload.js');
 const APP_ICON = path.join(__dirname, 'build', 'icon.ico');
@@ -63,6 +109,17 @@ function showError(message, isServer = true) {
 }
 
 function openMainWindow(url) {
+  // Reuse existing window when retrying after a disconnection
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.loadURL(url);
+    mainWindow.webContents.once('did-finish-load', () => {
+      closeOverlay();
+      if (!mainWindow.isVisible()) mainWindow.show();
+      mainWindow.focus();
+    });
+    return;
+  }
+
   mainWindow = new BrowserWindow({
     width: 1366, height: 768,
     center: true,
@@ -73,7 +130,6 @@ function openMainWindow(url) {
       preload: PRELOAD,
       contextIsolation: true,
       nodeIntegration: false,
-      // Allow same-origin requests from localhost to the PHP server
       webSecurity: true,
     },
   });
@@ -105,6 +161,114 @@ function openMainWindow(url) {
 
   // Prevent new windows from opening (use same window)
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+
+  // Navigation failure while the app is already running (server went down mid-session)
+  mainWindow.webContents.on('did-fail-load', (_, errorCode, _desc, failedUrl) => {
+    // -3 = ERR_ABORTED (normal navigation cancellation, e.g. SPA redirect), ignore
+    if (errorCode === -3) return;
+    // Ignore failures on local renderer files (e.g. error.html itself)
+    if (failedUrl && failedUrl.startsWith('file://')) return;
+    const serverIp = configManager.get('serverIp');
+    if (!serverIp) return;
+    stopHealthCheck();
+    showClientDisconnectedError(serverIp);
+  });
+}
+
+// ── Auto-updater ──────────────────────────────────────────────────────────────
+
+// Checks latest.yml on the update server. Returns update info if a newer version
+// is available, null otherwise (no update, no internet, any error).
+// Never throws — update check is best-effort, never blocks normal startup.
+function checkForUpdates() {
+  if (!app.isPackaged) return Promise.resolve(null);
+
+  const { autoUpdater } = require('electron-updater');
+  autoUpdater.autoDownload         = false;
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.logger               = null; // suppress to avoid polluting logs
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (v) => { if (!settled) { settled = true; resolve(v); } };
+
+    // 12-second hard timeout: if the server doesn't respond, keep going normally
+    const timer = setTimeout(() => finish(null), 12000);
+
+    autoUpdater.once('update-available',     (info) => { clearTimeout(timer); finish(info); });
+    autoUpdater.once('update-not-available', ()     => { clearTimeout(timer); finish(null); });
+    autoUpdater.once('error',                ()     => { clearTimeout(timer); finish(null); });
+
+    autoUpdater.checkForUpdates().catch(() => finish(null));
+  });
+}
+
+// Shows the updating.html screen, downloads the update, and calls quitAndInstall.
+// Returns true if quitAndInstall was triggered (app will restart), false on error.
+async function performUpdate(updateInfo) {
+  const { autoUpdater } = require('electron-updater');
+  const fs = require('fs');
+  const logFile = path.join(app.getPath('userData'), 'update.log');
+  const logUpdate = (msg) => {
+    try { fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`); } catch {}
+  };
+
+  autoUpdater.logger = { info: logUpdate, warn: logUpdate, error: logUpdate, debug: () => {} };
+
+  const updateWin = new BrowserWindow({
+    width: 460, height: 300, frame: false, resizable: false, center: true,
+    title: 'Logos POS — Actualizando',
+    icon: APP_ICON,
+    webPreferences: { preload: PRELOAD, contextIsolation: true, nodeIntegration: false },
+  });
+  updateWin.loadFile(path.join(__dirname, 'renderer', 'updating.html'));
+  await new Promise(r => updateWin.webContents.once('did-finish-load', r));
+  updateWin.webContents.send('update-start', updateInfo.version);
+  logUpdate(`Descargando v${updateInfo.version}...`);
+
+  return new Promise((resolve) => {
+    autoUpdater.on('download-progress', (p) => {
+      if (!updateWin.isDestroyed())
+        updateWin.webContents.send('update-progress', Math.round(p.percent));
+    });
+
+    autoUpdater.once('update-downloaded', async () => {
+      if (!updateWin.isDestroyed()) {
+        updateWin.webContents.send('update-progress', 100);
+        updateWin.webContents.send('update-installing');
+      }
+      logUpdate('Descarga completa. Instalando...');
+
+      // In server/supervisor mode, stop NSSM services so NSIS can overwrite
+      // MariaDB and PHP binaries without file-lock errors.
+      // sc stop blocks until the service reaches STOPPED — no extra sleep needed,
+      // just a short buffer (300 ms) for OS to release file handles after each stop.
+      if (serverManager.serviceMode === 'supervisor') {
+        try {
+          execFileSync('sc', ['stop', 'LogosPOS-PHP'], { timeout: 8000,  stdio: 'ignore' });
+          await new Promise(r => setTimeout(r, 300));
+          execFileSync('sc', ['stop', 'LogosPOS-DB'],  { timeout: 10000, stdio: 'ignore' });
+          await new Promise(r => setTimeout(r, 300));
+        } catch { /* ignore — installer.nsh will start them back */ }
+      }
+
+      // isSilent=true skips the NSIS UI; isForceRunAfter=true restarts Electron after install.
+      autoUpdater.quitAndInstall(true, true);
+      resolve(true);
+    });
+
+    const handleError = (err) => {
+      const msg = err ? err.message : 'Error desconocido';
+      logUpdate(`ERROR en descarga: ${msg}`);
+      if (err && err.stack) logUpdate(err.stack);
+      // Close the update window and let the app start normally
+      if (!updateWin.isDestroyed()) updateWin.close();
+      resolve(false);
+    };
+
+    autoUpdater.once('error', handleError);
+    autoUpdater.downloadUpdate().catch(handleError);
+  });
 }
 
 // ── Tray icon ─────────────────────────────────────────────────────────────────
@@ -214,6 +378,7 @@ async function startClientRole() {
     sendLoading(`Conectando a ${serverIp}…`);
     await waitForUrl(url, 15000);
     openMainWindow(url);
+    startHealthCheck(base, serverIp);
   } catch {
     closeOverlay();
     openOverlay('error.html', { title: 'Logos POS — Sin conexión' });
@@ -252,6 +417,7 @@ ipcMain.handle('save-server-ip', async (_, ip) => {
 });
 
 ipcMain.handle('retry-connection', async () => {
+  stopHealthCheck();
   closeOverlay();
   await startClientRole();
 });
@@ -271,8 +437,18 @@ ipcMain.handle('reset-config', () => {
 });
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
+
+  // Check for updates BEFORE showing anything to the user.
+  // If an update is found, performUpdate() downloads and installs it (app restarts).
+  // On any error (no internet, hash mismatch, etc.) it returns false and we continue normally.
+  const updateInfo = await checkForUpdates();
+  if (updateInfo) {
+    const installed = await performUpdate(updateInfo);
+    if (installed) return; // quitAndInstall was called — never actually reaches here
+    // Update failed: fall through to normal startup
+  }
 
   const cfg = configManager.getAll();
   if (cfg.firstRun || !cfg.role) {
@@ -301,5 +477,6 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  stopHealthCheck();
   serverManager.stopAll();
 });

@@ -1,0 +1,7 @@
+Options -Indexes
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Route .exe requests through PHP proxy (LiteSpeed blocks direct .exe serving)
+    # The [B] flag re-encodes backreferences so spaces become %20 in the query string
+    RewriteRule ^(Logos.+\.exe)$ serve-update.php?f=$1 [L,B,QSA]
+</IfModule>

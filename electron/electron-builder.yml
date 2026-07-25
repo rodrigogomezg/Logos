@@ -2,6 +2,13 @@ appId: com.bron.logos-pos
 productName: Logos POS
 copyright: Copyright © 2024 BRON
 
+# Auto-update: electron-updater consulta latest.yml desde esta URL.
+# El instalador .exe y latest.yml se suben a la misma ruta con npm run publish.
+publish:
+  provider: generic
+  url: https://logos.drilogs.com.ar/
+  channel: latest
+
 directories:
   buildResources: build
   output: dist

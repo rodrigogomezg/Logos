@@ -1,15 +1,18 @@
 {
   "name": "logos-pos",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "Logos POS - Sistema de Gestión para Pymes",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "start:dev": "set LOGOS_DEV_MODE=1&& electron .",
     "build": "electron-builder --win",
-    "setup-deps": "node scripts/download-deps.js"
+    "setup-deps": "node scripts/download-deps.js",
+    "publish": "electron-builder --win --publish always && node scripts/publish.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
   "devDependencies": {
     "electron": "^28.3.0",
     "electron-builder": "^24.9.1"

@@ -17,6 +17,11 @@ pos/.impeccable/
 .claude/
 .agents/
 PRODUCT.md
+reglas_de.txt
+
+# Composer installer artifacts (no forman parte del proyecto)
+composer.phar
+composer-setup.php
 
 # Electron app
 electron/node_modules/
@@ -26,3 +31,7 @@ electron/resources/mariadb/
 electron/resources/nssm.exe
 electron/resources/_tmp/
 electron/resources/www/
+# Credenciales y secretos para publicar actualizaciones (nunca commitear)
+electron/.env.publish
+# upload-handler.php contiene el secreto real — solo vive en Hostinger y localmente
+electron/scripts/upload-handler.php

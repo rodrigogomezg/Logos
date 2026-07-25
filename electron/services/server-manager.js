@@ -131,8 +131,22 @@ class ServerManager {
     ], { detached: false, stdio: 'ignore', windowsHide: true });
 
     this._dbProc.on('error', err => console.error('[MariaDB]', err.message));
+    this._dbExitCode = undefined;
+    this._dbProc.on('exit', code => { this._dbExitCode = code; });
 
-    await this._waitForMysql(30000);
+    try {
+      await this._waitForMysql(30000);
+    } catch (err) {
+      if (this._dbExitCode !== undefined) {
+        throw new Error(
+          `MariaDB terminó inesperadamente (código ${this._dbExitCode}).\n\n` +
+          `Puede haber otro servidor MySQL usando el puerto ${this._dbPort}.`
+        );
+      }
+      throw err;
+    }
+
+    this._assertOwnDatabase(dataDir);
 
     if (isNew) await this._runSchema();
     this._runMigrations();
@@ -180,6 +194,31 @@ class ServerManager {
     this._phpProc.on('error', err => console.error('[PHP]', err.message));
 
     return port;
+  }
+
+  // Verify the mysqld answering on _dbPort is the one we spawned. On Windows a
+  // foreign MySQL (XAMPP, servicio del instalador) puede tener 127.0.0.1:<port>
+  // mientras nuestro proceso murió en silencio al no poder bindear — el ping
+  // respondería igual y las migraciones correrían sobre una base ajena.
+  _assertOwnDatabase(dataDir) {
+    let actual;
+    try {
+      actual = execFileSync(this._mysqlExe, [
+        '--no-defaults', '-h', '127.0.0.1', '-P', String(this._dbPort), '-u', 'root',
+        '--skip-column-names', '-e', 'SELECT @@datadir;',
+      ], { timeout: 10000 }).toString('utf8').trim();
+    } catch {
+      return; // no se pudo consultar — no bloquear el arranque por el chequeo en sí
+    }
+    const norm = p => path.resolve(p).toLowerCase().replace(/[\\/]+$/, '');
+    if (norm(actual) !== norm(dataDir)) {
+      throw new Error(
+        `Otro servidor MySQL está ocupando el puerto ${this._dbPort}\n` +
+        `(datadir: ${actual}).\n\n` +
+        `Cerrá ese servicio (XAMPP u otra instalación de Logos POS)\n` +
+        `y volvé a abrir la aplicación.`
+      );
+    }
   }
 
   // ── SUPERVISOR mode — services managed by NSSM ──────────────────────────────

@@ -42,3 +42,7 @@ foreach ($svc in @('LogosPOS-PHP', 'LogosPOS-DB')) {
 
 Log "Servicios de Logos POS removidos."
 Log "Nota: Los datos en C:\ProgramData\LogosPOS\ se conservan."
+
+# Eliminar regla de firewall creada por el instalador
+Remove-NetFirewallRule -DisplayName 'LogosPOS-Web' -ErrorAction SilentlyContinue
+Log "Regla de firewall 'LogosPOS-Web' eliminada."

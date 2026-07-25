@@ -1019,9 +1019,6 @@ function toast(msg, tipo = '') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('visible'), tipo === 'err' ? 5500 : 3500);
 }
-function actualizarFecha() {
-  $('fecha-hora').textContent = new Date().toLocaleDateString('es-AR', { weekday:'short', day:'2-digit', month:'short' });
-}
 
 // ── Cambio de tab ────────────────────────────────────────────
 function cambiarTab(tab) {
@@ -2178,8 +2175,6 @@ async function exportarPdfPedido() {
 
 // ── Init ─────────────────────────────────────────────────────
 (async function init() {
-  actualizarFecha();
-  setInterval(actualizarFecha, 60000);
   if (esAdmin) $('grupo-admin').style.display = '';
 
   // Alerta de stock mínimo

@@ -9,6 +9,36 @@
 ; =============================================================================
 !macro customInstall
 
+  ; --- Auto-actualizacion (modo silencioso) -----------------------------------
+  ; Cuando electron-updater invoca el instalador, lo hace con el flag /S (silent).
+  ; En ese caso saltamos el dialogo de rol y la inicializacion de servicios —
+  ; el rol ya esta configurado y los servicios los reiniciamos nosotros.
+  ${If} ${Silent}
+    DetailPrint "Modo actualizacion automatica — omitiendo seleccion de rol."
+
+    ; Si los servicios NSSM existen (rol Servidor), reiniciarlos.
+    ; Fueron detenidos por Electron antes de llamar a quitAndInstall().
+    ; Si no existen (rol Cliente), sc start falla silenciosamente — no hay problema.
+    ; sc start bloquea hasta que el servicio alcanza estado RUNNING — no hace
+    ; falta Sleep adicional. La dependencia LogosPOS-PHP→LogosPOS-DB garantiza
+    ; que el orden sea correcto incluso si DB tarda en estar listo.
+    DetailPrint "Reiniciando servicios LogosPOS si corresponde..."
+    nsExec::ExecToStack 'sc start LogosPOS-DB'
+    Pop $R0
+    Pop $R1
+    nsExec::ExecToStack 'sc start LogosPOS-PHP'
+    Pop $R0
+    Pop $R1
+    DetailPrint "Servicios reiniciados (codigo DB=$R0)."
+
+    ; Reabrir inmediatamente — los servicios ya estan en RUNNING por sc start.
+    ExecShell "open" "$INSTDIR\Logos POS.exe"
+
+    Goto logos_role_done
+  ${EndIf}
+
+  ; --- Instalacion interactiva (primera vez o reinstalacion manual) -----------
+
   ; --- Seleccion de rol -------------------------------------------------------
   MessageBox MB_YESNO|MB_ICONQUESTION "Esta computadora va a funcionar como SERVIDOR?$\n$\nSi  = Servidor: instala base de datos + servidor web en esta PC.$\n       Otras PCs de la red se conectan a este equipo.$\n$\nNo  = Cliente: abre una ventana que se conecta al servidor.$\n       (se pedira la IP del servidor al abrir la aplicacion)" IDNO logos_client_role
 

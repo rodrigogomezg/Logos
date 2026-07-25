@@ -299,6 +299,7 @@ try {
                 $metodo === 'POST' && $accion === 'probar-impresion' => $ctrl->probarImpresion(),
                 $metodo === 'POST' && $accion === 'backup'           => $ctrl->backupAhora(),
                 $metodo === 'POST' && $accion === 'reset-fabrica'    => $ctrl->resetFabrica(),
+                $metodo === 'POST' && $accion === 'smtp'              => $ctrl->guardarSmtp(),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
@@ -448,6 +449,16 @@ try {
             $ctrl = new WhatsAppController();
             match (true) {
                 $metodo === 'POST' && $sub === 'enviar' => $ctrl->enviar(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'mail' => (function () use ($metodo, $sub) {
+            require_once __DIR__ . '/controllers/MailController.php';
+            $ctrl = new MailController();
+            match (true) {
+                $metodo === 'POST' && $sub === 'enviar' => $ctrl->enviar(),
+                $metodo === 'POST' && $sub === 'probar' => $ctrl->probar(),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),

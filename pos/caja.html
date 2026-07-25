@@ -545,7 +545,7 @@ function getCajaActual() {
   if (sel && sel.options.length > 0) {
     const id   = parseInt(sel.value) || null;
     const opt  = sel.options[sel.selectedIndex];
-    const nombre = (opt?.text || '').replace(' (mi caja)', '');
+    const nombre = opt?.text || '';
     return { id, nombre };
   }
   const id = typeof window.cajaOperativaId === 'function'
@@ -1462,7 +1462,7 @@ if (_navCajaOp) {
   new MutationObserver(() => {
     if (_navCajaOp.options.length > 0) {
       const opt = _navCajaOp.options[_navCajaOp.selectedIndex];
-      cajaNombre = (opt?.text || '').replace(' (mi caja)', '');
+      cajaNombre = opt?.text || '';
       const phSub = $('ph-caja-sub');
       if (phSub && cajaNombre) phSub.textContent = cajaNombre;
     }

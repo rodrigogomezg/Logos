@@ -11,8 +11,6 @@ body { font-family:'Inter',system-ui,-apple-system,sans-serif; font-size:14px; b
 .app-nav { background:var(--color-primary-dark,#0F2A4A); display:flex; align-items:center; padding:0 16px; height:44px; gap:2px; flex-shrink:0; }
 .nav-brand { display:flex; align-items:center; text-decoration:none; margin-right:14px; }
 .nav-brand img { height:26px; width:auto; display:block; }
-/* Wordmark de marca — única pieza de la UI en serif */
-.nav-wordmark { font-family:Georgia,'Times New Roman',serif; font-size:18px; font-weight:400; color:#F7F5EF; letter-spacing:.4px; margin-left:8px; line-height:1; }
 .nav-link { color:rgba(255,255,255,.55); text-decoration:none; padding:5px 12px; border-radius:6px; font-size:var(--fs-sm); font-weight:500; transition:background .12s, color .12s; }
 .nav-link:hover { background:rgba(255,255,255,.1); color:white; }
 .nav-link.activo { background:transparent; color:white; font-weight:600; box-shadow:inset 0 -2px 0 var(--color-accent,#E8B94C); }
@@ -33,14 +31,23 @@ body { font-family:'Inter',system-ui,-apple-system,sans-serif; font-size:14px; b
 .nav-drop-menu a:hover { background:rgba(255,255,255,.1); color:white; }
 .nav-drop-menu a.activo { background:rgba(255,255,255,.12); color:white; font-weight:600; }
 .nav-spacer { flex:1; }
-.nav-caja-select { background:transparent; color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.18); border-radius:6px; padding:5px 8px; font-size:var(--fs-sm); font-weight:600; font-family:inherit; margin-right:8px; outline:none; transition:border-color 140ms ease-out; }
+/* Selects del lado derecho */
+.nav-caja-select { background:transparent; color:rgba(255,255,255,.85); border:1px solid rgba(255,255,255,.18); border-radius:6px; padding:5px 8px; font-size:var(--fs-sm); font-weight:600; font-family:inherit; outline:none; transition:border-color 140ms ease-out; }
 .nav-caja-select:hover, .nav-caja-select:focus { border-color:rgba(255,255,255,.4); }
-.nav-config { display:flex; align-items:center; padding:6px; margin-left:8px; }
-.nav-fecha { color:rgba(255,255,255,.5); font-size:12px; }
-.nav-sep { width:1px; height:20px; background:rgba(255,255,255,.15); margin:0 6px; flex-shrink:0; }
-.nav-usuario { color:rgba(255,255,255,.75); font-size:12px; font-weight:600; white-space:nowrap; }
+/* Etiqueta de sucursal (usuario sin cambio de sucursal) */
+.nav-sucursal-label { color:rgba(255,255,255,.55); font-size:var(--fs-sm); font-weight:500; white-space:nowrap; }
+/* Separador */
+.nav-sep { width:1px; height:20px; background:rgba(255,255,255,.15); margin:0 4px; flex-shrink:0; }
+/* Links con ícono + etiqueta (Log, Config, Salir) */
+.nav-icon-link { display:inline-flex; align-items:center; gap:5px; padding:5px 8px; }
+.nav-icon-label { font-size:var(--fs-sm); font-weight:500; }
+/* Botón tour */
+.nav-tour-btn { background:none; border:none; cursor:pointer; font-family:inherit; color:rgba(255,255,255,.55); font-size:var(--fs-sm); font-weight:700; padding:5px 8px; border-radius:6px; transition:background .12s, color .12s; }
+.nav-tour-btn:hover { background:rgba(255,255,255,.1); color:white; }
+/* Info de sesión */
+.nav-fecha { color:rgba(255,255,255,.5); font-size:var(--fs-sm); white-space:nowrap; }
+.nav-usuario { color:rgba(255,255,255,.75); font-size:var(--fs-sm); font-weight:600; white-space:nowrap; }
 .nav-usuario span { color:rgba(255,255,255,.45); font-weight:500; }
-#nav-logout { display:flex; align-items:center; padding:6px; margin-left:4px; }
 
 /* ── Focus visible ── */
 button:focus-visible,

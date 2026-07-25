@@ -45,6 +45,14 @@ class Configuracion {
             'wa_phone_id'             => '',
             'wa_token'                => '',
             'wa_template_name'        => 'envio_comprobante',
+            'smtp_host'               => null,
+            'smtp_puerto'             => 587,
+            'smtp_seguridad'          => 'tls',
+            'smtp_usuario'            => null,
+            'smtp_clave'              => null,
+            'smtp_de_nombre'          => null,
+            'smtp_de_email'           => null,
+            'smtp_reply_to'           => null,
         ];
     }
 

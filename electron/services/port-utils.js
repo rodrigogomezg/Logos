@@ -1,16 +1,21 @@
 'use strict';
 const net = require('net');
 
-function isPortFree(port) {
+function canBind(port, host) {
   return new Promise(resolve => {
     const server = net.createServer();
     server.once('error', () => resolve(false));
-    // Bind to 0.0.0.0 — same as PHP will bind — so conflicts are detected correctly.
-    // On Windows SO_REUSEADDR allows 127.0.0.1 tests to false-positive even when
-    // another process owns 0.0.0.0:<port>.
     server.once('listening', () => { server.close(); resolve(true); });
-    server.listen(port, '0.0.0.0');
+    server.listen(port, host);
   });
+}
+
+async function isPortFree(port) {
+  // On Windows, wildcard and specific-address binds don't conflict with each
+  // other: binding 0.0.0.0:<port> succeeds even while another process owns
+  // 127.0.0.1:<port>, and vice versa. Both must be tested — PHP binds 0.0.0.0
+  // and mysqld binds 127.0.0.1.
+  return (await canBind(port, '0.0.0.0')) && (await canBind(port, '127.0.0.1'));
 }
 
 async function findFreePort(preferred) {

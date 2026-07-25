@@ -257,12 +257,6 @@ async function accionEditar(id) {
   }
 }
 
-function actualizarFecha() {
-  const f = $('fecha-hora');
-  if (f) f.textContent = new Date().toLocaleString('es-AR', { dateStyle:'short', timeStyle:'short' });
-}
-actualizarFecha();
-setInterval(actualizarFecha, 30000);
 
 init();
 </script>

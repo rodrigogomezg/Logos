@@ -33,22 +33,40 @@
   }
 
   /* Botones de usuario */
-  .usuarios-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; width:100%; }
-  .usuario-btn {
-    background: #fff;
-    color: var(--neo-text);
+  .login-input {
+    width: 100%;
+    padding: 11px 14px;
     border: 1px solid var(--borde-fuerte);
     border-radius: var(--neo-r-md);
-    padding: 16px 20px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--neo-text);
+    background: #fff;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color var(--neo-t-fast);
+  }
+  .login-input:focus { border-color: var(--color-primary); }
+  .login-btn {
+    width: 100%;
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--neo-r-md);
+    padding: 12px;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
-    min-width: 110px;
-    transition: border-color var(--neo-t-fast), color var(--neo-t-fast), background var(--neo-t-fast);
+    transition: opacity var(--neo-t-fast);
   }
-  .usuario-btn:hover  { border-color: var(--color-primary); color: var(--color-primary); }
-  .usuario-btn:active { background: var(--primary-soft); }
+  .login-btn:hover { opacity: .88; }
+  .login-btn.sec {
+    background: #fff;
+    color: var(--neo-text);
+    border: 1px solid var(--borde-fuerte);
+  }
+  .login-btn.sec:hover { border-color: var(--color-primary); color: var(--color-primary); opacity: 1; }
 
   /* PIN dots */
   .pin-dots { display:flex; gap:12px; height:20px; align-items:center; }
@@ -135,11 +153,13 @@
 
 <div class="login-wrap">
 <div class="login-box">
-  <img src="/Logos/logo_background.png" alt="Logos" id="login-logo" onerror="this.onerror=null;this.src='/Logos/logos_logo.png';">
+  <img src="/Logos/logos_logo.png" alt="Logos" id="login-logo">
 
-  <div class="paso activo" id="paso-usuarios">
-    <div class="titulo">¿Quién está usando la caja?</div>
-    <div class="usuarios-grid" id="usuarios-grid"></div>
+  <div class="paso activo" id="paso-nombre">
+    <div class="titulo">Iniciar sesión</div>
+    <input type="text" id="nombre-input" class="login-input" placeholder="Nombre de usuario" autocomplete="off" spellcheck="false">
+    <div class="error-msg" id="nombre-error"></div>
+    <button class="login-btn" id="nombre-submit">Continuar</button>
   </div>
 
   <div class="paso" id="paso-pin">
@@ -161,7 +181,7 @@
       El sistema está instalado, pero el servidor de base de datos no responde.<br>
       Abrí el <strong>Panel de Control de XAMPP</strong> y presioná <strong>Start</strong> en <strong>MySQL</strong>.
     </p>
-    <button class="usuario-btn" onclick="location.reload()">Reintentar</button>
+    <button class="login-btn sec" onclick="location.reload()">Reintentar</button>
   </div>
 </div>
 </div>
@@ -176,6 +196,7 @@ let usuarioActual  = null;
 let pin            = '';
 let tokenSesion    = null;
 let sucursalesData = [];
+let _usuarios      = [];
 
 function mostrarPaso(id) {
   document.querySelectorAll('.paso').forEach(p => p.classList.remove('activo'));
@@ -183,18 +204,29 @@ function mostrarPaso(id) {
 }
 
 async function cargarUsuarios() {
-  const res = await fetch(`${API}/usuarios`);
-  const usuarios = await res.json();
-  const grid = document.getElementById('usuarios-grid');
-  grid.innerHTML = '';
-  usuarios.forEach(u => {
-    const btn = document.createElement('button');
-    btn.className = 'usuario-btn';
-    btn.textContent = u.nombre;
-    btn.onclick = () => seleccionarUsuario(u);
-    grid.appendChild(btn);
-  });
+  try {
+    const res = await fetch(`${API}/usuarios`);
+    _usuarios = await res.json();
+  } catch (e) {
+    _usuarios = [];
+  }
+  document.getElementById('nombre-input').focus();
 }
+
+function buscarYSeleccionar() {
+  const val = document.getElementById('nombre-input').value.trim();
+  const errEl = document.getElementById('nombre-error');
+  if (!val) { errEl.textContent = 'Ingresá tu nombre de usuario'; return; }
+  const u = _usuarios.find(x => x.nombre.trim().toLowerCase() === val.toLowerCase());
+  if (!u) { errEl.textContent = 'Usuario no encontrado'; return; }
+  errEl.textContent = '';
+  seleccionarUsuario(u);
+}
+
+document.getElementById('nombre-submit').onclick = buscarYSeleccionar;
+document.getElementById('nombre-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') buscarYSeleccionar();
+});
 
 function seleccionarUsuario(u) {
   usuarioActual = u;
@@ -277,6 +309,18 @@ async function intentarLogin() {
 function mostrarSelectorCaja(usuario, cajas) {
   const grid = document.getElementById('caja-grid');
   grid.innerHTML = '';
+  if (!cajas.length) {
+    // Sin cajas habilitadas para este usuario (los no-admin solo ven cajas
+    // de tipo Venta): explicar el porqué en vez de mostrar una pantalla vacía.
+    const aviso = document.createElement('div');
+    aviso.style.cssText = 'font-size:13px;color:var(--neo-text-2);line-height:1.6;max-width:320px;text-align:center';
+    aviso.innerHTML = 'No hay cajas disponibles para tu usuario.<br>' +
+      'Pedile a un administrador que cree una <b>caja de tipo Venta</b> en Configuración, ' +
+      'o que te dé el permiso <b>"Operar todas las cajas"</b>.';
+    grid.appendChild(aviso);
+    mostrarPaso('paso-caja');
+    return;
+  }
   cajas.forEach(c => {
     const btn = document.createElement('button');
     btn.className = 'caja-btn';
@@ -307,7 +351,10 @@ function iniciarSesion(usuario, caja) {
 document.getElementById('pin-volver').onclick = () => {
   usuarioActual = null;
   pin = '';
-  mostrarPaso('paso-usuarios');
+  document.getElementById('nombre-input').value = '';
+  document.getElementById('nombre-error').textContent = '';
+  mostrarPaso('paso-nombre');
+  document.getElementById('nombre-input').focus();
 };
 
 document.addEventListener('keydown', (e) => {
@@ -342,8 +389,7 @@ async function chequearInstalacion() {
 }
 
 renderPad();
-chequearInstalacion().then(redirigido => { if (!redirigido) cargarUsuarios(); });
-document.getElementById('login-logo').src = '/Logos/logo_background.png?v=' + Date.now();
+chequearInstalacion().then(redirigido => { if (!redirigido) { cargarUsuarios(); } });
 </script>
 </body>
 </html>

@@ -29,13 +29,53 @@ $nssmExe     = "$InstallDir\resources\nssm.exe"
 $schemaPath  = "$appDir\install\schema_limpio.sql"
 $dbLocalPath = "$appDir\api\config\db.local.php"
 
-function Log([string]$msg) { Write-Host "[LogosPOS] $msg" }
+$setupLog = 'C:\ProgramData\LogosPOS\setup-log.txt'
+New-Item -ItemType Directory -Force -Path 'C:\ProgramData\LogosPOS' | Out-Null
+function Log([string]$msg) {
+    $line = "$(Get-Date -Format 'HH:mm:ss') [LogosPOS] $msg"
+    Write-Host $line
+    Add-Content -Path $setupLog -Value $line -Encoding UTF8
+}
+# Capturar errores no manejados en el log antes de que el script termine
+trap {
+    $errLine = "$(Get-Date -Format 'HH:mm:ss') [ERROR] $_  -- StackTrace: $($_.ScriptStackTrace)"
+    Write-Host $errLine
+    Add-Content -Path $setupLog -Value $errLine -Encoding UTF8
+    throw $_
+}
 
 # --- 1. Directorios ----------------------------------------------------------
 Log "Creando directorios de datos en $dataRoot ..."
 New-Item -ItemType Directory -Force -Path $dataDir, $logsDir | Out-Null
 
-# --- 2. Inicializar MariaDB (solo si es primera instalacion) ------------------
+# --- 2. Detener y remover servicios existentes ANTES de iniciar mysqld temporal
+# Critico: si LogosPOS-DB sigue corriendo ocupa el puerto y bloquea el datadir,
+# impidiendo que el mysqld temporal arranque (timeout de 90s → instalacion falla).
+$nssmExeEarly = "$InstallDir\resources\nssm.exe"
+foreach ($svc in @('LogosPOS-PHP', 'LogosPOS-DB')) {
+    sc.exe query $svc 2>&1 | Out-Null
+    if ($LASTEXITCODE -eq 0) {
+        Log "Deteniendo servicio previo: $svc ..."
+        sc.exe stop $svc 2>&1 | Out-Null
+        # Esperar hasta 20s a que el servicio llegue a STOPPED
+        for ($w = 0; $w -lt 20; $w++) {
+            Start-Sleep -Seconds 1
+            $state = (sc.exe query $svc 2>&1 | Select-String 'ESTADO').ToString()
+            if ($state -match '1  STOPPED') { break }
+        }
+        Log "Servicio $svc detenido. Removiendo..."
+        if (Test-Path $nssmExeEarly) {
+            & $nssmExeEarly remove $svc confirm 2>&1 | Out-Null
+        }
+        sc.exe delete $svc 2>&1 | Out-Null  # fallback si nssm falla
+        Log "Servicio previo $svc removido."
+    } else {
+        Log "Servicio $svc no encontrado (instalacion limpia)."
+    }
+}
+Start-Sleep -Seconds 2
+
+# --- 3. Inicializar MariaDB (solo si es primera instalacion) ------------------
 if (!(Test-Path "$dataDir\mysql")) {
     Log "Inicializando base de datos..."
     $installDbExe = "$mariadbBin\mysql_install_db.exe"
@@ -50,14 +90,14 @@ if (!(Test-Path "$dataDir\mysql")) {
     Log "Datos existentes detectados - se omite inicializacion."
 }
 
-# --- 3. Iniciar mysqld temporal para importar schema -------------------------
+# --- 4. Iniciar mysqld temporal para importar schema -------------------------
 Log "Iniciando mysqld temporal..."
 $mysqld = Start-Process -FilePath "$mariadbBin\mysqld.exe" `
     -ArgumentList @('--no-defaults', "--datadir=$dataDir", "--port=$DbPort", '--bind-address=127.0.0.1', '--skip-networking=OFF') `
     -PassThru -WindowStyle Hidden
 
 $ready = $false
-for ($i = 0; $i -lt 30; $i++) {
+for ($i = 0; $i -lt 90; $i++) {
     Start-Sleep -Seconds 1
     try {
         & "$mariadbBin\mysqladmin.exe" '--no-defaults' '-h' '127.0.0.1' "-P$DbPort" '-u' 'root' '--connect-timeout=2' 'ping' 2>&1 | Out-Null
@@ -66,11 +106,11 @@ for ($i = 0; $i -lt 30; $i++) {
 }
 if (!$ready) {
     try { $mysqld.Kill() } catch {}
-    throw "MariaDB no respondio en 30 segundos durante inicializacion"
+    throw "MariaDB no respondio en 90 segundos durante inicializacion"
 }
 Log "MariaDB temporal listo."
 
-# --- 4. Importar schema ------------------------------------------------------
+# --- 5. Importar schema ------------------------------------------------------
 try {
     Log "Importando schema..."
     & "$mariadbBin\mysql.exe" '--no-defaults' '-h' '127.0.0.1' "-P$DbPort" '-u' 'root' `
@@ -108,18 +148,7 @@ try {
 }
 Start-Sleep -Seconds 1
 
-# --- 7. Remover servicios existentes ------------------------------------------
-foreach ($svc in @('LogosPOS-PHP', 'LogosPOS-DB')) {
-    sc.exe query $svc 2>&1 | Out-Null
-    if ($LASTEXITCODE -eq 0) {
-        Log "Removiendo servicio previo: $svc"
-        & $nssmExe stop $svc 2>&1 | Out-Null
-        Start-Sleep -Seconds 2
-        & $nssmExe remove $svc confirm 2>&1 | Out-Null
-    }
-}
-
-# --- 8. Registrar LogosPOS-DB -------------------------------------------------
+# --- 7. Registrar LogosPOS-DB -------------------------------------------------
 Log "Registrando servicio LogosPOS-DB..."
 & $nssmExe install  LogosPOS-DB "$mariadbBin\mysqld.exe" 2>&1 | Out-Null
 & $nssmExe set LogosPOS-DB AppParameters   "--no-defaults --datadir=$dataDir --port=$DbPort --bind-address=127.0.0.1 --skip-networking=OFF" 2>&1 | Out-Null
@@ -133,8 +162,10 @@ Log "Registrando servicio LogosPOS-DB..."
 & $nssmExe set LogosPOS-DB AppRotateFiles  1 2>&1 | Out-Null
 & $nssmExe set LogosPOS-DB AppRotateBytes  10485760 2>&1 | Out-Null
 & $nssmExe set LogosPOS-DB ObjectName      LocalSystem '' 2>&1 | Out-Null
+# Belt-and-suspenders: sc.exe config escribe directamente en el SCM y es lo que sc qc lee
+sc.exe config LogosPOS-DB start= auto 2>&1 | Out-Null
 
-# --- 9. Registrar LogosPOS-PHP ------------------------------------------------
+# --- 8. Registrar LogosPOS-PHP ------------------------------------------------
 Log "Registrando servicio LogosPOS-PHP..."
 & $nssmExe install  LogosPOS-PHP "$phpBin\php.exe" 2>&1 | Out-Null
 # Write AppParameters directly to the registry to avoid PowerShell quoting issues
@@ -162,13 +193,28 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LogosPOS-PHP\Par
     "LOGOS_DB_USER=root" `
     "LOGOS_DB_PASS=" `
     "PHPRC=$phpBin" 2>&1 | Out-Null
+# Belt-and-suspenders: sc.exe config escribe directamente en el SCM y es lo que sc qc lee
+sc.exe config LogosPOS-PHP start= auto 2>&1 | Out-Null
+
+# --- 9. Regla de firewall de entrada ------------------------------------------
+Log "Configurando regla de firewall para puerto $WebPort..."
+Remove-NetFirewallRule -DisplayName 'LogosPOS-Web' -ErrorAction SilentlyContinue
+try {
+    New-NetFirewallRule -DisplayName 'LogosPOS-Web' `
+        -Direction Inbound -Protocol TCP -LocalPort $WebPort -Action Allow `
+        -Description "Acceso LAN al servidor web de Logos POS (puerto $WebPort)" | Out-Null
+    Log "Regla 'LogosPOS-Web' creada para puerto TCP $WebPort."
+} catch {
+    Log "AVISO: No se pudo crear regla de firewall (no fatal): $_"
+}
 
 # --- 10. Iniciar servicios ----------------------------------------------------
 Log "Iniciando LogosPOS-DB..."
 & $nssmExe start LogosPOS-DB 2>&1 | Out-Null
+Start-Sleep -Seconds 3  # dar tiempo a NSSM para registrar el proceso antes de pinger
 
 $ready = $false
-for ($i = 0; $i -lt 30; $i++) {
+for ($i = 0; $i -lt 60; $i++) {
     Start-Sleep -Seconds 1
     & "$mariadbBin\mysqladmin.exe" '--no-defaults' '-h' '127.0.0.1' "-P$DbPort" '-u' 'root' '--connect-timeout=2' 'ping' 2>&1 | Out-Null
     if ($LASTEXITCODE -eq 0) { $ready = $true; break }
