@@ -166,16 +166,16 @@
     <div class="form-grid">
       <div class="form-group fg-full">
         <label class="form-label">Razón social (fiscal)</label>
-        <input class="form-input" id="ng-razon" placeholder="Ej: GOMEZ RODRIGO GABRIEL">
+        <input class="form-input" id="ng-razon" placeholder="...">
       </div>
       <div class="form-group fg-full">
         <label class="form-label">Nombre comercial / fantasía</label>
-        <input class="form-input" id="ng-fantasia" placeholder="Ej: Ferretería Central">
+        <input class="form-input" id="ng-fantasia" placeholder="...">
         <span class="form-hint">Nombre visible en el sistema. Si no tenés nombre de fantasía, dejalo igual a la razón social.</span>
       </div>
       <div class="form-group">
         <label class="form-label">CUIT</label>
-        <input class="form-input" id="ng-cuit" placeholder="20-12345678-9">
+        <input class="form-input" id="ng-cuit" placeholder="...">
       </div>
       <div class="form-group">
         <label class="form-label">Condición IVA</label>
@@ -188,19 +188,19 @@
       </div>
       <div class="form-group fg-full">
         <label class="form-label">Domicilio comercial</label>
-        <input class="form-input" id="ng-domicilio" placeholder="Calle, número, localidad, provincia">
+        <input class="form-input" id="ng-domicilio" placeholder="...">
       </div>
       <div class="form-group">
         <label class="form-label">Ingresos Brutos (IIBB)</label>
-        <input class="form-input" id="ng-iibb" placeholder="Número de inscripción">
+        <input class="form-input" id="ng-iibb" placeholder="...">
       </div>
       <div class="form-group">
         <label class="form-label">Teléfono</label>
-        <input class="form-input" id="ng-telefono" placeholder="11-1234-5678">
+        <input class="form-input" id="ng-telefono" placeholder="...">
       </div>
       <div class="form-group">
         <label class="form-label">Website</label>
-        <input class="form-input" id="ng-website" placeholder="www.miempresa.com.ar">
+        <input class="form-input" id="ng-website" placeholder="...">
       </div>
       <div class="form-group">
         <label class="form-label">% IVA por defecto</label>
@@ -754,6 +754,19 @@ function progEstado(el, estado, icono) {
 let commitResult = null;
 
 async function ejecutarCommit() {
+  // Última red de seguridad antes de escribir nada: si en el rato que el
+  // usuario pasó completando el wizard el sistema resultó estar ya
+  // configurado (ver CLAUDE.md — nunca cortarle el acceso a un cliente
+  // andando), lo mandamos al login en vez de seguir.
+  try {
+    const estadoAhora = await fetch(`${API}/instalacion/estado`).then(r => r.json());
+    if (!estadoAhora.requiere_conexion && !estadoAhora.requiere_schema && !estadoAhora.requiere_admin &&
+        !estadoAhora.requiere_negocio && !estadoAhora.requiere_caja) {
+      location.href = '/Logos/pos/login.html';
+      return;
+    }
+  } catch { /* si esta verificación falla, seguimos con el flujo normal */ }
+
   $('ls-confirmar-row').style.display = 'none';
   $('ls-resumen').style.display       = 'none';
   $('ls-error').style.display         = 'none';
@@ -778,8 +791,17 @@ async function ejecutarCommit() {
       // Si el admin ya existe (commit interrumpido en un intento anterior), recuperar el ID
       if (rAdm.status === 403) {
         const rId = await fetch(`${API}/instalacion/admin-id`);
-        if (rId.ok) { adminId = (await rId.json()).id; }
-        else throw new Error('Ya existe un administrador. Hacé un reset de fábrica desde el login o contactá al soporte.');
+        if (rId.ok) {
+          adminId = (await rId.json()).id;
+        } else {
+          // admin-id también rechaza (403) → el sistema ya está TOTALMENTE
+          // configurado (negocio + caja también), no es un commit interrumpido.
+          // No hay nada para "arreglar" acá: es un cliente real ya andando que
+          // nunca debió haber entrado a este wizard. Mandarlo al login en vez
+          // de dejarlo en un callejón sin salida (ver CLAUDE.md).
+          location.href = '/Logos/pos/login.html';
+          return;
+        }
       } else {
         throw new Error('Al crear el administrador: ' + (dAdm.error || ''));
       }

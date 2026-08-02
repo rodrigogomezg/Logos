@@ -42,9 +42,13 @@
     ; Si los servicios NSSM existen (rol Servidor), reiniciarlos.
     ; Fueron detenidos por Electron antes de llamar a quitAndInstall().
     ; Si no existen (rol Cliente), sc start falla silenciosamente — no hay problema.
-    ; sc start bloquea hasta que el servicio alcanza estado RUNNING — no hace
-    ; falta Sleep adicional. La dependencia LogosPOS-PHP→LogosPOS-DB garantiza
-    ; que el orden sea correcto incluso si DB tarda en estar listo.
+    ; IMPORTANTE: "sc start" solo confirma que NSSM arranco el servicio de
+    ; Windows — NO garantiza que php.exe ya este escuchando en su puerto. El
+    ; php.exe VIEJO (recien detenido) puede tardar un instante en soltar el
+    ; puerto TCP; el nuevo php.exe puede fallar su primer intento de bind y
+    ; NSSM lo reintenta recien 5s despues (AppRestartDelay). Relanzar la app
+    ; inmediatamente aca podia pegarle a un servidor todavia no listo —
+    ; wait-after-update.ps1 confirma con un ping real antes de reabrir.
     DetailPrint "Reiniciando servicios LogosPOS si corresponde..."
     nsExec::ExecToStack 'sc start LogosPOS-DB'
     Pop $R0
@@ -52,9 +56,12 @@
     nsExec::ExecToStack 'sc start LogosPOS-PHP'
     Pop $R0
     Pop $R1
-    DetailPrint "Servicios reiniciados (codigo DB=$R0)."
+    DetailPrint "Servicios reiniciados (codigo DB=$R0). Confirmando que el servidor web responde..."
 
-    ; Reabrir inmediatamente — los servicios ya estan en RUNNING por sc start.
+    nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\resources\wait-after-update.ps1"'
+    Pop $R0
+
+    DetailPrint "Reabriendo Logos POS..."
     ExecShell "open" "$INSTDIR\Logos POS.exe"
 
     Goto logos_role_done

@@ -30,6 +30,15 @@ const DATA_ROOT = 'C:\\ProgramData\\LogosPOS';
 const configManager = new ConfigManager(DATA_ROOT);
 const serverManager = new ServerManager(RESOURCES, WWW_DIR, APP_DIR);
 
+// Se consume una sola vez por arranque del proceso — la primera pantalla que
+// cargue (sea cual sea) fuerza el logout; de ahí en más, navegar dentro de la
+// misma sesión de Electron ya abierta no vuelve a pedir usuario y clave.
+let sesionLimpiadaAlArrancar = false;
+ipcMain.on('debe-limpiar-sesion', (event) => {
+  event.returnValue = !sesionLimpiadaAlArrancar;
+  sesionLimpiadaAlArrancar = true;
+});
+
 // ── Window helpers ────────────────────────────────────────────────────────────
 let mainWindow   = null;
 let overlayWin   = null;
@@ -465,7 +474,7 @@ async function startServerRole() {
       // real DB request arrives before the engine is fully ready.
       sendLoading('Verificando base de datos...');
       const baseUrl = `http://localhost:${webPort}`;
-      const installState = await checkInstallState(baseUrl, 5);
+      let installState = await checkInstallState(baseUrl, 5);
       if (!installState) {
         throw new Error(
           'El servidor de base de datos no responde después de varios intentos.\n\n' +
@@ -474,9 +483,28 @@ async function startServerRole() {
         );
       }
 
-      const needsSetup = installState.requiere_conexion || installState.requiere_schema ||
-                         installState.requiere_admin    || installState.requiere_negocio ||
-                         installState.requiere_caja;
+      const flagsNeedSetup = (s) => !!(s && (s.requiere_conexion || s.requiere_schema ||
+                              s.requiere_admin || s.requiere_negocio || s.requiere_caja));
+      let needsSetup = flagsNeedSetup(installState);
+
+      // En modo supervisor un falso "necesita instalación" es catastrófico —
+      // manda a un cliente que ya está andando de vuelta al wizard, sin
+      // salida clara (ver CLAUDE.md, caso 01/08/2026). No hay downside real
+      // en confirmar dos veces: para una instalación nueva de verdad, el
+      // segundo chequeo va a decir exactamente lo mismo unos segundos después.
+      if (needsSetup) {
+        logLicencia(`ALERTA primer chequeo de instalación dice que hace falta setup: ${JSON.stringify(installState)}`);
+        sendLoading('Confirmando estado de la instalación...');
+        await new Promise(r => setTimeout(r, 4000));
+        const installState2 = await checkInstallState(baseUrl, 3);
+        const needsSetup2 = flagsNeedSetup(installState2);
+        logLicencia(`Segundo chequeo needsSetup=${needsSetup2}: ${JSON.stringify(installState2)}`);
+        if (!needsSetup2) {
+          needsSetup = false;
+          installState = installState2;
+        }
+      }
+
       const appUrl = needsSetup
         ? `${baseUrl}/Logos/pos/instalar.html`
         : `${baseUrl}/Logos/pos/index.html`;
