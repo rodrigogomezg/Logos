@@ -99,19 +99,22 @@ class ServerManager {
       const installDbExe  = this._mysqlInstallDbExe;
       const useInstallDb  = fs.existsSync(installDbExe);
 
+      const mariadbBase = path.dirname(path.dirname(this._mysqldExe));
+      const binDir      = path.dirname(this._mysqldExe);
       try {
         if (useInstallDb) {
           execFileSync(installDbExe, [
             `--datadir=${dataDir}`,
             '--password=',
-          ], { timeout: 120000, stdio: 'pipe' });
+          ], { timeout: 120000, stdio: 'pipe', cwd: binDir });
         } else {
           // MariaDB 10.11+ supports --initialize-insecure directly on mysqld
           execFileSync(this._mysqldExe, [
             '--no-defaults',
+            `--basedir=${mariadbBase}`,
             `--datadir=${dataDir}`,
             '--initialize-insecure',
-          ], { timeout: 120000, stdio: 'pipe' });
+          ], { timeout: 120000, stdio: 'pipe', cwd: binDir });
         }
       } catch (err) {
         const detail = (err.stderr || err.stdout || err.message || '').toString().substring(0, 400);
@@ -121,14 +124,16 @@ class ServerManager {
 
     this._dbPort = await findFreePort(3306);
 
+    const mariadbBase = path.dirname(path.dirname(this._mysqldExe)); // bin/../ = mariadb root
     this._dbProc = spawn(this._mysqldExe, [
       '--no-defaults',
+      `--basedir=${mariadbBase}`,
       `--datadir=${dataDir}`,
       `--port=${this._dbPort}`,
       '--bind-address=127.0.0.1',
       '--skip-networking=OFF',
       '--console',
-    ], { detached: false, stdio: 'ignore', windowsHide: true });
+    ], { detached: false, stdio: 'ignore', windowsHide: true, cwd: path.dirname(this._mysqldExe) });
 
     this._dbProc.on('error', err => console.error('[MariaDB]', err.message));
     this._dbExitCode = undefined;
@@ -227,6 +232,11 @@ class ServerManager {
   waitForDatabase(port, timeoutMs = 15000) {
     this._dbPort = port;
     return this._waitForMysql(timeoutMs);
+  }
+
+  // Run pending migrations (safe to call in any mode; no-op if migrate/ missing)
+  runMigrations() {
+    this._runMigrations();
   }
 
   // ── Shared helpers ───────────────────────────────────────────────────────────

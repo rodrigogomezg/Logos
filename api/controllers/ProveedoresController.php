@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../helpers/ReglasPrecioHelper.php';
 
 class ProveedoresController {
 
@@ -71,11 +72,13 @@ class ProveedoresController {
             SELECT p.id, p.nombre, p.cuit, p.condicion_iva, p.email, p.telefono,
                    p.domicilio, p.localidad, p.provincia, p.observaciones,
                    p.activo, p.cc_habilitada, p.limite_credito, p.saldo_cuenta_corriente,
-                   p.plazo_pago_dias, p.lista_precio_id, p.creado_en,
+                   p.plazo_pago_dias, p.lista_precio_id, p.regla_precio_id, p.creado_en,
                    lp.nombre AS lista_precio_nombre,
+                   rp.nombre AS regla_precio_nombre,
                    uc.ult_fecha
             FROM proveedores p
             LEFT JOIN listas_precio lp ON p.lista_precio_id = lp.id
+            LEFT JOIN reglas_precio rp ON p.regla_precio_id = rp.id
             LEFT JOIN (SELECT proveedor_id, MAX(fecha) AS ult_fecha FROM compras GROUP BY proveedor_id) AS uc
                    ON uc.proveedor_id = p.id
             $whereStr
@@ -91,6 +94,7 @@ class ProveedoresController {
             $r['limite_credito']         = (float)$r['limite_credito'];
             $r['saldo_cuenta_corriente'] = (float)$r['saldo_cuenta_corriente'];
             $r['lista_precio_id']        = $r['lista_precio_id'] ? (int)$r['lista_precio_id'] : null;
+            $r['regla_precio_id']        = $r['regla_precio_id'] ? (int)$r['regla_precio_id'] : null;
             $r['plazo_pago_dias']        = $r['plazo_pago_dias'] ? (int)$r['plazo_pago_dias'] : null;
         }
 
@@ -108,10 +112,12 @@ class ProveedoresController {
             SELECT p.id, p.nombre, p.cuit, p.condicion_iva, p.email, p.telefono,
                    p.domicilio, p.localidad, p.provincia, p.observaciones,
                    p.activo, p.cc_habilitada, p.limite_credito, p.saldo_cuenta_corriente,
-                   p.plazo_pago_dias, p.lista_precio_id, p.creado_en,
-                   lp.nombre AS lista_precio_nombre
+                   p.plazo_pago_dias, p.lista_precio_id, p.regla_precio_id, p.creado_en,
+                   lp.nombre AS lista_precio_nombre,
+                   rp.nombre AS regla_precio_nombre
             FROM proveedores p
             LEFT JOIN listas_precio lp ON p.lista_precio_id = lp.id
+            LEFT JOIN reglas_precio rp ON p.regla_precio_id = rp.id
             WHERE p.id = ?
         ");
         $stmt->execute([$id]);
@@ -123,6 +129,7 @@ class ProveedoresController {
         $r['limite_credito']         = (float)$r['limite_credito'];
         $r['saldo_cuenta_corriente'] = (float)$r['saldo_cuenta_corriente'];
         $r['lista_precio_id']        = $r['lista_precio_id'] ? (int)$r['lista_precio_id'] : null;
+        $r['regla_precio_id']        = $r['regla_precio_id'] ? (int)$r['regla_precio_id'] : null;
         $r['plazo_pago_dias']        = $r['plazo_pago_dias'] ? (int)$r['plazo_pago_dias'] : null;
         json(200, $r);
     }
@@ -137,9 +144,11 @@ class ProveedoresController {
         $db->prepare("
             INSERT INTO proveedores
                 (nombre, cuit, condicion_iva, email, telefono, domicilio, localidad, provincia,
-                 observaciones, activo, cc_habilitada, limite_credito, plazo_pago_dias, lista_precio_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 observaciones, activo, cc_habilitada, limite_credito, plazo_pago_dias, lista_precio_id, regla_precio_id)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ")->execute($this->params($body, $nombre));
+
+        if (!empty($body['regla_precio_id'])) ReglasPrecioHelper::recalcularPorGrupo($db, 'proveedor', $nombre);
 
         $this->get((int)$db->lastInsertId());
     }
@@ -159,9 +168,14 @@ class ProveedoresController {
             UPDATE proveedores SET
                 nombre=?, cuit=?, condicion_iva=?, email=?, telefono=?, domicilio=?,
                 localidad=?, provincia=?, observaciones=?, activo=?, cc_habilitada=?,
-                limite_credito=?, plazo_pago_dias=?, lista_precio_id=?
+                limite_credito=?, plazo_pago_dias=?, lista_precio_id=?, regla_precio_id=?
             WHERE id=?
         ")->execute([...$this->params($body, $nombre), $id]);
+
+        // Si asignó/cambió/quitó la regla, recalcular precio_venta de los productos de este proveedor.
+        if (array_key_exists('regla_precio_id', $body)) {
+            ReglasPrecioHelper::recalcularPorGrupo($db, 'proveedor', $nombre);
+        }
 
         $this->get($id);
     }
@@ -184,6 +198,8 @@ class ProveedoresController {
                 ? (int)$body['plazo_pago_dias'] : null,
             isset($body['lista_precio_id']) && $body['lista_precio_id']
                 ? (int)$body['lista_precio_id'] : null,
+            isset($body['regla_precio_id']) && $body['regla_precio_id']
+                ? (int)$body['regla_precio_id'] : null,
         ];
     }
 

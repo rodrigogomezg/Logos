@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../config/db.php';
+require_once __DIR__ . '/../helpers/ReglasPrecioHelper.php';
 
 class ProductosController {
 
@@ -112,7 +113,7 @@ class ProductosController {
 
         $sql = "
             SELECT p.id, p.codigo, p.codigo_secundario, p.nombre, p.marca, p.proveedor, p.categoria, p.subcategoria,
-                   p.precio_venta, p.costo_actual, p.stock_actual, p.stock_minimo,
+                   p.precio_venta, p.regla_precio_id, p.costo_actual, p.stock_actual, p.stock_minimo,
                    p.iva_porcentaje, p.unidad_medida, p.activo, p.publicado_web,
                    p.comisionable, p.comision_tipo, p.comision_valor,
                    $reservaSubq AS stock_disponible
@@ -133,7 +134,7 @@ class ProductosController {
     public function get(int $id): void {
         $stmt = DB::get()->prepare("
             SELECT id, codigo, codigo_secundario, nombre, descripcion, marca, proveedor, categoria, subcategoria,
-                   precio_venta, costo_actual, stock_actual, stock_minimo,
+                   precio_venta, regla_precio_id, costo_actual, stock_actual, stock_minimo,
                    iva_porcentaje, unidad_medida, peso, activo, publicado_web,
                    comisionable, comision_tipo, comision_valor
             FROM productos WHERE id = ?
@@ -192,7 +193,7 @@ class ProductosController {
 
         $stmt = $db->prepare("
             SELECT id, codigo, codigo_secundario, nombre, descripcion, marca, categoria, subcategoria, proveedor,
-                   precio_venta, costo_actual, stock_minimo,
+                   precio_venta, regla_precio_id, costo_actual, stock_minimo,
                    iva_porcentaje, unidad_medida, peso, activo, publicado_web,
                    comisionable, comision_tipo, comision_valor
             FROM productos
@@ -204,7 +205,8 @@ class ProductosController {
         $items = $stmt->fetchAll();
 
         foreach ($items as &$p) {
-            $p['precio_venta']   = (float)$p['precio_venta'];
+            $p['precio_venta']    = (float)$p['precio_venta'];
+            $p['regla_precio_id'] = $p['regla_precio_id'] !== null ? (int)$p['regla_precio_id'] : null;
             $p['costo_actual']   = (float)$p['costo_actual'];
             $p['stock_minimo']   = (float)$p['stock_minimo'];
             $p['iva_porcentaje'] = $p['iva_porcentaje'] !== null ? (float)$p['iva_porcentaje'] : null;
@@ -243,6 +245,7 @@ class ProductosController {
         $proveedor     = trim($body['proveedor']    ?? '') ?: null;
         $categoria     = trim($body['categoria']    ?? '') ?: null;
         $subcategoria  = trim($body['subcategoria'] ?? '') ?: null;
+        $regla_precio_id = isset($body['regla_precio_id']) && $body['regla_precio_id'] !== null ? (int)$body['regla_precio_id'] : null;
         $stock_min     = isset($body['stock_minimo'])  && $body['stock_minimo']  !== null ? (float)$body['stock_minimo']  : null;
         $stock_inicial = isset($body['stock_inicial']) && $body['stock_inicial'] !== null ? (float)$body['stock_inicial'] : 0;
         $iva_pct       = isset($body['iva_porcentaje']) && $body['iva_porcentaje'] !== null ? (float)$body['iva_porcentaje'] : 21;
@@ -266,12 +269,12 @@ class ProductosController {
         try {
             $db->prepare("
                 INSERT INTO productos
-                    (nombre, descripcion, codigo, codigo_secundario, precio_venta, costo_actual, marca, proveedor,
+                    (nombre, descripcion, codigo, codigo_secundario, precio_venta, regla_precio_id, costo_actual, marca, proveedor,
                      categoria, subcategoria, stock_minimo, stock_actual,
                      iva_porcentaje, unidad_medida, peso, activo, publicado_web,
                      comisionable, comision_tipo, comision_valor)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ")->execute([$nombre, $descripcion, $codigo, $codigo_sec, $precio, $costo, $marca, $proveedor,
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ")->execute([$nombre, $descripcion, $codigo, $codigo_sec, $precio, $regla_precio_id, $costo, $marca, $proveedor,
                          $categoria, $subcategoria, $stock_min, $stock_inicial,
                          $iva_pct, $unidad, $peso, $activo, $publicado_web,
                          $comisionable, $comision_tipo, $comision_valor]);
@@ -284,6 +287,10 @@ class ProductosController {
                     VALUES (?, 'entrada', ?, NOW())
                 ")->execute([$newId, $stock_inicial]);
             }
+
+            // Siempre, no solo si vino regla_precio_id explícita — puede heredar
+            // una regla de marca/rubro/proveedor sin que nadie la haya asignado a mano.
+            ReglasPrecioHelper::recalcularPrecio($db, $newId);
 
             $db->commit();
             json(201, ['id' => $newId, 'nombre' => $nombre]);
@@ -310,6 +317,7 @@ class ProductosController {
         $proveedor    = isset($body['proveedor'])    ? trim($body['proveedor'])     : null;
         $categoria    = isset($body['categoria'])    ? trim($body['categoria'])     : null;
         $subcategoria = isset($body['subcategoria']) ? trim($body['subcategoria'])  : null;
+        $regla_precio_id = !empty($body['regla_precio_id']) ? (int)$body['regla_precio_id'] : null;
         $stock_min    = array_key_exists('stock_minimo', $body) && $body['stock_minimo'] !== null
                         ? (float)$body['stock_minimo'] : null;
         $iva_pct      = array_key_exists('iva_porcentaje', $body) && $body['iva_porcentaje'] !== null
@@ -336,6 +344,7 @@ class ProductosController {
                 codigo_secundario = ?,
                 descripcion       = ?,
                 precio_venta      = COALESCE(?, precio_venta),
+                regla_precio_id   = ?,
                 costo_actual      = COALESCE(?, costo_actual),
                 marca             = ?,
                 proveedor         = ?,
@@ -357,6 +366,7 @@ class ProductosController {
             $codigo_sec,
             $descripcion,
             $precio,
+            $regla_precio_id,
             $costo,
             $marca        ?: null,
             $proveedor    ?: null,
@@ -373,6 +383,10 @@ class ProductosController {
             $comision_valor,
             $id,
         ]);
+
+        // No-op si el producto no tiene regla asignada — cubre tanto un cambio
+        // de costo como una (re)asignación de regla en el mismo request.
+        ReglasPrecioHelper::recalcularPrecio($db, $id);
 
         json(200, ['ok' => true]);
     }
@@ -488,12 +502,35 @@ class ProductosController {
             $set[]  = 'precio_venta = ROUND(precio_venta * ?, 2)';
             $setP[] = 1 + ($pct / 100);
         }
+        if (array_key_exists('regla_precio_id', $cambios)) {
+            $set[]  = 'regla_precio_id = ?';
+            $setP[] = !empty($cambios['regla_precio_id']) ? (int)$cambios['regla_precio_id'] : null;
+        }
 
         if (empty($set)) json(400, ['error' => 'No hay cambios válidos']);
+
+        // marca/categoria/proveedor o regla_precio_id afectan qué regla de precio
+        // aplica — hay que recalcular después. Se capturan los IDs ANTES del
+        // UPDATE: si el propio cambio modifica marca/categoria/proveedor, el
+        // $whereStr original (filtrado por el valor viejo) ya no matchearía
+        // las filas después de actualizarlas.
+        $tocaPrecio = array_key_exists('regla_precio_id', $cambios)
+            || array_key_exists('marca', $cambios) || array_key_exists('categoria', $cambios) || array_key_exists('proveedor', $cambios);
+        $idsAfectados = [];
+        if ($tocaPrecio) {
+            $s = DB::get()->prepare("SELECT id FROM productos WHERE $whereStr");
+            $s->execute($whereP);
+            $idsAfectados = array_column($s->fetchAll(), 'id');
+        }
 
         $db   = DB::get();
         $stmt = $db->prepare("UPDATE productos SET " . implode(', ', $set) . " WHERE $whereStr");
         $stmt->execute(array_merge($setP, $whereP));
+
+        if ($tocaPrecio && !empty($idsAfectados)) {
+            $ph = implode(',', array_fill(0, count($idsAfectados), '?'));
+            ReglasPrecioHelper::recalcularPorFiltro($db, "id IN ($ph)", $idsAfectados);
+        }
 
         json(200, ['ok' => true, 'afectados' => $stmt->rowCount()]);
     }

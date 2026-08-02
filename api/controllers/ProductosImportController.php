@@ -2,6 +2,8 @@
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
+require_once __DIR__ . '/../helpers/ReglasPrecioHelper.php';
+
 class ProductosImportController {
 
     private const EXT_OK    = ['xlsx', 'xls', 'csv'];
@@ -146,6 +148,8 @@ class ProductosImportController {
                     $r['precio_venta'], $r['costo_actual'], $r['stock_minimo'],
                 ]);
                 $nuevoId = (int)$db->lastInsertId();
+                // Puede heredar una regla de marca/rubro/proveedor sin que nadie la haya asignado a mano.
+                ReglasPrecioHelper::recalcularPrecio($db, $nuevoId);
                 $stmtDet->execute([$loteId, $nuevoId, $r['codigo'], 'crear', null, json_encode($r, JSON_UNESCAPED_UNICODE), null]);
                 $creados++;
             }
@@ -162,6 +166,9 @@ class ProductosImportController {
                 if (!$set) continue;
                 $params[] = $r['id'];
                 $db->prepare("UPDATE productos SET " . implode(', ', $set) . " WHERE id = ?")->execute($params);
+                // No-op si el producto no tiene regla asignada — cubre el caso de que
+                // el importador haya traído un costo_actual nuevo desde el proveedor.
+                ReglasPrecioHelper::recalcularPrecio($db, $r['id']);
                 $stmtDet->execute([
                     $loteId, $r['id'], $r['codigo'], 'actualizar',
                     json_encode($r['antes'], JSON_UNESCAPED_UNICODE), json_encode($r['despues'], JSON_UNESCAPED_UNICODE), null,

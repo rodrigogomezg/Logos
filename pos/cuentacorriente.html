@@ -1121,10 +1121,12 @@ function renderLibro(movs) {
 
   // Mapa venta_id → total asignado (calculado desde las asignaciones de los pagos)
   const asigPorVenta = {};
+  const asigPorCargo = {};
   for (const m of movs) {
     if (m.tipo === 'pago' && m.asignaciones) {
       for (const a of m.asignaciones) {
-        asigPorVenta[a.venta_id] = (asigPorVenta[a.venta_id] || 0) + a.monto;
+        if (a.venta_id) asigPorVenta[a.venta_id] = (asigPorVenta[a.venta_id] || 0) + a.monto;
+        if (a.cargo_id) asigPorCargo[a.cargo_id] = (asigPorCargo[a.cargo_id] || 0) + a.monto;
       }
     }
   }
@@ -1144,9 +1146,11 @@ function renderLibro(movs) {
     let obsLine  = '';
 
     if (m.tipo === 'cargo') {
-      if (m.referencia_id) {
-        const tipo = m.ref_tipo || (modoEntidad === 'proveedor' ? 'Compra' : 'Venta');
-        concepto = `${esc(tipo)} N°${pad(m.referencia_id)}`;
+      if (m.referencia_id && m.ref_tipo) {
+        // ref_tipo viene del backend: 'Factura A', 'Envío', etc.
+        concepto = `${esc(m.ref_tipo)} N°${pad(m.referencia_id)}`;
+      } else if (m.referencia_id) {
+        concepto = `${modoEntidad === 'proveedor' ? 'Compra' : 'Venta'} N°${pad(m.referencia_id)}`;
       } else {
         concepto = 'Cargo manual';
       }
@@ -1163,9 +1167,8 @@ function renderLibro(movs) {
       }
     }
 
-    const asignado     = (m.tipo === 'cargo' && m.referencia_id)
-      ? (asigPorVenta[m.referencia_id] || 0)
-      : 0;
+    const asignado     = m.tipo !== 'cargo' ? 0
+      : (m.referencia_id ? (asigPorVenta[m.referencia_id] || 0) : 0) + (asigPorCargo[m.id] || 0);
     const asigCell     = (m.tipo === 'cargo' && asignado > 0.001) ? fmt(asignado) : '';
     const esDevolucion = m.tipo === 'pago' && m.referencia_id;
 
@@ -1179,7 +1182,7 @@ function renderLibro(movs) {
       <td class="col-credito">${m.tipo === 'pago'  ? fmt(m.monto) : ''}</td>
       <td class="col-saldo" style="${saldoColor}">${fmt(saldo)}</td>
       <td class="col-acciones">
-        ${(m.tipo === 'pago' && !esDevolucion) ? `<button class="btn-print-recibo" data-id="${m.id}" title="Imprimir recibo">${svgPrint}</button>` : ''}
+        ${(m.tipo === 'pago' && !esDevolucion) ? `<button class="btn-print-recibo" data-id="${m.id}" title="Ver recibo">${svgPrint}</button>` : ''}
         <button class="btn-del-mov"
           data-id="${m.id}" data-tipo="${m.tipo}"
           data-monto="${m.monto}" data-fecha="${m.fecha}"
@@ -1350,17 +1353,25 @@ function renderAsignaciones() {
   $('asig-section-titulo-txt').textContent = modoEntidad === 'proveedor' ? 'Asignar a compras pendientes ' : 'Asignar a ventas pendientes ';
 
   lista.innerHTML = ventasPendientes.map(v => {
-    const badge = (v.tipo_comprobante ?? (modoEntidad === 'proveedor' ? 'Compra' : 'Venta')).substring(0, 8);
+    let label, dataAttr;
+    if (v.tipo_ref === 'cargo') {
+      label    = esc(v.tipo_comprobante || 'Cargo');
+      dataAttr = `data-cargo-id="${v.id}"`;
+    } else {
+      const badge = (v.tipo_comprobante ?? (modoEntidad === 'proveedor' ? 'Compra' : 'Venta')).substring(0, 8);
+      label    = `${esc(badge)} N°${pad(v.id)}`;
+      dataAttr = `data-venta-id="${v.id}"`;
+    }
     return `<div class="asig-fila">
       <div class="asig-info">
-        <div class="asig-tipo-num">${esc(badge)} N°${pad(v.id)}</div>
+        <div class="asig-tipo-num">${label}</div>
         <div class="asig-meta">${fmtFechaStr(v.fecha)} · Saldo: ${fmt(v.saldo_pendiente)}</div>
       </div>
       <div class="asig-input-wrap">
         <span class="asig-peso">$</span>
         <input class="asig-input" type="number" min="0" max="${v.saldo_pendiente}"
                step="any" value="0"
-               data-venta-id="${v.id}" data-max="${v.saldo_pendiente}"
+               ${dataAttr} data-max="${v.saldo_pendiente}"
                oninput="actualizarAsigTotal()">
       </div>
     </div>`;
@@ -1414,9 +1425,10 @@ async function confirmarPago() {
 
   const asignaciones = [];
   document.querySelectorAll('.asig-input').forEach(inp => {
-    const venta_id = parseInt(inp.dataset.ventaId);
-    const monto_a  = parseFloat(inp.value) || 0;
-    if (monto_a > 0.001) asignaciones.push({ venta_id, monto: monto_a });
+    const monto_a = parseFloat(inp.value) || 0;
+    if (monto_a < 0.001) return;
+    if (inp.dataset.ventaId) asignaciones.push({ venta_id: parseInt(inp.dataset.ventaId), monto: monto_a });
+    else if (inp.dataset.cargoId) asignaciones.push({ cargo_id: parseInt(inp.dataset.cargoId), monto: monto_a });
   });
 
   const medio = $('pago-medio').value;
@@ -1854,17 +1866,22 @@ async function cargarConfigEmpresa() {
 }
 
 async function imprimirReciboPago(movId) {
-  const mov = movsActuales.find(m => m.id === movId);
-  if (!mov) return;
-  const config = await cargarConfigEmpresa();
-  const html   = generarHtmlRecibo(mov, clienteActual, config);
-  const w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  setTimeout(() => w.print(), 600);
+  const [r, config] = await Promise.all([
+    fetch(`${API}/cc/${movId}/recibo-pdf`),
+    cargarConfigEmpresa(),
+  ]);
+  if (!r.ok) {
+    const d = await r.json().catch(() => ({}));
+    toast_(d.error || 'Error al generar recibo', 'err');
+    return;
+  }
+  const pv      = String(config.punto_venta || '1').padStart(4, '0');
+  const nRecibo = `${pv}-${String(movId).padStart(8, '0')}`;
+  abrirPdfModal(await r.blob(), { printBtn: true, downloadFilename: `recibo-${nRecibo}.pdf` });
 }
 
+/* generarHtmlRecibo — DESACTIVADA: reemplazada por ReciboGenerador.php (PDF server-side).
+   Dejada comentada para comparación visual durante testing.
 function generarHtmlRecibo(mov, cliente, config) {
   const e2  = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const fm  = n => '$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 });
@@ -1900,8 +1917,10 @@ function generarHtmlRecibo(mov, cliente, config) {
   let   asigRows    = '';
   let   totalAsig   = 0;
   for (const a of asigs) {
-    const tipo = e2(a.venta_tipo || 'VTA');
-    asigRows += `<tr><td>${tipo} N°${String(a.venta_id).padStart(8,'0')}</td><td class="r">${fm(a.monto)}</td></tr>`;
+    const label = a.venta_id
+      ? `${e2(a.venta_tipo || 'VTA')} N°${String(a.venta_id).padStart(8,'0')}`
+      : e2(a.venta_tipo || 'Cargo');
+    asigRows += `<tr><td>${label}</td><td class="r">${fm(a.monto)}</td></tr>`;
     totalAsig += a.monto;
   }
   const sinImputar = mov.monto - totalAsig;
@@ -2001,6 +2020,7 @@ table.tot tr.final td{border-top:2px solid #111;font-size:16px;font-weight:700;p
 </body>
 </html>`;
 }
+*/
 
 // ── Init ─────────────────────────────────────────────────────
 // ── Mini-dashboard de vencimientos en la ficha ──────────────

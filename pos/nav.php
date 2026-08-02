@@ -8,7 +8,7 @@ function nav_clase(string $clave, string $actual): string {
 $caja_activo      = in_array($nav_activo, ['caja', 'movimientos', 'operaciones', 'cierres', 'cheques'], true);
 $vendedores_activo = $nav_activo === 'vendedores';
 $reportes_activo  = in_array($nav_activo, ['dashboard', 'rentabilidad', 'iva', 'reportes'], true);
-$productos_activo = in_array($nav_activo, ['productos', 'stock', 'importar', 'taxonomias'], true);
+$productos_activo = in_array($nav_activo, ['productos', 'stock', 'importar', 'taxonomias', 'reglas-precio'], true);
 $cc_tipo   = $nav_activo === 'cuentacorriente' && ($_GET['tipo'] ?? 'cliente') === 'proveedor' ? 'proveedor' : 'cliente';
 $cont_tipo = $nav_activo === 'contactos'       && ($_GET['tipo'] ?? 'cliente') === 'proveedor' ? 'proveedor' : 'cliente';
 ?>
@@ -39,6 +39,7 @@ $cont_tipo = $nav_activo === 'contactos'       && ($_GET['tipo'] ?? 'cliente') =
       <a href="/Logos/pos/importar.html" id="nav-importar-link" class="<?= trim(nav_clase('importar',  $nav_activo)) ?>">Importar</a>
       <a href="/Logos/pos/taxonomias.html?tipo=rubros" class="<?= $nav_activo === 'taxonomias' && ($_GET['tipo'] ?? '') === 'rubros' ? 'activo' : '' ?>">Rubros</a>
       <a href="/Logos/pos/taxonomias.html?tipo=marcas" class="<?= $nav_activo === 'taxonomias' && ($_GET['tipo'] ?? '') === 'marcas' ? 'activo' : '' ?>">Marcas</a>
+      <a href="/Logos/pos/reglas-precio.html" class="<?= trim(nav_clase('reglas-precio', $nav_activo)) ?>">Reglas de precio</a>
     </div>
   </div>
   <a href="/Logos/pos/compras.html" id="nav-compras-link" class="nav-link<?= nav_clase('compras', $nav_activo) ?>">Compras</a>
@@ -86,3 +87,4 @@ $cont_tipo = $nav_activo === 'contactos'       && ($_GET['tipo'] ?? 'cliente') =
 </nav>
 <script src="/Logos/pos/auth.js?v=<?= @filemtime(__DIR__ . '/auth.js') ?: 0 ?>"></script>
 <script src="/Logos/pos/tour.js?v=<?= @filemtime(__DIR__ . '/tour.js') ?: 0 ?>"></script>
+<script src="/Logos/pos/licencia.js?v=<?= @filemtime(__DIR__ . '/licencia.js') ?: 0 ?>"></script>

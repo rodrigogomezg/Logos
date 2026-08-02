@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/Logos/logos_logo.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logos — Reglas de precio</title>
+<script src="config.js"></script>
+<script src="helpers.js"></script>
+<link rel="stylesheet" href="pos-base.css">
+<style>
+.page-body { flex:1; display:flex; flex-direction:column; overflow:hidden; padding:16px; gap:12px; background:var(--neo-bg-deep); }
+.rgp-inner { max-width:780px; width:100%; margin:0 auto; padding:20px 24px; background:var(--neo-bg); border-radius:var(--neo-r-lg); box-shadow:var(--neo-e2); }
+.rgp-header { display:flex; align-items:center; gap:14px; margin-bottom:8px; }
+.rgp-title  { font-size:18px; font-weight:700; color:var(--neo-text); margin:0; flex:1; }
+.rgp-sub    { font-size:12px; color:var(--neo-text-3); margin:0 0 20px; }
+
+.t-input { padding:7px 10px; border:none; border-radius:var(--neo-r-sm); font-size:13px;
+           font-family:inherit; outline:none; background:var(--neo-bg); box-shadow:var(--neo-i1);
+           color:var(--neo-text); width:100%; box-sizing:border-box; transition:box-shadow var(--neo-t-fast); }
+.t-input:focus { box-shadow:var(--neo-i1), 0 0 0 2px var(--neo-accent); }
+
+.rgp-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.rgp-search  { flex:1; min-width:160px; max-width:280px; }
+.rgp-count   { font-size:12px; color:var(--neo-text-3); }
+.rgp-chk-todos { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--neo-text-2); cursor:pointer; margin-left:auto; }
+.rgp-chk-todos input { accent-color:var(--neo-accent); cursor:pointer; }
+
+table.rgp-tbl { width:100%; border-collapse:collapse; }
+table.rgp-tbl col.c-nom { width:auto; }
+table.rgp-tbl col.c-pct { width:140px; }
+table.rgp-tbl col.c-est { width:90px; }
+table.rgp-tbl col.c-act { width:90px; }
+table.rgp-tbl th { padding:8px 10px; text-align:left; font-size:10px; font-weight:700;
+                   text-transform:uppercase; letter-spacing:.5px; color:var(--color-ink);
+                   border-bottom:1px solid var(--borde-fuerte); }
+table.rgp-tbl td { padding:9px 10px; font-size:13px; border-bottom:1px solid var(--borde);
+                   color:var(--neo-text); vertical-align:middle; }
+table.rgp-tbl tr:last-child td { border-bottom:none; }
+table.rgp-tbl tr:hover td { background:var(--color-bg-alt); }
+
+.badge-on  { display:inline-block; padding:2px 8px; border-radius:var(--neo-r-pill); font-size:10px; font-weight:700;
+             text-transform:uppercase; background:rgba(46,204,113,.12); color:#27ae60; }
+.badge-off { display:inline-block; padding:2px 8px; border-radius:var(--neo-r-pill); font-size:10px; font-weight:700;
+             text-transform:uppercase; background:var(--color-bg-alt); color:var(--neo-text-3); }
+
+.btn-icon { padding:5px 8px; border:none; border-radius:var(--neo-r-xs); background:var(--neo-bg); cursor:pointer;
+            color:var(--neo-text-2); box-shadow:var(--neo-e1); transition:.15s; font-size:13px; }
+.btn-icon:hover { box-shadow:var(--neo-e2); color:var(--neo-accent); }
+.btn-icon.danger:hover { color:var(--neo-danger); }
+
+.overlay { position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.45);
+           display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:.2s; }
+.overlay.abierto { opacity:1; pointer-events:auto; }
+.modal { background:var(--neo-bg); border-radius:var(--neo-r-lg); padding:28px 28px 24px;
+         width:400px; max-width:95vw; box-shadow:0 8px 32px rgba(0,0,0,.22);
+         transform:translateY(8px); transition:.2s; }
+.overlay.abierto .modal { transform:none; }
+.modal-title { font-size:16px; font-weight:700; margin:0 0 20px; color:var(--neo-text); }
+.form-row  { margin-bottom:14px; }
+.form-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px;
+              color:var(--neo-text-3); display:block; margin-bottom:5px; }
+.form-hint  { font-size:11px; color:var(--neo-text-3); margin-top:4px; }
+.pct-wrap { position:relative; }
+.pct-wrap .t-input { padding-right:28px; }
+.pct-sym  { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:13px; color:var(--neo-text-3); pointer-events:none; }
+.toggle-wrap { display:flex; align-items:center; gap:8px; }
+.toggle-lbl  { font-size:13px; color:var(--neo-text-2); }
+.toggle { position:relative; width:36px; height:20px; }
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-slider { position:absolute; inset:0; border-radius:10px; background:var(--color-bg-alt); transition:.2s; cursor:pointer; }
+.toggle-slider::before { content:''; position:absolute; width:14px; height:14px; left:3px; top:3px;
+                         border-radius:50%; background:#fff; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.2); }
+.toggle input:checked + .toggle-slider { background:var(--neo-accent); }
+.toggle input:checked + .toggle-slider::before { transform:translateX(16px); }
+.modal-footer { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+
+.neo-btn { padding:8px 20px; border:none; border-radius:var(--neo-r-sm); cursor:pointer;
+           font-size:13px; font-weight:700; font-family:inherit; transition:.15s; }
+.neo-btn-primary { background:var(--neo-accent); color:#fff; box-shadow:3px 3px 8px var(--neo-accent-glow),-2px -2px 5px rgba(255,255,255,.2); }
+.neo-btn-primary:hover { opacity:.9; }
+.neo-btn-ghost { background:var(--neo-bg); color:var(--neo-text-2); box-shadow:var(--neo-e1); }
+.neo-btn-ghost:hover { box-shadow:var(--neo-e2); color:var(--neo-text); }
+.neo-btn-add { background:var(--neo-accent); color:#fff; font-size:12px; font-weight:700;
+               box-shadow:3px 3px 8px var(--neo-accent-glow),-2px -2px 5px rgba(255,255,255,.2); }
+.neo-btn-add:hover { opacity:.9; }
+
+.empty-msg { text-align:center; padding:40px 0; color:var(--neo-text-3); font-size:13px; }
+</style>
+</head>
+<body class="app-layout">
+<?php $nav_activo = 'reglas-precio'; require 'nav.php'; ?>
+
+<div class="page-body">
+  <div class="rgp-inner">
+    <div class="rgp-header">
+      <h1 class="rgp-title">Reglas de precio</h1>
+      <button class="neo-btn neo-btn-add" id="btn-nuevo">+ Nueva regla</button>
+    </div>
+    <p class="rgp-sub">
+      Recargo % sobre el costo (con IVA incluido). El precio de venta se recalcula solo cada vez que cambia el costo.
+      Se pueden asignar en cuatro lugares — a un producto individual o en bloque desde <strong>Productos</strong>,
+      o a toda una <strong>marca</strong>, <strong>rubro</strong> o <strong>proveedor</strong> (ahí en su propia pantalla) —
+      y esa regla se aplica sola a los productos que correspondan, incluidos los que se carguen después.
+      Si un producto queda alcanzado por más de una a la vez, gana en este orden:
+      <strong>regla propia del producto</strong> &gt; <strong>marca</strong> &gt; <strong>rubro</strong> &gt; <strong>proveedor</strong>.
+    </p>
+
+    <div class="rgp-toolbar">
+      <input class="t-input rgp-search" id="inp-search" type="search" placeholder="Buscar regla…">
+      <span class="rgp-count" id="lbl-count"></span>
+      <label class="rgp-chk-todos">
+        <input type="checkbox" id="chk-todos"> Mostrar inactivas
+      </label>
+    </div>
+
+    <div class="rgp-table-wrap" id="tabla-wrap">
+      <table class="rgp-tbl">
+        <colgroup><col class="c-nom"><col class="c-pct"><col class="c-est"><col class="c-act"></colgroup>
+        <thead>
+          <tr>
+            <th>Nombre</th><th>Recargo</th><th>Estado</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-body"></tbody>
+      </table>
+      <div class="empty-msg" id="empty-msg" style="display:none">No hay reglas de precio cargadas.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal crear/editar -->
+<div class="overlay" id="modal-overlay">
+  <div class="modal">
+    <p class="modal-title" id="modal-titulo">Nueva regla de precio</p>
+    <div class="form-row">
+      <label class="form-label">Nombre</label>
+      <input class="t-input" id="f-nombre" type="text" placeholder="Ej: Recargo importados" maxlength="100">
+    </div>
+    <div class="form-row">
+      <label class="form-label">Recargo sobre el costo</label>
+      <div class="pct-wrap"><input class="t-input" id="f-porcentaje" type="number" step="0.01" placeholder="Ej: 40"><span class="pct-sym">%</span></div>
+      <p class="form-hint">precio de venta = costo × (1 + recargo / 100)</p>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Estado</label>
+      <div class="toggle-wrap">
+        <label class="toggle"><input type="checkbox" id="f-activa" checked><span class="toggle-slider"></span></label>
+        <span class="toggle-lbl" id="lbl-activa">Activa</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="neo-btn neo-btn-ghost" id="btn-cancelar">Cancelar</button>
+      <button class="neo-btn neo-btn-primary" id="btn-guardar">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+<script>
+(function () {
+  var API   = (window.API_BASE || '/Logos/api') + '/reglas-precio';
+  var datos = [];
+  var editId = null;
+
+  var overlay   = document.getElementById('modal-overlay');
+  var body      = document.getElementById('tabla-body');
+  var empty     = document.getElementById('empty-msg');
+  var lbl       = document.getElementById('lbl-count');
+  var fActiva   = document.getElementById('f-activa');
+  var lblActiva = document.getElementById('lbl-activa');
+
+  fActiva.addEventListener('change', function () {
+    lblActiva.textContent = fActiva.checked ? 'Activa' : 'Inactiva';
+  });
+
+  var toastTimer;
+  function avisar(msg, tipo) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (tipo ? ' ' + tipo : '');
+    void t.offsetWidth;
+    t.classList.add('visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('visible'); }, tipo === 'err' ? 5500 : 3500);
+  }
+
+  function cargar() {
+    var todas = document.getElementById('chk-todos').checked;
+    fetch(API + (todas ? '' : '?activas=1'), { headers: {} })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        datos = d;
+        renderizar();
+      });
+  }
+
+  function renderizar() {
+    var q = document.getElementById('inp-search').value.toLowerCase();
+    var filas = datos.filter(function (r) { return r.nombre.toLowerCase().includes(q); });
+    lbl.textContent = filas.length + ' regla' + (filas.length !== 1 ? 's' : '');
+    body.innerHTML = '';
+    if (!filas.length) { empty.style.display = ''; return; }
+    empty.style.display = 'none';
+    filas.forEach(function (r) {
+      var tr = document.createElement('tr');
+      var signo = r.porcentaje_recargo >= 0 ? '+' : '';
+      tr.innerHTML =
+        '<td><strong>' + esc(r.nombre) + '</strong></td>' +
+        '<td>' + signo + r.porcentaje_recargo.toLocaleString('es-AR', { maximumFractionDigits: 2 }) + '%</td>' +
+        '<td><span class="' + (r.activa ? 'badge-on' : 'badge-off') + '">' + (r.activa ? 'Activa' : 'Inactiva') + '</span></td>' +
+        '<td>' +
+          '<button class="btn-icon" title="Editar" data-id="' + r.id + '" data-accion="editar">✏️</button> ' +
+          '<button class="btn-icon danger" title="Eliminar" data-id="' + r.id + '" data-accion="eliminar">🗑️</button>' +
+        '</td>';
+      body.appendChild(tr);
+    });
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  body.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-accion]');
+    if (!btn) return;
+    var id     = parseInt(btn.dataset.id);
+    var accion = btn.dataset.accion;
+    var r      = datos.find(function (x) { return x.id === id; });
+    if (accion === 'editar' && r) abrirModal(r);
+    if (accion === 'eliminar' && r) eliminar(r);
+  });
+
+  function abrirModal(r) {
+    editId = r ? r.id : null;
+    document.getElementById('modal-titulo').textContent = r ? 'Editar regla de precio' : 'Nueva regla de precio';
+    document.getElementById('f-nombre').value      = r ? r.nombre : '';
+    document.getElementById('f-porcentaje').value  = r ? r.porcentaje_recargo : '';
+    fActiva.checked = r ? r.activa : true;
+    lblActiva.textContent = fActiva.checked ? 'Activa' : 'Inactiva';
+    overlay.classList.add('abierto');
+    document.getElementById('f-nombre').focus();
+  }
+
+  function cerrarModal() {
+    overlay.classList.remove('abierto');
+    editId = null;
+  }
+
+  document.getElementById('btn-nuevo').addEventListener('click',    function () { abrirModal(null); });
+  document.getElementById('btn-cancelar').addEventListener('click', cerrarModal);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) cerrarModal(); });
+
+  document.getElementById('btn-guardar').addEventListener('click', function () {
+    var nombre = document.getElementById('f-nombre').value.trim();
+    var pct    = document.getElementById('f-porcentaje').value;
+    if (!nombre) { avisar('El nombre es requerido', 'err'); return; }
+    if (pct === '' || isNaN(parseFloat(pct))) { avisar('Ingresá un porcentaje válido', 'err'); return; }
+    var payload = {
+      nombre: nombre,
+      porcentaje_recargo: parseFloat(pct),
+      activa: fActiva.checked,
+    };
+    var url    = editId ? API + '/' + editId : API;
+    var method = editId ? 'PUT' : 'POST';
+    fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok) { avisar(res.d.error || 'Error al guardar', 'err'); return; }
+        cerrarModal();
+        cargar();
+      });
+  });
+
+  function eliminar(r) {
+    if (!confirm('¿Eliminar la regla "' + r.nombre + '"?')) return;
+    fetch(API + '/' + r.id, { method: 'DELETE', headers: {} })
+      .then(function (resp) { return resp.json().then(function (d) { return { ok: resp.ok, d: d }; }); })
+      .then(function (res) {
+        if (!res.ok) { avisar(res.d.error || 'No se pudo eliminar', 'err'); return; }
+        cargar();
+      });
+  }
+
+  document.getElementById('inp-search').addEventListener('input', renderizar);
+  document.getElementById('chk-todos').addEventListener('change', cargar);
+
+  cargar();
+})();
+</script>
+</body>
+</html>

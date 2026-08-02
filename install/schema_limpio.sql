@@ -140,10 +140,13 @@ CREATE TABLE `cc_asignaciones` (
   `venta_id` int(11) DEFAULT NULL,
   `monto` decimal(14,4) NOT NULL,
   `compra_id` int(11) DEFAULT NULL,
+  `cargo_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_mov` (`movimiento_id`),
   KEY `idx_ven` (`venta_id`),
   KEY `fk_cca_com` (`compra_id`),
+  KEY `idx_cargo` (`cargo_id`),
+  CONSTRAINT `fk_cca_cargo` FOREIGN KEY (`cargo_id`) REFERENCES `cuenta_corriente_movimientos` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cca_com` FOREIGN KEY (`compra_id`) REFERENCES `compras` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cca_mov` FOREIGN KEY (`movimiento_id`) REFERENCES `cuenta_corriente_movimientos` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_cca_ven` FOREIGN KEY (`venta_id`) REFERENCES `ventas` (`id`) ON DELETE CASCADE
@@ -354,6 +357,19 @@ CREATE TABLE `escalas_precio` (
   CONSTRAINT `escalas_precio_ibfk_1` FOREIGN KEY (`producto_id`) REFERENCES `productos` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
+DROP TABLE IF EXISTS `reglas_precio`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `reglas_precio` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nombre` varchar(100) NOT NULL,
+  `porcentaje_recargo` decimal(7,2) NOT NULL,
+  `activa` tinyint(1) NOT NULL DEFAULT 1,
+  `creado_en` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_activa` (`activa`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `listas_precio`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -482,6 +498,7 @@ CREATE TABLE `productos` (
   `marca` varchar(100) DEFAULT NULL,
   `proveedor` varchar(150) DEFAULT NULL,
   `precio_venta` decimal(14,4) NOT NULL DEFAULT 0.0000,
+  `regla_precio_id` int(11) DEFAULT NULL,
   `costo_actual` decimal(14,4) NOT NULL DEFAULT 0.0000,
   `stock_actual` decimal(14,4) NOT NULL DEFAULT 0.0000,
   `stock_minimo` decimal(14,4) NOT NULL DEFAULT 0.0000,
@@ -497,7 +514,9 @@ CREATE TABLE `productos` (
   KEY `idx_codigo` (`codigo`),
   KEY `idx_codigo_secundario` (`codigo_secundario`),
   KEY `idx_nombre` (`nombre`),
-  KEY `idx_activo` (`activo`)
+  KEY `idx_activo` (`activo`),
+  KEY `idx_regla_precio` (`regla_precio_id`),
+  CONSTRAINT `productos_ibfk_regla_precio` FOREIGN KEY (`regla_precio_id`) REFERENCES `reglas_precio` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `productos_import_detalle`;
@@ -565,10 +584,13 @@ CREATE TABLE `proveedores` (
   `limite_credito` decimal(14,4) NOT NULL DEFAULT 0.0000,
   `plazo_pago_dias` int(11) DEFAULT NULL,
   `lista_precio_id` int(11) DEFAULT NULL,
+  `regla_precio_id` int(11) DEFAULT NULL,
   `creado_en` datetime DEFAULT current_timestamp(),
   `saldo_cuenta_corriente` decimal(14,4) NOT NULL DEFAULT 0.0000,
   PRIMARY KEY (`id`),
-  KEY `idx_nombre` (`nombre`)
+  KEY `idx_nombre` (`nombre`),
+  KEY `idx_proveedor_regla_precio` (`regla_precio_id`),
+  CONSTRAINT `proveedores_ibfk_regla_precio` FOREIGN KEY (`regla_precio_id`) REFERENCES `reglas_precio` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 DROP TABLE IF EXISTS `reportes_comisiones`;
@@ -805,15 +827,19 @@ FOR EACH ROW SET NEW.sync_uuid = IF(NEW.sync_uuid IS NULL OR NEW.sync_uuid = '',
 CREATE TABLE IF NOT EXISTS `rubros` (
   `id`     int(11)      NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
+  `regla_precio_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_rubro_nombre` (`nombre`)
+  UNIQUE KEY `uk_rubro_nombre` (`nombre`),
+  KEY `idx_rubro_regla_precio` (`regla_precio_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `marcas` (
   `id`     int(11)      NOT NULL AUTO_INCREMENT,
   `nombre` varchar(100) NOT NULL,
+  `regla_precio_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_marca_nombre` (`nombre`)
+  UNIQUE KEY `uk_marca_nombre` (`nombre`),
+  KEY `idx_marca_regla_precio` (`regla_precio_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 CREATE TABLE IF NOT EXISTS `cheques` (
@@ -847,6 +873,23 @@ CREATE TABLE IF NOT EXISTS `cheques` (
   KEY `idx_venta`        (`venta_id`),
   KEY `idx_cc_mov`       (`cc_movimiento_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+DROP TABLE IF EXISTS `licencia_estado`;
+CREATE TABLE `licencia_estado` (
+  `id` int(11) NOT NULL DEFAULT 1,
+  `estado_hub` enum('al_dia','en_gracia','bloqueado') NOT NULL DEFAULT 'al_dia',
+  `dias_restantes_gracia` tinyint(4) DEFAULT NULL,
+  `proximo_vencimiento` date DEFAULT NULL,
+  `mensaje_hub` text DEFAULT NULL,
+  `fecha_ultima_verificacion_exitosa` datetime DEFAULT NULL,
+  `actualizado_en` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `licencia_estado`
+    (`id`, `estado_hub`, `dias_restantes_gracia`, `proximo_vencimiento`, `mensaje_hub`, `fecha_ultima_verificacion_exitosa`)
+VALUES
+    (1, 'al_dia', NULL, NULL, NULL, NULL);
 
 -- Seed mínimo garantizado: sin estos registros los INSERTs en caja_turnos,
 -- caja_cierres y caja_movimientos fallan por FK (sucursal_id NOT NULL DEFAULT 1).

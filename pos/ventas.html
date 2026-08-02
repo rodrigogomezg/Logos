@@ -52,6 +52,8 @@ select.fbar-ctrl { cursor: pointer; }
   transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
 }
 .fbar-btn:hover { box-shadow: var(--neo-e2); color: var(--neo-text); }
+@keyframes spin-cw { to { transform: rotate(360deg); } }
+.fbar-btn-refresh.spinning svg { animation: spin-cw .65s linear infinite; transform-origin: center; }
 .fbar-btn-search {
   background: var(--neo-accent); color: white;
   box-shadow: 3px 3px 7px var(--neo-accent-glow), -1px -1px 4px rgba(255,255,255,.2);
@@ -520,6 +522,11 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
   <input type="number" id="f-monto-max" class="fbar-ctrl" placeholder="$ máx" min="0" step="any">
 
   <span class="resultados-count" id="count-label"></span>
+
+  <!-- Botón refrescar -->
+  <button class="fbar-btn fbar-btn-refresh" id="btn-refresh" title="Actualizar lista" onclick="buscar()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+  </button>
 
   <!-- Botón "más opciones" -->
   <div class="fbar-more-wrap">
@@ -1406,6 +1413,8 @@ document.addEventListener('click', e => { if (!e.target.closest('.f-cli-wrap')) 
 // ── Buscar ─────────────────────────────────────────────
 async function buscar() {
   deseleccionar();
+  const btnRefresh = document.getElementById('btn-refresh');
+  if (btnRefresh) btnRefresh.classList.add('spinning');
   const params = new URLSearchParams({ limit: 500 });
   const desde = $('f-desde').value, hasta = $('f-hasta').value;
   const tipo  = $('f-tipo').value,  q     = $('f-q').value.trim();
@@ -1437,6 +1446,8 @@ async function buscar() {
   } catch (e) {
     $('tabla-wrap').innerHTML = `<div class="estado-vacio">${esc(e.message)}</div>`;
     toast_(e.message, 'err');
+  } finally {
+    if (btnRefresh) btnRefresh.classList.remove('spinning');
   }
 }
 

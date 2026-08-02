@@ -103,6 +103,23 @@
   <img src="/Logos/logos_logo.png" alt="Logos" id="wiz-logo">
   <div class="pasos-ind" id="pasos-ind"></div>
 
+  <!-- ── 0. Licencia ──────────────────────────────────────────── -->
+  <div class="panel" id="panel-licencia">
+    <div class="titulo">Activación de licencia</div>
+    <div class="sub">Ingresá el token de licencia que recibiste al contratar Logos. Se requiere conexión a internet para validarlo.</div>
+    <div class="form-group">
+      <label class="form-label">Token de licencia</label>
+      <input class="form-input" id="lc-token" placeholder="Pegá aquí el token" autocomplete="off" spellcheck="false">
+    </div>
+    <div id="lc-resultado"></div>
+    <div class="btn-row" id="lc-btn-validar-row">
+      <button class="btn-pri" id="lc-btn-validar">Validar y continuar</button>
+    </div>
+    <div class="btn-row" id="lc-btn-confirmar-row" style="display:none">
+      <button class="btn-pri" id="lc-btn-confirmar">Confirmar e instalar</button>
+    </div>
+  </div>
+
   <!-- ── 1. Conexión ──────────────────────────────────────────── -->
   <div class="panel" id="panel-conexion">
     <div class="titulo">Conexión a la base de datos</div>
@@ -186,11 +203,6 @@
         <input class="form-input" id="ng-website" placeholder="www.miempresa.com.ar">
       </div>
       <div class="form-group">
-        <label class="form-label">Punto de venta AFIP</label>
-        <input class="form-input" id="ng-pv" type="number" min="1" max="9999" value="1">
-        <span class="form-hint">Número del PV habilitado en AFIP.</span>
-      </div>
-      <div class="form-group">
         <label class="form-label">% IVA por defecto</label>
         <select class="form-input" id="ng-iva">
           <option value="21">21%</option>
@@ -247,6 +259,11 @@
     <hr class="afip-sep">
 
     <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Punto de venta AFIP</label>
+        <input class="form-input" id="af-pv" type="number" min="1" max="9999" value="1">
+        <span class="form-hint">Número del PV que habilitaste en el paso 4 de arriba.</span>
+      </div>
       <div class="form-group fg-full">
         <label class="form-label">Archivo .p12</label>
         <input class="form-input" id="af-archivo" type="file" accept=".p12,.pfx">
@@ -440,6 +457,71 @@ function onEnterPaso(paso) {
   if (paso === 'listo')     renderResumen();
 }
 
+// ── Paso 0: Licencia — validar token contra el Hub antes de instalar ─
+let lcTokenValidado = null;
+
+async function validarToken() {
+  const token = $('lc-token').value.trim();
+  if (!token) { aviso($('lc-resultado'), 'Pegá el token de licencia', 'err'); return; }
+
+  const btnV = $('lc-btn-validar');
+  btnV.disabled = true;
+  btnV.textContent = 'Validando…';
+  $('lc-token').disabled = true;
+  $('lc-btn-confirmar-row').style.display = 'none';
+  aviso($('lc-resultado'), '', '');
+
+  try {
+    const version = window.logos?.getAppVersion
+      ? await window.logos.getAppVersion().catch(() => '')
+      : '';
+
+    const r = await fetch(`${API}/licencia/verificar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, version_app: version }),
+    });
+    const d = await r.json();
+
+    if (d.verificacion_ok) {
+      lcTokenValidado = token;
+      $('lc-resultado').innerHTML =
+        `<div class="aviso ok"><strong>${esc(d.cliente_nombre ?? '')}</strong><br>` +
+        `<span style="opacity:.8">${esc(d.sucursal_nombre ?? '')}</span></div>`;
+      $('lc-btn-validar-row').style.display = 'none';
+      $('lc-btn-confirmar-row').style.display = 'flex';
+    } else {
+      lcTokenValidado = null;
+      const msg = d.motivo_fallo === 'token_invalido'
+        ? 'Token inválido. Verificá que lo copiaste completo y sin espacios.'
+        : 'No se pudo conectar a internet para validar la licencia. Este paso requiere conexión — probá de nuevo cuando tengas internet disponible.';
+      aviso($('lc-resultado'), msg, 'err');
+      btnV.disabled = false;
+      btnV.textContent = 'Validar y continuar';
+      $('lc-token').disabled = false;
+    }
+  } catch {
+    lcTokenValidado = null;
+    aviso($('lc-resultado'), 'No se pudo conectar al servidor local. Intentá de nuevo.', 'err');
+    btnV.disabled = false;
+    btnV.textContent = 'Validar y continuar';
+    $('lc-token').disabled = false;
+  }
+}
+
+async function confirmarToken() {
+  if (!lcTokenValidado) return;
+  const btn = $('lc-btn-confirmar');
+  btn.disabled = true;
+  if (window.logos?.saveLicenciaToken) {
+    await window.logos.saveLicenciaToken(lcTokenValidado);
+  }
+  siguiente();
+}
+
+$('lc-btn-validar').addEventListener('click', validarToken);
+$('lc-btn-confirmar').addEventListener('click', confirmarToken);
+
 // ── Paso 1: Conexión — única que escribe a la BD inmediatamente ───
 let modoConexion = 'servidor';
 
@@ -529,7 +611,6 @@ $('ng-btn-siguiente').addEventListener('click', () => {
     iibb:           $('ng-iibb').value.trim() || null,
     telefono:       $('ng-telefono').value.trim() || null,
     website:        $('ng-website').value.trim() || null,
-    punto_venta:    parseInt($('ng-pv').value) || 1,
     iva_porcentaje: parseFloat($('ng-iva').value) || 21,
   };
   aviso($('ng-resultado'), '', '');
@@ -539,8 +620,11 @@ $('ng-btn-siguiente').addEventListener('click', () => {
 // ── Paso 4: AFIP — guardar referencia de archivo en memoria ───────
 $('af-btn-omitir').addEventListener('click', () => { wiz.afip = null; siguiente(); });
 $('af-btn-siguiente').addEventListener('click', () => {
-  const archivo = $('af-archivo').files[0];
-  wiz.afip = archivo ? { archivo, pass: $('af-pass').value, entorno: $('af-entorno').value } : null;
+  const archivo      = $('af-archivo').files[0];
+  const punto_venta  = parseInt($('af-pv').value) || 1;
+  wiz.afip = archivo
+    ? { archivo, pass: $('af-pass').value, entorno: $('af-entorno').value, punto_venta }
+    : { punto_venta };   // sin certificado pero con PV registrado igual
   siguiente();
 });
 
@@ -711,6 +795,8 @@ async function ejecutarCommit() {
     const pNeg = progAgregar('Guardando datos del negocio…');
     progEstado(pNeg, 'ejecutando', '↻');
     const cfgBody = { ...wiz.negocio };
+    // punto_venta vive en el paso AFIP; si el usuario lo configuró úsalo, sino default 1
+    cfgBody.punto_venta = wiz.afip?.punto_venta || 1;
     if (wiz.impresora) cfgBody.impresora_nombre          = wiz.impresora;
     if (wiz.carpetas?.comprobantes) cfgBody.carpeta_comprobantes = wiz.carpetas.comprobantes;
     if (wiz.carpetas?.backups)      cfgBody.carpeta_backups      = wiz.carpetas.backups;
@@ -815,6 +901,12 @@ $('ls-btn-entrar').addEventListener('click', () => {
       !estado.requiere_negocio && !estado.requiere_caja) {
     location.href = '/Logos/pos/login.html';
     return;
+  }
+
+  // Paso de licencia solo para rol Servidor en Electron (no para rol Cliente ni para web puro)
+  if (window.logos?.getConfig) {
+    const cfg = await window.logos.getConfig().catch(() => null);
+    if (!cfg || cfg.role !== 'client') pasos.push('licencia');
   }
 
   if (estado.requiere_conexion || estado.requiere_schema) pasos.push('conexion');

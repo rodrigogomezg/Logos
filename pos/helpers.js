@@ -114,16 +114,17 @@ async function apiFetch(url, opts = {}) {
   }
 }
 
-// Visor PDF interno — reemplaza window.open(url, '_blank') para PDFs
-function abrirPdfModal(blob) {
+// Visor PDF/HTML interno — reemplaza window.open(url, '_blank')
+// Opciones: { printBtn: true } agrega botón Imprimir; { downloadFilename: 'nombre.ext' } agrega botón Descargar
+function abrirPdfModal(blob, { printBtn = false, downloadFilename = null } = {}) {
   if (!document.getElementById('pdf-modal-css')) {
     const s = document.createElement('style');
     s.id = 'pdf-modal-css';
     s.textContent = `
 #pdf-modal{position:fixed;inset:0;z-index:9000;background:#404040;display:flex;flex-direction:column}
 #pdf-modal-bar{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:8px 14px;background:#1e1e1e;flex-shrink:0}
-#pdf-modal-close{background:none;border:1.5px solid rgba(255,255,255,.3);color:#fff;padding:6px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:background .15s}
-#pdf-modal-close:hover{background:rgba(255,255,255,.1)}
+#pdf-modal-close,.pdf-modal-act{background:none;border:1.5px solid rgba(255,255,255,.3);color:#fff;padding:6px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:background .15s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+#pdf-modal-close:hover,.pdf-modal-act:hover{background:rgba(255,255,255,.1)}
 #pdf-modal-frame{flex:1;border:none;width:100%;height:100%}
 `;
     document.head.appendChild(s);
@@ -131,12 +132,19 @@ function abrirPdfModal(blob) {
   const url = URL.createObjectURL(blob);
   const el  = document.createElement('div');
   el.id = 'pdf-modal';
-  el.innerHTML = `<div id="pdf-modal-bar"><button id="pdf-modal-close">✕&nbsp;&nbsp;Cerrar</button></div><iframe id="pdf-modal-frame" src="${url}"></iframe>`;
+  const btnPrint    = printBtn        ? `<button class="pdf-modal-act" id="pdf-modal-print">🖨&nbsp;Imprimir</button>` : '';
+  const btnDownload = downloadFilename ? `<a class="pdf-modal-act" href="${url}" download="${downloadFilename}">⬇&nbsp;Descargar</a>` : '';
+  el.innerHTML = `<div id="pdf-modal-bar">${btnPrint}${btnDownload}<button id="pdf-modal-close">✕&nbsp;&nbsp;Cerrar</button></div><iframe id="pdf-modal-frame" src="${url}"></iframe>`;
   document.body.appendChild(el);
   const cerrar = () => { el.remove(); URL.revokeObjectURL(url); document.removeEventListener('keydown', onKey); };
   function onKey(e) { if (e.key === 'Escape') cerrar(); }
   document.addEventListener('keydown', onKey);
   el.querySelector('#pdf-modal-close').addEventListener('click', cerrar);
+  if (printBtn) {
+    el.querySelector('#pdf-modal-print').addEventListener('click', () => {
+      el.querySelector('#pdf-modal-frame').contentWindow?.print();
+    });
+  }
 }
 
 // Modal de confirmación nativo del sistema — reemplaza window.confirm()

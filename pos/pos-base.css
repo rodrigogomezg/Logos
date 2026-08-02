@@ -54,7 +54,7 @@
 }
 
 /* Botón de cierre (✕) */
-.modal-close, .modal-cerrar, .modal-cierre, .cierre-cerrar, .cmodal-close {
+.modal-close, .modal-cerrar, .cierre-cerrar, .cmodal-close {
   background: none !important;
   border: none !important;
   box-shadow: none !important;
@@ -64,7 +64,7 @@
   height: auto !important;
   padding: 2px 6px !important;
 }
-.modal-close:hover, .modal-cerrar:hover, .modal-cierre:hover, .cierre-cerrar:hover { color: var(--color-ink) !important; }
+.modal-close:hover, .modal-cerrar:hover, .cierre-cerrar:hover { color: var(--color-ink) !important; }
 
 /* Footer */
 .modal-footer, .cmodal-btns, .cierre-footer {

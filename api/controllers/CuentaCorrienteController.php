@@ -59,13 +59,17 @@ class CuentaCorrienteController {
         $entidad['plazo_pago_dias'] = $entidad['plazo_pago_dias'] !== null ? (int)$entidad['plazo_pago_dias'] : null;
         $entidad['saldo_cuenta_corriente'] = (float)$entidad['saldo_cuenta_corriente'];
 
-        // 2. Movimientos en orden cronológico (ASC), join al comprobante para los cargos
+        // 2. Movimientos en orden cronológico (ASC), join al comprobante para los cargos.
+        //    También une notas_envio para mostrar "Envío N°X" en lugar de "Venta N°X"
+        //    cuando el cargo proviene de un costo de envío de nota de envío.
         $stmt = $db->prepare("
             SELECT m.id, m.tipo, m.monto, m.fecha, m.referencia_id, m.observaciones,
                    m.medio_pago, m.pago_datos, m.comprobante,
-                   c.tipo_comprobante AS ref_tipo
+                   c.tipo_comprobante AS ref_tipo,
+                   ne.numero AS ref_ne_numero
             FROM cuenta_corriente_movimientos m
-            LEFT JOIN $tablaComp c ON c.id = m.referencia_id AND m.tipo = 'cargo'
+            LEFT JOIN $tablaComp c  ON c.id  = m.referencia_id AND m.tipo = 'cargo'
+            LEFT JOIN notas_envio ne ON ne.id = m.referencia_id AND m.tipo = 'cargo'
             WHERE m.entidad_tipo = ? AND m.entidad_id = ?
             ORDER BY m.fecha ASC, m.id ASC
             LIMIT ? OFFSET ?
@@ -80,10 +84,13 @@ class CuentaCorrienteController {
         }
         $asig_map = [];
         if (!empty($pago_ids)) {
-            $ph   = implode(',', array_fill(0, count($pago_ids), '?'));
+            $ph = implode(',', array_fill(0, count($pago_ids), '?'));
+
+            // Asignaciones a ventas/compras
             $stmt = $db->prepare("
                 SELECT a.movimiento_id, a.$colAsig AS comprobante_id, a.monto,
-                       c.tipo_comprobante AS comprobante_tipo
+                       c.tipo_comprobante AS comprobante_tipo,
+                       NULL AS cargo_id
                 FROM cc_asignaciones a
                 JOIN $tablaComp c ON c.id = a.$colAsig
                 WHERE a.movimiento_id IN ($ph)
@@ -93,7 +100,32 @@ class CuentaCorrienteController {
             foreach ($stmt->fetchAll() as $a) {
                 $asig_map[(int)$a['movimiento_id']][] = [
                     'venta_id'   => (int)$a['comprobante_id'],
+                    'cargo_id'   => null,
                     'venta_tipo' => $a['comprobante_tipo'],
+                    'monto'      => (float)$a['monto'],
+                ];
+            }
+
+            // Asignaciones a cargos manuales / costos de envío
+            $stmt = $db->prepare("
+                SELECT a.movimiento_id, a.cargo_id, a.monto,
+                       ne.numero AS ref_ne_numero,
+                       m.comprobante AS cargo_comprobante
+                FROM cc_asignaciones a
+                JOIN cuenta_corriente_movimientos m ON m.id = a.cargo_id
+                LEFT JOIN notas_envio ne ON ne.id = m.referencia_id
+                WHERE a.movimiento_id IN ($ph) AND a.cargo_id IS NOT NULL
+                ORDER BY a.id ASC
+            ");
+            $stmt->execute($pago_ids);
+            foreach ($stmt->fetchAll() as $a) {
+                $label = $a['ref_ne_numero'] !== null
+                    ? 'Envío N°' . $a['ref_ne_numero']
+                    : ($a['cargo_comprobante'] ?: 'Cargo manual');
+                $asig_map[(int)$a['movimiento_id']][] = [
+                    'venta_id'   => null,
+                    'cargo_id'   => (int)$a['cargo_id'],
+                    'venta_tipo' => $label,
                     'monto'      => (float)$a['monto'],
                 ];
             }
@@ -103,22 +135,51 @@ class CuentaCorrienteController {
             $m['monto']        = (float)$m['monto'];
             $m['pago_datos']   = $m['pago_datos'] ? json_decode($m['pago_datos'], true) : null;
             $m['asignaciones'] = $asig_map[(int)$m['id']] ?? [];
+            // Corregir ref_tipo para cargos de notas de envío
+            if ($m['ref_tipo'] === null && $m['ref_ne_numero'] !== null) {
+                $m['ref_tipo'] = 'Envío';
+            }
+            unset($m['ref_ne_numero']);
         }
         unset($m);
 
-        // 3. Comprobantes 100% CC con saldo pendiente > 0
+        // 3. Comprobantes/cargos con saldo pendiente > 0.
+        //    Parte A: ventas/compras 100% CC.
+        //    Parte B: cargos CC sin comprobante de venta asociado (e.g., costos de envío
+        //             de notas de envío, cargos manuales).
         $stmt = $db->prepare("
-            SELECT v.id, v.fecha, v.total, v.tipo_comprobante,
-                   COALESCE(SUM(a.monto), 0)             AS monto_pagado,
-                   (v.total - COALESCE(SUM(a.monto), 0)) AS saldo_pendiente
-            FROM $tablaComp v
-            LEFT JOIN cc_asignaciones a ON a.$colAsig = v.id
-            WHERE v.$colEntComp = ? AND v.tipo_pago = 'cc'
-            GROUP BY v.id
-            HAVING saldo_pendiente > 0.001
-            ORDER BY v.fecha ASC, v.id ASC
+            (
+                SELECT 'comprobante' AS tipo_ref, v.id, v.fecha, v.total, v.tipo_comprobante,
+                       COALESCE(SUM(a.monto), 0)             AS monto_pagado,
+                       (v.total - COALESCE(SUM(a.monto), 0)) AS saldo_pendiente
+                FROM $tablaComp v
+                LEFT JOIN cc_asignaciones a ON a.$colAsig = v.id
+                WHERE v.$colEntComp = ? AND v.tipo_pago = 'cc'
+                GROUP BY v.id
+                HAVING saldo_pendiente > 0.001
+            )
+            UNION ALL
+            (
+                SELECT 'cargo' AS tipo_ref, m.id, m.fecha, m.monto AS total,
+                       CASE
+                           WHEN ne.id IS NOT NULL THEN CONCAT('Envío N°', ne.numero)
+                           ELSE COALESCE(m.comprobante, 'Cargo manual')
+                       END AS tipo_comprobante,
+                       COALESCE(SUM(a.monto), 0)             AS monto_pagado,
+                       (m.monto - COALESCE(SUM(a.monto), 0)) AS saldo_pendiente
+                FROM cuenta_corriente_movimientos m
+                LEFT JOIN notas_envio ne  ON ne.id = m.referencia_id
+                LEFT JOIN $tablaComp v2   ON v2.id = m.referencia_id
+                LEFT JOIN cc_asignaciones a ON a.cargo_id = m.id
+                WHERE m.entidad_tipo = ? AND m.entidad_id = ?
+                  AND m.tipo = 'cargo'
+                  AND v2.id IS NULL
+                GROUP BY m.id
+                HAVING saldo_pendiente > 0.001
+            )
+            ORDER BY fecha ASC, id ASC
         ");
-        $stmt->execute([$entidad_id]);
+        $stmt->execute([$entidad_id, $entidad_tipo, $entidad_id]);
         $pendientes = $stmt->fetchAll();
 
         foreach ($pendientes as &$v) {
@@ -390,6 +451,21 @@ class CuentaCorrienteController {
         }
     }
 
+    /**
+     * GET /cc/{id}/recibo-pdf — PDF de un pago de CC de cliente.
+     * Solo aplica a pagos de clientes; pagos a proveedores fuera de alcance por ahora.
+     */
+    public function reciboPdf(int $id): void {
+        require_once __DIR__ . '/../helpers/ReciboGenerador.php';
+        ['pdf' => $pdf, 'nRecibo' => $nRecibo] = ReciboGenerador::generarPdf($id);
+
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: inline; filename="recibo-' . $nRecibo . '.pdf"');
+        echo $pdf;
+        exit;
+    }
+
     public function registrar(): void {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!$body) json(400, ['error' => 'Body JSON inválido']);
@@ -448,28 +524,52 @@ class CuentaCorrienteController {
         $asigs_ok       = [];
         $total_asignado = 0.0;
         foreach ($asignaciones as $a) {
-            $comprobante_id = isset($a['venta_id']) ? (int)$a['venta_id'] : 0;
-            $monto_a        = isset($a['monto'])    ? (float)$a['monto']  : 0.0;
-            if (!$comprobante_id || $monto_a < 0.001) continue;
+            $comprobante_id = isset($a['venta_id'])  ? (int)$a['venta_id']  : 0;
+            $cargo_id       = isset($a['cargo_id'])  ? (int)$a['cargo_id']  : 0;
+            $monto_a        = isset($a['monto'])     ? (float)$a['monto']   : 0.0;
+            if ((!$comprobante_id && !$cargo_id) || $monto_a < 0.001) continue;
 
-            $stmt2 = $db->prepare("
-                SELECT v.total, COALESCE(SUM(ca.monto), 0) AS ya_pagado
-                FROM $tablaComp v
-                LEFT JOIN cc_asignaciones ca ON ca.$colAsig = v.id
-                WHERE v.id = ? AND v.$colEntComp = ? AND v.tipo_pago = 'cc'
-                GROUP BY v.id
-            ");
-            $stmt2->execute([$comprobante_id, $entidad_id]);
-            $comprobante_row = $stmt2->fetch();
-            if (!$comprobante_row) json(422, ['error' => "Comprobante $comprobante_id no válido para esta entidad"]);
+            if ($cargo_id) {
+                // Asignación a cargo manual / costo de envío
+                $stmt2 = $db->prepare("
+                    SELECT m.monto AS total, COALESCE(SUM(ca.monto), 0) AS ya_pagado
+                    FROM cuenta_corriente_movimientos m
+                    LEFT JOIN $tablaComp v2  ON v2.id = m.referencia_id
+                    LEFT JOIN cc_asignaciones ca ON ca.cargo_id = m.id
+                    WHERE m.id = ? AND m.entidad_tipo = ? AND m.entidad_id = ?
+                      AND m.tipo = 'cargo' AND v2.id IS NULL
+                    GROUP BY m.id
+                ");
+                $stmt2->execute([$cargo_id, $entidad_tipo, $entidad_id]);
+                $cargo_row = $stmt2->fetch();
+                if (!$cargo_row) json(422, ['error' => "Cargo #$cargo_id no válido para esta entidad"]);
 
-            $saldo_disp = (float)$comprobante_row['total'] - (float)$comprobante_row['ya_pagado'];
-            if ($monto_a > $saldo_disp + 0.01) {
-                json(422, ['error' => "Asignación para comprobante $comprobante_id excede el saldo disponible"]);
+                $saldo_disp = (float)$cargo_row['total'] - (float)$cargo_row['ya_pagado'];
+                if ($monto_a > $saldo_disp + 0.01) {
+                    json(422, ['error' => "Asignación para cargo #$cargo_id excede el saldo disponible"]);
+                }
+                $asigs_ok[]      = ['cargo_id' => $cargo_id, 'monto' => min($monto_a, $saldo_disp)];
+                $total_asignado += $monto_a;
+            } else {
+                // Asignación a venta/compra CC
+                $stmt2 = $db->prepare("
+                    SELECT v.total, COALESCE(SUM(ca.monto), 0) AS ya_pagado
+                    FROM $tablaComp v
+                    LEFT JOIN cc_asignaciones ca ON ca.$colAsig = v.id
+                    WHERE v.id = ? AND v.$colEntComp = ? AND v.tipo_pago = 'cc'
+                    GROUP BY v.id
+                ");
+                $stmt2->execute([$comprobante_id, $entidad_id]);
+                $comprobante_row = $stmt2->fetch();
+                if (!$comprobante_row) json(422, ['error' => "Comprobante $comprobante_id no válido para esta entidad"]);
+
+                $saldo_disp = (float)$comprobante_row['total'] - (float)$comprobante_row['ya_pagado'];
+                if ($monto_a > $saldo_disp + 0.01) {
+                    json(422, ['error' => "Asignación para comprobante $comprobante_id excede el saldo disponible"]);
+                }
+                $asigs_ok[]      = ['comprobante_id' => $comprobante_id, 'monto' => min($monto_a, $saldo_disp)];
+                $total_asignado += $monto_a;
             }
-
-            $asigs_ok[]      = ['comprobante_id' => $comprobante_id, 'monto' => min($monto_a, $saldo_disp)];
-            $total_asignado += $monto_a;
         }
 
         if ($total_asignado > $monto + 0.01) {
@@ -488,8 +588,13 @@ class CuentaCorrienteController {
             $mov_id = (int)$db->lastInsertId();
 
             foreach ($asigs_ok as $a) {
-                $db->prepare("INSERT INTO cc_asignaciones (movimiento_id, $colAsig, monto) VALUES (?, ?, ?)")
-                   ->execute([$mov_id, $a['comprobante_id'], $a['monto']]);
+                if (isset($a['cargo_id'])) {
+                    $db->prepare("INSERT INTO cc_asignaciones (movimiento_id, cargo_id, monto) VALUES (?, ?, ?)")
+                       ->execute([$mov_id, $a['cargo_id'], $a['monto']]);
+                } else {
+                    $db->prepare("INSERT INTO cc_asignaciones (movimiento_id, $colAsig, monto) VALUES (?, ?, ?)")
+                       ->execute([$mov_id, $a['comprobante_id'], $a['monto']]);
+                }
             }
 
             $delta = $tipo === 'pago' ? -$monto : $monto;

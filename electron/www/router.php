@@ -87,7 +87,11 @@ if (!file_exists($filePath)) {
 }
 
 // ── pos/*.html executed as PHP ────────────────────────────────────────────────
+// Sin esto, el navegador puede quedarse con una versión vieja de la página en
+// caché (a diferencia de los estáticos de serveStatic(), acá no había ningún
+// header de caché) — se notó recién al actualizar la app y no verse UI nueva.
 if (preg_match('#^/Logos/pos/[^/]+\.html$#', $uri)) {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
     chdir(dirname($filePath));
     require $filePath;
     return true;
@@ -95,6 +99,7 @@ if (preg_match('#^/Logos/pos/[^/]+\.html$#', $uri)) {
 
 // ── .php files executed ───────────────────────────────────────────────────────
 if (substr($filePath, -4) === '.php') {
+    header('Cache-Control: no-store, no-cache, must-revalidate');
     chdir(dirname($filePath));
     require $filePath;
     return true;

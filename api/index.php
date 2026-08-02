@@ -50,7 +50,8 @@ $esRutaPublica =
     ($recurso === 'usuarios'      && $metodo === 'POST' && $accion === 'login') ||
     ($recurso === 'usuarios'      && $metodo === 'GET'  && $id === null && $accion === null) ||
     ($recurso === 'configuracion' && $metodo === 'GET'  && $accion === null) ||
-    ($recurso === 'mercadopago'   && $metodo === 'POST' && $sub === 'webhook');
+    ($recurso === 'mercadopago'   && $metodo === 'POST' && $sub === 'webhook') ||
+    ($recurso === 'licencia'      && $metodo === 'POST' && $accion === 'verificar');
 
 try {
     if (!$esRutaPublica && Auth::usuarioActual() === null && !Auth::modoInstalacion()) {
@@ -164,6 +165,21 @@ try {
             };
         })(),
 
+        'reglas-precio' => (function () use ($metodo, $id) {
+            if ($metodo === 'POST' || $metodo === 'PUT' || $metodo === 'DELETE') {
+                Auth::requireAdmin();
+            }
+            require_once __DIR__ . '/controllers/ReglasPrecioController.php';
+            $ctrl = new ReglasPrecioController();
+            match (true) {
+                $metodo === 'GET'                    => $ctrl->listar(),
+                $metodo === 'POST'   && $id === null => $ctrl->crear(),
+                $metodo === 'PUT'    && $id !== null => $ctrl->actualizar($id),
+                $metodo === 'DELETE' && $id !== null => $ctrl->eliminar($id),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
         'ventas' => (function () use ($metodo, $id, $accion, $subAccion) {
             require_once __DIR__ . '/controllers/VentasController.php';
             $ctrl = new VentasController();
@@ -221,13 +237,14 @@ try {
             };
         })(),
 
-        'cc' => (function () use ($metodo, $id, $accion) {
+        'cc' => (function () use ($metodo, $id, $accion, $subAccion) {
             require_once __DIR__ . '/controllers/CuentaCorrienteController.php';
             $ctrl = new CuentaCorrienteController();
             if ($metodo === 'GET')    Auth::requirePermiso('cc_ver');
             if ($metodo === 'POST')   Auth::requirePermiso('cc_cobrar');
             if ($metodo === 'DELETE') Auth::requireAdmin();
             match (true) {
+                $metodo === 'GET' && $id !== null && $subAccion === 'recibo-pdf' => $ctrl->reciboPdf($id),
                 $metodo === 'GET' && $accion === 'aging'   => $ctrl->aging(),
                 $metodo === 'GET'                          => $ctrl->listar(),
                 $metodo === 'POST'                         => $ctrl->registrar(),
@@ -526,12 +543,30 @@ try {
             };
         })(),
 
+        'licencia' => (function () use ($metodo, $accion) {
+            require_once __DIR__ . '/controllers/LicenciaController.php';
+            $ctrl = new LicenciaController();
+            match (true) {
+                $metodo === 'POST' && $accion === 'verificar' => $ctrl->verificar(),
+                $metodo === 'GET'  && $accion === 'estado'    => $ctrl->estado(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
         default => json(404, ['error' => "Recurso '$recurso' no existe"]),
     };
 } catch (PDOException $e) {
-    error_log(sprintf("[%s] %s %s — PDO: %s\n", date('Y-m-d H:i:s'), $metodo, $uri, $e->getMessage()), 3, __DIR__ . '/logs/error.log');
+    $msg     = sprintf("[%s] %s %s — PDO: %s\n", date('Y-m-d H:i:s'), $metodo, $uri, $e->getMessage());
+    $logFile = __DIR__ . '/logs/error.log';
+    @mkdir(dirname($logFile), 0755, true);
+    error_log($msg, 3, $logFile); // log específico de la app
+    error_log($msg);              // log general de PHP (C:\ProgramData\LogosPOS\logs\php-error.log en producción)
     json(500, ['error' => 'Error de base de datos. Revisá el log del servidor.']);
 } catch (Throwable $e) {
-    error_log(sprintf("[%s] %s %s — %s: %s\n", date('Y-m-d H:i:s'), $metodo, $uri, get_class($e), $e->getMessage()), 3, __DIR__ . '/logs/error.log');
+    $msg     = sprintf("[%s] %s %s — %s: %s\n", date('Y-m-d H:i:s'), $metodo, $uri, get_class($e), $e->getMessage());
+    $logFile = __DIR__ . '/logs/error.log';
+    @mkdir(dirname($logFile), 0755, true);
+    error_log($msg, 3, $logFile);
+    error_log($msg);
     json(500, ['error' => 'Error interno del servidor. Revisá el log.']);
 }

@@ -74,6 +74,12 @@ class VentasController {
 
     /** POST /ventas/{id}/facturar — reintento manual de una factura/NC sin CAE */
     public function facturar(int $id): void {
+        require_once __DIR__ . '/LicenciaController.php';
+        $lic = LicenciaController::getEstadoEfectivo();
+        if ($lic['modo_restringido']) {
+            json(403, ['error' => $lic['mensaje'] ?? 'Sistema limitado. No se puede emitir comprobantes.']);
+        }
+
         $error = $this->solicitarCae($id);
         if ($error !== null) json(502, ['error' => $error]);
         $this->get($id);
@@ -232,6 +238,12 @@ class VentasController {
      * correspondientes si el crédito implica una devolución física o de saldo.
      */
     public function emitirNc(int $venta_id): void {
+        require_once __DIR__ . '/LicenciaController.php';
+        $lic = LicenciaController::getEstadoEfectivo();
+        if ($lic['modo_restringido']) {
+            json(403, ['error' => $lic['mensaje'] ?? 'Sistema limitado. No se puede emitir comprobantes.']);
+        }
+
         require_once __DIR__ . '/../helpers/AfipWs.php';
         require_once __DIR__ . '/../helpers/AfipPadron.php';
 

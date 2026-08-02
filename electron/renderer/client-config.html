@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Logos POS — Servidor</title>
+  <title>Logos POS — Conectar al servidor</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -20,9 +20,36 @@
     }
     .logo { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 4px; }
     .logo span { color: #4f8ef7; }
-    .subtitle { font-size: 12px; color: #6b7280; margin-bottom: 32px; }
-    h2 { font-size: 15px; font-weight: 600; color: #c9d1d9; margin-bottom: 6px; }
-    .hint { font-size: 12px; color: #6b7280; margin-bottom: 24px; }
+    .subtitle { font-size: 12px; color: #6b7280; margin-bottom: 26px; }
+    h2 { font-size: 15px; font-weight: 600; color: #c9d1d9; margin-bottom: 16px; }
+
+    .mode-tabs {
+      display: flex;
+      width: 100%;
+      max-width: 380px;
+      background: #161b27;
+      border: 1.5px solid #1e2330;
+      border-radius: 8px;
+      padding: 3px;
+      margin-bottom: 18px;
+    }
+    .mode-tab {
+      flex: 1;
+      padding: 7px 10px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: #6b7280;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .mode-tab.active { background: #1a2744; color: #4f8ef7; }
+    .mode-tab:hover:not(.active) { color: #c9d1d9; }
+
+    .hint { font-size: 12px; color: #6b7280; margin-bottom: 20px; text-align: center; max-width: 380px; line-height: 1.5; }
     .form { width: 100%; max-width: 380px; }
     .row { display: flex; gap: 10px; margin-bottom: 16px; }
     .row .ip-wrap { flex: 1; }
@@ -57,7 +84,7 @@
     .btn-primary { background: #4f8ef7; color: #fff; }
     .btn-primary:hover { background: #3d7de8; }
     .btn-primary:disabled { opacity: 0.35; cursor: default; }
-    .note { margin-top: 18px; font-size: 11px; color: #4b5563; line-height: 1.6; }
+    .note { margin-top: 18px; font-size: 11px; color: #4b5563; line-height: 1.6; max-width: 380px; text-align: center; }
     .note strong { color: #6b7280; }
   </style>
 </head>
@@ -65,12 +92,18 @@
   <div class="logo">Logos<span>POS</span></div>
   <div class="subtitle">Modo cliente</div>
   <h2>Conectar al servidor</h2>
-  <p class="hint">Ingresá la IP y el puerto del equipo servidor en la red local.</p>
+
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tab-lan" onclick="setMode('lan')">Red local (LAN)</button>
+    <button class="mode-tab"        id="tab-ts"  onclick="setMode('tailscale')">Red remota (Tailscale)</button>
+  </div>
+
+  <p class="hint" id="hint">Ingresá la IP y el puerto del equipo servidor en la red local.</p>
 
   <div class="form">
     <div class="row">
       <div class="ip-wrap">
-        <label for="ip">Dirección IP</label>
+        <label for="ip" id="ip-label">Dirección IP</label>
         <input type="text" id="ip" placeholder="192.168.1.10"
                autocomplete="off" spellcheck="false">
       </div>
@@ -90,6 +123,28 @@
   <script>
     const ipInput   = document.getElementById('ip');
     const portInput = document.getElementById('port');
+    const hint      = document.getElementById('hint');
+    const ipLabel   = document.getElementById('ip-label');
+
+    let mode = 'lan';
+
+    function setMode(m) {
+      mode = m;
+      document.getElementById('tab-lan').classList.toggle('active', m === 'lan');
+      document.getElementById('tab-ts').classList.toggle('active', m === 'tailscale');
+      if (m === 'tailscale') {
+        hint.textContent    = 'Ingresá la IP virtual de Tailscale del servidor.';
+        ipLabel.textContent = 'IP de Tailscale';
+        ipInput.placeholder = '100.64.0.1';
+      } else {
+        hint.textContent    = 'Ingresá la IP y el puerto del equipo servidor en la red local.';
+        ipLabel.textContent = 'Dirección IP';
+        ipInput.placeholder = '192.168.1.10';
+      }
+      ipInput.classList.remove('error');
+      ipInput.value = '';
+      ipInput.focus();
+    }
 
     ipInput.focus();
     [ipInput, portInput].forEach(el =>

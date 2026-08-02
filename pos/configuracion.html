@@ -617,6 +617,12 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
             <div class="btn-row">
               <button class="btn btn-ok" id="btn-guardar-device">Guardar nombre</button>
             </div>
+            <div class="form-grid" id="cfg-version-wrap" style="margin-top:14px;display:none">
+              <div class="form-group full">
+                <label class="form-label">Versión instalada</label>
+                <div class="form-hint" id="cfg-app-version" style="font-size:13px;font-weight:600;color:var(--neo-text)">—</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1186,6 +1192,16 @@ $('btn-probar-smtp').addEventListener('click', async () => {
       toast('Nombre de equipo guardado');
     });
   }
+})();
+
+// ── Versión instalada (Electron) — para confirmar visualmente que las
+// actualizaciones automáticas se instalaron, sin tener que abrir una terminal.
+(function () {
+  if (!window.logos || typeof window.logos.getAppVersion !== 'function') return;
+  window.logos.getAppVersion().then(function (v) {
+    $('cfg-app-version').textContent = v;
+    $('cfg-version-wrap').style.display = '';
+  }).catch(function () {});
 })();
 
 // ── Logo ─────────────────────────────────────────────────────

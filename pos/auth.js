@@ -44,7 +44,7 @@ try { localStorage.removeItem('logos_tema'); } catch(e) {}
         '<div style="max-width:420px;text-align:center;color:rgba(255,255,255,.9);font-family:inherit;display:flex;flex-direction:column;gap:16px;align-items:center;padding:24px;">' +
           '<div style="font-size:40px;">🔌</div>' +
           '<div style="font-size:20px;font-weight:700;">No se pudo conectar a la base de datos</div>' +
-          '<div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.5;">El sistema ya está instalado, pero el servidor de base de datos no responde.<br>Abrí el <b>Panel de Control de XAMPP</b> y presioná <b>Start</b> en <b>MySQL</b>.</div>' +
+          '<div style="font-size:14px;color:rgba(255,255,255,.6);line-height:1.5;">El servidor de base de datos no responde.<br>Cerrá y volvé a abrir la aplicación. Si el problema persiste, reiniciá la PC.</div>' +
           '<button id="logos-reintentar" style="background:var(--azul,#2563eb);color:white;border:none;border-radius:10px;padding:12px 28px;font-size:14px;font-weight:600;cursor:pointer;">Reintentar</button>' +
         '</div>';
       document.body.appendChild(overlay);

@@ -3,11 +3,16 @@ const fs = require('fs');
 const path = require('path');
 
 const DEFAULTS = {
-  firstRun:   true,
-  role:       null,   // 'server' | 'client'
-  serverPort: 8080,   // port PHP listens on
-  dbPort:     3306,   // port MariaDB listens on (saved after first start; used in supervisor mode)
-  serverIp:   null,   // for client role: 'IP:PORT'
+  role:             null,   // 'server' | 'client' — seteado por el instalador NSIS
+  serverPort:       8080,   // port PHP listens on
+  dbPort:           3306,   // port MariaDB listens on (saved after first start; used in supervisor mode)
+  serverIp:         null,   // for client role: 'IP:PORT'
+  licenciaApiToken: '',     // Bearer token para el Hub de licencias — completar al instalar
+  remoteAccess: {           // Tailscale/Headscale — inactive until explicitly enabled
+    enabled:            false,
+    headscaleServerUrl: '',
+    preAuthKey:         '',
+  },
 };
 
 class ConfigManager {

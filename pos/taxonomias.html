@@ -48,6 +48,7 @@ table.tax-tbl { width:100%; border-collapse:collapse; table-layout:fixed; }
 table.tax-tbl col.c-chk  { width:38px; }
 table.tax-tbl col.c-nom  { width:auto; }
 table.tax-tbl col.c-prod { width:110px; }
+table.tax-tbl col.c-regla { width:220px; }
 table.tax-tbl col.c-act  { width:100px; }
 table.tax-tbl thead th { padding:8px 10px; font-size:11px; font-weight:700; text-transform:uppercase;
                           letter-spacing:.5px; color:var(--color-ink); border-bottom:2px solid var(--borde); text-align:left; }
@@ -138,24 +139,25 @@ include __DIR__ . '/nav.php';
     <div class="tax-table-wrap">
       <table class="tax-tbl">
         <colgroup>
-          <col class="c-chk"><col class="c-nom"><col class="c-prod"><col class="c-act">
+          <col class="c-chk"><col class="c-nom"><col class="c-prod"><col class="c-regla"><col class="c-act">
         </colgroup>
         <thead>
           <tr>
             <th><input type="checkbox" id="chk-all" onchange="toggleAll(this.checked)" title="Seleccionar todos"></th>
             <th>Nombre</th>
             <th style="text-align:center">Productos</th>
+            <th>Regla de precio</th>
             <th></th>
           </tr>
         </thead>
         <tbody id="tax-tbody">
-          <tr><td colspan="4" class="tax-loading">Cargando…</td></tr>
+          <tr><td colspan="5" class="tax-loading">Cargando…</td></tr>
         </tbody>
         <!-- Quick-add row -->
         <tfoot>
           <tr class="tax-add-row">
             <td></td>
-            <td colspan="3">
+            <td colspan="4">
               <div class="tax-add-form">
                 <input type="text" id="add-nombre" class="t-input tax-add-inp"
                        placeholder="Nombre nuevo…" maxlength="100"
@@ -199,11 +201,39 @@ function cambiarTipo(tipo) {
 /* ── API calls ───────────────────────────────────────────── */
 async function cargar(q = '') {
   document.getElementById('tax-tbody').innerHTML =
-    '<tr><td colspan="4" class="tax-loading">Cargando…</td></tr>';
+    '<tr><td colspan="5" class="tax-loading">Cargando…</td></tr>';
   const url = API + '?tipo=' + tipoActual + (q ? '&q=' + encodeURIComponent(q) : '');
-  const r   = await fetch(url);
+  const [r] = await Promise.all([fetch(url), cargarReglasPrecio()]);
   filas     = r.ok ? await r.json() : [];
   renderTabla();
+}
+
+/* ── Reglas de precio (para el select de cada fila) ─────────── */
+let _reglasPrecio = [];
+async function cargarReglasPrecio() {
+  if (_reglasPrecio.length) return;
+  try {
+    const r = await fetch((window.APP_CONFIG?.API_BASE || '/Logos/api') + '/reglas-precio?activas=1');
+    _reglasPrecio = r.ok ? await r.json() : [];
+  } catch { _reglasPrecio = []; }
+}
+function reglaSelectHtml(f) {
+  const opciones = ['<option value="">— Sin regla —</option>']
+    .concat(_reglasPrecio.map(rg => `<option value="${rg.id}" ${rg.id === f.regla_precio_id ? 'selected' : ''}>${esc(rg.nombre)} (+${rg.porcentaje_recargo}%)</option>`));
+  return `<select class="t-input" onchange="cambiarRegla(${f.id}, this.value)">${opciones.join('')}</select>`;
+}
+async function cambiarRegla(id, reglaId) {
+  const f = filas.find(x => x.id === id);
+  if (!f) return;
+  const r = await fetch(API + '/' + id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tipo: tipoActual, nombre: f.nombre, regla_precio_id: reglaId ? parseInt(reglaId) : null })
+  });
+  const data = await r.json();
+  if (!r.ok) { mostrarToast(data.error || 'Error al asignar la regla', 'error'); cargar(document.getElementById('tax-busq').value); return; }
+  mostrarToast('Regla actualizada — los productos ya recalcularon su precio');
+  cargar(document.getElementById('tax-busq').value);
 }
 
 function renderTabla() {
@@ -213,7 +243,7 @@ function renderTabla() {
   document.getElementById('chk-all').checked = false;
 
   if (!filas.length) {
-    tb.innerHTML = '<tr><td colspan="4" class="tax-empty">No hay elementos. Agregá el primero.</td></tr>';
+    tb.innerHTML = '<tr><td colspan="5" class="tax-empty">No hay elementos. Agregá el primero.</td></tr>';
     return;
   }
   tb.innerHTML = filas.map(f => rowHtml(f)).join('');
@@ -225,7 +255,7 @@ function rowHtml(f) {
     return `<tr data-id="${f.id}">
       <td><input type="checkbox" class="row-chk" value="${f.id}" ${sel ? 'checked' : ''}
           onchange="toggleSel(${f.id}, this.checked)"></td>
-      <td colspan="3">
+      <td colspan="4">
         <div class="tax-rename-form">
           <input type="text" class="t-input tax-rename-inp" id="ren-${f.id}"
                  value="${esc(f.nombre)}" maxlength="100"
@@ -241,6 +271,7 @@ function rowHtml(f) {
         onchange="toggleSel(${f.id}, this.checked)"></td>
     <td class="td-nom">${esc(f.nombre)}</td>
     <td class="td-prod">${f.productos || 0}</td>
+    <td>${reglaSelectHtml(f)}</td>
     <td class="td-act">
       <button class="btn btn-sec btn-xs" title="Renombrar"
               onclick="iniciarRename(${f.id})">✎</button>

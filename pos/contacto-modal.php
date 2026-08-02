@@ -228,6 +228,20 @@
             </div>
           </div>
 
+          <!-- Configuración comercial (solo proveedores) -->
+          <div id="cm-seccion-comercial-proveedor" style="display:flex;flex-direction:column;gap:10px">
+            <span class="cm-section">Configuración comercial</span>
+            <div class="cm-group">
+              <label class="cm-label">Regla de precio</label>
+              <select class="cm-select" name="regla_precio_id">
+                <option value="">Sin regla asignada</option>
+              </select>
+              <div class="cm-hint" style="font-size:11px;color:#8A8578;margin-top:4px">
+                Se aplica automáticamente a todos los productos de este proveedor que no tengan su propia regla asignada.
+              </div>
+            </div>
+          </div>
+
           <!-- Domicilios de envío (solo clientes) -->
           <div id="cm-seccion-envio" style="display:flex;flex-direction:column;gap:10px;flex:1;min-height:0">
             <div style="display:flex;align-items:center;justify-content:space-between">
@@ -287,6 +301,7 @@ window.ContactoModal = (function () {
 
   let _tipo       = 'clientes';
   let _listas     = [];
+  let _reglas     = [];
   let _envios     = [];
   let _cbGuardar  = null;
   let _cbEliminar = null;
@@ -299,8 +314,9 @@ window.ContactoModal = (function () {
   /* ── setup visual según tipo ────────────────────── */
   function _configurar(tipo) {
     const esCliente = tipo === 'clientes';
-    $('cm-seccion-comercial').style.display = esCliente ? 'flex' : 'none';
-    $('cm-seccion-envio').style.display     = esCliente ? 'flex' : 'none';
+    $('cm-seccion-comercial').style.display           = esCliente ? 'flex' : 'none';
+    $('cm-seccion-envio').style.display                = esCliente ? 'flex' : 'none';
+    $('cm-seccion-comercial-proveedor').style.display  = esCliente ? 'none' : 'flex';
   }
 
   /* ── plazo de pago: presets + personalizado ───────── */
@@ -339,6 +355,19 @@ window.ContactoModal = (function () {
     const val = sel.value;
     sel.innerHTML = '<option value="">Sin lista asignada</option>' +
       _listas.map(l => `<option value="${l.id}">${esc(l.nombre)} (${l.porcentaje >= 0 ? '+' : ''}${l.porcentaje}%)</option>`).join('');
+    sel.value = val;
+  }
+
+  /* ── reglas de precio (solo proveedores) ─────────── */
+  async function _cargarReglas() {
+    if (!_reglas.length) {
+      const r = await fetch(`${API}/reglas-precio?activas=1`);
+      if (r.ok) _reglas = await r.json();
+    }
+    const sel = document.querySelector('#cm-form [name=regla_precio_id]');
+    const val = sel.value;
+    sel.innerHTML = '<option value="">Sin regla asignada</option>' +
+      _reglas.map(rg => `<option value="${rg.id}">${esc(rg.nombre)} (+${rg.porcentaje_recargo}%)</option>`).join('');
     sel.value = val;
   }
 
@@ -419,6 +448,7 @@ window.ContactoModal = (function () {
     set('plazo_pago_dias', r.plazo_pago_dias ?? '');
     _syncPlazoPreset();
     set('lista_precio_id', r.lista_precio_id ?? '');
+    set('regla_precio_id', r.regla_precio_id ?? '');
     chk('cc_habilitada', r.cc_habilitada);
     chk('activo', r.activo !== false);
     chk('solo_remito', r.solo_remito);
@@ -440,6 +470,7 @@ window.ContactoModal = (function () {
     ['limite_credito','descuento_extra'].forEach(k => { if (k in obj) obj[k] = parseFloat(obj[k]) || 0; });
     if ('plazo_pago_dias' in obj) obj.plazo_pago_dias = obj.plazo_pago_dias !== '' ? parseInt(obj.plazo_pago_dias) : null;
     if ('lista_precio_id' in obj) obj.lista_precio_id = obj.lista_precio_id !== '' ? parseInt(obj.lista_precio_id) : null;
+    if ('regla_precio_id' in obj) obj.regla_precio_id = obj.regla_precio_id !== '' ? parseInt(obj.regla_precio_id) : null;
     if (_tipo === 'clientes') obj.domicilios_envio = _envios.filter(d => d.domicilio?.trim());
     return obj;
   }
@@ -461,6 +492,7 @@ window.ContactoModal = (function () {
       : (esCliente ? 'Nuevo cliente'  : 'Nuevo proveedor');
 
     if (esCliente) await _cargarListas();
+    else            await _cargarReglas();
 
     if (id) {
       const r = await fetch(`${API}/${_tipo}/${id}`);

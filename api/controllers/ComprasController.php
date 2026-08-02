@@ -4,6 +4,7 @@ require_once __DIR__ . '/../config/db.php';
 require_once __DIR__ . '/../helpers/Validadores.php';
 require_once __DIR__ . '/../helpers/Auth.php';
 require_once __DIR__ . '/../helpers/LogAcciones.php';
+require_once __DIR__ . '/../helpers/ReglasPrecioHelper.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -306,6 +307,8 @@ class ComprasController {
                     $db->prepare("UPDATE productos SET iva_porcentaje = ? WHERE id = ?")
                        ->execute([$item['iva_porcentaje'], $item['producto_id']]);
                 }
+                // Después de costo_actual e iva_porcentaje — la fórmula usa ambos.
+                ReglasPrecioHelper::recalcularPrecio($db, $item['producto_id']);
 
                 $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha) VALUES (?, ?, 'compra', ?, ?, NOW())")
                    ->execute([$item['producto_id'], $deposito_id, $item['cantidad'], $compra_id]);
@@ -654,6 +657,8 @@ class ComprasController {
                     $db->prepare("UPDATE productos SET iva_porcentaje = ? WHERE id = ?")
                        ->execute([$item['iva_porcentaje'], $item['producto_id']]);
                 }
+                // Después de costo_actual e iva_porcentaje — la fórmula usa ambos.
+                ReglasPrecioHelper::recalcularPrecio($db, $item['producto_id']);
                 $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha) VALUES (?, ?, 'compra', ?, ?, NOW())")
                    ->execute([$item['producto_id'], $deposito_id_edit, $item['cantidad'], $id]);
             }

@@ -1,7 +1,12 @@
 {
   "name": "logos-pos",
-  "version": "1.0.4",
+  "version": "1.0.9",
   "description": "Logos POS - Sistema de Gestión para Pymes",
+  "author": {
+    "name": "Drilogs",
+    "email": "contacto@drilogs.com.ar",
+    "url": "https://drilogs.com.ar"
+  },
   "main": "main.js",
   "scripts": {
     "start": "electron .",

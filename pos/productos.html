@@ -491,6 +491,7 @@ textarea.form-input { resize: vertical; min-height: 64px; }
   <button class="btn-bulk" id="btn-bulk-marca">Cambiar marca</button>
   <button class="btn-bulk" id="btn-bulk-rubro">Cambiar rubro</button>
   <button class="btn-bulk" id="btn-bulk-precio">Aumento de precio</button>
+  <button class="btn-bulk" id="btn-bulk-regla">Asignar regla de precio</button>
   <div class="bulk-div"></div>
   <button class="btn-bulk-danger" id="btn-bulk-eliminar">Eliminar</button>
   <div class="bulk-div"></div>
@@ -602,15 +603,20 @@ textarea.form-input { resize: vertical; min-height: 64px; }
         </div>
         <div class="form-group">
           <label class="form-label">Costo actual</label>
-          <input type="number" id="e-costo" class="form-input" min="0" step="0.01">
+          <input type="number" id="e-costo" class="form-input" min="0" step="0.01" oninput="_previewPrecioRegla('e')">
         </div>
         <div class="form-group">
           <label class="form-label">IVA</label>
-          <select id="e-iva" class="form-input">
+          <select id="e-iva" class="form-input" onchange="_previewPrecioRegla('e')">
             <option value="21">21%</option>
             <option value="10.5">10,5%</option>
             <option value="0">Exento (0%)</option>
           </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Regla de precio</label>
+          <select id="e-regla-precio" class="form-input form-select" onchange="_previewPrecioRegla('e')"><option value="">— Sin regla —</option></select>
+          <p class="bulk-hint" id="e-regla-hint" style="display:none;margin-top:4px"></p>
         </div>
         <div class="form-group">
           <label class="form-label">Proveedor</label>
@@ -761,9 +767,14 @@ textarea.form-input { resize: vertical; min-height: 64px; }
           <label class="form-label">Margen (%)</label>
           <input type="number" id="n-margen" class="form-input" min="-99" step="0.1" placeholder="0.0">
         </div>
+        <div class="form-group">
+          <label class="form-label">Regla de precio</label>
+          <select id="n-regla-precio" class="form-input form-select" onchange="_previewPrecioRegla('n')"><option value="">— Sin regla —</option></select>
+        </div>
         <div class="form-group fg-2">
           <label class="form-label">Precio venta c/IVA</label>
           <input type="number" id="n-precio" class="form-input destacado" min="0" step="0.01" placeholder="0.00">
+          <p class="bulk-hint" id="n-regla-hint" style="display:none;margin-top:4px"></p>
         </div>
 
         <div class="form-section fg-full">
@@ -1139,6 +1150,58 @@ async function cargarFiltros() {
 let _taxRubros    = [];
 let _taxMarcas    = [];
 let _proveedores  = [];
+let _reglasPrecio = [];
+
+async function cargarReglasPrecio() {
+  try {
+    const r = await fetch(`${API}/reglas-precio?activas=1`).then(r => r.json());
+    _reglasPrecio = Array.isArray(r) ? r : [];
+    for (const id of ['e-regla-precio', 'n-regla-precio']) {
+      const sel = $(id);
+      if (!sel) continue;
+      const val = sel.value;
+      sel.innerHTML = '<option value="">— Sin regla —</option>';
+      _reglasPrecio.forEach(rg => sel.appendChild(Object.assign(document.createElement('option'),
+        { value: rg.id, textContent: `${rg.nombre} (+${rg.porcentaje_recargo}%)` })));
+      sel.value = val;
+    }
+  } catch (err) { console.error('Reglas de precio:', err); }
+}
+
+// Recalcula y previsualiza precio_venta = costo c/IVA × (1 + recargo/100) — misma
+// fórmula que aplica el backend (ReglasPrecioHelper) — y bloquea el campo de precio
+// mientras haya una regla asignada, para que no quede desincronizado del valor real
+// que va a quedar guardado.
+function _previewPrecioRegla(prefix) {
+  const selRegla   = $(`${prefix}-regla-precio`);
+  const precioInp  = $(`${prefix}-precio`);
+  const hint       = $(`${prefix}-regla-hint`);
+  const margenInp  = prefix === 'n' ? $('n-margen') : null;
+  if (!selRegla || !precioInp) return;
+
+  if (!selRegla.value) {
+    precioInp.disabled = false;
+    if (margenInp) margenInp.disabled = false;
+    if (hint) hint.style.display = 'none';
+    return;
+  }
+  const regla = _reglasPrecio.find(r => String(r.id) === selRegla.value);
+  if (!regla) return;
+
+  const costoNeto = prefix === 'e' ? parseFloat($('e-costo').value) : parseFloat($('n-costo-neto').value);
+  const iva       = parseFloat($(`${prefix}-iva`).value) || 0;
+  if (margenInp) margenInp.value = regla.porcentaje_recargo;
+  if (!isNaN(costoNeto) && costoNeto >= 0) {
+    const precio = costoNeto * (1 + iva / 100) * (1 + regla.porcentaje_recargo / 100);
+    precioInp.value = precio.toFixed(2);
+  }
+  precioInp.disabled = true;
+  if (margenInp) margenInp.disabled = true;
+  if (hint) {
+    hint.textContent = `Precio fijado por la regla "${regla.nombre}" — se recalcula solo cuando cambia el costo.`;
+    hint.style.display = '';
+  }
+}
 
 async function cargarTaxonomias() {
   try {
@@ -1393,6 +1456,10 @@ function abrirModalNuevo() {
   ['n-nombre','n-codigo','n-costo-neto','n-costo-bruto','n-margen','n-precio',
    'n-proveedor','n-marca','n-categoria','n-subcategoria','n-stock-inicial','n-stock-min','n-unidad'].forEach(id => $(id).value = '');
   $('n-iva').value = '21';
+  $('n-regla-precio').value = '';
+  $('n-precio').disabled = false;
+  $('n-margen').disabled = false;
+  $('n-regla-hint').style.display = 'none';
   $('n-activo').checked = true;
   $('n-comisionable').checked = false;
   $('n-comision-valor').value = '';
@@ -1447,6 +1514,7 @@ function recalcNuevoPrecios(origen) {
       $('n-margen').value = ((precio / bruto - 1) * 100).toFixed(1);
     }
   }
+  _previewPrecioRegla('n');
 }
 
 async function guardarNuevoProducto() {
@@ -1462,6 +1530,7 @@ async function guardarNuevoProducto() {
     codigo_secundario: $('n-codigo-sec').value.trim()  || null,
     precio_venta:  $('n-precio').value !== ''        ? parseFloat($('n-precio').value)        : null,
     costo_actual:  $('n-costo-neto').value !== ''     ? parseFloat($('n-costo-neto').value)    : null,
+    regla_precio_id: $('n-regla-precio').value !== '' ? parseInt($('n-regla-precio').value)    : null,
     proveedor:     $('n-proveedor').value.trim()     || null,
     marca:         $('n-marca').value.trim()         || null,
     categoria:     $('n-categoria').value.trim()     || null,
@@ -1605,8 +1674,11 @@ function abrirModalEditar(p) {
   $('e-descripcion').value  = p.descripcion      || '';
   $('e-codigo').value       = p.codigo           || '';
   $('e-codigo-sec').value   = p.codigo_secundario || '';
+  $('e-precio').disabled    = false;
   $('e-precio').value       = p.precio_venta != null ? p.precio_venta : '';
   $('e-costo').value        = p.costo_actual != null ? p.costo_actual : '';
+  $('e-regla-precio').value = p.regla_precio_id != null ? String(p.regla_precio_id) : '';
+  _previewPrecioRegla('e');
   $('e-marca').value        = p.marca         || '';
   $('e-proveedor').value    = p.proveedor     || '';
   $('e-categoria').value    = p.categoria     || '';
@@ -1637,8 +1709,9 @@ async function guardarProducto() {
     descripcion:       $('e-descripcion').value.trim() || null,
     codigo:            $('e-codigo').value.trim()      || null,
     codigo_secundario: $('e-codigo-sec').value.trim()  || null,
-    precio_venta: $('e-precio').value !== '' ? parseFloat($('e-precio').value) : null,
-    costo_actual: $('e-costo').value  !== '' ? parseFloat($('e-costo').value)  : null,
+    precio_venta:     $('e-precio').value !== '' ? parseFloat($('e-precio').value) : null,
+    costo_actual:     $('e-costo').value  !== '' ? parseFloat($('e-costo').value)  : null,
+    regla_precio_id:  $('e-regla-precio').value !== '' ? parseInt($('e-regla-precio').value) : null,
     marca:        $('e-marca').value.trim()        || null,
     proveedor:    $('e-proveedor').value.trim()    || null,
     categoria:    $('e-categoria').value.trim()    || null,
@@ -1689,7 +1762,7 @@ function abrirModalBulk(campo) {
   bulkCampo = campo;
   const n = todosLosFiltrados ? totalFiltradoDatos : seleccionados.size;
   const s = n !== 1;
-  const labels = { proveedor:'Proveedor', marca:'Marca', categoria:'Rubro', precio_pct:'Precio' };
+  const labels = { proveedor:'Proveedor', marca:'Marca', categoria:'Rubro', precio_pct:'Precio', regla_precio_id:'Regla de precio' };
   $('bulk-titulo').textContent = `Cambiar ${labels[campo]}`;
   $('bulk-desc').textContent   = todosLosFiltrados
     ? `Se aplicará a los ${n.toLocaleString('es-AR')} productos del filtro actual.`
@@ -1702,6 +1775,12 @@ function abrirModalBulk(campo) {
     wrap.innerHTML = `<label class="form-label">Porcentaje de aumento</label>
       <div class="pct-wrap"><input type="number" id="bulk-val" class="form-input" placeholder="ej: 10" step="0.1" min="-99" max="10000"><span class="pct-sym">%</span></div>
       <p class="bulk-hint">Positivo = sube precio · Negativo = baja precio</p>`;
+  } else if (campo === 'regla_precio_id') {
+    const opciones = ['<option value="">— Quitar regla —</option>']
+      .concat(_reglasPrecio.map(r => `<option value="${r.id}">${esc(r.nombre)} (+${r.porcentaje_recargo}%)</option>`));
+    wrap.innerHTML = `<label class="form-label">Regla de precio</label>
+      <select id="bulk-val" class="form-input form-select">${opciones.join('')}</select>
+      <p class="bulk-hint">El precio de venta se recalcula al instante para los productos afectados.</p>`;
   } else {
     wrap.innerHTML = `<label class="form-label">Nuevo valor</label>
       <input type="text" id="bulk-val" class="form-input" autocomplete="off" placeholder="Elegí o escribí un valor…">`;
@@ -1736,6 +1815,8 @@ async function aplicarBulk() {
     if (isNaN(pct) || pct === 0) { toast('Ingresá un porcentaje válido', 'err'); return; }
     if (pct <= -100)              { toast('El porcentaje no puede ser −100% o menor', 'err'); return; }
     cambios = { precio_pct: pct };
+  } else if (bulkCampo === 'regla_precio_id') {
+    cambios = { regla_precio_id: val ? parseInt(val) : null };
   } else {
     if (!val) { toast('Ingresá un valor', 'err'); return; }
     const tipo = bulkCampo === 'marca' ? 'marcas' : bulkCampo === 'categoria' ? 'rubros' : null;
@@ -2193,7 +2274,7 @@ async function exportarPdfPedido() {
     }
   }).catch(() => {});
 
-  await Promise.all([cargarFiltros(), cargarTaxonomias()]);
+  await Promise.all([cargarFiltros(), cargarTaxonomias(), cargarReglasPrecio()]);
   cargarDatos();
 
   document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => cambiarTab(btn.dataset.tab)));
@@ -2254,6 +2335,7 @@ async function exportarPdfPedido() {
   $('btn-bulk-marca').addEventListener('click',     () => abrirModalBulk('marca'));
   $('btn-bulk-rubro').addEventListener('click',     () => abrirModalBulk('categoria'));
   $('btn-bulk-precio').addEventListener('click',    () => abrirModalBulk('precio_pct'));
+  $('btn-bulk-regla').addEventListener('click',     () => abrirModalBulk('regla_precio_id'));
   $('btn-bulk-eliminar').addEventListener('click',  abrirModalEliminarBulk);
   $('btn-sel-filtrados').addEventListener('click',  seleccionarTodosFiltrados);
   $('btn-desel').addEventListener('click',          deseleccionarTodo);

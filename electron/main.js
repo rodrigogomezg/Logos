@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, Menu, Tray, net, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, Tray, net, nativeImage, session } = require('electron');
 const { execFileSync } = require('child_process');
 const path = require('path');
 const os = require('os');
@@ -21,7 +21,13 @@ const WWW_DIR      = IS_PACKAGED ? path.join(process.resourcesPath, 'www') : pat
 // In production: app source is bundled into resources/www/Logos/.
 const APP_DIR      = IS_PACKAGED ? path.join(process.resourcesPath, 'www', 'Logos') : path.join(__dirname, '..');
 
-const configManager = new ConfigManager(app.getPath('userData'));
+// Ubicación única para todo el estado de esta instalación (config, logs de
+// diagnóstico) — la misma carpeta que usa el instalador NSIS/setup-server.ps1
+// para servicios y datos. Machine-wide en vez de por-usuario de Windows: así
+// no importa qué usuario abra la app, siempre ve la misma configuración.
+const DATA_ROOT = 'C:\\ProgramData\\LogosPOS';
+
+const configManager = new ConfigManager(DATA_ROOT);
 const serverManager = new ServerManager(RESOURCES, WWW_DIR, APP_DIR);
 
 // ── Window helpers ────────────────────────────────────────────────────────────
@@ -32,6 +38,88 @@ let tray         = null;
 // ── Client health-check ───────────────────────────────────────────────────────
 let healthTimer = null;
 let healthFails = 0;
+
+// ── Licencia heartbeat (server role only) ─────────────────────────────────────
+let licenciaTimer = null;
+
+function stopLicenciaTimer() {
+  if (licenciaTimer) { clearInterval(licenciaTimer); licenciaTimer = null; }
+}
+
+function logLicencia(msg) {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const logPath = path.join(DATA_ROOT, 'licencia-debug.log');
+    const linea = `${new Date().toISOString()} ${msg}\n`;
+    fs.appendFileSync(logPath, linea, 'utf8');
+  } catch { /* no romper nada si falla el log */ }
+}
+
+// Misma IP que devuelve el IPC 'get-local-ips' — primera IPv4 no interna.
+// Se manda al Hub para tener a mano la dirección del servidor de esta
+// sucursal (útil si en el futuro hay que conectar una PC cliente adicional).
+function getLanIp() {
+  const ip = Object.values(os.networkInterfaces())
+    .flat()
+    .find(n => n && n.family === 'IPv4' && !n.internal);
+  return ip ? ip.address : null;
+}
+
+function callLicenciaVerificar(baseUrl) {
+  const token   = configManager.get('licenciaApiToken') || '';
+  const version = app.getVersion();
+  const ipLocal = getLanIp();
+  const puertoLocal = configManager.get('serverPort') || null;
+  const body    = Buffer.from(JSON.stringify({
+    token, version_app: version, ip_local: ipLocal, puerto_local: puertoLocal,
+  }), 'utf8');
+  const url     = `${baseUrl}/Logos/api/licencia/verificar`;
+
+  logLicencia(`INICIO url=${url} token_presente=${token !== ''} token_len=${token.length}`);
+
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      logLicencia('TIMEOUT tras 10s sin respuesta');
+      resolve();
+    }, 10000);
+
+    try {
+      const req = net.request({ url, method: 'POST' });
+      req.setHeader('Content-Type', 'application/json');
+      req.setHeader('Content-Length', String(body.length));
+
+      req.on('response', (res) => {
+        let chunks = '';
+        res.on('data', (chunk) => { chunks += chunk.toString(); });
+        res.on('end', () => {
+          clearTimeout(timer);
+          logLicencia(`RESPUESTA status=${res.statusCode} body=${chunks.slice(0, 300)}`);
+          resolve();
+        });
+      });
+
+      req.on('error', (err) => {
+        clearTimeout(timer);
+        logLicencia(`ERROR_CONEXION ${err.message}`);
+        resolve();
+      });
+
+      req.write(body);
+      req.end();
+    } catch (e) {
+      clearTimeout(timer);
+      logLicencia(`EXCEPCION ${e.message}`);
+      resolve();
+    }
+  });
+}
+
+function startLicenciaTimer(baseUrl) {
+  stopLicenciaTimer();
+  callLicenciaVerificar(baseUrl); // llamada inmediata al arrancar
+  licenciaTimer = setInterval(() => callLicenciaVerificar(baseUrl), 6 * 60 * 60 * 1000);
+}
 
 function pingUrl(url) {
   return new Promise(resolve => {
@@ -208,7 +296,7 @@ function checkForUpdates() {
 async function performUpdate(updateInfo) {
   const { autoUpdater } = require('electron-updater');
   const fs = require('fs');
-  const logFile = path.join(app.getPath('userData'), 'update.log');
+  const logFile = path.join(DATA_ROOT, 'update.log');
   const logUpdate = (msg) => {
     try { fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`); } catch {}
   };
@@ -284,6 +372,11 @@ function setupTray() {
     },
     { type: 'separator' },
     {
+      label: 'Configuración avanzada…',
+      click: () => openOverlay('server-settings.html', { width: 560, height: 460, title: 'Logos POS — Configuración avanzada' }),
+    },
+    { type: 'separator' },
+    {
       label: 'Salir',
       click: () => {
         app.isQuitting = true;
@@ -313,6 +406,43 @@ function waitForUrl(url, timeoutMs = 25000) {
   });
 }
 
+// Polls /instalacion/estado until it returns a non-sin_conexion response.
+// Returns the estado object on success, null after maxRetries with sin_conexion.
+function checkInstallState(baseUrl, maxRetries = 5) {
+  return new Promise((resolve) => {
+    let attempt = 0;
+    const try_ = () => {
+      const req = net.request({ url: `${baseUrl}/Logos/api/instalacion/estado`, method: 'GET' });
+      const chunks = [];
+      req.on('response', (res) => {
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => {
+          try {
+            const estado = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+            if (estado.sin_conexion) {
+              if (++attempt < maxRetries) {
+                setTimeout(try_, 3000);
+              } else {
+                resolve(null);
+              }
+            } else {
+              resolve(estado);
+            }
+          } catch {
+            resolve(null);
+          }
+        });
+      });
+      req.on('error', () => {
+        if (++attempt < maxRetries) setTimeout(try_, 3000);
+        else resolve(null);
+      });
+      req.end();
+    };
+    try_();
+  });
+}
+
 // ── Role startup ─────────────────────────────────────────────────────────────
 async function startServerRole() {
   openOverlay('loading.html', { width: 460, height: 290, frame: false });
@@ -325,13 +455,38 @@ async function startServerRole() {
       const dbPort  = configManager.get('dbPort')     || 3306;
       const webPort = configManager.get('serverPort') || 8080;
 
-      await serverManager.waitForDatabase(dbPort, 15000);
+      await serverManager.waitForDatabase(dbPort, 45000);
 
       sendLoading('Verificando servidor web...');
       await waitForUrl(`http://localhost:${webPort}/Logos/ping`, 15000);
 
+      // Confirm the PHP→DB path is working and determine if initial setup is needed.
+      // Retries handle the race window where MariaDB just started and PHP's first
+      // real DB request arrives before the engine is fully ready.
+      sendLoading('Verificando base de datos...');
+      const baseUrl = `http://localhost:${webPort}`;
+      const installState = await checkInstallState(baseUrl, 5);
+      if (!installState) {
+        throw new Error(
+          'El servidor de base de datos no responde después de varios intentos.\n\n' +
+          'Reiniciá la PC e intentá de nuevo. Si el problema persiste, revisá los logs en:\n' +
+          'C:\\ProgramData\\LogosPOS\\logs\\mariadb-err.log'
+        );
+      }
+
+      const needsSetup = installState.requiere_conexion || installState.requiere_schema ||
+                         installState.requiere_admin    || installState.requiere_negocio ||
+                         installState.requiere_caja;
+      const appUrl = needsSetup
+        ? `${baseUrl}/Logos/pos/instalar.html`
+        : `${baseUrl}/Logos/pos/index.html`;
+
       setupTray();
-      openMainWindow(`http://localhost:${webPort}/Logos/pos/index.html`);
+      openMainWindow(appUrl);
+      startLicenciaTimer(baseUrl);
+
+      // Run pending migrations in background — non-blocking, won't delay startup
+      try { serverManager.runMigrations(); } catch (e) { console.warn('[migrations]', e.message); }
     } else {
       // ── INITIATOR: Electron starts and owns the processes ──────────────────
       sendLoading('Iniciando base de datos...');
@@ -354,6 +509,7 @@ async function startServerRole() {
 
       setupTray();
       openMainWindow(appUrl);
+      startLicenciaTimer(`http://localhost:${port}`);
     }
   } catch (err) {
     showError(err.message, true);
@@ -402,13 +558,11 @@ ipcMain.handle('get-local-ips', () =>
     .map(n => n.address)
 );
 
-ipcMain.handle('save-role', async (_, role) => {
-  configManager.set('role', role);
-  configManager.set('firstRun', false);
-  closeOverlay();
-  if (role === 'server') await startServerRole();
-  else await startClientRole();
+ipcMain.handle('save-licencia-token', (_, token) => {
+  configManager.set('licenciaApiToken', String(token).trim());
 });
+
+ipcMain.handle('get-app-version', () => app.getVersion());
 
 ipcMain.handle('save-server-ip', async (_, ip) => {
   configManager.set('serverIp', ip.trim());
@@ -428,17 +582,36 @@ ipcMain.handle('reconfigure-client', () => {
   openOverlay('client-config.html', { width: 500, height: 380, title: 'Logos POS — Configurar servidor' });
 });
 
-ipcMain.handle('reset-config', () => {
-  configManager.set('role', null);
-  configManager.set('firstRun', true);
-  configManager.set('serverIp', null);
+// El rol (Servidor/Cliente) lo decide el instalador, no se re-elige desde la app.
+// "Reconfigurar" / "Volver al inicio" reintentan el arranque del rol ya asignado
+// (para Cliente eso implica volver a pedir la IP del servidor).
+ipcMain.handle('reset-config', async () => {
   closeOverlay();
-  openOverlay('setup.html', { width: 620, height: 480, title: 'Logos POS — Configuración inicial' });
+  if (configManager.get('role') === 'client') {
+    configManager.set('serverIp', null);
+    openOverlay('client-config.html', { width: 500, height: 380, title: 'Logos POS — Configurar servidor' });
+  } else {
+    await startServerRole();
+  }
+});
+
+ipcMain.handle('save-remote-access-config', (_, cfg) => {
+  configManager.set('remoteAccess', {
+    enabled:            !!cfg.enabled,
+    headscaleServerUrl: String(cfg.headscaleServerUrl || '').trim(),
+    preAuthKey:         String(cfg.preAuthKey || '').trim(),
+  });
 });
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
+
+  // router.php sirve las páginas de pos/*.html como PHP dinámico sin headers de
+  // caché explícitos — sin esto, el navegador puede quedarse con una versión
+  // vieja de la UI después de actualizar la app, aunque los archivos en disco
+  // ya sean los nuevos. El costo es despreciable (todo corre contra localhost).
+  try { await session.defaultSession.clearCache(); } catch { /* no bloquear el arranque por esto */ }
 
   // Check for updates BEFORE showing anything to the user.
   // If an update is found, performUpdate() downloads and installs it (app restarts).
@@ -450,13 +623,16 @@ app.whenReady().then(async () => {
     // Update failed: fall through to normal startup
   }
 
-  const cfg = configManager.getAll();
-  if (cfg.firstRun || !cfg.role) {
-    openOverlay('setup.html', { width: 620, height: 480, title: 'Logos POS — Configuración inicial' });
-    return;
+  let role = configManager.get('role');
+  if (!role) {
+    // El instalador NSIS debería haber dejado el rol seteado. Si no está
+    // (modo desarrollo, o un estado incompleto), asumimos Servidor en vez
+    // de preguntar — la elección de rol vive únicamente en el instalador.
+    role = 'server';
+    configManager.set('role', role);
   }
 
-  if (cfg.role === 'server') startServerRole();
+  if (role === 'server') startServerRole();
   else startClientRole();
 });
 
@@ -478,5 +654,6 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   stopHealthCheck();
+  stopLicenciaTimer();
   serverManager.stopAll();
 });
