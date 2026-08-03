@@ -5,6 +5,11 @@
 ; customInstall   ejecutado DESPUES de copiar archivos (dentro de Section Install)
 ; customUnInstall ejecutado ANTES de borrar archivos   (dentro de Section Uninstall)
 
+; electron-builder ya lo incluye en el .nsi generado (lo usa para su propio
+; "Run app" de la pagina de Finish), pero se declara explicito aca tambien
+; para no depender de ese orden de ensamblado — !include es idempotente.
+!include StdUtils.nsh
+
 ; =============================================================================
 ; INIT — red de seguridad: abortar si no hay privilegios de administrador
 ; =============================================================================
@@ -59,7 +64,18 @@
     Pop $R1
     DetailPrint "Servicios reiniciados (codigo DB=$R0). Reabriendo Logos POS..."
 
-    ExecShell "open" "$INSTDIR\Logos POS.exe"
+    ; ExecShell (plano) hereda el contexto elevado (Administrador) de este
+    ; instalador — que corre elevado por UAC/perMachine. Un proceso lanzado
+    ; asi puede no llegar a la sesion interactiva del usuario logueado, lo
+    ; que explicaria "la app no vuelve a abrir sola" tras una actualizacion
+    ; silenciosa. StdUtils::ExecShellAsUser existe justamente para esto —
+    ; "ShellExecute() as NON-elevated user from elevated installer" — y es
+    ; el mismo mecanismo que usa electron-builder para el "Run app" de su
+    ; propia pagina de Finish interactiva (que en modo /S nunca se muestra,
+    ; asi que su relanzado tampoco corre: esta linea es la UNICA reapertura
+    ; real en una actualizacion silenciosa).
+    ${StdUtils.ExecShellAsUser} $R0 "$INSTDIR\Logos POS.exe" "open" ""
+    DetailPrint "Reapertura solicitada (codigo: $R0)."
 
     Goto logos_role_done
   ${EndIf}
