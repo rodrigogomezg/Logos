@@ -42,13 +42,14 @@
     ; Si los servicios NSSM existen (rol Servidor), reiniciarlos.
     ; Fueron detenidos por Electron antes de llamar a quitAndInstall().
     ; Si no existen (rol Cliente), sc start falla silenciosamente — no hay problema.
-    ; IMPORTANTE: "sc start" solo confirma que NSSM arranco el servicio de
-    ; Windows — NO garantiza que php.exe ya este escuchando en su puerto. El
-    ; php.exe VIEJO (recien detenido) puede tardar un instante en soltar el
-    ; puerto TCP; el nuevo php.exe puede fallar su primer intento de bind y
-    ; NSSM lo reintenta recien 5s despues (AppRestartDelay). Relanzar la app
-    ; inmediatamente aca podia pegarle a un servidor todavia no listo —
-    ; wait-after-update.ps1 confirma con un ping real antes de reabrir.
+    ; "sc start" solo confirma que NSSM arranco el servicio de Windows — NO
+    ; garantiza que php.exe ya este escuchando en su puerto (el proceso viejo
+    ; puede tardar un instante en soltarlo). A proposito NO se espera/verifica
+    ; nada aca: el instalador silencioso no tiene ninguna ventana visible, asi
+    ; que cualquier espera aca es tiempo muerto sin feedback para quien esta
+    ; mirando la pantalla. Reabrir de una y dejar que startServerRole() en
+    ; main.js maneje la espera real — esa parte SI le muestra al usuario
+    ; "Verificando servicios..." en pantalla mientras reintenta.
     DetailPrint "Reiniciando servicios LogosPOS si corresponde..."
     nsExec::ExecToStack 'sc start LogosPOS-DB'
     Pop $R0
@@ -56,12 +57,8 @@
     nsExec::ExecToStack 'sc start LogosPOS-PHP'
     Pop $R0
     Pop $R1
-    DetailPrint "Servicios reiniciados (codigo DB=$R0). Confirmando que el servidor web responde..."
+    DetailPrint "Servicios reiniciados (codigo DB=$R0). Reabriendo Logos POS..."
 
-    nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\resources\wait-after-update.ps1"'
-    Pop $R0
-
-    DetailPrint "Reabriendo Logos POS..."
     ExecShell "open" "$INSTDIR\Logos POS.exe"
 
     Goto logos_role_done
@@ -139,5 +136,24 @@
     Pop $R1
     DetailPrint "Teardown completado (codigo: $R0)"
   logos_no_teardown:
+
+  ; --- Borrado completo opcional (base de datos + config) ----------------------
+  ; Nunca en modo silencioso: un borrado irreversible de la base de un cliente
+  ; real no puede depender de un flag /S que nadie confirmo a proposito en ese
+  ; momento. Solo se ofrece en desinstalacion interactiva, y el default ante
+  ; cualquier cosa que no sea un "Si" explicito (Esc, cerrar el dialogo, No)
+  ; es NO BORRAR NADA.
+  ${IfNot} ${Silent}
+    MessageBox MB_YESNO|MB_ICONQUESTION "Se va a desinstalar Logos POS.$\n$\nQuerés borrar también la base de datos y toda la configuración de esta instalación (C:\ProgramData\LogosPOS)?$\n$\nSÍ = borrado completo, sin dejar rastro. Esta acción NO se puede deshacer.$\nNO = se desinstala solo el programa. Tus datos quedan intactos por si volvés a instalar Logos POS más adelante." IDYES logos_borrado_completo
+    Goto logos_uninstall_done
+
+    logos_borrado_completo:
+      DetailPrint "Borrando base de datos y configuracion..."
+      RMDir /r "C:\ProgramData\LogosPOS"
+      RMDir /r "$APPDATA\logos-pos"
+      DetailPrint "Borrado completo."
+  ${EndIf}
+
+  logos_uninstall_done:
 
 !macroend

@@ -1,7 +1,7 @@
 appId: com.drilogs.logos-pos
 productName: Logos POS
 copyright: Copyright © 2025 Drilogs
-buildVersion: "1.0.11"
+buildVersion: "1.0.17"
 
 # Auto-update: electron-updater consulta latest.yml desde esta URL.
 # El instalador .exe y latest.yml se suben a la misma ruta con npm run publish.
@@ -49,8 +49,6 @@ extraResources:
     to: "setup-server.ps1"
   - from: "resources/teardown-server.ps1"
     to: "teardown-server.ps1"
-  - from: "resources/wait-after-update.ps1"
-    to: "wait-after-update.ps1"
   # PHP web root — the router + the Logos app source
   - from: "www"
     to: "www"

@@ -4,13 +4,36 @@ class DB {
     private static ?PDO $instance = null;
     private static ?array $config = null;
 
+    // Ubicación compartida fuera de resources/ — el instalador NSIS reempaqueta
+    // ese árbol en cada actualización y puede arrastrar este archivo con él
+    // (bug real, ver CLAUDE.md § db.local.php). ProgramData sobrevive updates.
+    public const CONFIG_PATH = 'C:\\ProgramData\\LogosPOS\\db.local.php';
+    // Ubicación vieja, junto al código — se sigue leyendo para no romper
+    // instalaciones que actualicen desde una versión anterior a este fix.
+    private const LEGACY_PATH = __DIR__ . '/db.local.php';
+
+    // Resuelve la config real, migrando de LEGACY_PATH a CONFIG_PATH la primera
+    // vez que la encuentra ahí. Best-effort: si la copia falla, sigue leyendo
+    // de la ruta vieja hasta que algo la reescriba en la nueva ubicación.
+    private static function rutaLectura(): ?string {
+        if (is_file(self::CONFIG_PATH)) return self::CONFIG_PATH;
+        if (is_file(self::LEGACY_PATH)) {
+            $dir = dirname(self::CONFIG_PATH);
+            if (!is_dir($dir)) @mkdir($dir, 0777, true);
+            @copy(self::LEGACY_PATH, self::CONFIG_PATH);
+            return is_file(self::CONFIG_PATH) ? self::CONFIG_PATH : self::LEGACY_PATH;
+        }
+        return null;
+    }
+
     public static function estaConfigurado(): bool {
-        return is_file(__DIR__ . '/db.local.php');
+        return self::rutaLectura() !== null;
     }
 
     public static function config(): array {
         if (self::$config === null) {
-            $local = self::estaConfigurado() ? require __DIR__ . '/db.local.php' : [];
+            $ruta  = self::rutaLectura();
+            $local = $ruta !== null ? require $ruta : [];
             self::$config = array_merge([
                 'host'   => '127.0.0.1',
                 'port'   => 3306,

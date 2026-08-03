@@ -26,7 +26,9 @@ $wwwDir      = "$InstallDir\resources\www"
 $appDir      = "$InstallDir\resources\www\Logos"
 $nssmExe     = "$InstallDir\resources\nssm.exe"
 $schemaPath  = "$appDir\install\schema_limpio.sql"
-$dbLocalPath = "$appDir\api\config\db.local.php"
+# Fuera de resources/ a proposito: ese arbol lo reempaqueta el instalador NSIS
+# en cada actualizacion y puede arrastrar este archivo con el. Ver CLAUDE.md.
+$dbLocalPath = "$dataRoot\db.local.php"
 
 $setupLog = 'C:\ProgramData\LogosPOS\setup-log.txt'
 New-Item -ItemType Directory -Force -Path 'C:\ProgramData\LogosPOS' | Out-Null
@@ -129,6 +131,17 @@ $mariadbBase = Split-Path $mariadbBin
 # --- 3. Inicializar MariaDB (solo si es primera instalacion) ------------------
 if (!(Test-Path "$dataDir\mysql")) {
     Log "Inicializando base de datos..."
+
+    # mysql_install_db.exe exige un datadir COMPLETAMENTE vacio, no solo que
+    # falte la carpeta "mysql". Un desinstalador previo puede haber dejado
+    # restos sueltos (.pid/.err de un mysqld que no llego a cerrar limpio, un
+    # archivo que estaba bloqueado justo en el momento del borrado) — en vez
+    # de confiar en que la desinstalacion haya dejado todo perfecto, lo
+    # garantizamos aca mismo, justo antes de inicializar. Caso real 02/08/2026:
+    # "Data directory ... is not empty" con la carpeta "mysql" ya ausente.
+    Get-ChildItem -Path $dataDir -Force -ErrorAction SilentlyContinue |
+        Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
     $installDbExe = "$mariadbBin\mysql_install_db.exe"
     if (Test-Path $installDbExe) {
         # mysql_install_db.exe auto-detecta basedir desde su propio path — NO pasar --basedir.

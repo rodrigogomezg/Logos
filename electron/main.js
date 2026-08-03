@@ -1,5 +1,5 @@
 'use strict';
-const { app, BrowserWindow, ipcMain, Menu, Tray, net, nativeImage, session } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, Tray, net, nativeImage, session, dialog } = require('electron');
 const { execFileSync } = require('child_process');
 const path = require('path');
 const os = require('os');
@@ -12,6 +12,14 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
   process.exit(0);
 }
+
+// QUIC (HTTP/3, sobre UDP) falla en algunas redes hogareñas/corporativas que
+// bloquean o interfieren con UDP-443, aunque el HTTPS normal funcione sin
+// problema — vimos ERR_QUIC_PROTOCOL_ERROR bloquear por completo la descarga
+// de una actualización real (ver CLAUDE.md). Forzar HTTP/2 o HTTP/1.1 sobre
+// TCP es más lento en el mejor de los casos, pero mucho más compatible.
+// Tiene que llamarse antes de app.whenReady().
+app.commandLine.appendSwitch('disable-quic');
 
 // ── Path resolution (dev vs packaged) ────────────────────────────────────────
 const IS_PACKAGED  = app.isPackaged;
@@ -244,6 +252,22 @@ function openMainWindow(url) {
     if (tray && !app.isQuitting) {
       e.preventDefault();
       mainWindow.hide();
+
+      // Cerrar la ventana (aunque sea "a la bandeja") tiene que exigir login
+      // de nuevo al reabrir — desde la perspectiva de quien está frente a la
+      // PC, esto ES cerrar el programa, aunque el proceso siga vivo para no
+      // cortarle el servicio a otras PCs cliente. El flag de un solo uso por
+      // proceso (debe-limpiar-sesion, en preload.js) ya se consumió en el
+      // arranque real, así que sin esto, reabrir desde la bandeja (tray o
+      // segunda instancia) mostraba la sesión anterior intacta — la ventana
+      // nunca navega de nuevo, solo se vuelve a mostrar. Limpiar la sesión y
+      // recargar la página actual: auth.js se encarga de redirigir a
+      // login.html al no encontrar sesión válida. Ver CLAUDE.md.
+      mainWindow.webContents.executeJavaScript(
+        "try { localStorage.removeItem('logos_sesion'); } catch (e) {}"
+      ).then(() => {
+        if (mainWindow && !mainWindow.isDestroyed()) mainWindow.reload();
+      }).catch(() => {});
     }
   });
 
@@ -283,6 +307,7 @@ function checkForUpdates() {
   const { autoUpdater } = require('electron-updater');
   autoUpdater.autoDownload         = false;
   autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.disableWebInstaller  = true; // no usamos web installer — evita el warning en el log y el default futuro
   autoUpdater.logger               = null; // suppress to avoid polluting logs
 
   return new Promise((resolve) => {
@@ -388,6 +413,21 @@ function setupTray() {
     {
       label: 'Salir',
       click: () => {
+        // Confirmación explícita: "Salir" desde la bandeja es fácil de tocar
+        // sin querer (ícono chiquito, menú contextual), y a diferencia de la
+        // X de la ventana (que solo minimiza) esto sí cierra la aplicación
+        // de verdad en esta PC.
+        const response = dialog.showMessageBoxSync(mainWindow || undefined, {
+          type: 'question',
+          buttons: ['Cancelar', 'Salir'],
+          defaultId: 0,
+          cancelId: 0,
+          title: 'Logos POS',
+          message: '¿Seguro que querés salir de Logos POS?',
+          detail: 'Vas a cerrar la aplicación en esta PC.',
+        });
+        if (response !== 1) return;
+
         app.isQuitting = true;
         serverManager.stopAll();
         app.quit();
