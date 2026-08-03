@@ -544,6 +544,9 @@ tr.comp-nc.seleccionada          td { background: rgba(236,72,153,.12); }
       <label class="fbar-chk fbar-more-chk" title="Mostrar ventas anuladas">
         <input type="checkbox" id="f-mostrar-anuladas"> Mostrar anuladas
       </label>
+      <label class="fbar-chk fbar-more-chk" title="Facturas electrónicas sin CAE autorizado por ARCA">
+        <input type="checkbox" id="f-sin-cae"> Solo pendientes de CAE
+      </label>
       <div class="fbar-more-sep"></div>
       <button class="fbar-more-export" id="btn-exportar">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -1428,6 +1431,7 @@ async function buscar() {
   if (montoMin !== '') params.set('monto_min', montoMin);
   if (montoMax !== '') params.set('monto_max', montoMax);
   if ($('f-mostrar-anuladas').checked) params.set('mostrar_anuladas', '1');
+  if ($('f-sin-cae').checked)          params.set('sin_cae', '1');
   const sucFiltro = $('f-sucursal').value;
   if (sucFiltro) params.set('sucursal_id', sucFiltro);
   const venFiltro = $('f-vendedor').value;
@@ -2446,6 +2450,7 @@ document.addEventListener('click', e => {
 // ── Botón buscar ───────────────────────────────────────
 $('btn-buscar').addEventListener('click', buscar);
 $('f-mostrar-anuladas').addEventListener('change', buscar);
+$('f-sin-cae').addEventListener('change', buscar);
 
 $('btn-exportar').addEventListener('click', async () => {
   const params = new URLSearchParams();

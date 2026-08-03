@@ -26,7 +26,7 @@ Sólido, rápido, confiable. BRON is a real business with its own identity, not 
 1. **Speed above all** — every interaction must minimize friction. The cashier's hands stay on the keyboard; the mouse is secondary.
 2. **Keyboard-first flows** — every primary workflow (search, add product, confirm sale, navigate screens) must be completable without touching the mouse.
 3. **Zero ambiguity** — labels, states, and feedback must be unambiguous. A cashier making an error under pressure costs the business money.
-4. **Owned identity** — the system should look like BRON's system, not off-the-shelf SaaS. The brand color (dark red/bordeaux) and identity should be present and confident, not decorative.
+4. **Owned identity** — the system should look like BRON's system, not off-the-shelf SaaS. The brand palette (navy / dorado / marfil, per the 23/07 rebrand) and identity should be present and confident, not decorative.
 5. **Trust through reliability** — the visual language must signal that this tool won't fail. No superfluous animation, no decorative uncertainty, no cute interactions that slow things down.
 
 ## Accessibility & Inclusion

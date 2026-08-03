@@ -33,7 +33,7 @@
   box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast);
 }
 .busqueda-rapida input:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
-.busqueda-rapida input::placeholder { color: var(--neo-text-3); }
+.busqueda-rapida input::placeholder { color: var(--neo-text-2); }
 
 .dropdown {
   position: absolute; top: calc(100% + 6px); left: 0; right: 0;
@@ -48,14 +48,15 @@
 }
 .dd-item:last-child { border-bottom: none; }
 .dd-item:hover, .dd-item.activo { background: var(--primary-soft); }
-.dd-item .cod { color: var(--neo-text-3); font-family: monospace; font-size: 12px; white-space: nowrap; }
+.dd-item .cod { color: var(--neo-text-2); font-family: monospace; font-size: 12px; white-space: nowrap; }
 .dd-item .nom { font-weight: 500; color: var(--neo-text); }
 .dd-item .pre { font-weight: 700; color: var(--neo-accent); }
 
 /* ── ITEMS TABLE ── */
 .items-card {
   background: var(--neo-bg-deep); border-radius: var(--neo-r-lg); box-shadow: var(--neo-i1);
-  display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; border: none !important;
+  display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;
+  border: 1px solid var(--borde-fuerte);
 }
 .items-header {
   padding: 9px 14px; border-bottom: 1px solid var(--borde-fuerte);
@@ -73,7 +74,7 @@
 }
 .item-row:hover { background: var(--color-bg-alt); }
 .item-row .nom { font-weight: 500; line-height: 1.3; min-width: 0; overflow-wrap: break-word; color: var(--neo-text); }
-.item-row .nom small { display: block; color: var(--neo-text-3); font-size: 11px; font-weight: 400; }
+.item-row .nom small { display: block; color: var(--neo-text-2); font-size: 11px; font-weight: 400; }
 .item-row .sub { text-align: right; font-weight: 600; color: var(--neo-text); white-space: nowrap; }
 
 .cant-wrap { display: flex; align-items: center; gap: 2px; }
@@ -85,7 +86,7 @@
   box-shadow: var(--neo-e1); transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
   user-select: none;
 }
-.cant-btn:hover  { box-shadow: var(--neo-e2); color: var(--neo-accent); }
+.cant-btn:hover  { background: var(--color-bg-alt); box-shadow: none; color: var(--neo-accent); }
 .cant-btn:active { box-shadow: var(--neo-i1); }
 .cant-wrap .item-input { text-align: center; min-width: 0; }
 
@@ -115,7 +116,7 @@
   font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap;
   background: var(--neo-bg); color: var(--neo-text); transition: box-shadow var(--neo-t-fast);
 }
-.sel-btn:hover { box-shadow: var(--neo-e2); }
+.sel-btn:hover { background: var(--color-bg-alt); box-shadow: none; }
 .sel-btn-del { color: var(--neo-danger); }
 .sel-btn-del:hover { background: var(--neo-danger); color: white; box-shadow: 3px 3px 6px var(--neo-danger-glow); }
 .sel-btn:disabled { opacity: .4; cursor: not-allowed; pointer-events: none; }
@@ -152,14 +153,14 @@
 }
 .btn-del:hover { background: rgba(231,76,60,.1); }
 
-.items-vacio { padding: 40px 20px; text-align: center; color: var(--neo-text-3); line-height: 2; }
+.items-vacio { padding: 40px 20px; text-align: center; color: var(--neo-text-2); line-height: 2; }
 
 /* ── COL DER ── */
 .col-der { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
 .col-der::-webkit-scrollbar { width: 4px; }
 .col-der::-webkit-scrollbar-thumb { background: var(--neo-sd); border-radius: 2px; }
 
-.card { background: var(--neo-bg); border-radius: var(--neo-r-md); box-shadow: var(--neo-e2); padding: 14px; border: none !important; }
+.card { background: var(--neo-bg); border-radius: var(--neo-r-md); box-shadow: var(--neo-e2); padding: 14px; border: 1px solid var(--borde-fuerte); }
 .card label {
   display: block; font-size: 10px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); margin-bottom: 5px;
@@ -221,12 +222,12 @@ label.envio-toggle {
   transition: box-shadow var(--neo-t-fast); letter-spacing: .3px;
 }
 .btn-ok {
-  background: var(--neo-accent); color: white;
+  background: var(--color-accent); color: var(--color-primary-dark);
   display: flex; align-items: center; justify-content: center; gap: 10px;
   padding: 16px 13px; font-size: 16px; letter-spacing: .6px;
-  box-shadow: 6px 6px 16px var(--neo-accent-glow), -3px -3px 8px rgba(255,255,255,.2);
+  box-shadow: none;
 }
-.btn-ok:hover { background: var(--neo-accent-h); box-shadow: 8px 8px 20px var(--neo-accent-glow), -3px -3px 8px rgba(255,255,255,.2); }
+.btn-ok:hover { background: var(--color-accent-h); box-shadow: none; }
 .btn-ok:disabled { background: var(--neo-bg-deep); color: var(--neo-text-3); cursor: not-allowed; box-shadow: var(--neo-i1); opacity: 0.55; }
 .btn-sec {
   background: var(--neo-bg); color: var(--neo-text); margin-top: 6px;
@@ -293,7 +294,7 @@ label.envio-toggle {
   cursor: pointer; color: var(--neo-text-3); white-space: nowrap;
   transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
 }
-.pm-auto-btn:hover { box-shadow: var(--neo-e2); color: var(--neo-accent); }
+.pm-auto-btn:hover { background: var(--color-bg-alt); box-shadow: none; color: var(--neo-accent); }
 .pm-del-btn {
   flex-shrink: 0; width: 28px; height: 28px; border: none; background: none; cursor: pointer;
   color: var(--neo-text-3); font-size: 18px; border-radius: var(--neo-r-xs); padding: 0;
@@ -320,27 +321,9 @@ label.envio-toggle {
 .pm-btn { padding: 8px 18px; border-radius: var(--neo-r-sm); font-size: 12px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; }
 .pm-btn-ghost { background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); transition: box-shadow var(--neo-t-fast); }
 .pm-btn-ghost:hover { box-shadow: var(--neo-e3); }
-.pm-btn-primary { background: var(--neo-accent); color: white; box-shadow: 4px 4px 10px var(--neo-accent-glow); }
+.pm-btn-primary { background: var(--color-accent); color: var(--color-primary-dark); box-shadow: none; }
 .pm-btn-primary:hover { background: var(--neo-accent-h); }
 .pm-btn-primary:disabled { background: var(--neo-bg-deep); color: var(--neo-text-3); cursor: not-allowed; box-shadow: var(--neo-i1); }
-
-/* ── BOTONES DE ACCIÓN ── */
-.accion-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.accion-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 5px;
-  padding: 11px 8px 9px; border: none; border-radius: var(--neo-r-md);
-  background: var(--neo-bg); box-shadow: var(--neo-e1); cursor: pointer; font-family: inherit;
-  font-size: 12px; font-weight: 600; color: var(--neo-text-2);
-  transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
-}
-.accion-btn:hover { box-shadow: var(--neo-e2); color: var(--neo-accent); }
-.accion-btn:active { box-shadow: var(--neo-i1); }
-.accion-btn svg { flex-shrink: 0; }
-.ab-kbd {
-  font-family: monospace; font-size: 10px; color: var(--neo-text-3);
-  background: var(--neo-bg-deep); padding: 1px 5px; border-radius: var(--neo-r-xs);
-  box-shadow: var(--neo-e1); margin-top: 1px;
-}
 
 /* ── TOP BAR ── */
 .top-bar {
@@ -360,7 +343,7 @@ label.envio-toggle {
   font-size: 12px; font-family: inherit; background: var(--neo-bg); color: var(--neo-text); outline: none;
   box-shadow: var(--neo-i1); transition: box-shadow var(--neo-t-fast);
 }
-.top-bar input::placeholder { color: var(--neo-text-3); }
+.top-bar input::placeholder { color: var(--neo-text-2); }
 .top-bar input[type=text]:focus, .top-bar input[type=date]:focus, .top-bar select:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
 .top-bar select option { background: var(--neo-bg); color: var(--neo-text); }
 #fecha-venta.fecha-modificada { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-warning); }
@@ -386,7 +369,7 @@ label.envio-toggle {
   color: var(--neo-text-2); white-space: nowrap; flex-shrink: 0;
   transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
 }
-.cat-btn:hover { box-shadow: var(--neo-e2); color: var(--neo-accent); }
+.cat-btn:hover { background: var(--color-bg-alt); box-shadow: none; color: var(--neo-accent); }
 .cat-btn:active { box-shadow: var(--neo-i1); }
 .cat-kbd { font-family: monospace; font-size: 10px; color: var(--neo-text-3); background: var(--neo-bg-deep); padding: 1px 5px; border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1); }
 
@@ -438,7 +421,7 @@ label.envio-toggle {
   background: var(--neo-bg); box-shadow: var(--neo-e1); user-select: none;
   transition: box-shadow var(--neo-t-fast), color var(--neo-t-fast);
 }
-.toggle-wrap:hover { box-shadow: var(--neo-e2); }
+.toggle-wrap:hover { background: var(--color-bg-alt); box-shadow: none; }
 .toggle-wrap input { display: none; }
 .toggle-wrap.activo { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); color: var(--neo-accent); }
 
@@ -517,10 +500,10 @@ label.envio-toggle {
 }
 .sel-footer-info { font-size: 13px; color: var(--neo-text-3); }
 .sel-btn-ok {
-  padding: 9px 22px; background: var(--neo-accent); color: white;
+  padding: 9px 22px; background: var(--color-accent); color: var(--color-primary-dark);
   border: none; border-radius: var(--neo-r-sm); font-size: 13px; font-weight: 700;
   font-family: inherit; cursor: pointer; white-space: nowrap;
-  box-shadow: 4px 4px 10px var(--neo-accent-glow);
+  box-shadow: none;
 }
 .sel-btn-ok:hover { background: var(--neo-accent-h); }
 
@@ -528,10 +511,10 @@ label.envio-toggle {
 .cli-search-wrap { display: flex; gap: 6px; align-items: center; }
 .cli-search-wrap .busqueda-rapida { flex: 1; min-width: 0; }
 .btn-nuevo-cli {
-  flex-shrink: 0; width: 40px; height: 40px; background: var(--neo-accent); color: white;
+  flex-shrink: 0; width: 40px; height: 40px; background: var(--color-accent); color: var(--color-primary-dark);
   border: none; border-radius: var(--neo-r-sm); font-size: 22px; font-weight: 300;
   cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1;
-  box-shadow: 3px 3px 7px var(--neo-accent-glow);
+  box-shadow: none;
 }
 .btn-nuevo-cli:hover { background: var(--neo-accent-h); }
 
@@ -561,7 +544,7 @@ label.envio-toggle {
 .nc-foot { padding: 14px 20px; border-top: 1px solid var(--borde-fuerte); display: flex; justify-content: flex-end; gap: 8px; flex-shrink: 0; }
 .nc-btn-sec { padding: 9px 18px; border: none; border-radius: var(--neo-r-sm); background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); font-size: 13px; font-weight: 500; cursor: pointer; transition: box-shadow var(--neo-t-fast); }
 .nc-btn-sec:hover { box-shadow: var(--neo-e3); }
-.nc-btn-pri { padding: 9px 18px; border: none; border-radius: var(--neo-r-sm); background: var(--neo-accent); color: white; box-shadow: 4px 4px 10px var(--neo-accent-glow); font-size: 13px; font-weight: 600; cursor: pointer; }
+.nc-btn-pri { padding: 9px 18px; border: none; border-radius: var(--neo-r-sm); background: var(--color-accent); color: var(--color-primary-dark); box-shadow: none; font-size: 13px; font-weight: 600; cursor: pointer; }
 .nc-btn-pri:hover:not(:disabled) { background: var(--neo-accent-h); }
 .nc-btn-pri:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -605,6 +588,14 @@ label.envio-toggle {
   transition: box-shadow var(--neo-t-fast);
 }
 .uv-btn:hover { box-shadow: var(--neo-e2); }
+.cae-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; border-radius: 50%; font-size: 9px; font-weight: 800;
+  margin-left: 6px; vertical-align: middle; flex-shrink: 0;
+}
+.cae-ok   { background: rgba(39,174,96,.15);  color: var(--neo-success); }
+.cae-err  { background: rgba(231,76,60,.15);  color: var(--neo-danger);  }
+.cae-pend { background: rgba(255,255,255,.55); color: var(--neo-success-h); }
 
 @media (prefers-reduced-motion: reduce) {
   .afip-warn, .ultima-venta, .envio-reveal { transition: none; }
@@ -950,7 +941,7 @@ label.envio-toggle {
       <span>CONFIRMAR VENTA</span>
       <span style="font-size:11px;font-weight:500;opacity:.75;font-family:monospace;background:rgba(0,0,0,.2);padding:1px 5px;border-radius:3px;margin-left:2px">F10</span>
     </button>
-    <div id="cc-alerta" style="display:none;background:#fef2f2;border:1px solid #fecaca;padding:9px 12px;font-size:12px;line-height:1.55;color:#991b1b"></div>
+    <div id="cc-alerta" style="display:none;background:rgba(231,76,60,.08);border-radius:var(--neo-r-sm);box-shadow:var(--neo-e1), 0 0 0 1.5px var(--neo-danger);padding:9px 12px;font-size:12px;line-height:1.55;color:var(--neo-text-2)"></div>
 
     <!-- Última venta -->
     <div class="ultima-venta" id="ultima-venta" aria-label="Última venta confirmada">
@@ -959,7 +950,7 @@ label.envio-toggle {
         <button class="uv-cerrar" id="uv-cerrar" type="button" title="Cerrar" aria-label="Cerrar panel de última venta">×</button>
       </div>
       <div class="uv-data">
-        <span class="uv-comp" id="uv-comp"></span>
+        <span class="uv-comp-wrap"><span class="uv-comp" id="uv-comp"></span><span class="cae-badge" id="uv-cae" role="status" aria-live="polite" style="display:none"></span></span>
         <span class="uv-total" id="uv-total"></span>
       </div>
       <div class="uv-btns">
@@ -2125,7 +2116,7 @@ function actualizarBtnConfirmar() {
       elAlerta.innerHTML =
         `<strong>Límite de crédito insuficiente</strong><br>` +
         `Saldo actual: <strong>${fmtN(saldo)}</strong> &nbsp;·&nbsp; Límite: <strong>${fmtN(limite)}</strong><br>` +
-        `Disponible: <strong style="color:${disponible<=0?'#b91c1c':'#92400e'}">${fmtN(disponible)}</strong> &nbsp;·&nbsp; Esta venta: <strong>${fmtN(total)}</strong>`;
+        `Disponible: <strong style="color:${disponible<=0?'var(--neo-danger-h)':'var(--neo-warning-h)'}">${fmtN(disponible)}</strong> &nbsp;·&nbsp; Esta venta: <strong>${fmtN(total)}</strong>`;
       elAlerta.style.display = '';
     } else {
       elAlerta.style.display = 'none';
@@ -2135,7 +2126,9 @@ function actualizarBtnConfirmar() {
   }
 
   btnConfirmar.disabled = vacio || afipGuardActivo;
-  btnConfirmar.title = vacio ? 'Agregá productos al carrito para confirmar' : '';
+  btnConfirmar.title = vacio ? 'Agregá productos al carrito para confirmar'
+    : afipGuardActivo ? $('afip-warn-msg').textContent
+    : '';
 }
 
 // ════════ ÚLTIMA VENTA ════════════════════════════════
@@ -2144,12 +2137,30 @@ function mostrarUltimaVenta(data) {
   ultimaVentaData = data;
   $('uv-comp').textContent  = `${data.tipo_comprobante} N° ${data.numero}`;
   $('uv-total').textContent = fmt(data.total);
+  const badge = $('uv-cae');
+  badge.style.display = 'none';
+  badge.title = '';
   $('ultima-venta').classList.add('visible');
 }
 
 function ocultarUltimaVenta() {
   ultimaVentaData = null;
   $('ultima-venta').classList.remove('visible');
+}
+
+// Refleja el resultado real del pedido de CAE a ARCA sobre el panel de
+// "Última venta". No bloquea al cajero (que ya puede estar en la venta
+// siguiente): solo actualiza el badge si ese panel sigue mostrando esta
+// misma venta, para no pisar una venta más reciente.
+function actualizarCaeUltimaVenta(ventaId, estado, mensaje) {
+  if (!ultimaVentaData || ultimaVentaData.id !== ventaId) return;
+  const badge = $('uv-cae');
+  badge.className   = `cae-badge cae-${estado}`;
+  badge.textContent = estado === 'ok' ? '✓' : estado === 'err' ? '!' : '…';
+  badge.title = estado === 'ok'  ? 'Autorizada por ARCA'
+              : estado === 'err' ? (mensaje || 'ARCA no autorizó el comprobante — reintentá desde Ventas')
+              : 'Solicitando autorización a ARCA...';
+  badge.style.display = '';
 }
 
 // ════════ CONFIRMAR VENTA ═════════════════════════════
@@ -2298,8 +2309,24 @@ async function confirmarVenta() {
     const esElectronico = !esModoEdicion && TIPOS_ELECT_POS.includes(body.tipo_comprobante);
     if (esElectronico) {
       toast_(`${body.tipo_comprobante} guardada — solicitando CAE a ARCA...`, 'ok');
-      // Fire-and-forget: el POS queda libre inmediatamente
-      fetch(`${API}/ventas/${d.id}/facturar`, { method: 'POST' }).catch(() => {});
+      actualizarCaeUltimaVenta(d.id, 'pend');
+      // No bloquea al cajero (el POS queda libre para la próxima venta ya),
+      // pero el resultado real se refleja en el panel de "Última venta" y
+      // en un toast — nunca se descarta en silencio.
+      fetch(`${API}/ventas/${d.id}/facturar`, { method: 'POST' })
+        .then(async r => {
+          const df = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            toast_(`ARCA rechazó el comprobante: ${df.error ?? 'sin detalle'} — reintentá desde Ventas`, 'err');
+            actualizarCaeUltimaVenta(d.id, 'err', df.error);
+          } else {
+            actualizarCaeUltimaVenta(d.id, 'ok');
+          }
+        })
+        .catch(() => {
+          toast_('No se pudo conectar con ARCA para pedir el CAE — reintentá desde Ventas', 'err');
+          actualizarCaeUltimaVenta(d.id, 'err', 'Sin conexión con ARCA');
+        });
     } else {
       const accion = esModoEdicion ? 'Actualizado' : '✓';
       const sufijo = esMp ? ' — QR MercadoPago incluido en comprobante' : '';
