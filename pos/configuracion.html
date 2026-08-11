@@ -44,19 +44,12 @@
 .panel { display: none; }
 .panel.activo { display: flex; flex-direction: column; flex: 1; }
 
-/* ── Columnas por panel: ocupan todo el alto y ancho disponibles.
-   Las columnas se igualan en altura y las cards se estiran para
-   que no queden huecos en la pantalla. ── */
+/* ── Columnas por panel: todo en una sola columna, apilado de arriba a
+   abajo — cada tab se recorre scrolleando, no repartiendo cards en el
+   ancho de la pantalla. (Antes: grid de 2-3 columnas en pantallas anchas.) ── */
 .cols { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: stretch; margin-bottom: 16px; flex: 1; }
 .cols .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .cols .card { margin-bottom: 0; flex: 1 1 auto; }
-@media (min-width: 1100px) {
-  .cols-3 { grid-template-columns: 1fr 1fr; }
-  .cols-negocio { grid-template-columns: 1.6fr 1fr; }
-}
-@media (min-width: 1750px) {
-  .cols-3 { grid-template-columns: 1fr 1fr 1fr; }
-}
 
 /* ── Cards ── */
 .card {
@@ -188,10 +181,9 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 .avz-seccion + .card { margin-top: 0; }
 .avz-seccion-danger { color: var(--neo-danger); border-color: rgba(231,76,60,.25); margin-top: 8px; }
 
-/* Grid 2 columnas para la sección Configuración */
+/* Sección Configuración: una sola columna, apilado (ver nota en .cols) */
 .cols-avz { display: grid; grid-template-columns: 1fr; gap: 16px; align-items: start; margin-bottom: 16px; }
 .cols-avz .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-@media (min-width: 900px) { .cols-avz { grid-template-columns: 1fr 1fr; } }
 
 /* ── Danger zone ── */
 .danger-card { box-shadow: var(--neo-e2), 0 0 0 2px rgba(231,76,60,.3) !important; }
@@ -570,7 +562,7 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
         <div class="card-body">
           <div class="logo-row">
             <div class="logo-preview" id="logo-preview">
-              <img src="/Logos/logo_background.png?t=0" id="logo-preview-img" alt="">
+              <img src="/Logos/api/configuracion/logo?t=0" id="logo-preview-img" alt="">
             </div>
             <div>
               <input type="file" id="logo-file" accept="image/png,image/jpeg,image/gif,image/webp">
@@ -654,7 +646,7 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
             <div class="form-grid">
               <div class="form-group full">
                 <label class="form-label">Carpeta de backups</label>
-                <input class="form-input" id="cfg-carpeta_backups" placeholder="C:\Logos\backups">
+                <input class="form-input" id="cfg-carpeta_backups" placeholder="Vacío = C:\ProgramData\LogosPOS\backups (automático)">
               </div>
               <div class="form-group full">
                 <label class="form-label">Carpeta secundaria (copia externa)</label>
@@ -667,6 +659,7 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
                 Hacer backup automáticamente al cerrar el turno diario (Z)
               </label>
             </div>
+            <p id="backup-estado-linea" style="margin:10px 0 0;font-size:13px;color:var(--texto-secundario,#666)"></p>
             <div class="btn-row">
               <button class="btn btn-sec" id="btn-backup-ahora">Backup ahora</button>
             </div>
@@ -796,6 +789,43 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
 
     <!-- ── Sección 3: Zona de peligro ── -->
     <div class="avz-seccion avz-seccion-danger">Zona de peligro</div>
+
+    <div class="card danger-card" id="rb-card">
+      <div class="card-body">
+        <div class="card-titulo" style="margin-bottom:10px">Restaurar backup</div>
+        <div class="form-hint" style="margin-bottom:16px">
+          Reemplaza <b>todos</b> los datos actuales (productos, clientes, ventas, cajas, todo) por los
+          de un backup elegido. Antes de tocar nada se genera automáticamente un backup del estado
+          actual, por si el archivo elegido no era el correcto. La restauración en sí no se puede
+          deshacer, y la aplicación se reinicia sola al terminar. Puede tardar varios minutos con
+          backups grandes — no cierres la ventana.
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label class="form-label">Backup a restaurar (de la carpeta configurada)</label>
+            <select class="form-select" id="rb-archivo-select">
+              <option value="">Cargando backups disponibles…</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">…o subí un archivo .sql de otro lado</label>
+            <input type="file" class="form-input" id="rb-archivo-file" accept=".sql">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Escribí RESTAURAR BACKUP para habilitar el botón</label>
+            <input class="form-input" id="rb-confirmacion" placeholder="RESTAURAR BACKUP" autocomplete="off">
+          </div>
+          <div class="form-group full" id="rb-clave-grupo" style="display:none">
+            <label class="form-label">Clave de autorización</label>
+            <input class="form-input" type="password" id="rb-clave" autocomplete="new-password">
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="btn-restaurar-backup" disabled>Restaurar backup</button>
+        </div>
+      </div>
+    </div>
+
     <div class="card danger-card">
       <div class="card-body">
         <div class="form-hint" style="margin-bottom:16px">
@@ -933,6 +963,7 @@ async function cargarConfig() {
   $('cfg-ventas_sin_stock').checked    = !!(configActual.ventas_sin_stock);
   $('cfg-clave_autorizacion').value   = '';
   $('rf-clave-grupo').style.display   = configActual.clave_autorizacion_configurada ? '' : 'none';
+  $('rb-clave-grupo').style.display   = configActual.clave_autorizacion_configurada ? '' : 'none';
   $('cfg-clave-hint').textContent = (configActual.clave_autorizacion_configurada
     ? 'Clave configurada. '
     : 'Todavía no hay clave configurada — los usuarios no Admin podrán eliminar libremente. ')
@@ -1240,12 +1271,34 @@ $('btn-probar-impresion').addEventListener('click', async () => {
 });
 
 // ── Backup ───────────────────────────────────────────────────
+async function cargarEstadoBackup() {
+  const linea = $('backup-estado-linea');
+  if (!linea) return;
+  try {
+    const res = await fetch(`${API}/backup/estado`);
+    if (!res.ok) return;
+    const estado = await res.json();
+    if (!estado.ultimo_en) {
+      linea.textContent = 'Todavía no se generó ningún backup automático.';
+      linea.style.color = estado.alerta ? '#c0392b' : 'var(--texto-secundario,#666)';
+      return;
+    }
+    const fecha = new Date(estado.ultimo_en.replace(' ', 'T')).toLocaleString('es-AR');
+    linea.textContent = estado.ultimo_ok
+      ? `Último backup: ${fecha} (OK)`
+      : `Último backup falló (${fecha}): ${estado.mensaje || ''}`;
+    linea.style.color = estado.alerta ? '#c0392b' : 'var(--texto-secundario,#666)';
+  } catch { /* no romper la pantalla si esto falla */ }
+}
+cargarEstadoBackup();
+
 $('btn-backup-ahora').addEventListener('click', async () => {
   try {
     const res = await fetch(`${API}/configuracion/backup`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) { toast(data.error || 'Error al hacer el backup', 'err'); return; }
     toast('Backup creado: ' + data.archivo, 'ok');
+    cargarEstadoBackup();
   } catch {
     toast('Error de conexión', 'err');
   }
@@ -1626,6 +1679,92 @@ $('btn-usuario-agregar').addEventListener('click', async () => {
   $('usuario-nuevo-pin').value    = '';
   toast('Usuario creado', 'ok');
   cargarUsuarios();
+});
+
+// ── Zona de peligro: restaurar backup ───────────────────────
+// Oculto en PC "Cliente": no tiene la base local, y "reiniciar la app" ahí
+// no reiniciaría el Servidor real (solo su propia ventana). Ver CLAUDE.md.
+(async function ocultarRestoreSiEsCliente() {
+  if (!window.logos?.getConfig) return; // navegador sin Electron: no podemos saber el rol, se deja visible
+  try {
+    const cfg = await window.logos.getConfig();
+    if (cfg?.role === 'client') $('rb-card').style.display = 'none';
+  } catch { /* no ocultar por las dudas si falla la consulta */ }
+})();
+
+async function cargarListaBackups() {
+  const sel = $('rb-archivo-select');
+  try {
+    const res = await fetch(`${API}/backup/listar`);
+    const lista = res.ok ? await res.json() : [];
+    if (!lista.length) {
+      sel.innerHTML = '<option value="">No hay backups en la carpeta configurada</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">Elegí un backup…</option>' + lista.map(b => {
+      const fecha = new Date(b.modificado.replace(' ', 'T')).toLocaleString('es-AR');
+      const mb    = (b.tamano / 1024 / 1024).toFixed(1);
+      const origenLabel = b.origen === 'secundaria' ? ' [carpeta secundaria]' : '';
+      return `<option value="${esc(b.nombre)}|${esc(b.origen)}">${esc(b.nombre)} — ${fecha} (${mb} MB)${origenLabel}</option>`;
+    }).join('');
+  } catch {
+    sel.innerHTML = '<option value="">Error al cargar backups</option>';
+  }
+}
+cargarListaBackups();
+
+function actualizarBotonRestaurar() {
+  const confOk   = $('rb-confirmacion').value.trim() === 'RESTAURAR BACKUP';
+  const origenOk = $('rb-archivo-file').files.length > 0 || $('rb-archivo-select').value !== '';
+  $('btn-restaurar-backup').disabled = !(confOk && origenOk);
+}
+$('rb-confirmacion').addEventListener('input', actualizarBotonRestaurar);
+$('rb-archivo-select').addEventListener('change', actualizarBotonRestaurar);
+$('rb-archivo-file').addEventListener('change', actualizarBotonRestaurar);
+
+$('btn-restaurar-backup').addEventListener('click', async () => {
+  const ok = await confirmarModal(
+    'Esto reemplaza TODOS los datos actuales por los del backup elegido. Se guarda un backup del estado de ahora antes de empezar, pero la restauración en sí no se puede deshacer.',
+    { titulo: 'Restaurar backup', confirmLabel: 'Restaurar', danger: true }
+  );
+  if (!ok) return;
+
+  const btn = $('btn-restaurar-backup');
+  btn.disabled = true; btn.textContent = 'Restaurando… no cierres la ventana';
+
+  const fd   = new FormData();
+  const file = $('rb-archivo-file').files[0];
+  if (file) {
+    fd.append('backup', file);
+  } else {
+    const [nombre, origen] = $('rb-archivo-select').value.split('|');
+    fd.append('archivo', nombre);
+    fd.append('origen', origen);
+  }
+  fd.append('confirmacion', $('rb-confirmacion').value.trim());
+  fd.append('clave_autorizacion', $('rb-clave').value);
+
+  try {
+    const res  = await fetch(`${API}/backup/restaurar`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) {
+      toast(data.error || 'Error al restaurar', 'err');
+      btn.disabled = false; btn.textContent = 'Restaurar backup';
+      return;
+    }
+    localStorage.removeItem('logos_sesion');
+    sessionStorage.clear();
+    if (window.logos?.restartApp) {
+      toast('Restauración completa. Reiniciando la aplicación…', 'ok');
+      setTimeout(() => window.logos.restartApp(), 1200);
+    } else {
+      toast('Restauración completa. Cerrá y volvé a abrir Logos POS en la PC Servidor para terminar.', 'ok');
+      btn.textContent = 'Listo — reiniciá la app';
+    }
+  } catch (e) {
+    toast('Error de conexión', 'err');
+    btn.disabled = false; btn.textContent = 'Restaurar backup';
+  }
 });
 
 // ── Zona de peligro: reset de fábrica ───────────────────────

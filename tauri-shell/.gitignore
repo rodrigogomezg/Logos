@@ -1,0 +1,40 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Binario vendored (vc_redist) — igual criterio que electron/resources/*
+# en el .gitignore raíz: se provee aparte, no se versiona.
+vendor/
+
+# Artefactos de prueba del endpoint de update local (instaladores firmados,
+# manifest de latest.json) — se regeneran en cada ronda de prueba, nunca
+# deben viajar al repo.
+update-test/*.exe
+update-test/*.sig
+
+# Carpetas de scratch de inspección manual del .nsi generado — sin valor
+# de código, quedaron de debugging puntual.
+inspect-installer/
+inspect-installer2/
+inspect-installer3/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

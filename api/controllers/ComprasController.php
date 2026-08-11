@@ -66,7 +66,9 @@ class ComprasController {
         $stmt = $db->prepare("
             SELECT c.id, LPAD(c.id, 8, '0') AS numero, c.fecha, c.total, c.estado,
                    c.tipo_comprobante, c.numero_comprobante, c.subtotal, c.iva_monto,
-                   c.percepcion_iibb_porcentaje, c.percepcion_iibb_monto, c.tipo_pago,
+                   c.percepcion_iibb_porcentaje, c.percepcion_iibb_monto,
+                   c.descuento_general_porcentaje, c.descuento_general_monto,
+                   c.actualiza_stock, c.actualiza_costos, c.tipo_pago,
                    pr.id AS proveedor_id, pr.nombre AS proveedor_nombre
             FROM compras c
             LEFT JOIN proveedores pr ON pr.id = c.proveedor_id
@@ -77,7 +79,8 @@ class ComprasController {
         if (!$compra) json(404, ['error' => 'Compra no encontrada']);
 
         $stmt = $db->prepare("
-            SELECT ci.id, ci.cantidad, ci.costo_unitario, ci.iva_porcentaje, ci.iva_monto,
+            SELECT ci.id, ci.cantidad, ci.costo_unitario, ci.descuento_porcentaje, ci.descuento_monto,
+                   ci.iva_porcentaje, ci.iva_monto,
                    (ci.cantidad * ci.costo_unitario) AS subtotal,
                    p.id AS producto_id, p.nombre AS producto_nombre, p.codigo AS producto_codigo
             FROM compra_items ci
@@ -89,11 +92,13 @@ class ComprasController {
         $compra['items'] = $stmt->fetchAll();
 
         foreach ($compra['items'] as &$item) {
-            $item['cantidad']       = (float)$item['cantidad'];
-            $item['costo_unitario'] = (float)$item['costo_unitario'];
-            $item['iva_porcentaje'] = (float)$item['iva_porcentaje'];
-            $item['iva_monto']      = (float)$item['iva_monto'];
-            $item['subtotal']       = (float)$item['subtotal'];
+            $item['cantidad']             = (float)$item['cantidad'];
+            $item['costo_unitario']       = (float)$item['costo_unitario'];
+            $item['descuento_porcentaje'] = (float)$item['descuento_porcentaje'];
+            $item['descuento_monto']      = (float)$item['descuento_monto'];
+            $item['iva_porcentaje']       = (float)$item['iva_porcentaje'];
+            $item['iva_monto']            = (float)$item['iva_monto'];
+            $item['subtotal']             = (float)$item['subtotal'];
         }
 
         $stmt = $db->prepare("SELECT tipo_pago, monto FROM compra_pagos WHERE compra_id = ? ORDER BY id");
@@ -101,13 +106,98 @@ class ComprasController {
         $compra['pagos'] = $stmt->fetchAll();
         foreach ($compra['pagos'] as &$p) { $p['monto'] = (float)$p['monto']; }
 
-        $compra['total']                      = (float)$compra['total'];
-        $compra['subtotal']                   = (float)$compra['subtotal'];
-        $compra['iva_monto']                  = (float)$compra['iva_monto'];
-        $compra['percepcion_iibb_porcentaje'] = $compra['percepcion_iibb_porcentaje'] !== null ? (float)$compra['percepcion_iibb_porcentaje'] : null;
-        $compra['percepcion_iibb_monto']      = (float)$compra['percepcion_iibb_monto'];
+        $compra['total']                        = (float)$compra['total'];
+        $compra['subtotal']                     = (float)$compra['subtotal'];
+        $compra['iva_monto']                    = (float)$compra['iva_monto'];
+        $compra['percepcion_iibb_porcentaje']   = $compra['percepcion_iibb_porcentaje'] !== null ? (float)$compra['percepcion_iibb_porcentaje'] : null;
+        $compra['percepcion_iibb_monto']        = (float)$compra['percepcion_iibb_monto'];
+        $compra['descuento_general_porcentaje'] = $compra['descuento_general_porcentaje'] !== null ? (float)$compra['descuento_general_porcentaje'] : null;
+        $compra['descuento_general_monto']      = (float)$compra['descuento_general_monto'];
+        $compra['actualiza_stock']              = (bool)$compra['actualiza_stock'];
+        $compra['actualiza_costos']             = (bool)$compra['actualiza_costos'];
 
         json(200, $compra);
+    }
+
+    // Procesa los ítems del body: valida producto/cantidad/costo, calcula el
+    // descuento por ítem (clamp 0..sub_bruto, `descuento_monto` manda si vino
+    // — el frontend siempre lo manda sincronizado con el %) y el IVA sobre el
+    // NETO (después del descuento), igual que calcularTotales() del lado
+    // cliente. `costo_unitario` queda tal cual lo tipeó el usuario (bruto,
+    // sin descuento) — es el valor de auditoría/edición; el costo final con
+    // descuento se calcula aparte en aplicarDescuentoGeneralACostos().
+    private function procesarItems(array $items, PDO $db): array {
+        $items_data = [];
+        $subtotal   = 0.0;
+        $iva_total  = 0.0;
+
+        foreach ($items as $i => $item) {
+            $producto_id    = (int)($item['producto_id']    ?? 0);
+            $cantidad       = (float)($item['cantidad']       ?? 0);
+            $costo_unitario = (float)($item['costo_unitario'] ?? 0);
+
+            if (!$producto_id || $cantidad <= 0 || $costo_unitario < 0) {
+                json(400, ['error' => "Ítem $i inválido"]);
+            }
+
+            $stmt = $db->prepare("SELECT id, nombre, iva_porcentaje FROM productos WHERE id = ?");
+            $stmt->execute([$producto_id]);
+            $producto = $stmt->fetch();
+            if (!$producto) json(404, ['error' => "Producto $producto_id no encontrado"]);
+
+            $iva_porcentaje = isset($item['iva_porcentaje']) && is_numeric($item['iva_porcentaje'])
+                              ? (float)$item['iva_porcentaje'] : (float)$producto['iva_porcentaje'];
+            if ($iva_porcentaje < 0 || $iva_porcentaje > 100) {
+                json(400, ['error' => "iva_porcentaje inválido en ítem $i"]);
+            }
+
+            $sub_bruto = $cantidad * $costo_unitario;
+
+            $desc_pct_in = isset($item['descuento_porcentaje']) && is_numeric($item['descuento_porcentaje'])
+                           ? max(0.0, min(100.0, (float)$item['descuento_porcentaje'])) : 0.0;
+            $desc_monto_in = isset($item['descuento_monto']) && is_numeric($item['descuento_monto'])
+                             ? (float)$item['descuento_monto'] : 0.0;
+            // `descuento_monto` es la fuente de verdad (el frontend lo recalcula
+            // cada vez que cambia el %) — si no vino pero sí el %, se deriva acá.
+            $desc_monto = $desc_monto_in > 0 ? $desc_monto_in : ($sub_bruto * $desc_pct_in / 100);
+            $desc_monto = max(0.0, min($sub_bruto, $desc_monto));
+            $desc_pct   = $sub_bruto > 0 ? ($desc_monto / $sub_bruto) * 100 : 0.0;
+
+            $sub_neto  = $sub_bruto - $desc_monto;
+            $iva_item  = $sub_neto * $iva_porcentaje / 100;
+            $subtotal += $sub_neto;
+            $iva_total += $iva_item;
+
+            $items_data[] = [
+                'producto_id'          => $producto_id,
+                'cantidad'             => $cantidad,
+                'costo_unitario'       => $costo_unitario,
+                'descuento_porcentaje' => $desc_pct,
+                'descuento_monto'      => $desc_monto,
+                'sub_neto'             => $sub_neto,
+                'iva_porcentaje'       => $iva_porcentaje,
+                'iva_monto'            => $iva_item,
+                'iva_previo'           => (float)$producto['iva_porcentaje'],
+            ];
+        }
+
+        return ['items_data' => $items_data, 'subtotal' => $subtotal, 'iva_total' => $iva_total];
+    }
+
+    // El descuento general es sobre el total de la FACTURA (ej: "10% por pago
+    // contado" que da el proveedor), no un descuento de mercadería en sí — se
+    // prorratea entre los ítems según su peso en el subtotal (neto de
+    // descuento por ítem, sin IVA/percepción) para saber cuánto le toca a
+    // cada uno y así calcular el costo unitario FINAL que se carga a
+    // productos.costo_actual. Regla dura pedida por Rodrigo: el costo cargado
+    // siempre tiene que reflejar todos los descuentos, por ítem y generales.
+    private function aplicarDescuentoGeneralACostos(array $items_data, float $subtotal, float $descGeneralMonto): array {
+        $factor = $subtotal > 0 ? $descGeneralMonto / $subtotal : 0.0;
+        foreach ($items_data as &$item) {
+            $sub_final = $item['sub_neto'] * (1 - $factor);
+            $item['costo_unitario_final'] = $item['cantidad'] > 0 ? $sub_final / $item['cantidad'] : 0.0;
+        }
+        return $items_data;
     }
 
     // Valida el array de pagos de un pago mixto: cada línea con tipo simple + monto > 0,
@@ -147,6 +237,8 @@ class ComprasController {
         $usuario_id   = Auth::usuarioActual()['id'] ?? (isset($body['usuario_id']) && is_numeric($body['usuario_id']) ? (int)$body['usuario_id'] : null);
         $percepcion_pct = isset($body['percepcion_iibb_porcentaje']) && is_numeric($body['percepcion_iibb_porcentaje']) && $body['percepcion_iibb_porcentaje'] > 0
                           ? (float)$body['percepcion_iibb_porcentaje'] : null;
+        $actualiza_stock  = !array_key_exists('actualiza_stock', $body)  || (bool)$body['actualiza_stock'];
+        $actualiza_costos = !array_key_exists('actualiza_costos', $body) || (bool)$body['actualiza_costos'];
 
         if (empty($items)) json(400, ['error' => 'La compra debe tener al menos un ítem']);
         if (!$proveedor_id) json(400, ['error' => 'proveedor_id es requerido']);
@@ -168,48 +260,29 @@ class ComprasController {
         $proveedor = $stmt->fetch();
         if (!$proveedor) json(404, ['error' => 'Proveedor no encontrado']);
 
-        // Cargar y validar ítems
-        $items_data = [];
-        $subtotal   = 0.0;
-        $iva_total  = 0.0;
-
-        foreach ($items as $i => $item) {
-            $producto_id    = (int)($item['producto_id']    ?? 0);
-            $cantidad       = (float)($item['cantidad']       ?? 0);
-            $costo_unitario = (float)($item['costo_unitario'] ?? 0);
-
-            if (!$producto_id || $cantidad <= 0 || $costo_unitario < 0) {
-                json(400, ['error' => "Ítem $i inválido"]);
-            }
-
-            $stmt = $db->prepare("SELECT id, nombre, iva_porcentaje FROM productos WHERE id = ?");
-            $stmt->execute([$producto_id]);
-            $producto = $stmt->fetch();
-            if (!$producto) json(404, ['error' => "Producto $producto_id no encontrado"]);
-
-            $iva_porcentaje = isset($item['iva_porcentaje']) && is_numeric($item['iva_porcentaje'])
-                              ? (float)$item['iva_porcentaje'] : (float)$producto['iva_porcentaje'];
-            if ($iva_porcentaje < 0 || $iva_porcentaje > 100) {
-                json(400, ['error' => "iva_porcentaje inválido en ítem $i"]);
-            }
-
-            $sub_item  = $cantidad * $costo_unitario;
-            $iva_item  = $sub_item * $iva_porcentaje / 100;
-            $subtotal += $sub_item;
-            $iva_total += $iva_item;
-
-            $items_data[] = [
-                'producto_id'    => $producto_id,
-                'cantidad'       => $cantidad,
-                'costo_unitario' => $costo_unitario,
-                'iva_porcentaje' => $iva_porcentaje,
-                'iva_monto'      => $iva_item,
-                'iva_previo'     => (float)$producto['iva_porcentaje'],
-            ];
-        }
+        // Cargar y validar ítems — descuento por ítem incluido (ver procesarItems).
+        $r          = $this->procesarItems($items, $db);
+        $items_data = $r['items_data'];
+        $subtotal   = $r['subtotal'];
+        $iva_total  = $r['iva_total'];
 
         $percepcion_monto = $percepcion_pct !== null ? $subtotal * $percepcion_pct / 100 : 0.0;
-        $total = $subtotal + $iva_total + $percepcion_monto;
+        $totalBruto = $subtotal + $iva_total + $percepcion_monto;
+
+        $desc_gen_pct_in = isset($body['descuento_general_porcentaje']) && is_numeric($body['descuento_general_porcentaje'])
+                           ? max(0.0, min(100.0, (float)$body['descuento_general_porcentaje'])) : 0.0;
+        $desc_gen_monto_in = isset($body['descuento_general_monto']) && is_numeric($body['descuento_general_monto'])
+                             ? (float)$body['descuento_general_monto'] : 0.0;
+        $descuento_general_monto = $desc_gen_monto_in > 0 ? $desc_gen_monto_in : ($totalBruto * $desc_gen_pct_in / 100);
+        $descuento_general_monto = max(0.0, min($totalBruto, $descuento_general_monto));
+        $descuento_general_pct   = $totalBruto > 0 ? ($descuento_general_monto / $totalBruto) * 100 : null;
+
+        $total = $totalBruto - $descuento_general_monto;
+
+        // Costo final por ítem (bruto - descuento propio - prorrateo del
+        // descuento general) — esto es lo que se carga a productos.costo_actual,
+        // nunca el costo_unitario tal cual lo tipeó el usuario.
+        $items_data = $this->aplicarDescuentoGeneralACostos($items_data, $subtotal, $descuento_general_monto);
 
         $pagos_mixto = [];
         if ($tipo_pago === 'mixto') {
@@ -276,42 +349,60 @@ class ComprasController {
                 INSERT INTO compras
                     (fecha, proveedor_id, total, estado, caja_id, usuario_id,
                      tipo_comprobante, numero_comprobante, subtotal, iva_monto,
-                     percepcion_iibb_porcentaje, percepcion_iibb_monto, tipo_pago, sucursal_id)
-                VALUES (?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     percepcion_iibb_porcentaje, percepcion_iibb_monto,
+                     descuento_general_porcentaje, descuento_general_monto,
+                     actualiza_stock, actualiza_costos, tipo_pago, sucursal_id)
+                VALUES (?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $fecha, $proveedor_id, $total, $caja_id, $usuario_id,
                 $tipo_comprobante, $numero_comprobante, $subtotal, $iva_total,
-                $percepcion_pct, $percepcion_monto, $tipo_pago, $sucursal_id,
+                $percepcion_pct, $percepcion_monto,
+                $descuento_general_pct, $descuento_general_monto,
+                $actualiza_stock ? 1 : 0, $actualiza_costos ? 1 : 0, $tipo_pago, $sucursal_id,
             ]);
             $compra_id = (int)$db->lastInsertId();
 
             foreach ($items_data as $item) {
                 $db->prepare("
-                    INSERT INTO compra_items (compra_id, producto_id, cantidad, costo_unitario, iva_porcentaje, iva_monto)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO compra_items
+                        (compra_id, producto_id, cantidad, costo_unitario,
+                         descuento_porcentaje, descuento_monto, iva_porcentaje, iva_monto)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ")->execute([
                     $compra_id, $item['producto_id'], $item['cantidad'], $item['costo_unitario'],
+                    $item['descuento_porcentaje'], $item['descuento_monto'],
                     $item['iva_porcentaje'], $item['iva_monto'],
                 ]);
 
-                $db->prepare("UPDATE productos SET stock_actual = stock_actual + ?, costo_actual = ? WHERE id = ?")
-                   ->execute([$item['cantidad'], $item['costo_unitario'], $item['producto_id']]);
-                $db->prepare("
-                    INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual)
-                    VALUES (?, ?, ?)
-                    ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)
-                ")->execute([$item['producto_id'], $deposito_id, $item['cantidad']]);
+                if ($actualiza_stock) {
+                    $db->prepare("UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?")
+                       ->execute([$item['cantidad'], $item['producto_id']]);
+                    $db->prepare("
+                        INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual)
+                        VALUES (?, ?, ?)
+                        ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)
+                    ")->execute([$item['producto_id'], $deposito_id, $item['cantidad']]);
+                    $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha) VALUES (?, ?, 'compra', ?, ?, NOW())")
+                       ->execute([$item['producto_id'], $deposito_id, $item['cantidad'], $compra_id]);
+                }
 
-                if (abs($item['iva_porcentaje'] - $item['iva_previo']) > 0.001) {
+                if ($actualiza_costos) {
+                    // costo_unitario_final ya tiene descontado el descuento por
+                    // ítem Y el prorrateo del descuento general — nunca el
+                    // costo_unitario bruto (ver aplicarDescuentoGeneralACostos).
+                    $db->prepare("UPDATE productos SET costo_actual = ? WHERE id = ?")
+                       ->execute([$item['costo_unitario_final'], $item['producto_id']]);
+                }
+
+                if ($actualiza_costos && abs($item['iva_porcentaje'] - $item['iva_previo']) > 0.001) {
                     $db->prepare("UPDATE productos SET iva_porcentaje = ? WHERE id = ?")
                        ->execute([$item['iva_porcentaje'], $item['producto_id']]);
                 }
-                // Después de costo_actual e iva_porcentaje — la fórmula usa ambos.
-                ReglasPrecioHelper::recalcularPrecio($db, $item['producto_id']);
-
-                $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha) VALUES (?, ?, 'compra', ?, ?, NOW())")
-                   ->execute([$item['producto_id'], $deposito_id, $item['cantidad'], $compra_id]);
+                if ($actualiza_costos) {
+                    // Después de costo_actual e iva_porcentaje — la fórmula usa ambos.
+                    ReglasPrecioHelper::recalcularPrecio($db, $item['producto_id']);
+                }
             }
 
             if ($tipo_pago === 'mixto') {
@@ -503,38 +594,28 @@ class ComprasController {
         $proveedor = $stmt->fetch();
         if (!$proveedor) json(404, ['error' => 'Proveedor no encontrado']);
 
-        $items_data = [];
-        $subtotal   = 0.0;
-        $iva_total  = 0.0;
-        foreach ($items as $i => $item) {
-            $producto_id    = (int)($item['producto_id']    ?? 0);
-            $cantidad       = (float)($item['cantidad']       ?? 0);
-            $costo_unitario = (float)($item['costo_unitario'] ?? 0);
-            if (!$producto_id || $cantidad <= 0 || $costo_unitario < 0) json(400, ['error' => "Ítem $i inválido"]);
+        $actualiza_stock  = !array_key_exists('actualiza_stock', $body)  || (bool)$body['actualiza_stock'];
+        $actualiza_costos = !array_key_exists('actualiza_costos', $body) || (bool)$body['actualiza_costos'];
 
-            $stmt = $db->prepare("SELECT id, iva_porcentaje FROM productos WHERE id = ?");
-            $stmt->execute([$producto_id]);
-            $producto = $stmt->fetch();
-            if (!$producto) json(404, ['error' => "Producto $producto_id no encontrado"]);
-
-            $iva_p = isset($item['iva_porcentaje']) && is_numeric($item['iva_porcentaje'])
-                     ? (float)$item['iva_porcentaje'] : (float)$producto['iva_porcentaje'];
-            $sub   = $cantidad * $costo_unitario;
-            $iva   = $sub * $iva_p / 100;
-            $subtotal  += $sub;
-            $iva_total += $iva;
-            $items_data[] = [
-                'producto_id'    => $producto_id,
-                'cantidad'       => $cantidad,
-                'costo_unitario' => $costo_unitario,
-                'iva_porcentaje' => $iva_p,
-                'iva_monto'      => $iva,
-                'iva_previo'     => (float)$producto['iva_porcentaje'],
-            ];
-        }
+        $r          = $this->procesarItems($items, $db);
+        $items_data = $r['items_data'];
+        $subtotal   = $r['subtotal'];
+        $iva_total  = $r['iva_total'];
 
         $percepcion_monto = $percepcion_pct !== null ? $subtotal * $percepcion_pct / 100 : 0.0;
-        $total = $subtotal + $iva_total + $percepcion_monto;
+        $totalBruto = $subtotal + $iva_total + $percepcion_monto;
+
+        $desc_gen_pct_in = isset($body['descuento_general_porcentaje']) && is_numeric($body['descuento_general_porcentaje'])
+                           ? max(0.0, min(100.0, (float)$body['descuento_general_porcentaje'])) : 0.0;
+        $desc_gen_monto_in = isset($body['descuento_general_monto']) && is_numeric($body['descuento_general_monto'])
+                             ? (float)$body['descuento_general_monto'] : 0.0;
+        $descuento_general_monto = $desc_gen_monto_in > 0 ? $desc_gen_monto_in : ($totalBruto * $desc_gen_pct_in / 100);
+        $descuento_general_monto = max(0.0, min($totalBruto, $descuento_general_monto));
+        $descuento_general_pct   = $totalBruto > 0 ? ($descuento_general_monto / $totalBruto) * 100 : null;
+
+        $total = $totalBruto - $descuento_general_monto;
+
+        $items_data = $this->aplicarDescuentoGeneralACostos($items_data, $subtotal, $descuento_general_monto);
 
         $pagos_mixto = [];
         if ($tipo_pago === 'mixto') {
@@ -588,10 +669,14 @@ class ComprasController {
         try {
             $db->beginTransaction();
 
-            // 1. Revertir stock viejo
+            // 1. Revertir stock viejo — solo si la compra ORIGINAL efectivamente
+            // había tocado stock (si actualiza_stock era false, nunca se aplicó
+            // nada acá, así que tampoco hay nada que revertir).
             $stmt = $db->prepare("SELECT producto_id, cantidad FROM compra_items WHERE compra_id = ?");
             $stmt->execute([$id]);
+            $old_actualiza_stock = (bool)$old['actualiza_stock'];
             foreach ($stmt->fetchAll() as $oi) {
+                if (!$old_actualiza_stock) continue;
                 $msRow = $db->prepare("SELECT deposito_id FROM movimientos_stock WHERE referencia_id = ? AND producto_id = ? AND tipo = 'compra' LIMIT 1");
                 $msRow->execute([$id, (int)$oi['producto_id']]);
                 $depId = (int)(($msRow->fetch()['deposito_id'] ?? 1));
@@ -635,6 +720,8 @@ class ComprasController {
                     tipo_comprobante = ?, numero_comprobante = ?,
                     subtotal = ?, iva_monto = ?,
                     percepcion_iibb_porcentaje = ?, percepcion_iibb_monto = ?,
+                    descuento_general_porcentaje = ?, descuento_general_monto = ?,
+                    actualiza_stock = ?, actualiza_costos = ?,
                     tipo_pago = ?
                 WHERE id = ?
             ")->execute([
@@ -642,25 +729,43 @@ class ComprasController {
                 $tipo_comprobante, $numero_comprobante,
                 $subtotal, $iva_total,
                 $percepcion_pct, $percepcion_monto,
+                $descuento_general_pct, $descuento_general_monto,
+                $actualiza_stock ? 1 : 0, $actualiza_costos ? 1 : 0,
                 $tipo_pago, $id,
             ]);
 
-            // 6. Insertar nuevos ítems y aplicar stock
+            // 6. Insertar nuevos ítems y aplicar stock/costos
             foreach ($items_data as $item) {
-                $db->prepare("INSERT INTO compra_items (compra_id, producto_id, cantidad, costo_unitario, iva_porcentaje, iva_monto) VALUES (?, ?, ?, ?, ?, ?)")
-                   ->execute([$id, $item['producto_id'], $item['cantidad'], $item['costo_unitario'], $item['iva_porcentaje'], $item['iva_monto']]);
-                $db->prepare("UPDATE productos SET stock_actual = stock_actual + ?, costo_actual = ? WHERE id = ?")
-                   ->execute([$item['cantidad'], $item['costo_unitario'], $item['producto_id']]);
-                $db->prepare("INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)")
-                   ->execute([$item['producto_id'], $deposito_id_edit, $item['cantidad']]);
-                if (abs($item['iva_porcentaje'] - $item['iva_previo']) > 0.001) {
-                    $db->prepare("UPDATE productos SET iva_porcentaje = ? WHERE id = ?")
-                       ->execute([$item['iva_porcentaje'], $item['producto_id']]);
+                $db->prepare("
+                    INSERT INTO compra_items
+                        (compra_id, producto_id, cantidad, costo_unitario,
+                         descuento_porcentaje, descuento_monto, iva_porcentaje, iva_monto)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ")->execute([
+                    $id, $item['producto_id'], $item['cantidad'], $item['costo_unitario'],
+                    $item['descuento_porcentaje'], $item['descuento_monto'],
+                    $item['iva_porcentaje'], $item['iva_monto'],
+                ]);
+
+                if ($actualiza_stock) {
+                    $db->prepare("UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?")
+                       ->execute([$item['cantidad'], $item['producto_id']]);
+                    $db->prepare("INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)")
+                       ->execute([$item['producto_id'], $deposito_id_edit, $item['cantidad']]);
+                    $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha) VALUES (?, ?, 'compra', ?, ?, NOW())")
+                       ->execute([$item['producto_id'], $deposito_id_edit, $item['cantidad'], $id]);
                 }
-                // Después de costo_actual e iva_porcentaje — la fórmula usa ambos.
-                ReglasPrecioHelper::recalcularPrecio($db, $item['producto_id']);
-                $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha) VALUES (?, ?, 'compra', ?, ?, NOW())")
-                   ->execute([$item['producto_id'], $deposito_id_edit, $item['cantidad'], $id]);
+
+                if ($actualiza_costos) {
+                    $db->prepare("UPDATE productos SET costo_actual = ? WHERE id = ?")
+                       ->execute([$item['costo_unitario_final'], $item['producto_id']]);
+                    if (abs($item['iva_porcentaje'] - $item['iva_previo']) > 0.001) {
+                        $db->prepare("UPDATE productos SET iva_porcentaje = ? WHERE id = ?")
+                           ->execute([$item['iva_porcentaje'], $item['producto_id']]);
+                    }
+                    // Después de costo_actual e iva_porcentaje — la fórmula usa ambos.
+                    ReglasPrecioHelper::recalcularPrecio($db, $item['producto_id']);
+                }
             }
 
             // 7. Nuevos pagos mixtos

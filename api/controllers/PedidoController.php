@@ -24,7 +24,7 @@ class PedidoController {
 
         $config = Configuracion::get();
         $fecha  = date('d/m/Y');
-        $logo   = str_replace('\\', '/', realpath(__DIR__ . '/../../logo_background.png'));
+        $logo   = str_replace('\\', '/', realpath(Configuracion::rutaLogo()));
 
         ob_start();
         require __DIR__ . '/../../pos/templates/pedido_pdf.php';

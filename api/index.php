@@ -51,7 +51,9 @@ $esRutaPublica =
     ($recurso === 'usuarios'      && $metodo === 'GET'  && $id === null && $accion === null) ||
     ($recurso === 'configuracion' && $metodo === 'GET'  && $accion === null) ||
     ($recurso === 'mercadopago'   && $metodo === 'POST' && $sub === 'webhook') ||
-    ($recurso === 'licencia'      && $metodo === 'POST' && $accion === 'verificar');
+    ($recurso === 'licencia'      && $metodo === 'POST' && $accion === 'verificar') ||
+    ($recurso === 'backup'        && $metodo === 'POST' && $accion === 'programado') ||
+    ($recurso === 'configuracion' && $metodo === 'GET'  && $accion === 'logo');
 
 try {
     if (!$esRutaPublica && Auth::usuarioActual() === null && !Auth::modoInstalacion()) {
@@ -309,6 +311,7 @@ try {
             }
             match (true) {
                 $metodo === 'GET'  && $accion === 'impresoras'      => $ctrl->listarImpresoras(),
+                $metodo === 'GET'  && $accion === 'logo'            => $ctrl->logo(),
                 $metodo === 'GET'                                    => $ctrl->get(),
                 $metodo === 'PUT'                                    => $ctrl->actualizar(),
                 $metodo === 'POST' && $accion === 'cert-afip'         => $ctrl->subirCertAfip(),
@@ -549,6 +552,18 @@ try {
             match (true) {
                 $metodo === 'POST' && $accion === 'verificar' => $ctrl->verificar(),
                 $metodo === 'GET'  && $accion === 'estado'    => $ctrl->estado(),
+                default => json(405, ['error' => 'Método no permitido']),
+            };
+        })(),
+
+        'backup' => (function () use ($metodo, $accion) {
+            require_once __DIR__ . '/controllers/BackupController.php';
+            $ctrl = new BackupController();
+            match (true) {
+                $metodo === 'POST' && $accion === 'programado' => $ctrl->programado(),
+                $metodo === 'GET'  && $accion === 'estado'      => $ctrl->estado(),
+                $metodo === 'GET'  && $accion === 'listar'      => $ctrl->listar(),
+                $metodo === 'POST' && $accion === 'restaurar'   => $ctrl->restaurar(),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),

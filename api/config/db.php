@@ -7,21 +7,37 @@ class DB {
     // Ubicación compartida fuera de resources/ — el instalador NSIS reempaqueta
     // ese árbol en cada actualización y puede arrastrar este archivo con él
     // (bug real, ver CLAUDE.md § db.local.php). ProgramData sobrevive updates.
-    public const CONFIG_PATH = 'C:\\ProgramData\\LogosPOS\\db.local.php';
+    //
+    // LOGOS_DATA_ROOT: override para instalaciones side-by-side (ej. el POC
+    // de Tauri, que corre en la misma PC que una instalación real de
+    // Electron y NUNCA debe escribir en su C:\ProgramData\LogosPOS — ver
+    // plan de migración Fase 3 / memoria project_migracion_sveltekit_tauri,
+    // hallazgo real del 08/08/2026). Sin la env var (caso de Electron en
+    // producción, sin cambios), el default es exactamente el de siempre.
+    public static function dataRoot(): string {
+        return getenv('LOGOS_DATA_ROOT') ?: 'C:\\ProgramData\\LogosPOS';
+    }
+
+    public static function configPath(): string {
+        return self::dataRoot() . '\\db.local.php';
+    }
+
     // Ubicación vieja, junto al código — se sigue leyendo para no romper
     // instalaciones que actualicen desde una versión anterior a este fix.
     private const LEGACY_PATH = __DIR__ . '/db.local.php';
 
-    // Resuelve la config real, migrando de LEGACY_PATH a CONFIG_PATH la primera
-    // vez que la encuentra ahí. Best-effort: si la copia falla, sigue leyendo
-    // de la ruta vieja hasta que algo la reescriba en la nueva ubicación.
+    // Resuelve la config real, migrando de LEGACY_PATH a configPath() la
+    // primera vez que la encuentra ahí. Best-effort: si la copia falla,
+    // sigue leyendo de la ruta vieja hasta que algo la reescriba en la
+    // nueva ubicación.
     private static function rutaLectura(): ?string {
-        if (is_file(self::CONFIG_PATH)) return self::CONFIG_PATH;
+        $configPath = self::configPath();
+        if (is_file($configPath)) return $configPath;
         if (is_file(self::LEGACY_PATH)) {
-            $dir = dirname(self::CONFIG_PATH);
+            $dir = dirname($configPath);
             if (!is_dir($dir)) @mkdir($dir, 0777, true);
-            @copy(self::LEGACY_PATH, self::CONFIG_PATH);
-            return is_file(self::CONFIG_PATH) ? self::CONFIG_PATH : self::LEGACY_PATH;
+            @copy(self::LEGACY_PATH, $configPath);
+            return is_file($configPath) ? $configPath : self::LEGACY_PATH;
         }
         return null;
     }

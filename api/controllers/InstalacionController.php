@@ -88,11 +88,11 @@ class InstalacionController {
         // Si ya hay una instalación funcionando (config + base alcanzable con esquema),
         // no se permite reinstalar: reinstalar reescribe db.local.php y recrea el usuario
         // de aplicación, lo que desconectaría la base actual. Para reinstalar a propósito,
-        // hay que borrar DB::CONFIG_PATH a mano.
+        // hay que borrar DB::configPath() a mano.
         if (DB::estaConfigurado()) {
             try {
                 DB::get()->query("SELECT 1 FROM usuarios LIMIT 1");
-                json(403, ['error' => 'El sistema ya está instalado. Si realmente necesitás reinstalar, eliminá ' . DB::CONFIG_PATH . ' en el servidor y volvé a intentar.']);
+                json(403, ['error' => 'El sistema ya está instalado. Si realmente necesitás reinstalar, eliminá ' . DB::configPath() . ' en el servidor y volvé a intentar.']);
             } catch (\Throwable $e) {
                 // Config presente pero base inalcanzable o sin esquema: se permite
                 // reinstalar como vía de recuperación.
@@ -184,9 +184,9 @@ class InstalacionController {
             "    'user'   => " . var_export($finalUser, true) . ",\n" .
             "    'pass'   => " . var_export($finalPass, true) . ",\n" .
             "];\n";
-        $dbConfigDir = dirname(DB::CONFIG_PATH);
+        $dbConfigDir = dirname(DB::configPath());
         if (!is_dir($dbConfigDir)) mkdir($dbConfigDir, 0777, true);
-        file_put_contents(DB::CONFIG_PATH, $contenido);
+        file_put_contents(DB::configPath(), $contenido);
 
         json(200, [
             'ok'   => true,

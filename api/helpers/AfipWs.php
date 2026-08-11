@@ -10,6 +10,22 @@ class AfipException extends Exception {}
 
 class AfipWs {
 
+    // Mutex de archivo que serializa el pedido de CAE entre cajas (reemplaza
+    // GET_LOCK/RELEASE_LOCK de MySQL — deliberadamente fuera del motor de
+    // base de datos: ver plan de Fase 0, este lock se sostiene durante todo
+    // el round-trip de red a ARCA, y una transacción de escritura larga en
+    // un motor de un solo escritor por archivo bloquearía el resto de la
+    // app). Vive en ProgramData, no en el árbol de la app — mismo criterio
+    // que db.local.php / carpeta_backups / logo (ver CLAUDE.md).
+    // Vía DB::dataRoot() (no hardcodeado) — mismo motivo que db.php/Configuracion.php:
+    // instalaciones side-by-side (POC de Tauri) nunca deben tocar el
+    // C:\ProgramData\LogosPOS real (hallazgo 08/08/2026, ver memoria).
+    private static function lockPath(): string {
+        return DB::dataRoot() . '\\locks\\afip_facturar.lock';
+    }
+    private const LOCK_TIMEOUT_SEG = 20;
+    private const LOCK_POLL_USEG   = 150000; // 150ms entre reintentos
+
     private const URLS = [
         'homologacion' => [
             'wsaa' => 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms',
@@ -92,9 +108,8 @@ class AfipWs {
         $entorno = ($config['afip_entorno'] ?? 'homologacion') === 'produccion' ? 'produccion' : 'homologacion';
 
         // El lock serializa las llamadas: dos cajas no pueden pedir el mismo número.
-        $db   = DB::get();
-        $lock = $db->query("SELECT GET_LOCK('logos_afip_facturar', 20)")->fetchColumn();
-        if (!$lock) throw new AfipException('Otra caja está facturando en este momento. Reintentá en unos segundos.');
+        $db         = DB::get();
+        $lockHandle = self::adquirirLock();
 
         try {
             $ta = self::obtenerTA($config, $entorno);
@@ -153,8 +168,45 @@ class AfipWs {
             return $resultado;
 
         } finally {
-            $db->query("SELECT RELEASE_LOCK('logos_afip_facturar')");
+            self::liberarLock($lockHandle);
         }
+    }
+
+    /**
+     * Toma el mutex de archivo, esperando hasta LOCK_TIMEOUT_SEG. Devuelve el
+     * handle abierto (para pasarlo a liberarLock()) o lanza AfipException si
+     * se agota el tiempo — mismo mensaje/comportamiento que el GET_LOCK que
+     * reemplaza.
+     */
+    private static function adquirirLock() {
+        $lockPath = self::lockPath();
+        $dir = dirname($lockPath);
+        if (!is_dir($dir) && !@mkdir($dir, 0777, true) && !is_dir($dir)) {
+            throw new AfipException('No se pudo preparar el bloqueo de facturación (carpeta de locks).');
+        }
+
+        $handle = @fopen($lockPath, 'c');
+        if ($handle === false) {
+            throw new AfipException('No se pudo preparar el bloqueo de facturación.');
+        }
+
+        $limite = microtime(true) + self::LOCK_TIMEOUT_SEG;
+        while (!flock($handle, LOCK_EX | LOCK_NB)) {
+            if (microtime(true) >= $limite) {
+                fclose($handle);
+                throw new AfipException('Otra caja está facturando en este momento. Reintentá en unos segundos.');
+            }
+            usleep(self::LOCK_POLL_USEG);
+        }
+
+        return $handle;
+    }
+
+    /** Libera y cierra el handle devuelto por adquirirLock(). Tolerante a null. */
+    private static function liberarLock($handle): void {
+        if (!$handle) return;
+        flock($handle, LOCK_UN);
+        fclose($handle);
     }
 
     /**

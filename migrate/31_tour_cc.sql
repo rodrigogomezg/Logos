@@ -25,11 +25,11 @@ WHERE @cli IS NOT NULL
 
 SET @v_cc = LAST_INSERT_ID();
 
-INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
-SELECT @v_cc, @p1, 5.0000, 1000.0000, 700.0000 WHERE @v_cc > 0 AND @p1 IS NOT NULL;
+INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario, sync_uuid)
+SELECT @v_cc, @p1, 5.0000, 1000.0000, 700.0000, UUID() WHERE @v_cc > 0 AND @p1 IS NOT NULL;
 
-INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
-SELECT @v_cc, @p2, 4.0000, 2500.0000, 1800.0000 WHERE @v_cc > 0 AND @p2 IS NOT NULL;
+INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario, sync_uuid)
+SELECT @v_cc, @p2, 4.0000, 2500.0000, 1800.0000, UUID() WHERE @v_cc > 0 AND @p2 IS NOT NULL;
 
 -- Movimiento CC: cargo por la venta
 INSERT INTO cuenta_corriente_movimientos (entidad_tipo, entidad_id, tipo, monto, referencia_id, fecha)

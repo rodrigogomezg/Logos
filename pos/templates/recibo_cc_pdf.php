@@ -24,7 +24,8 @@ if (!function_exists('rc_fecha')) {
     }
 }
 
-$logo = str_replace('\\', '/', realpath(__DIR__ . '/../../logo_background.png'));
+require_once __DIR__ . '/../../api/helpers/Configuracion.php';
+$logo = str_replace('\\', '/', realpath(Configuracion::rutaLogo()));
 
 // Medio de pago — igual al mapa del frontend
 $medioMap = ['efectivo' => 'Efectivo', 'transferencia' => 'Transferencia bancaria', 'cheque' => 'Cheque'];

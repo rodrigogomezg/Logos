@@ -68,7 +68,8 @@ $letraCod = match ($tipo) {
     default      => null,
 };
 
-$logo = str_replace('\\', '/', realpath(__DIR__ . '/../../logo_background.png'));
+require_once __DIR__ . '/../../api/helpers/Configuracion.php';
+$logo = str_replace('\\', '/', realpath(Configuracion::rutaLogo()));
 
 $subtotalProductosGross = 0.0;
 foreach ($venta['items'] as $it) { $subtotalProductosGross += $it['subtotal']; }

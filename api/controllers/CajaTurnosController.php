@@ -399,10 +399,12 @@ class CajaTurnosController {
 
         LogAcciones::registrar('cierre_caja', 'turno', $id, ['diferencia' => $diferencia, 'efectivo_contado' => $efectivo_contado]);
 
-        // Backup automático si está configurado
+        // Backup automático si está configurado. No bloquear el cierre si falla —
+        // el resultado queda registrado igual (Configuracion::registrarResultado)
+        // y se ve en la UI vía /api/backup/estado, no se pierde en silencio.
         $cfg = Configuracion::get();
         if (!empty($cfg['backup_auto_cierre'])) {
-            try { Configuracion::ejecutarBackup(); } catch (\Throwable $e) { /* no bloquear el cierre si el backup falla */ }
+            try { Configuracion::ejecutarBackup(); } catch (\Throwable $e) { /* registrado, no bloquear */ }
         }
 
         $this->get($id);

@@ -53,6 +53,12 @@ extraResources:
   - from: "www"
     to: "www"
     filter: ["**/*"]
+  # SvelteKit SPA build (adapter-static), served at the domain root by
+  # router.php — sibling of www/Logos, never inside it. Built manually with
+  # `npm run build` in app/ before packaging (not run automatically here).
+  - from: "../app/build"
+    to: "www/app"
+    filter: ["**/*"]
   # The actual PHP/HTML app files go into www/Logos/
   - from: ".."
     to: "www/Logos"

@@ -24,7 +24,49 @@
     link.appendChild(dot);
   }
 
-  function mostrarBanner(estado) {
+  // "Verificar ahora" fuerza un heartbeat inmediato en vez de esperar al
+  // timer (ver electron/main.js). Solo existe si estamos dentro de la app
+  // Electron (no en un navegador suelto) Y en la PC con rol Servidor — es
+  // la única que realmente le habla al Hub; en una PC Cliente el botón no
+  // tendría nada que hacer.
+  async function crearBotonVerificar() {
+    if (!window.logos?.verificarLicenciaAhora || !window.logos?.getConfig) return null;
+    let cfg;
+    try { cfg = await window.logos.getConfig(); } catch { return null; }
+    if (cfg?.role === 'client') return null;
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = 'Verificar ahora';
+    btn.style.cssText = [
+      'padding:7px 14px',
+      'border:1px solid currentColor',
+      'border-radius:5px',
+      'background:none',
+      'color:inherit',
+      'font-size:12px',
+      'font-weight:700',
+      'text-transform:uppercase',
+      'letter-spacing:.4px',
+      'cursor:pointer',
+      'flex-shrink:0',
+      'font-family:inherit',
+      'white-space:nowrap',
+    ].join(';');
+
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.textContent = 'Verificando…';
+      try {
+        await window.logos.verificarLicenciaAhora();
+      } catch { /* igual recargamos abajo para reflejar lo que haya pasado */ }
+      location.reload();
+    });
+
+    return btn;
+  }
+
+  async function mostrarBanner(estado) {
     // Solo en la pantalla de Configuración (el link de Config tiene clase 'activo')
     const navConfig = document.getElementById('nav-config-link');
     if (!navConfig || !navConfig.classList.contains('activo')) return;
@@ -40,11 +82,22 @@
       'font-size:13px',
       'font-weight:600',
       'line-height:1.5',
+      'display:flex',
+      'align-items:center',
+      'justify-content:space-between',
+      'gap:16px',
+      'flex-wrap:wrap',
       esBloqueo
         ? 'background:#fde8e8;color:#7b1d1d;border:1px solid #f5c6c6'
         : 'background:#fff8e6;color:#7d5a00;border:1px solid #f5da8b',
     ].join(';');
-    banner.textContent = estado.mensaje || (esBloqueo ? 'Licencia bloqueada.' : 'Licencia en período de gracia.');
+
+    const msg = document.createElement('span');
+    msg.textContent = estado.mensaje || (esBloqueo ? 'Licencia bloqueada.' : 'Licencia en período de gracia.');
+    banner.appendChild(msg);
+
+    const btn = await crearBotonVerificar();
+    if (btn) banner.appendChild(btn);
 
     // Insertar antes del área de contenido (entre tab-bar y contenido)
     const contenido = document.querySelector('.contenido');
@@ -99,7 +152,7 @@
     if (!estado || estado.estado_efectivo === 'al_dia') return;
 
     marcarBadge();
-    mostrarBanner(estado);
+    await mostrarBanner(estado);
     mostrarToast(estado);
   }
 

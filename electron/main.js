@@ -28,6 +28,10 @@ const WWW_DIR      = IS_PACKAGED ? path.join(process.resourcesPath, 'www') : pat
 // In dev: app source is the Logos root (one level up from electron/).
 // In production: app source is bundled into resources/www/Logos/.
 const APP_DIR      = IS_PACKAGED ? path.join(process.resourcesPath, 'www', 'Logos') : path.join(__dirname, '..');
+// Build estático de la SPA (SvelteKit, adapter-static). Sibling de www/Logos en
+// producción (empaquetado por electron-builder.yml); en dev vive en app/build
+// del repo — hay que correr `npm run build` en app/ antes de levantar esto.
+const APP_BUILD_DIR = IS_PACKAGED ? path.join(process.resourcesPath, 'www', 'app') : path.join(__dirname, '..', 'app', 'build');
 
 // Ubicación única para todo el estado de esta instalación (config, logs de
 // diagnóstico) — la misma carpeta que usa el instalador NSIS/setup-server.ps1
@@ -36,7 +40,7 @@ const APP_DIR      = IS_PACKAGED ? path.join(process.resourcesPath, 'www', 'Logo
 const DATA_ROOT = 'C:\\ProgramData\\LogosPOS';
 
 const configManager = new ConfigManager(DATA_ROOT);
-const serverManager = new ServerManager(RESOURCES, WWW_DIR, APP_DIR);
+const serverManager = new ServerManager(RESOURCES, WWW_DIR, APP_DIR, APP_BUILD_DIR);
 
 // Se consume una sola vez por arranque del proceso — la primera pantalla que
 // cargue (sea cual sea) fuerza el logout; de ahí en más, navegar dentro de la
@@ -57,10 +61,19 @@ let healthTimer = null;
 let healthFails = 0;
 
 // ── Licencia heartbeat (server role only) ─────────────────────────────────────
-let licenciaTimer = null;
+// Intervalo adaptativo: si el cliente está al día, 6h alcanza y sobra — no
+// tiene sentido molestar al Hub más seguido sin necesidad. Pero si está en
+// gracia/bloqueado (o no se pudo ni verificar), preguntar cada poco tiempo:
+// es la ventana en la que alguien puede estar esperando que se destrabe
+// justo después de que Rodrigo registre un pago en el Hub.
+const INTERVALO_LICENCIA_NORMAL = 6 * 60 * 60 * 1000; // 6h — al día
+const INTERVALO_LICENCIA_RAPIDO = 5 * 60 * 1000;       // 5min — en_gracia/bloqueado/sin verificar
+
+let licenciaTimer   = null;
+let licenciaBaseUrl = null; // guardado para que el IPC "verificar ahora" sepa a qué URL pegarle
 
 function stopLicenciaTimer() {
-  if (licenciaTimer) { clearInterval(licenciaTimer); licenciaTimer = null; }
+  if (licenciaTimer) { clearTimeout(licenciaTimer); licenciaTimer = null; }
 }
 
 function logLicencia(msg) {
@@ -83,6 +96,11 @@ function getLanIp() {
   return ip ? ip.address : null;
 }
 
+// Devuelve el estado_efectivo ('al_dia'/'en_gracia'/'bloqueado') que contestó
+// el Hub, o null si no se pudo verificar (timeout, sin conexión, respuesta
+// rara) — null se trata igual que "no está al día" para decidir cada cuánto
+// reintentar: más vale preguntar de nuevo pronto que dejar a alguien
+// bloqueado de más por no haber podido confirmar que ya pagó.
 function callLicenciaVerificar(baseUrl) {
   const token   = configManager.get('licenciaApiToken') || '';
   const version = app.getVersion();
@@ -98,7 +116,7 @@ function callLicenciaVerificar(baseUrl) {
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       logLicencia('TIMEOUT tras 10s sin respuesta');
-      resolve();
+      resolve(null);
     }, 10000);
 
     try {
@@ -112,14 +130,16 @@ function callLicenciaVerificar(baseUrl) {
         res.on('end', () => {
           clearTimeout(timer);
           logLicencia(`RESPUESTA status=${res.statusCode} body=${chunks.slice(0, 300)}`);
-          resolve();
+          let estado = null;
+          try { estado = JSON.parse(chunks).estado_efectivo ?? null; } catch { /* respuesta no-JSON */ }
+          resolve(estado);
         });
       });
 
       req.on('error', (err) => {
         clearTimeout(timer);
         logLicencia(`ERROR_CONEXION ${err.message}`);
-        resolve();
+        resolve(null);
       });
 
       req.write(body);
@@ -127,15 +147,61 @@ function callLicenciaVerificar(baseUrl) {
     } catch (e) {
       clearTimeout(timer);
       logLicencia(`EXCEPCION ${e.message}`);
-      resolve();
+      resolve(null);
     }
   });
 }
 
+async function ejecutarVerificacionLicencia(baseUrl) {
+  const estado = await callLicenciaVerificar(baseUrl);
+  const delay  = estado === 'al_dia' ? INTERVALO_LICENCIA_NORMAL : INTERVALO_LICENCIA_RAPIDO;
+  // stopLicenciaTimer() adentro de esta misma llamada (vía el setTimeout de
+  // abajo) asegura que "verificar ahora" manual y el ciclo automático nunca
+  // queden corriendo los dos a la vez — cada verificación reprograma la
+  // siguiente desde cero.
+  stopLicenciaTimer();
+  licenciaTimer = setTimeout(() => ejecutarVerificacionLicencia(baseUrl), delay);
+  return estado;
+}
+
 function startLicenciaTimer(baseUrl) {
   stopLicenciaTimer();
-  callLicenciaVerificar(baseUrl); // llamada inmediata al arrancar
-  licenciaTimer = setInterval(() => callLicenciaVerificar(baseUrl), 6 * 60 * 60 * 1000);
+  licenciaBaseUrl = baseUrl;
+  ejecutarVerificacionLicencia(baseUrl); // llamada inmediata al arrancar, se autoprograma la siguiente
+}
+
+// ── Backup automático (server role only) ────────────────────────────────────
+// El backup NO puede depender de que alguien cierre turno o entre a
+// Configuración: si nadie lo hace, nunca corre. Este timer llama a un
+// endpoint liviano cada una hora; el propio backend decide ahí si ya
+// pasó suficiente tiempo desde el último intento como para correr uno
+// nuevo (ver BackupController::HORAS_ENTRE_INTENTOS).
+let backupTimer = null;
+
+function stopBackupTimer() {
+  if (backupTimer) { clearInterval(backupTimer); backupTimer = null; }
+}
+
+function callBackupProgramado(baseUrl) {
+  const url = `${baseUrl}/Logos/api/backup/programado`;
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, 20000);
+    try {
+      const req = net.request({ url, method: 'POST' });
+      req.on('response', (res) => {
+        res.on('data', () => {});
+        res.on('end', () => { clearTimeout(timer); resolve(); });
+      });
+      req.on('error', () => { clearTimeout(timer); resolve(); });
+      req.end();
+    } catch { clearTimeout(timer); resolve(); }
+  });
+}
+
+function startBackupTimer(baseUrl) {
+  stopBackupTimer();
+  callBackupProgramado(baseUrl); // llamada inmediata al arrancar
+  backupTimer = setInterval(() => callBackupProgramado(baseUrl), 60 * 60 * 1000);
 }
 
 function pingUrl(url) {
@@ -547,11 +613,12 @@ async function startServerRole() {
 
       const appUrl = needsSetup
         ? `${baseUrl}/Logos/pos/instalar.html`
-        : `${baseUrl}/Logos/pos/index.html`;
+        : `${baseUrl}/`;
 
       setupTray();
       openMainWindow(appUrl);
       startLicenciaTimer(baseUrl);
+      startBackupTimer(baseUrl);
 
       // Run pending migrations in background — non-blocking, won't delay startup
       try { serverManager.runMigrations(); } catch (e) { console.warn('[migrations]', e.message); }
@@ -570,7 +637,7 @@ async function startServerRole() {
 
       const appUrl = isFirstSetup
         ? `http://localhost:${port}/Logos/pos/instalar.html`
-        : `http://localhost:${port}/Logos/pos/index.html`;
+        : `http://localhost:${port}/`;
 
       sendLoading('Cargando aplicación...');
       await waitForUrl(`http://localhost:${port}/Logos/ping`, 25000);
@@ -578,6 +645,7 @@ async function startServerRole() {
       setupTray();
       openMainWindow(appUrl);
       startLicenciaTimer(`http://localhost:${port}`);
+      startBackupTimer(`http://localhost:${port}`);
     }
   } catch (err) {
     showError(err.message, true);
@@ -596,7 +664,7 @@ async function startClientRole() {
   // serverIp is 'IP:PORT' (from client-config.html) or legacy 'IP' (defaults to 8080)
   const hasPort = /:\d+$/.test(serverIp);
   const base = hasPort ? `http://${serverIp}` : `http://${serverIp}:8080`;
-  const url = `${base}/Logos/pos/index.html`;
+  const url = `${base}/`;
 
   try {
     sendLoading(`Conectando a ${serverIp}…`);
@@ -628,6 +696,18 @@ ipcMain.handle('get-local-ips', () =>
 
 ipcMain.handle('save-licencia-token', (_, token) => {
   configManager.set('licenciaApiToken', String(token).trim());
+});
+
+// Botón "Verificar ahora" en Configuración (pos/licencia.js): fuerza un
+// heartbeat inmediato en vez de esperar al próximo tick del timer. Solo
+// tiene sentido en la PC que corre el rol Servidor — es la única que llama
+// a startLicenciaTimer() y por lo tanto la única con licenciaBaseUrl seteado.
+ipcMain.handle('verificar-licencia-ahora', async () => {
+  if (!licenciaBaseUrl) {
+    return { ok: false, motivo: 'no-disponible' };
+  }
+  const estado = await ejecutarVerificacionLicencia(licenciaBaseUrl);
+  return { ok: true, estado };
 });
 
 ipcMain.handle('get-app-version', () => app.getVersion());
@@ -723,5 +803,22 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
   stopHealthCheck();
   stopLicenciaTimer();
+  stopBackupTimer();
   serverManager.stopAll();
+});
+
+// Usado tras restaurar un backup (pos/configuracion.html): un dump viejo
+// puede traer un schema desactualizado, y hay estado en memoria (caché de
+// Configuracion::$cache, conexión PDO de DB::$instance) que quedaría stale
+// dentro del mismo proceso PHP si no se reinicia todo. No usamos app.quit()
+// a propósito: la ventana intercepta 'close' para minimizar a la bandeja en
+// vez de cerrar (server-manager sigue sirviendo a otras PCs), así que
+// app.quit() podría no terminar el proceso realmente. app.exit() lo fuerza.
+ipcMain.handle('restart-app', () => {
+  stopHealthCheck();
+  stopLicenciaTimer();
+  stopBackupTimer();
+  serverManager.stopAll();
+  app.relaunch();
+  app.exit(0);
 });

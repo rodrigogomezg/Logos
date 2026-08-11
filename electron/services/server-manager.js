@@ -9,10 +9,11 @@ const SERVICE_DB  = 'LogosPOS-DB';
 const SERVICE_PHP = 'LogosPOS-PHP';
 
 class ServerManager {
-  constructor(resourcesPath, wwwPath, appDir) {
+  constructor(resourcesPath, wwwPath, appDir, appBuildDir) {
     this._resourcesPath      = resourcesPath;
     this._wwwPath            = wwwPath;
     this._appDir             = appDir;
+    this._appBuildDir        = appBuildDir;
     this._phpProc            = null;
     this._dbProc             = null;
     this._dbPort             = 3306;
@@ -180,6 +181,7 @@ class ServerManager {
       ...process.env,
       PATH: [mariadbBin, phpBin, process.env.PATH || ''].filter(Boolean).join(';'),
       LOGOS_APP_DIR:  this._appDir,
+      LOGOS_APP_BUILD_DIR: this._appBuildDir,
       LOGOS_DB_HOST:  '127.0.0.1',
       LOGOS_DB_PORT:  String(this._dbPort),
       LOGOS_DB_NAME:  'logos',

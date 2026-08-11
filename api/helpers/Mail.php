@@ -19,7 +19,8 @@ class Mail {
         $mail->addAddress($para, $venta['cliente_nombre'] ?? '');
         $mail->Subject = $asunto;
 
-        $logoPath = __DIR__ . '/../../logo_background.png';
+        require_once __DIR__ . '/Configuracion.php';
+        $logoPath = Configuracion::rutaLogo();
         $logoB64  = file_exists($logoPath) ? base64_encode(file_get_contents($logoPath)) : null;
         $logoMime = 'image/png';
 

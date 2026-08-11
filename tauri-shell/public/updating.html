@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Logos POS — Actualizando</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: #0F2A4A;
+      color: #f2f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 22px;
+      user-select: none;
+      overflow: hidden;
+    }
+    .logo {
+      width: 84px;
+      height: 84px;
+      object-fit: contain;
+    }
+
+    .version {
+      font-size: 13px;
+      color: rgba(255,255,255,.65);
+      text-align: center;
+      min-height: 18px;
+    }
+    .version strong { color: #fff; }
+
+    .spinner {
+      width: 26px; height: 26px;
+      border: 3px solid rgba(255,255,255,.15);
+      border-top-color: #E8B94C;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .progress-track {
+      width: 220px;
+      height: 6px;
+      background: rgba(255,255,255,.15);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #E8B94C;
+      border-radius: 3px;
+      transition: width 0.3s ease;
+    }
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      width: 220px;
+      font-size: 11px;
+      color: rgba(255,255,255,.55);
+    }
+
+    .warning {
+      font-size: 10.5px;
+      color: rgba(255,255,255,.4);
+      text-align: center;
+      max-width: 260px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <img class="logo" src="logos_logo.png" alt="Logos POS">
+
+  <div class="spinner" id="spinner"></div>
+
+  <div class="version" id="label">Verificando actualización…</div>
+
+  <div class="progress-track">
+    <div class="progress-bar" id="bar"></div>
+  </div>
+  <div class="progress-info">
+    <span id="pct"></span>
+    <span id="eta"></span>
+  </div>
+
+  <div class="warning" id="warning"></div>
+
+  <script>
+    const label   = document.getElementById('label');
+    const bar     = document.getElementById('bar');
+    const pct     = document.getElementById('pct');
+    const eta     = document.getElementById('eta');
+    const warning = document.getElementById('warning');
+
+    function formatEta(seconds) {
+      if (seconds === null || seconds === undefined || !isFinite(seconds) || seconds < 0) return 'calculando…';
+      if (seconds < 1) return 'un instante';
+      if (seconds < 60) return Math.ceil(seconds) + 's restantes';
+      const m = Math.floor(seconds / 60);
+      const s = Math.round(seconds % 60);
+      return m + 'm ' + s + 's restantes';
+    }
+
+    // No hay IPC/preload acá — Rust empuja estado directo vía WebviewWindow::eval(),
+    // mismo patrón ya usado en tray.rs/timers.rs para el overlay de "servidor caído".
+    window.updateStart = function (version) {
+      label.innerHTML = `Actualizando a la versión <strong>v${version}</strong>`;
+      warning.textContent = 'No cierres el programa — la actualización se instalará sola.';
+    };
+
+    window.updateProgress = function (percent, etaSeconds) {
+      bar.style.width = percent + '%';
+      pct.textContent = percent + '%';
+      eta.textContent = percent < 100 ? formatEta(etaSeconds) : '';
+    };
+
+    window.updateInstalling = function () {
+      label.textContent = 'Instalando actualización…';
+      bar.style.width = '100%';
+      pct.textContent = '100%';
+      eta.textContent = '';
+      document.getElementById('spinner').style.display = 'none';
+      warning.textContent = 'La aplicación se reiniciará en unos segundos.';
+    };
+  </script>
+</body>
+</html>

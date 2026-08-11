@@ -15,11 +15,11 @@ WHERE @p1 IS NOT NULL
 
 SET @v1 = LAST_INSERT_ID();
 
-INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
-SELECT @v1, @p1, 1.0000, 1000.0000, 700.0000 WHERE @v1 > 0;
+INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario, sync_uuid)
+SELECT @v1, @p1, 1.0000, 1000.0000, 700.0000, UUID() WHERE @v1 > 0;
 
-INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
-SELECT @v1, @p2, 2.0000, 2500.0000, 1800.0000 WHERE @v1 > 0 AND @p2 IS NOT NULL;
+INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario, sync_uuid)
+SELECT @v1, @p2, 2.0000, 2500.0000, 1800.0000, UUID() WHERE @v1 > 0 AND @p2 IS NOT NULL;
 
 -- Venta 2: 3x PRUEBA 1 + 1x PRUEBA 2 = $5.500, transferencia, ayer
 INSERT INTO ventas (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado, numero_afip, sync_uuid)
@@ -28,10 +28,10 @@ WHERE @v1 > 0;
 
 SET @v2 = LAST_INSERT_ID();
 
-INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
-SELECT @v2, @p1, 3.0000, 1000.0000, 700.0000 WHERE @v2 > 0 AND @v2 != @v1;
+INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario, sync_uuid)
+SELECT @v2, @p1, 3.0000, 1000.0000, 700.0000, UUID() WHERE @v2 > 0 AND @v2 != @v1;
 
-INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
-SELECT @v2, @p2, 1.0000, 2500.0000, 1800.0000 WHERE @v2 > 0 AND @v2 != @v1 AND @p2 IS NOT NULL;
+INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario, sync_uuid)
+SELECT @v2, @p2, 1.0000, 2500.0000, 1800.0000, UUID() WHERE @v2 > 0 AND @v2 != @v1 AND @p2 IS NOT NULL;
 
 SELECT CONCAT('Ventas demo insertadas: ', IF(@v1 > 0, 2, 0)) AS resultado;

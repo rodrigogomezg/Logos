@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Logos POS TauriPOC",
+  "mainBinaryName": "Logos POS TauriPOC",
+  "version": "0.1.24",
+  "identifier": "com.drilogs.logospos.tauripoc",
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "publisher": "Drilogs",
+    "targets": ["nsis"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "offlineInstaller",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "perMachine",
+        "installerHooks": "nsis/installer-hooks.nsh",
+        "headerImage": "nsis/assets/header.bmp",
+        "sidebarImage": "nsis/assets/sidebar.bmp"
+      }
+    },
+    "resources": {
+      "../../electron/resources/mariadb": "mariadb",
+      "../../electron/resources/php": "php",
+      "../../electron/resources/nssm.exe": "nssm.exe",
+      "resources/setup-server-poc.ps1": "setup-server-poc.ps1",
+      "resources/teardown-server-poc.ps1": "teardown-server-poc.ps1",
+      "../../electron/www/router.php": "www/router.php",
+      "../../app/build": "www/app",
+      "../../api": "www/Logos/api",
+      "../../pos": "www/Logos/pos",
+      "../../vendor": "www/Logos/vendor",
+      "../../install/schema_limpio.sql": "www/Logos/install/schema_limpio.sql",
+      "../../migrate": "www/Logos/migrate",
+      "../../composer.json": "www/Logos/composer.json",
+      "../../logos_logo.png": "www/Logos/logos_logo.png",
+      "../update-test": "www/Logos/update-test",
+      "../vendor/vc_redist.x64.exe": "vc_redist.x64.exe",
+      "nsis/assets/splash_argb.bin": "splash_argb.bin"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkxMjk3OTQzNkVCQTIwNjYKUldSbUlMcHVRM2twa1Z0T0NGbDduVU9UUUNHVWtacVRqTkRDL0FmRjZSNytCSkFxbXc3bEhsVHMK",
+      "endpoints": [
+        "http://127.0.0.1:8080/Logos/update-test/latest.json"
+      ],
+      "dangerousInsecureTransportProtocol": true,
+      "windows": {
+        "installMode": "quiet"
+      }
+    }
+  }
+}

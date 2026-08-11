@@ -237,12 +237,28 @@ class ConfiguracionController {
             json(400, ['error' => 'Tipo de archivo no permitido. Solo imágenes (JPG, PNG, WEBP).']);
         }
 
-        $destino = __DIR__ . '/../../logo_background.png';
+        $destino = Configuracion::rutaLogoDestino();
         if (!move_uploaded_file($f['tmp_name'], $destino)) {
             json(500, ['error' => 'No se pudo guardar el logo']);
         }
 
-        json(200, ['ok' => true, 'path' => '/Logos/logo_background.png?' . time()]);
+        json(200, ['ok' => true, 'path' => '/Logos/api/configuracion/logo?t=' . time()]);
+    }
+
+    /**
+     * GET /api/configuracion/logo — sirve el logo subido. Ruta pública (ver
+     * index.php): un <img src> no puede mandar el header X-Auth-Token, y el
+     * logo no es información sensible.
+     */
+    public function logo(): void {
+        $ruta = Configuracion::rutaLogo();
+        if (!is_file($ruta)) json(404, ['error' => 'No hay logo configurado']);
+
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($ruta) ?: 'image/png';
+        header('Content-Type: ' . $mime);
+        header('Cache-Control: public, max-age=86400');
+        readfile($ruta);
+        exit;
     }
 
     public function probarImpresion(): void {
@@ -269,11 +285,6 @@ class ConfiguracionController {
     }
 
     public function backupAhora(): void {
-        $config  = Configuracion::get();
-        $carpeta = $config['carpeta_backups'] ?? '';
-        if (!$carpeta) json(400, ['error' => 'No hay carpeta de backups configurada']);
-        if (!is_dir($carpeta)) json(400, ['error' => 'La carpeta de backups no existe: ' . $carpeta]);
-
         try {
             $archivo = Configuracion::ejecutarBackup();
             json(200, ['ok' => true, 'archivo' => $archivo]);
@@ -297,7 +308,10 @@ class ConfiguracionController {
             }
         }
 
-        $carpeta = $config['carpeta_backups'] ?: (__DIR__ . '/../../install/backups');
+        // No usar una carpeta dentro del árbol de la app (ver CLAUDE.md — el
+        // instalador NSIS reempaqueta resources/ en cada actualización, igual
+        // que pasó antes con db.local.php).
+        $carpeta = $config['carpeta_backups'] ?: Configuracion::carpetaBackupsPorDefecto();
         if (!is_dir($carpeta)) @mkdir($carpeta, 0777, true);
         if (!is_dir($carpeta)) json(500, ['error' => 'No se pudo crear la carpeta de backups: ' . $carpeta]);
 

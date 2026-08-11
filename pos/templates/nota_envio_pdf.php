@@ -31,7 +31,8 @@ if (!function_exists('ne_cuit')) {
     }
 }
 
-$logo           = str_replace('\\', '/', realpath(__DIR__ . '/../../logo_background.png'));
+require_once __DIR__ . '/../../api/helpers/Configuracion.php';
+$logo           = str_replace('\\', '/', realpath(Configuracion::rutaLogo()));
 $tieneEntregas  = !empty($nota['notas_previas']);
 $hayPrevios     = false;
 foreach ($nota['venta_items'] as $vi) {

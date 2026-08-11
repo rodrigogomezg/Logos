@@ -7,8 +7,12 @@
  * In production:  falls back to __DIR__/Logos (files are copied there during build).
  *
  * Handles:
+ *   - / (y cualquier ruta que no empiece con /Logos/) → SPA de SvelteKit (app/build),
+ *     servida en la raíz del dominio con fallback a index.html para el ruteo
+ *     client-side. Ver LOGOS_APP_BUILD_DIR más abajo.
  *   - /Logos/api/* → routes through api/index.php (replicates mod_rewrite from api/.htaccess)
- *   - /Logos/pos/*.html → executes as PHP (replicates AddType from pos/.htaccess)
+ *   - /Logos/pos/*.html → executes as PHP (replicates AddType from pos/.htaccess) —
+ *     legacy, todavía necesario para instalar.html (fuera de alcance de la migración)
  *   - /Logos/*.php → executes as PHP
  *   - /Logos/* (static) → served directly with correct MIME type
  */
@@ -20,10 +24,12 @@ $appDir = rtrim(
 
 $uri = rawurldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
-// Root → redirect to app
-if ($uri === '/' || $uri === '') {
-    header('Location: /Logos/pos/index.html');
-    exit;
+// Todo lo que no sea /Logos/* es la SPA nueva, servida en la raíz del dominio
+// (mismo esquema que usa en dev el proxy de Vite: la app vive en "/", y le
+// pega a "/Logos/api/*" para el backend).
+if (strpos($uri, '/Logos') !== 0) {
+    serveSpa($uri);
+    return true;
 }
 
 if ($uri === '/Logos' || $uri === '/Logos/') {
@@ -35,12 +41,6 @@ if ($uri === '/Logos' || $uri === '/Logos/') {
 if ($uri === '/Logos/ping') {
     http_response_code(200);
     echo 'ok';
-    return true;
-}
-
-if (strpos($uri, '/Logos/') !== 0) {
-    http_response_code(404);
-    echo "Not found: $uri";
     return true;
 }
 
@@ -110,6 +110,45 @@ serveStatic($filePath);
 return true;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Sirve la SPA de SvelteKit (adapter-static) en la raíz del dominio.
+// LOGOS_APP_BUILD_DIR: override para dev (el build real vive en app/build del
+// repo, no dentro de electron/www/). En producción, __DIR__/app ya coincide
+// con lo que empaqueta electron-builder.yml (www/app, sibling de www/Logos).
+function serveSpa(string $uri): void
+{
+    $buildDir = rtrim(
+        getenv('LOGOS_APP_BUILD_DIR') ?: __DIR__ . DIRECTORY_SEPARATOR . 'app',
+        '/\\'
+    );
+
+    if (!is_dir($buildDir)) {
+        http_response_code(503);
+        echo 'App no disponible: build no encontrado en ' . $buildDir;
+        return;
+    }
+
+    $path = str_replace('/', DIRECTORY_SEPARATOR, rtrim($uri, '/'));
+    $file = $buildDir . $path;
+
+    // Archivo estático real (JS/CSS/fuentes de _app/, robots.txt, favicon, etc.)
+    if ($path !== '' && is_file($file)) {
+        serveStatic($file);
+        return;
+    }
+
+    // Fallback SPA: cualquier otra ruta la resuelve el router client-side
+    $index = $buildDir . DIRECTORY_SEPARATOR . 'index.html';
+    if (is_file($index)) {
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Content-Type: text/html; charset=UTF-8');
+        readfile($index);
+        return;
+    }
+
+    http_response_code(404);
+    echo "Not found: $uri";
+}
+
 function serveStatic(string $file): void
 {
     static $mimes = [
