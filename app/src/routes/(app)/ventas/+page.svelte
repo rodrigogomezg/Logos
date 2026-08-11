@@ -803,6 +803,7 @@
 	let delConfirmando = $state(false);
 	let delConfirmarTexto = $state('Sí, anular');
 	let delConfirmarDisabled = $state(false);
+	let modoRecuperar = $state(false);
 
 	function mostrarClaveEliminar() {
 		delClave = '';
@@ -813,6 +814,7 @@
 		if (!ventaSeleccionada) return;
 		const v = ventaSeleccionada;
 		modoDeleteBulk = false;
+		modoRecuperar = false;
 		delTitulo = `Venta #${v.numero} — ${fmt(v.total)}`;
 		delInfo = `Fecha: ${v.fecha} · Cliente: ${v.cliente_nombre ?? '— Consumidor final —'} · Tipo: ${v.tipo_comprobante ?? '—'} · Pago: ${v.tipo_pago ?? '—'}`;
 		delConfirmarTexto = 'Sí, anular';
@@ -821,9 +823,23 @@
 		mostrarClaveEliminar();
 		delAbierto = true;
 	}
+	function accionRecuperar() {
+		if (!ventaSeleccionada) return;
+		const v = ventaSeleccionada;
+		modoDeleteBulk = false;
+		modoRecuperar = true;
+		delTitulo = `Recuperar venta #${v.numero} — ${fmt(v.total)}`;
+		delInfo = `Fecha: ${v.fecha} · Cliente: ${v.cliente_nombre ?? '— Consumidor final —'} · Tipo: ${v.tipo_comprobante ?? '—'} · Pago: ${v.tipo_pago ?? '—'}`;
+		delConfirmarTexto = 'Sí, recuperar';
+		delConfirmarDisabled = false;
+		delCaeAviso = false;
+		mostrarClaveEliminar();
+		delAbierto = true;
+	}
 	function accionEliminarBulk() {
 		const lista = [...multiSel.values()];
 		modoDeleteBulk = true;
+		modoRecuperar = false;
 		delTitulo = `Eliminar ${lista.length} venta${lista.length !== 1 ? 's' : ''}`;
 		delInfo = lista.map((v) => `${v.tipo_comprobante ?? '—'} N° ${v.numero} — ${v.cliente_nombre ?? '— Consumidor final —'} — ${fmt(v.total)}`).join(' · ');
 		delConfirmarTexto = `Sí, eliminar las ${lista.length}`;
@@ -838,7 +854,9 @@
 	async function confirmarEliminarVenta() {
 		delClaveError = '';
 		delConfirmando = true;
-		const opciones: RequestInit = { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave_autorizacion: delClave }) };
+		const opciones: RequestInit = modoRecuperar
+			? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave_autorizacion: delClave }) }
+			: { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clave_autorizacion: delClave }) };
 		try {
 			if (modoDeleteBulk) {
 				const ids = [...multiSel.keys()];
@@ -864,25 +882,30 @@
 				toast_(`${ok} venta${ok !== 1 ? 's' : ''} anulada${ok !== 1 ? 's' : ''} correctamente`, 'ok');
 			} else {
 				if (!ventaSeleccionada) return;
-				const r = await api(`/ventas/${ventaSeleccionada.id}`, opciones);
+				const url = modoRecuperar ? `/ventas/${ventaSeleccionada.id}/recuperar` : `/ventas/${ventaSeleccionada.id}`;
+				const r = await api(url, opciones);
 				const d = await r.json();
 				if (!r.ok) {
 					if (r.status === 403) {
 						delClaveError = d.error ?? 'Clave incorrecta';
 						return;
 					}
-					throw new Error(d.error ?? 'Error al eliminar');
+					throw new Error(d.error ?? (modoRecuperar ? 'Error al recuperar' : 'Error al eliminar'));
 				}
 				const id = ventaSeleccionada.id;
-				if (fMostrarAnuladas) {
+				if (modoRecuperar) {
+					const idx = resultadosActuales.findIndex((x) => x.id === id);
+					if (idx !== -1) resultadosActuales[idx] = { ...resultadosActuales[idx], estado: 'completado' };
+					if (ventaSeleccionada) ventaSeleccionada = { ...ventaSeleccionada, estado: 'completado' };
+				} else if (fMostrarAnuladas) {
 					const idx = resultadosActuales.findIndex((x) => x.id === id);
 					if (idx !== -1) resultadosActuales[idx] = { ...resultadosActuales[idx], estado: 'anulado' };
 				} else {
 					resultadosActuales = resultadosActuales.filter((x) => x.id !== id);
 				}
 				delAbierto = false;
-				deseleccionar();
-				toast_('Venta anulada correctamente.', 'ok');
+				if (!modoRecuperar) deseleccionar();
+				toast_(modoRecuperar ? 'Venta recuperada correctamente.' : 'Venta anulada correctamente.', 'ok');
 			}
 		} catch (e) {
 			toast_(e instanceof Error ? e.message : 'Error', 'err');
@@ -1547,9 +1570,15 @@
 			<button class="selec-btn sbtn-ghost" onclick={accionDevolver}
 				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3.38" /></svg>Devolver</button
 			>
-			<button class="selec-btn sbtn-danger" onclick={accionEliminar}
-				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>Eliminar</button
-			>
+			{#if ventaSeleccionada?.estado === 'anulado'}
+				<button class="selec-btn sbtn-primary" onclick={accionRecuperar}
+					><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3.38" /></svg>Recuperar</button
+				>
+			{:else}
+				<button class="selec-btn sbtn-danger" onclick={accionEliminar}
+					><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>Eliminar</button
+				>
+			{/if}
 			<button class="selec-cerrar" title="Deseleccionar" onclick={deseleccionar}>×</button>
 		</div>
 	{:else}
@@ -1771,17 +1800,25 @@
 	<div class="overlay abierto" role="presentation" onclick={(e) => e.target === e.currentTarget && cerrarDel()}>
 		<div class="modal modal-sm" role="dialog" aria-modal="true">
 			<div class="modal-head">
-				<h2 style="color:var(--rojo)">Anular venta</h2>
+				<h2 style="color:var(--rojo)">{modoRecuperar ? 'Recuperar venta' : 'Anular venta'}</h2>
 				<button class="modal-close" aria-label="Cerrar" onclick={cerrarDel}>×</button>
 			</div>
 			<div class="del-body">
 				<div class="del-titulo">{delTitulo}</div>
 				<div class="del-info">{delInfo}</div>
-				<div class="del-aviso">
-					La venta quedará marcada como <strong>ANULADA</strong> en el historial.<br />
-					El stock de los productos se revertirá.<br />
-					Si era en cuenta corriente, el saldo del cliente se actualizará.
-				</div>
+				{#if modoRecuperar}
+					<div class="del-aviso">
+						La venta volverá a quedar <strong>COMPLETADA</strong> en el historial.<br />
+						El stock de los productos se volverá a descontar.<br />
+						Si era en cuenta corriente, el saldo del cliente se volverá a cargar.
+					</div>
+				{:else}
+					<div class="del-aviso">
+						La venta quedará marcada como <strong>ANULADA</strong> en el historial.<br />
+						El stock de los productos se revertirá.<br />
+						Si era en cuenta corriente, el saldo del cliente se actualizará.
+					</div>
+				{/if}
 				{#if delCaeAviso}
 					<div style="display:block;margin-top:10px;padding:8px 10px;background:#FEF9C3;border:1px solid #FDE047;border-radius:6px;font-size:12px;color:#78350F;">
 						Esta factura fue autorizada por ARCA (tiene CAE) y no se puede anular: quedaría fuera del Libro IVA pero seguiría existiendo ante el organismo. Usá <strong>Nota de Crédito</strong> para revertirla.
@@ -1797,7 +1834,7 @@
 			</div>
 			<div class="modal-footer">
 				<button class="btn-modal btn-modal-ghost" onclick={cerrarDel}>Cancelar</button>
-				<button class="btn-modal btn-modal-danger" disabled={delConfirmarDisabled || delConfirmando} onclick={confirmarEliminarVenta}>{delConfirmando ? 'Eliminando...' : delConfirmarTexto}</button>
+				<button class="btn-modal btn-modal-danger" disabled={delConfirmarDisabled || delConfirmando} onclick={confirmarEliminarVenta}>{delConfirmando ? (modoRecuperar ? 'Recuperando...' : 'Eliminando...') : delConfirmarTexto}</button>
 			</div>
 		</div>
 	</div>

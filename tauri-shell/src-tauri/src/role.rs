@@ -1,24 +1,17 @@
 // Port a Rust del arranque en modo "supervisor" (servicios NSSM) de
 // electron/main.js (startServerRole) + electron/services/server-manager.js
-// (serviceMode). Ver plan de migración Fase 3 / Chunk 2.
-//
-// A diferencia de la versión JS, acá NO hace falta un bypass tipo
-// LOGOS_DEV_MODE para el chequeo de `sc query`: el nombre de servicio que se
-// consulta (LogosPOS-TauriPOC-DB) es exclusivo del POC — nunca puede
-// "accidentalmente" existir en una PC de desarrollo salvo que este mismo POC
-// ya se haya instalado ahí antes, a diferencia de LogosPOS-DB (nombre real)
-// que sí podría colisionar con una instalación real en la misma máquina.
+// (serviceMode).
 
 use serde::Deserialize;
 use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 
-pub const SERVICE_DB: &str = "LogosPOS-TauriPOC-DB";
-pub const SERVICE_PHP: &str = "LogosPOS-TauriPOC-PHP";
+pub const SERVICE_DB: &str = "LogosPOS-DB";
+pub const SERVICE_PHP: &str = "LogosPOS-PHP";
 
 pub fn data_root() -> PathBuf {
-    PathBuf::from(r"C:\ProgramData\LogosPOS-TauriPOC")
+    PathBuf::from(r"C:\ProgramData\LogosPOS")
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -61,8 +54,8 @@ pub struct LogosConfig {
     pub server_ip: Option<String>,
 }
 
-/// Lee C:\ProgramData\LogosPOS-TauriPOC\logos-config.json, escrito por
-/// setup-server-poc.ps1 (rol Servidor) o por el hook NSIS (rol Cliente).
+/// Lee C:\ProgramData\LogosPOS\logos-config.json, escrito por
+/// setup-server.ps1 (rol Servidor) o por el hook NSIS (rol Cliente).
 pub fn read_config() -> Option<LogosConfig> {
     let path = data_root().join("logos-config.json");
     let content = std::fs::read_to_string(path).ok()?;

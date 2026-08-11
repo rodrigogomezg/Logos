@@ -1,13 +1,8 @@
-// Port a Rust de electron/services/server-manager.js — spike Fase 1B (ver plan
-// de migración). Portar la lógica tal cual, no rediseñarla: mismo orden de
-// pasos (init datadir si hace falta → spawn mysqld → esperar ping → schema/
-// migraciones → spawn php -S), mismos binarios portables.
-//
-// Alcance deliberadamente recortado para el POC: solo modo "initiator" (Tauri
-// dueño de los procesos, como Electron en dev) — el modo "supervisor" (NSSM)
-// y _assertOwnDatabase() quedan para cuando/si esto avanza más allá del
-// spike. Puertos y datadir propios (LogosPOS-TauriPOC) para no pisar una
-// instalación Electron real corriendo en la misma PC de pruebas.
+// Port a Rust de electron/services/server-manager.js. Mismo orden de pasos
+// (init datadir si hace falta → spawn mysqld → esperar ping → schema/
+// migraciones → spawn php -S), mismos binarios portables. Modo "initiator"
+// (Tauri dueño de los procesos, como Electron en dev) — el modo "supervisor"
+// (NSSM) se maneja en role.rs.
 
 use std::fs;
 use std::io::Write;
@@ -464,7 +459,7 @@ impl ServerManager {
         // saca el pipe: stderr va a un archivo de verdad, no a un pipe
         // anónimo — se mantiene el diagnóstico sin tocar lo que causaba el
         // crash.
-        let stderr_log_path = PathBuf::from(r"C:\ProgramData\LogosPOS-TauriPOC\logs\php-stderr.log");
+        let stderr_log_path = PathBuf::from(r"C:\ProgramData\LogosPOS\logs\php-stderr.log");
         if let Some(dir) = stderr_log_path.parent() {
             let _ = fs::create_dir_all(dir);
         }
@@ -484,12 +479,11 @@ impl ServerManager {
             .env("LOGOS_APP_BUILD_DIR", &self.app_build_dir)
             // La app PHP compartida (api/) tiene varias rutas de
             // C:\ProgramData\LogosPOS hardcodeadas por default (db.local.php,
-            // logo, carpeta de backups, lock de AFIP) — sin esto, el modo
-            // initiator del POC las escribiría en el ProgramData REAL,
-            // aunque todo el resto (servicios, puertos, datadir de MariaDB)
-            // esté aislado. Ver DB::dataRoot() en api/config/db.php y el
-            // hallazgo real del 08/08/2026 en memoria.
-            .env("LOGOS_DATA_ROOT", r"C:\ProgramData\LogosPOS-TauriPOC")
+            // logo, carpeta de backups, lock de AFIP) — ver DB::dataRoot()
+            // en api/config/db.php. Coincide con el default, pero se pasa
+            // explícito para no depender de que nadie cambie ese default sin
+            // darse cuenta.
+            .env("LOGOS_DATA_ROOT", r"C:\ProgramData\LogosPOS")
             .env("LOGOS_DB_HOST", "127.0.0.1")
             .env("LOGOS_DB_PORT", self.db_port.to_string())
             .env("LOGOS_DB_NAME", "logos")

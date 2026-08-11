@@ -16,12 +16,6 @@ dist-ssr
 # en el .gitignore raíz: se provee aparte, no se versiona.
 vendor/
 
-# Artefactos de prueba del endpoint de update local (instaladores firmados,
-# manifest de latest.json) — se regeneran en cada ronda de prueba, nunca
-# deben viajar al repo.
-update-test/*.exe
-update-test/*.sig
-
 # Carpetas de scratch de inspección manual del .nsi generado — sin valor
 # de código, quedaron de debugging puntual.
 inspect-installer/

@@ -130,7 +130,7 @@ async fn decide_start_url(base_url: &str, mode: role::ServiceMode, is_first_setu
 /// haber creado y mostrado la ventana con el login.
 ///
 /// Usa una página local embebida (`WebviewUrl::App`, bundleada vía
-/// `frontendDist`) en vez de servirla desde el propio php.exe del POC — así
+/// `frontendDist`) en vez de servirla desde el propio php.exe local — así
 /// no depende de que el servidor local siga respondiendo durante toda la
 /// descarga/instalación (en modo supervisor los servicios se paran ANTES de
 /// descargar, ver abajo). El progreso se empuja con `WebviewWindow::eval()`,
@@ -317,7 +317,7 @@ pub fn run() {
                 paths.www,
                 paths.app_dir,
                 paths.app_build_dir,
-                PathBuf::from(r"C:\ProgramData\LogosPOS-TauriPOC\mysql-data"),
+                PathBuf::from(r"C:\ProgramData\LogosPOS\mysql-data"),
             );
             let start = match manager.start_database() {
                 Ok(s) => s,
@@ -353,34 +353,23 @@ pub fn run() {
                 // vieja nunca llegue a ver el login (mismo criterio que
                 // Electron: checkForUpdates() corre en app.whenReady(),
                 // antes de cualquier ventana — ver electron/main.js). El
-                // endpoint de prueba de este POC lo sirve el propio php.exe
-                // local, así que este chequeo necesita el servidor ya
-                // arriba — a esta altura ya lo está (wait_for_database /
-                // start_database corrieron antes, más arriba en run()).
-                let update_endpoint = format!("{base_url_task}/Logos/update-test/latest.json");
-                let update_disponible = match app_handle
-                    .updater_builder()
-                    .endpoints(vec![Url::parse(&update_endpoint).expect("endpoint de update inválido")])
-                {
-                    Ok(builder) => match builder.build() {
-                        Ok(updater) => match updater.check().await {
-                            Ok(Some(update)) => Some(update),
-                            Ok(None) => {
-                                println!("[updater] sin actualizaciones — endpoint de prueba respondió OK");
-                                None
-                            }
-                            Err(e) => {
-                                println!("[updater] error al chequear: {e}");
-                                None
-                            }
-                        },
+                // endpoint real (Hostinger) ya está configurado en
+                // tauri.conf.json — nada que ver con base_url_task (ese es
+                // el servidor local de esta PC, no el canal de updates).
+                let update_disponible = match app_handle.updater_builder().build() {
+                    Ok(updater) => match updater.check().await {
+                        Ok(Some(update)) => Some(update),
+                        Ok(None) => {
+                            println!("[updater] sin actualizaciones");
+                            None
+                        }
                         Err(e) => {
-                            println!("[updater] error al construir el updater: {e}");
+                            println!("[updater] error al chequear: {e}");
                             None
                         }
                     },
                     Err(e) => {
-                        println!("[updater] no se pudo configurar el endpoint: {e}");
+                        println!("[updater] error al construir el updater: {e}");
                         None
                     }
                 };
@@ -428,7 +417,7 @@ pub fn run() {
 
                 let version = app_handle.package_info().version.to_string();
                 let _window = match WebviewWindowBuilder::new(&app_handle, "main", WebviewUrl::External(url))
-                    .title(format!("Logos POS (Tauri POC) — v{version}"))
+                    .title(format!("Logos POS — v{version}"))
                     .inner_size(1280.0, 800.0)
                     .min_inner_size(1024.0, 640.0)
                     .build()
@@ -454,9 +443,14 @@ pub fn run() {
 
                 // Tareas en tokio, no en JS del webview — tienen que seguir
                 // corriendo con la ventana minimizada (ver timers.rs).
+                // TODO gap real de producción (no resuelto en el corte a Tauri):
+                // Electron lee el token real desde configManager.get('licenciaApiToken')
+                // (persistido vía IPC 'save-licencia-token', ver pos/licencia.js). Acá
+                // todavía no hay ningún mecanismo para leer/guardar ese token — el
+                // heartbeat de licencia corre siempre sin token hasta que se porte.
                 tauri::async_runtime::spawn(timers::run_licencia_heartbeat(
                     base_url_task.clone(),
-                    String::new(), // sin token en este spike (instalación de prueba, sin Hub real)
+                    String::new(),
                     version,
                 ));
                 tauri::async_runtime::spawn(timers::run_backup_timer(base_url_task.clone()));

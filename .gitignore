@@ -33,5 +33,6 @@ electron/resources/_tmp/
 electron/resources/www/
 # Credenciales y secretos para publicar actualizaciones (nunca commitear)
 electron/.env.publish
+tauri-shell/.env.publish
 # upload-handler.php contiene el secreto real — solo vive en Hostinger y localmente
 electron/scripts/upload-handler.php

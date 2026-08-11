@@ -75,7 +75,7 @@ Function LogosRolePageCreate
     Abort
   ${EndIf}
 
-  ${NSD_CreateLabel} 0 0u 100% 24u "Logos POS TauriPOC — instalación de PRUEBA, aislada de cualquier Logos POS real en esta PC."
+  ${NSD_CreateLabel} 0 0u 100% 24u "Logos POS — configuración de instalación."
   Pop $LogosRoleTmp
 
   ${NSD_CreateLabel} 0 30u 100% 20u "¿Esta computadora va a funcionar como SERVIDOR?"
@@ -84,7 +84,7 @@ Function LogosRolePageCreate
   ${NSD_CreateRadioButton} 10u 58u 100% 12u "Servidor"
   Pop $LogosRoleServidorRadio
   ${NSD_Check} $LogosRoleServidorRadio
-  ${NSD_CreateLabel} 20u 72u 90% 24u "Instala base de datos + servidor web de PRUEBA en esta PC. Otras PCs de la red se conectan a este equipo."
+  ${NSD_CreateLabel} 20u 72u 90% 24u "Instala base de datos + servidor web en esta PC. Otras PCs de la red se conectan a este equipo."
   Pop $LogosRoleTmp
 
   ${NSD_CreateRadioButton} 10u 104u 100% 12u "Cliente"
@@ -130,10 +130,10 @@ Page custom LogosRolePageCreate LogosRolePageLeave
     DetailPrint "Modo actualización automática — omitiendo selección de rol."
 
     DetailPrint "Reiniciando servicios LogosPOS si corresponde..."
-    nsExec::ExecToStack 'sc start LogosPOS-TauriPOC-DB'
+    nsExec::ExecToStack 'sc start LogosPOS-DB'
     Pop $R0
     Pop $R1
-    nsExec::ExecToStack 'sc start LogosPOS-TauriPOC-PHP'
+    nsExec::ExecToStack 'sc start LogosPOS-PHP'
     Pop $R0
     Pop $R1
     DetailPrint "Servicios reiniciados (código DB=$R0). Reabriendo Logos POS..."
@@ -146,7 +146,7 @@ Page custom LogosRolePageCreate LogosRolePageLeave
     ; usuario que está corriendo este instalador (el caso normal de UAC: se
     ; eleva el mismo usuario, no se cambia de cuenta).
     DetailPrint "Programando reapertura no elevada..."
-    nsExec::ExecToStack 'schtasks /create /tn "LogosPOSRelaunch" /tr "\"$INSTDIR\Logos POS TauriPOC.exe\"" /sc once /st 23:59 /ru "%USERNAME%" /it /f'
+    nsExec::ExecToStack 'schtasks /create /tn "LogosPOSRelaunch" /tr "\"$INSTDIR\Logos POS.exe\"" /sc once /st 23:59 /ru "%USERNAME%" /it /f'
     Pop $R0
     Pop $R1
     nsExec::ExecToStack 'schtasks /run /tn "LogosPOSRelaunch"'
@@ -161,15 +161,9 @@ Page custom LogosRolePageCreate LogosRolePageLeave
   ${EndIf}
 
   ; --- Instalación interactiva (primera vez o reinstalación manual) -----------
-  ; Todas las rutas/nombres de acá en adelante llevan el sufijo -TauriPOC a
-  ; propósito (carpeta de datos, servicios, regla de firewall) — este POC
-  ; corre side-by-side con una instalación real de Electron en la misma PC de
-  ; pruebas y NUNCA debe tocar C:\ProgramData\LogosPOS ni LogosPOS-DB/-PHP.
-  ; Ver plan de migración Fase 3 / Chunk 0.
-
-  DetailPrint "Preparando carpeta de datos del POC..."
-  CreateDirectory "C:\ProgramData\LogosPOS-TauriPOC"
-  nsExec::ExecToLog 'icacls "C:\ProgramData\LogosPOS-TauriPOC" /grant *S-1-5-32-545:(OI)(CI)M /T'
+  DetailPrint "Preparando carpeta de datos..."
+  CreateDirectory "C:\ProgramData\LogosPOS"
+  nsExec::ExecToLog 'icacls "C:\ProgramData\LogosPOS" /grant *S-1-5-32-545:(OI)(CI)M /T'
   Pop $R0
 
   ; Rol ya elegido en la página custom (LogosRolePageCreate/Leave, ver
@@ -179,31 +173,31 @@ Page custom LogosRolePageCreate LogosRolePageLeave
   ${EndIf}
 
   ; --- ROL SERVIDOR -----------------------------------------------------------
-  DetailPrint "Configurando rol Servidor (POC)..."
+  DetailPrint "Configurando rol Servidor..."
   DetailPrint "Inicializando base de datos y registrando servicios de Windows..."
 
   DetailPrint "Buscando puertos disponibles e iniciando servicios..."
-  nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\setup-server-poc.ps1" -InstallDir "$INSTDIR"'
+  nsExec::ExecToLog 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\setup-server.ps1" -InstallDir "$INSTDIR"'
   Pop $R0
 
   IntCmp $R0 0 logos_setup_ok logos_setup_ok logos_setup_error
   logos_setup_error:
-    DetailPrint "Error en setup-server-poc.ps1 (código $R0)"
-    MessageBox MB_ICONSTOP "Error al configurar el servidor del POC de Logos POS (Tauri).$\n$\nCódigo: $R0$\n$\nRevisá los logs en C:\ProgramData\LogosPOS-TauriPOC\setup-log.txt$\nSoporte: drilogs.com.ar$\n$\nLa aplicación quedó instalada pero los servicios no están activos."
+    DetailPrint "Error en setup-server.ps1 (código $R0)"
+    MessageBox MB_ICONSTOP "Error al configurar el servidor de Logos POS.$\n$\nCódigo: $R0$\n$\nRevisá los logs en C:\ProgramData\LogosPOS\setup-log.txt$\nSoporte: drilogs.com.ar$\n$\nLa aplicación quedó instalada pero los servicios no están activos."
     Goto logos_setup_done
   logos_setup_ok:
     DetailPrint "Servicios de Windows registrados correctamente."
   logos_setup_done:
 
-  DetailPrint "Rol Servidor (POC) configurado."
+  DetailPrint "Rol Servidor configurado."
   Goto logos_role_done
 
   ; --- ROL CLIENTE ------------------------------------------------------------
   logos_client_role:
-  DetailPrint "Configurando rol Cliente (POC)..."
+  DetailPrint "Configurando rol Cliente..."
 
-  FileOpen  $R9 "C:\ProgramData\LogosPOS-TauriPOC\logos-config.json" w
-  FileWrite $R9 '{"role":"client","serverPort":8090,"dbPort":3309,"serverIp":null}'
+  FileOpen  $R9 "C:\ProgramData\LogosPOS\logos-config.json" w
+  FileWrite $R9 '{"role":"client","serverPort":8080,"dbPort":3306,"serverIp":null}'
   FileClose $R9
 
   DetailPrint "Rol Cliente configurado (se pedirá la IP del servidor al abrir la aplicación)."
@@ -214,23 +208,23 @@ Page custom LogosRolePageCreate LogosRolePageLeave
 
 !macro NSIS_HOOK_PREUNINSTALL
 
-  IfFileExists "$INSTDIR\teardown-server-poc.ps1" logos_do_teardown logos_no_teardown
+  IfFileExists "$INSTDIR\teardown-server.ps1" logos_do_teardown logos_no_teardown
   logos_do_teardown:
-    DetailPrint "Deteniendo servicios del POC de Logos POS (Tauri)..."
-    nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\teardown-server-poc.ps1" -InstallDir "$INSTDIR"'
+    DetailPrint "Deteniendo servicios de Logos POS..."
+    nsExec::ExecToStack 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$INSTDIR\teardown-server.ps1" -InstallDir "$INSTDIR"'
     Pop $R0
     Pop $R1
     DetailPrint "Teardown completado (código: $R0)"
   logos_no_teardown:
 
   ${IfNot} ${Silent}
-    MessageBox MB_YESNO|MB_ICONQUESTION "Se va a desinstalar el POC de Logos POS (Tauri).$\n$\nQuerés borrar también la base de datos y toda la configuración de esta instalación de PRUEBA (C:\ProgramData\LogosPOS-TauriPOC)?$\n$\nSÍ = borrado completo, sin dejar rastro. Esta acción NO se puede deshacer.$\nNO = se desinstala solo el programa. Tus datos de prueba quedan intactos por si volvés a instalar el POC más adelante.$\n$\n(Esto nunca toca una instalación real de Logos POS ni C:\ProgramData\LogosPOS)" IDYES logos_borrado_completo
+    MessageBox MB_YESNO|MB_ICONQUESTION "Se va a desinstalar Logos POS.$\n$\nQuerés borrar también la base de datos y toda la configuración (C:\ProgramData\LogosPOS)?$\n$\nSÍ = borrado completo, sin dejar rastro. Esta acción NO se puede deshacer.$\nNO = se desinstala solo el programa. Tus datos quedan intactos por si volvés a instalar Logos POS más adelante." IDYES logos_borrado_completo
     Goto logos_uninstall_done
 
     logos_borrado_completo:
-      DetailPrint "Borrando base de datos y configuración del POC..."
-      RMDir /r "C:\ProgramData\LogosPOS-TauriPOC"
-      RMDir /r "$APPDATA\logos-pos-tauripoc"
+      DetailPrint "Borrando base de datos y configuración..."
+      RMDir /r "C:\ProgramData\LogosPOS"
+      RMDir /r "$APPDATA\logos-pos"
       DetailPrint "Borrado completo."
   ${EndIf}
 

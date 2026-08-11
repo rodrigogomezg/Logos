@@ -888,6 +888,7 @@
 		envioDirOpciones = null;
 		inputCodigo = '';
 		codEstado = '';
+		catalogoSel = new Map();
 		sincronizarReservas();
 		codInputEl?.focus();
 	}

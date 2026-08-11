@@ -23,9 +23,12 @@ if (function_exists('apache_setenv')) {
 }
 while (ob_get_level()) { ob_end_clean(); }
 
-// Solo servir archivos que coincidan con el patrón del instalador
+// Solo servir instaladores de Logos POS — cubre tanto el patrón de Electron
+// ("Logos POS Setup X.X.X.exe") como el de Tauri ("Logos POS_X.X.X_x64-setup.exe"),
+// sin volverse un servidor de archivos genérico. basename() ya arriba corta
+// cualquier intento de path traversal antes de llegar acá.
 $file = basename(urldecode($_GET['f'] ?? ''));
-if (!preg_match('/^Logos POS Setup \d+\.\d+\.\d+\.exe$/', $file)) {
+if (!preg_match('/^Logos[^\/\\\\]*\.exe$/', $file)) {
     http_response_code(404);
     exit('Not Found');
 }

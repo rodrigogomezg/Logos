@@ -19,11 +19,8 @@ use std::net::UdpSocket;
 use std::path::PathBuf;
 use std::time::Duration;
 
-// Mismo criterio de aislamiento que server_manager.rs: log propio del POC,
-// nunca C:\ProgramData\LogosPOS\licencia-debug.log (compartido con la
-// instalación real de Electron que puede estar corriendo en paralelo).
 fn log_path() -> PathBuf {
-    PathBuf::from(r"C:\ProgramData\LogosPOS-TauriPOC\licencia-debug.log")
+    PathBuf::from(r"C:\ProgramData\LogosPOS\licencia-debug.log")
 }
 
 fn log_line(msg: &str) {
@@ -130,29 +127,29 @@ pub async fn run_backup_timer(base_url: String) {
 // (chequea el id antes de crear) para no duplicar si el health-check vuelve
 // a fallar antes de que se resuelva la reconexión.
 //
-// Simplificación deliberada frente a Electron: sin "reconfigurar IP" (no
-// existe todavía un comando/estado de client-config en este POC — el rol
-// Cliente real de Electron permite cambiar la IP del servidor desde acá; acá
-// solo se ofrece "Reintentar", que en la práctica es cosmético porque el
-// propio loop de abajo ya reintenta solo cada 8s). Si esto avanza más allá
-// de la paridad side-by-side, sumar el comando real de reconfigurar IP.
+// TODO gap real de producción (no resuelto en el corte a Tauri): no existe
+// todavía un comando/estado de client-config acá — el rol Cliente real de
+// Electron permite cambiar la IP del servidor desde este mismo overlay; acá
+// solo se ofrece "Reintentar" (el propio loop de abajo ya reintenta solo
+// cada 8s, así que es cosmético). Portar el comando real de reconfigurar IP
+// cuando haga falta.
 const JS_MOSTRAR_OVERLAY: &str = r#"(function(){
-  if (document.getElementById('logos-tauripoc-disconnected')) return;
+  if (document.getElementById('logos-disconnected')) return;
   var d = document.createElement('div');
-  d.id = 'logos-tauripoc-disconnected';
+  d.id = 'logos-disconnected';
   d.style.cssText = 'position:fixed;inset:0;z-index:999999;background:rgba(15,15,20,0.92);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:system-ui,sans-serif;text-align:center;padding:24px;';
   d.innerHTML = '<div style="font-size:20px;font-weight:600;margin-bottom:8px;">No se puede conectar al servidor</div>' +
     '<div style="font-size:14px;opacity:0.8;margin-bottom:20px;max-width:420px;">Verificá que la PC servidor esté encendida y conectada a la red. Reintentando automáticamente...</div>' +
-    '<button id="logos-tauripoc-retry" style="padding:8px 20px;border-radius:6px;border:none;background:#fff;color:#111;font-weight:600;cursor:pointer;">Reintentar ahora</button>';
+    '<button id="logos-retry" style="padding:8px 20px;border-radius:6px;border:none;background:#fff;color:#111;font-weight:600;cursor:pointer;">Reintentar ahora</button>';
   document.body.appendChild(d);
-  document.getElementById('logos-tauripoc-retry').onclick = function(){
+  document.getElementById('logos-retry').onclick = function(){
     this.textContent = 'Reintentando…';
     this.disabled = true;
   };
 })();"#;
 
 const JS_OCULTAR_OVERLAY: &str = r#"(function(){
-  var d = document.getElementById('logos-tauripoc-disconnected');
+  var d = document.getElementById('logos-disconnected');
   if (d) d.remove();
 })();"#;
 

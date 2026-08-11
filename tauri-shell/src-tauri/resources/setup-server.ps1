@@ -1,15 +1,7 @@
 ﻿<#
 .SYNOPSIS
-    Version POC (Tauri) de setup-server.ps1 (electron/resources/setup-server.ps1).
-    Inicializa MariaDB y registra los servicios Windows del POC de Tauri via NSSM.
+    Inicializa MariaDB y registra los servicios Windows de Logos POS via NSSM.
     Es ejecutado por el instalador NSIS con privilegios de Administrador.
-
-    Bifurcado a proposito, no compartido con Electron: cada nombre de servicio,
-    regla de firewall y ruta de C:\ProgramData\... usa el sufijo -TauriPOC, para
-    que instalar/desinstalar el rol Servidor de este POC en una PC que tambien
-    tiene la instalacion real de Electron corriendo NUNCA toque sus servicios ni
-    sus datos (LogosPOS-DB/-PHP, C:\ProgramData\LogosPOS). Ver plan de migracion
-    Fase 3 / Chunk 0 en memoria (project_migracion_sveltekit_tauri).
 
     Layout de paths distinto al de Electron: el bundle de Tauri no tiene una
     subcarpeta "resources\" (los recursos quedan planos bajo $InstallDir, ver
@@ -17,14 +9,12 @@
     NO llevan el prefijo "resources\" que si usa el script de Electron.
 
 .PARAMETER InstallDir
-    Directorio de instalacion del POC (p.ej. C:\Program Files\Logos POS TauriPOC)
+    Directorio de instalacion (p.ej. C:\Program Files\Logos POS)
 .PARAMETER DbPort
-    Puerto MariaDB. 0 = auto-descubrir (default). Se prueban 3309-3311 (evita
-    a proposito el rango 3306-3308 que usa Electron, para minimizar colisiones
-    de "puerto preferido ocupado" cuando ambos corren en la misma PC de prueba)
-    y como ultimo recurso se solicita un puerto libre al SO (nunca falla por
-    conflicto). WebPort (PHP) siempre se auto-descubre: 8090-8092 o puerto
-    libre del SO (mismo criterio, evita el 8080-8082 de Electron).
+    Puerto MariaDB. 0 = auto-descubrir (default). Se prueban 3306-3308 y como
+    ultimo recurso se solicita un puerto libre al SO (nunca falla por
+    conflicto). WebPort (PHP) siempre se auto-descubre: 8080-8082 o puerto
+    libre del SO.
 #>
 param(
     [Parameter(Mandatory=$true)]
@@ -33,10 +23,10 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-$svcDb       = 'LogosPOS-TauriPOC-DB'
-$svcPhp      = 'LogosPOS-TauriPOC-PHP'
-$fwRuleName  = 'LogosPOS-TauriPOC-Web'
-$dataRoot    = 'C:\ProgramData\LogosPOS-TauriPOC'
+$svcDb       = 'LogosPOS-DB'
+$svcPhp      = 'LogosPOS-PHP'
+$fwRuleName  = 'LogosPOS-Web'
+$dataRoot    = 'C:\ProgramData\LogosPOS'
 $dataDir     = "$dataRoot\mysql-data"
 $logsDir     = "$dataRoot\logs"
 $mariadbBin  = "$InstallDir\mariadb\bin"
@@ -52,7 +42,7 @@ $dbLocalPath = "$dataRoot\db.local.php"
 $setupLog = "$dataRoot\setup-log.txt"
 New-Item -ItemType Directory -Force -Path $dataRoot | Out-Null
 function Log([string]$msg) {
-    $line = "$(Get-Date -Format 'HH:mm:ss') [LogosPOS-TauriPOC] $msg"
+    $line = "$(Get-Date -Format 'HH:mm:ss') [LogosPOS] $msg"
     Write-Host $line
     Add-Content -Path $setupLog -Value $line -Encoding UTF8
 }
@@ -110,21 +100,20 @@ function Find-FreePort {
 
 # --- 0. Descubrir puertos libres para MariaDB y PHP ---------------------------
 if ($DbPort -eq 0) {
-    $DbPort = Find-FreePort -Candidatos @(3309, 3310, 3311) -Etiqueta "MariaDB"
+    $DbPort = Find-FreePort -Candidatos @(3306, 3307, 3308) -Etiqueta "MariaDB"
 } else {
     Log "Puerto MariaDB especificado manualmente: $DbPort"
 }
-$WebPort = Find-FreePort -Candidatos @(8090, 8091, 8092) -Etiqueta "PHP"
+$WebPort = Find-FreePort -Candidatos @(8080, 8081, 8082) -Etiqueta "PHP"
 
 # --- 1. Directorios ----------------------------------------------------------
 Log "Creando directorios de datos en $dataRoot ..."
 New-Item -ItemType Directory -Force -Path $dataDir, $logsDir | Out-Null
 
 # --- 2. Detener y remover servicios existentes ANTES de iniciar mysqld temporal
-# Critico: si el servicio DB del POC sigue corriendo ocupa el puerto y bloquea
-# el datadir. Usamos sc.exe para stop/delete (no NSSM) porque es mas confiable
+# Critico: si el servicio DB sigue corriendo ocupa el puerto y bloquea el
+# datadir. Usamos sc.exe para stop/delete (no NSSM) porque es mas confiable
 # y no escribe a stderr de formas que conflictuen con $ErrorActionPreference=Stop.
-# Nombres TauriPOC-suffixed unicamente: nunca toca LogosPOS-DB/-PHP reales.
 foreach ($svc in @($svcPhp, $svcDb)) {
     $null = sc.exe query $svc 2>$null
     if ($LASTEXITCODE -eq 0) {
@@ -153,8 +142,8 @@ if (!(Test-Path "$dataDir\mysql")) {
     Log "Inicializando base de datos..."
 
     # mysql_install_db.exe exige un datadir COMPLETAMENTE vacio, no solo que
-    # falte la carpeta "mysql". Ver CLAUDE.md / setup-server.ps1 de Electron
-    # (mismo fix, mismo motivo: restos sueltos de un desinstalador previo).
+    # falte la carpeta "mysql". Ver CLAUDE.md (mismo fix, mismo motivo: restos
+    # sueltos de un desinstalador previo).
     Get-ChildItem -Path $dataDir -Force -ErrorAction SilentlyContinue |
         Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
@@ -234,7 +223,7 @@ if (!$tieneEsquema) {
 }
 
 # --- 5. Escribir db.local.php ------------------------------------------------
-$dbLocalContent = "<?php`r`n// Auto-generado por el instalador del POC de Tauri.`r`nreturn [`r`n    'host'   => '127.0.0.1',`r`n    'port'   => $DbPort,`r`n    'dbname' => 'logos',`r`n    'user'   => 'root',`r`n    'pass'   => '',`r`n];`r`n"
+$dbLocalContent = "<?php`r`n// Auto-generado por el instalador de Logos POS.`r`nreturn [`r`n    'host'   => '127.0.0.1',`r`n    'port'   => $DbPort,`r`n    'dbname' => 'logos',`r`n    'user'   => 'root',`r`n    'pass'   => '',`r`n];`r`n"
 try {
     $dbLocalDir = Split-Path $dbLocalPath
     if (!(Test-Path $dbLocalDir)) { New-Item -ItemType Directory -Force $dbLocalDir | Out-Null }
@@ -267,7 +256,7 @@ try {
     Log "AVISO: No se pudo escribir AppParameters DB via registry: $_"
 }
 RunExe $nssmExe @('set', $svcDb, 'AppDirectory',    $mariadbBin)
-RunExe $nssmExe @('set', $svcDb, 'DisplayName',     'Logos POS TauriPOC - Base de datos')
+RunExe $nssmExe @('set', $svcDb, 'DisplayName',     'Logos POS - Base de datos')
 RunExe $nssmExe @('set', $svcDb, 'Start',           'SERVICE_AUTO_START')
 RunExe $nssmExe @('set', $svcDb, 'AppRestartDelay', '5000')
 RunExe $nssmExe @('set', $svcDb, 'AppNoConsole',    '1')
@@ -292,7 +281,7 @@ try {
     Log "AVISO: No se pudo escribir AppParameters PHP via registry: $_"
 }
 RunExe $nssmExe @('set', $svcPhp, 'AppDirectory',    $phpBin)
-RunExe $nssmExe @('set', $svcPhp, 'DisplayName',     'Logos POS TauriPOC - Servidor web')
+RunExe $nssmExe @('set', $svcPhp, 'DisplayName',     'Logos POS - Servidor web')
 RunExe $nssmExe @('set', $svcPhp, 'Start',           'SERVICE_AUTO_START')
 RunExe $nssmExe @('set', $svcPhp, 'AppRestartDelay', '5000')
 RunExe $nssmExe @('set', $svcPhp, 'AppNoConsole',    '1')
@@ -321,7 +310,7 @@ Remove-NetFirewallRule -DisplayName $fwRuleName -ErrorAction SilentlyContinue
 try {
     New-NetFirewallRule -DisplayName $fwRuleName `
         -Direction Inbound -Protocol TCP -LocalPort $WebPort -Action Allow `
-        -Description "Acceso LAN al servidor web del POC de Tauri de Logos POS (puerto $WebPort)" | Out-Null
+        -Description "Acceso LAN al servidor web de Logos POS (puerto $WebPort)" | Out-Null
     Log "Regla '$fwRuleName' creada para puerto TCP $WebPort."
 } catch {
     Log "AVISO: No se pudo crear regla de firewall (no fatal): $_"

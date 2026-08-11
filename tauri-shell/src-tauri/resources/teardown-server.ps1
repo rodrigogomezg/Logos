@@ -1,16 +1,12 @@
 ﻿<#
 .SYNOPSIS
-    Version POC (Tauri) de teardown-server.ps1 (electron/resources/teardown-server.ps1).
-    Detiene y remueve los servicios Windows del POC de Tauri. Ejecutado por el
+    Detiene y remueve los servicios Windows de Logos POS. Ejecutado por el
     desinstalador NSIS con privilegios de Administrador.
-    Los datos en C:\ProgramData\LogosPOS-TauriPOC\ NO se eliminan (son datos de prueba).
-
-    Nombres TauriPOC-suffixed unicamente: nunca toca LogosPOS-DB/-PHP reales
-    ni la regla de firewall real, aunque corra en una PC que tambien tenga la
-    instalacion real de Electron.
+    Los datos en C:\ProgramData\LogosPOS\ NO se eliminan salvo borrado completo
+    explícito (ver installer-hooks.nsh, NSIS_HOOK_PREUNINSTALL).
 
 .PARAMETER InstallDir
-    Directorio de instalacion del POC (para localizar nssm.exe — sin el prefijo
+    Directorio de instalacion (para localizar nssm.exe — sin el prefijo
     "resources\" que usa Electron, el bundle de Tauri lo deja plano bajo $InstallDir)
 #>
 param(
@@ -19,12 +15,12 @@ param(
 )
 $ErrorActionPreference = 'SilentlyContinue'
 
-$svcDb      = 'LogosPOS-TauriPOC-DB'
-$svcPhp     = 'LogosPOS-TauriPOC-PHP'
-$fwRuleName = 'LogosPOS-TauriPOC-Web'
+$svcDb      = 'LogosPOS-DB'
+$svcPhp     = 'LogosPOS-PHP'
+$fwRuleName = 'LogosPOS-Web'
 $nssmExe    = "$InstallDir\nssm.exe"
 
-function Log([string]$msg) { Write-Host "[LogosPOS-TauriPOC] $msg" }
+function Log([string]$msg) { Write-Host "[LogosPOS] $msg" }
 
 # Detener en orden inverso: primero PHP, luego DB
 foreach ($svc in @($svcPhp, $svcDb)) {
@@ -49,9 +45,9 @@ foreach ($svc in @($svcPhp, $svcDb)) {
     }
 }
 
-Log "Servicios del POC de Tauri removidos."
-Log "Nota: Los datos en C:\ProgramData\LogosPOS-TauriPOC\ se conservan."
+Log "Servicios de Logos POS removidos."
+Log "Nota: Los datos en C:\ProgramData\LogosPOS\ se conservan."
 
-# Eliminar regla de firewall creada por el instalador del POC
+# Eliminar regla de firewall creada por el instalador
 Remove-NetFirewallRule -DisplayName $fwRuleName -ErrorAction SilentlyContinue
 Log "Regla de firewall '$fwRuleName' eliminada."

@@ -1411,6 +1411,82 @@ class VentasController {
         json(200, ['ok' => true, 'id' => $id]);
     }
 
+    // Reversa exacta de eliminar(): vuelve a descontar el stock, vuelve a
+    // cargar la cuenta corriente si correspondía, y saca el estado 'anulado'.
+    // Misma clave de autorización que eliminar() — mismo criterio de permisos
+    // (Auth::puede('anular'), los admin quedan exentos).
+    public function recuperar(int $id): void {
+        if (!Auth::puede('anular')) {
+            $body  = json_decode(file_get_contents('php://input'), true) ?: [];
+            $clave = trim($body['clave_autorizacion'] ?? '');
+            $hash  = Configuracion::get()['clave_autorizacion_hash'] ?? null;
+
+            if (!$hash) json(403, ['error' => 'No hay clave de autorización configurada. Pedile a un administrador que la configure.']);
+            if ($clave === '' || !password_verify($clave, $hash)) {
+                json(403, ['error' => 'Clave de autorización incorrecta']);
+            }
+        }
+
+        $db = DB::get();
+
+        $stmt = $db->prepare("SELECT id, cliente_id, tipo_pago, total, estado FROM ventas WHERE id = ?");
+        $stmt->execute([$id]);
+        $venta = $stmt->fetch();
+        if (!$venta) json(404, ['error' => 'Venta no encontrada']);
+        if ($venta['estado'] !== 'anulado') json(409, ['error' => 'Esta venta no está anulada']);
+
+        $stmt = $db->prepare("SELECT producto_id, cantidad FROM venta_items WHERE venta_id = ?");
+        $stmt->execute([$id]);
+        $items = $stmt->fetchAll();
+
+        try {
+            $db->beginTransaction();
+
+            // Volver a descontar stock y registrar el movimiento de recuperación
+            foreach ($items as $item) {
+                $msRow = $db->prepare("SELECT deposito_id FROM movimientos_stock WHERE referencia_id = ? AND producto_id = ? AND tipo = 'venta' LIMIT 1");
+                $msRow->execute([$id, (int)$item['producto_id']]);
+                $depId = (int)(($msRow->fetch()['deposito_id'] ?? 1));
+
+                $db->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?")
+                   ->execute([(float)$item['cantidad'], (int)$item['producto_id']]);
+                $db->prepare("INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)")
+                   ->execute([(int)$item['producto_id'], $depId, -(float)$item['cantidad']]);
+                $db->prepare("INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha) VALUES (?, ?, 'recuperacion', ?, ?, NOW())")
+                   ->execute([(int)$item['producto_id'], $depId, (float)$item['cantidad'], $id]);
+            }
+
+            // Volver a cargar CC si correspondía
+            $pagos_venta = [];
+            if ($venta['tipo_pago'] === 'mixto') {
+                $stmt = $db->prepare("SELECT tipo_pago AS tipo, monto FROM venta_pagos WHERE venta_id = ?");
+                $stmt->execute([$id]);
+                $pagos_venta = array_map(fn($p) => ['tipo' => $p['tipo'], 'monto' => (float)$p['monto']], $stmt->fetchAll());
+            }
+            $monto_cc = $this->montoCC($venta['tipo_pago'], (float)$venta['total'], $pagos_venta);
+            if ($monto_cc > 0 && $venta['cliente_id']) {
+                $db->prepare("
+                    INSERT INTO cuenta_corriente_movimientos (entidad_tipo, entidad_id, tipo, monto, referencia_id, fecha)
+                    VALUES ('cliente', ?, 'cargo', ?, ?, CURDATE())
+                ")->execute([(int)$venta['cliente_id'], $monto_cc, $id]);
+                $db->prepare("UPDATE clientes SET saldo_cuenta_corriente = saldo_cuenta_corriente + ? WHERE id = ?")
+                   ->execute([$monto_cc, (int)$venta['cliente_id']]);
+            }
+
+            // Sacar el estado de anulado
+            $db->prepare("UPDATE ventas SET estado = 'completado' WHERE id = ?")->execute([$id]);
+
+            $db->commit();
+        } catch (Exception $e) {
+            $db->rollBack();
+            json(500, ['error' => 'Error al recuperar: ' . $e->getMessage()]);
+        }
+
+        LogAcciones::registrar('recuperar_venta', 'venta', $id, ['total' => (float)$venta['total'], 'tipo_pago' => $venta['tipo_pago']]);
+
+        json(200, ['ok' => true, 'id' => $id]);
+    }
+
     public function get(int $id): void {
         $db = DB::get();
 

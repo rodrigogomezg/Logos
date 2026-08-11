@@ -196,6 +196,7 @@ try {
                 $metodo === 'POST'   && $id !== null && $subAccion === 'facturar'             => $ctrl->facturar($id),
                 $metodo === 'POST'   && $id !== null && $subAccion === 'confirmar-presupuesto' => $ctrl->confirmarPresupuesto($id),
                 $metodo === 'POST'   && $id !== null && $subAccion === 'nota-credito' => $ctrl->emitirNc($id),
+                $metodo === 'POST'   && $id !== null && $subAccion === 'recuperar'    => $ctrl->recuperar($id),
                 $metodo === 'GET'    && $id !== null && $subAccion === 'afip-estado'  => $ctrl->consultarAfip($id),
                 $metodo === 'GET'    && $accion === 'export'    => $ctrl->exportar(),
                 $metodo === 'GET'    && $accion === 'dashboard' => $ctrl->dashboard(),

@@ -1,10 +1,15 @@
 <?php
 /**
  * Logos — Stress Test Seeder
- * Inserta 50.000 productos, 50 proveedores y 100 clientes con prefijo __SEED__
- * para poder limpiarlos en cualquier momento sin tocar datos reales.
+ * Inserta productos, proveedores, clientes y ventas históricas con prefijo
+ * __SEED__ (o observaciones='__SEED__' para ventas, que no tienen campo
+ * nombre) para poder limpiarlos en cualquier momento sin tocar datos reales.
  *
- * Acceder desde: http://localhost/Logos/tools/seed_stress.php
+ * Web:  http://localhost/Logos/tools/seed_stress.php
+ * CLI:  php tools/seed_stress.php seed
+ *       php tools/seed_stress.php cleanup
+ *       (CLI usa DB::dataRoot() / LOGOS_DATA_ROOT igual que la app — apunta
+ *       a la base real configurada en esta máquina, no a una de prueba aparte)
  */
 
 set_time_limit(600);
@@ -14,9 +19,11 @@ require_once __DIR__ . '/../api/config/db.php';
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 const SEED_TAG        = '__SEED__';
-const N_PRODUCTOS     = 50000;
-const N_PROVEEDORES   = 50;
+const N_PRODUCTOS     = 20000;
+const N_PROVEEDORES   = 100;
 const N_CLIENTES      = 100;
+const N_DIAS_VENTAS   = 120; // ~4 meses
+const VENTAS_POR_DIA  = 50;
 const BATCH           = 500;
 
 // ── Pools de datos ────────────────────────────────────────────────────────────
@@ -79,6 +86,9 @@ $CIUDADES = [
     'San Miguel de Tucumán', 'Salta', 'Santa Fe', 'San Juan',
 ];
 
+$TIPOS_PAGO_VENTA = ['efectivo', 'transferencia', 'tarjeta', 'cc'];
+$TIPOS_COMPROBANTE_VENTA = ['factura_b', 'remito'];
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function rnd(array $arr): string {
     return $arr[array_rand($arr)];
@@ -93,6 +103,13 @@ function cuit_fake(int $seed): string {
     return "20-{$base}-9";
 }
 
+function uuidv4(): string {
+    $d = random_bytes(16);
+    $d[6] = chr((ord($d[6]) & 0x0f) | 0x40);
+    $d[8] = chr((ord($d[8]) & 0x3f) | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($d), 4));
+}
+
 function ya_hay_seed(PDO $db): bool {
     $n = (int)$db->query("SELECT COUNT(*) FROM productos WHERE codigo LIKE '__SEED__%'")->fetchColumn();
     return $n > 0;
@@ -103,10 +120,21 @@ function contar_seed(PDO $db): array {
         'productos'   => (int)$db->query("SELECT COUNT(*) FROM productos   WHERE codigo LIKE '__SEED__%'")->fetchColumn(),
         'clientes'    => (int)$db->query("SELECT COUNT(*) FROM clientes    WHERE nombre LIKE '__SEED__%'")->fetchColumn(),
         'proveedores' => (int)$db->query("SELECT COUNT(*) FROM proveedores WHERE nombre LIKE '__SEED__%'")->fetchColumn(),
+        'ventas'      => (int)$db->query("SELECT COUNT(*) FROM ventas      WHERE observaciones = '__SEED__'")->fetchColumn(),
     ];
 }
 
-// ── Acción: seed ──────────────────────────────────────────────────────────────
+// Primer registro utilizable de cada tabla que hace falta para ventas —
+// tienen que existir ya (negocio/caja configurados), este script no los crea.
+function contexto_ventas(PDO $db): ?array {
+    $sucursal = $db->query("SELECT id FROM sucursales WHERE activo = 1 ORDER BY id LIMIT 1")->fetchColumn();
+    $caja     = $db->query("SELECT id FROM cajas WHERE activo = 1 AND tipo = 'venta' ORDER BY id LIMIT 1")->fetchColumn();
+    $usuario  = $db->query("SELECT id FROM usuarios WHERE activo = 1 ORDER BY id LIMIT 1")->fetchColumn();
+    if (!$sucursal || !$caja || !$usuario) return null;
+    return ['sucursal_id' => (int)$sucursal, 'caja_id' => (int)$caja, 'usuario_id' => (int)$usuario];
+}
+
+// ── Acción: seed productos/proveedores/clientes ────────────────────────────────
 function ejecutar_seed(PDO $db, array $CATEGORIAS, array $MARCAS, array $PREFIJOS, array $SUFIJOS, array $APELLIDOS, array $NOMBRES, array $CIUDADES): array {
     $t0  = microtime(true);
     $log = [];
@@ -134,17 +162,12 @@ function ejecutar_seed(PDO $db, array $CATEGORIAS, array $MARCAS, array $PREFIJO
     $inserted  = 0;
     $lote      = [];
 
-    $placeholders = implode(',', array_fill(0, BATCH, '(?,?,?,?,?,?,?,?,0,?,1)'));
-    $stmtBulk = $db->prepare(
-        "INSERT INTO productos (codigo, nombre, marca, categoria, subcategoria, proveedor, precio_venta, costo_actual, stock_actual, stock_minimo, activo)
-         VALUES $placeholders"
-    );
-
-    // Placeholders para el último lote (tamaño variable)
-    $flush = function (array &$lote, PDO $db) use (&$inserted): void {
+    // Stock real por fila (no 0) — para que las ventas seed tengan de dónde
+    // descontar visualmente en pantalla y las listas no se vean vacías.
+    $flush = function () use (&$lote, $db, &$inserted): void {
         if (empty($lote)) return;
-        $n    = count($lote) / 9; // 9 columnas por fila
-        $ph   = implode(',', array_fill(0, (int)$n, '(?,?,?,?,?,?,?,?,0,?,1)'));
+        $n  = count($lote) / 10;
+        $ph = implode(',', array_fill(0, (int)$n, '(?,?,?,?,?,?,?,?,?,?,1)'));
         $db->prepare(
             "INSERT INTO productos (codigo, nombre, marca, categoria, subcategoria, proveedor, precio_venta, costo_actual, stock_actual, stock_minimo, activo)
              VALUES $ph"
@@ -167,17 +190,13 @@ function ejecutar_seed(PDO $db, array $CATEGORIAS, array $MARCAS, array $PREFIJO
             $codigo  = SEED_TAG . str_pad($i, 6, '0', STR_PAD_LEFT);
             $costo   = precio(100, 20000);
             $pventa  = round($costo * (1 + mt_rand(15, 60) / 100), 2);
+            $stock   = mt_rand(20, 500);
             $stk_min = mt_rand(0, 5);
 
-            array_push($lote, $codigo, $nombre, $marca, $cat, $subcat, $prov, $pventa, $costo, $stk_min);
-
-            if (count($lote) / 9 === BATCH) {
-                $stmtBulk->execute($lote);
-                $inserted += BATCH;
-                $lote = [];
-            }
+            array_push($lote, $codigo, $nombre, $marca, $cat, $subcat, $prov, $pventa, $costo, $stock, $stk_min);
+            if (count($lote) / 10 === BATCH) $flush();
         }
-        $flush($lote, $db);
+        $flush();
         $db->commit();
     } catch (\Throwable $e) {
         $db->rollBack();
@@ -189,10 +208,95 @@ function ejecutar_seed(PDO $db, array $CATEGORIAS, array $MARCAS, array $PREFIJO
     return $log;
 }
 
+// ── Acción: seed ventas ──────────────────────────────────────────────────────
+// Requiere que ya haya productos/clientes seed cargados (correr ejecutar_seed
+// primero) y que el negocio ya tenga sucursal + caja de venta + usuario
+// activos (instalación ya configurada — este script no los crea).
+function ejecutar_seed_ventas(PDO $db, array $ctx, array $TIPOS_PAGO_VENTA, array $TIPOS_COMPROBANTE_VENTA): array {
+    $t0  = microtime(true);
+    $log = [];
+
+    $productos = $db->query("SELECT id, precio_venta, costo_actual FROM productos WHERE codigo LIKE '__SEED__%'")->fetchAll(PDO::FETCH_ASSOC);
+    $clientes  = $db->query("SELECT id FROM clientes WHERE nombre LIKE '__SEED__%'")->fetchAll(PDO::FETCH_COLUMN);
+    if (empty($productos)) throw new \RuntimeException('No hay productos seed — corré el seed de productos primero.');
+
+    $nProd = count($productos);
+    $nCli  = count($clientes);
+
+    $stmtVenta = $db->prepare("
+        INSERT INTO ventas
+            (sync_uuid, sucursal_id, fecha, creado_en, cliente_id, total,
+             tipo_comprobante, estado, tipo_pago, caja_id, usuario_id, observaciones)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'completado', ?, ?, ?, ?)
+    ");
+    $stmtItem = $db->prepare("
+        INSERT INTO venta_items (sync_uuid, venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+    $stmtPago = $db->prepare("
+        INSERT INTO venta_pagos (sync_uuid, venta_id, tipo_pago, monto)
+        VALUES (?, ?, ?, ?)
+    ");
+
+    $totalVentas = 0;
+    $totalItems  = 0;
+    $hoy = new \DateTime('today');
+
+    $db->beginTransaction();
+    try {
+        for ($d = N_DIAS_VENTAS; $d >= 1; $d--) {
+            $fecha = (clone $hoy)->modify("-$d days")->format('Y-m-d');
+            for ($v = 0; $v < VENTAS_POR_DIA; $v++) {
+                $clienteId = ($nCli > 0 && mt_rand(1, 100) <= 70) ? (int)$clientes[mt_rand(0, $nCli - 1)] : null;
+                $nItems = mt_rand(1, 6);
+                $itemsSel = [];
+                $total = 0.0;
+                for ($k = 0; $k < $nItems; $k++) {
+                    $p = $productos[mt_rand(0, $nProd - 1)];
+                    $p['cantidad'] = mt_rand(1, 5);
+                    $itemsSel[] = $p;
+                    $total += round($p['precio_venta'] * $p['cantidad'], 2);
+                }
+
+                $tipoPago = rnd($TIPOS_PAGO_VENTA);
+                $tipoComp = rnd($TIPOS_COMPROBANTE_VENTA);
+                $creadoEn = $fecha . ' ' . sprintf('%02d:%02d:%02d', mt_rand(8, 20), mt_rand(0, 59), mt_rand(0, 59));
+
+                $stmtVenta->execute([
+                    uuidv4(), $ctx['sucursal_id'], $fecha, $creadoEn, $clienteId, $total,
+                    $tipoComp, $tipoPago, $ctx['caja_id'], $ctx['usuario_id'], SEED_TAG,
+                ]);
+                $ventaId = (int)$db->lastInsertId();
+
+                foreach ($itemsSel as $p) {
+                    $stmtItem->execute([uuidv4(), $ventaId, $p['id'], $p['cantidad'], $p['precio_venta'], $p['costo_actual']]);
+                    $totalItems++;
+                }
+                $stmtPago->execute([uuidv4(), $ventaId, $tipoPago, $total]);
+                $totalVentas++;
+            }
+        }
+        $db->commit();
+    } catch (\Throwable $e) {
+        $db->rollBack();
+        throw $e;
+    }
+
+    $log[] = "$totalVentas ventas insertadas (" . N_DIAS_VENTAS . ' días × ' . VENTAS_POR_DIA . '/día)';
+    $log[] = "$totalItems ítems de venta insertados";
+    $log[] = 'Tiempo total: ' . round(microtime(true) - $t0, 2) . 's';
+    return $log;
+}
+
 // ── Acción: cleanup ───────────────────────────────────────────────────────────
 function ejecutar_cleanup(PDO $db): array {
     $t0  = microtime(true);
     $log = [];
+
+    $db->exec("DELETE vi FROM venta_items vi INNER JOIN ventas v ON v.id = vi.venta_id WHERE v.observaciones = '__SEED__'");
+    $db->exec("DELETE vp FROM venta_pagos vp INNER JOIN ventas v ON v.id = vp.venta_id WHERE v.observaciones = '__SEED__'");
+    $vt = $db->exec("DELETE FROM ventas WHERE observaciones = '__SEED__'");
+    $log[] = "$vt ventas eliminadas (con sus ítems y pagos)";
 
     $p = $db->exec("DELETE FROM productos   WHERE codigo LIKE '__SEED__%'");
     $log[] = "$p productos eliminados";
@@ -207,7 +311,44 @@ function ejecutar_cleanup(PDO $db): array {
     return $log;
 }
 
-// ── Router ────────────────────────────────────────────────────────────────────
+// ── CLI ───────────────────────────────────────────────────────────────────────
+if (PHP_SAPI === 'cli') {
+    $action = $argv[1] ?? null;
+    if (!in_array($action, ['seed', 'cleanup'], true)) {
+        fwrite(STDERR, "Uso: php tools/seed_stress.php seed|cleanup\n");
+        exit(1);
+    }
+    $db = DB::get();
+    try {
+        if ($action === 'seed') {
+            if (ya_hay_seed($db)) {
+                fwrite(STDERR, "Ya hay datos seed cargados. Corré 'cleanup' primero.\n");
+                exit(1);
+            }
+            $ctx = contexto_ventas($db);
+            if (!$ctx) {
+                fwrite(STDERR, "Falta sucursal/caja de venta/usuario activos — configurá el negocio primero.\n");
+                exit(1);
+            }
+            foreach (ejecutar_seed($db, $CATEGORIAS, $MARCAS, $PREFIJOS, $SUFIJOS, $APELLIDOS, $NOMBRES, $CIUDADES) as $linea) {
+                echo "$linea\n";
+            }
+            foreach (ejecutar_seed_ventas($db, $ctx, $TIPOS_PAGO_VENTA, $TIPOS_COMPROBANTE_VENTA) as $linea) {
+                echo "$linea\n";
+            }
+        } else {
+            foreach (ejecutar_cleanup($db) as $linea) {
+                echo "$linea\n";
+            }
+        }
+    } catch (\Throwable $e) {
+        fwrite(STDERR, 'ERROR: ' . $e->getMessage() . "\n");
+        exit(1);
+    }
+    exit(0);
+}
+
+// ── Router (web) ────────────────────────────────────────────────────────────
 $resultado = null;
 $error     = null;
 
@@ -218,7 +359,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (ya_hay_seed($db)) {
                 $error = 'Ya hay datos seed cargados. Limpiá primero antes de volver a seedear.';
             } else {
-                $resultado = ejecutar_seed($db, $CATEGORIAS, $MARCAS, $PREFIJOS, $SUFIJOS, $APELLIDOS, $NOMBRES, $CIUDADES);
+                $ctx = contexto_ventas($db);
+                if (!$ctx) {
+                    $error = 'Falta sucursal / caja de venta / usuario activos — configurá el negocio primero.';
+                } else {
+                    $resultado = array_merge(
+                        ejecutar_seed($db, $CATEGORIAS, $MARCAS, $PREFIJOS, $SUFIJOS, $APELLIDOS, $NOMBRES, $CIUDADES),
+                        ejecutar_seed_ventas($db, $ctx, $TIPOS_PAGO_VENTA, $TIPOS_COMPROBANTE_VENTA)
+                    );
+                }
             }
         } elseif ($_POST['action'] === 'cleanup') {
             $resultado = ejecutar_cleanup($db);
@@ -236,10 +385,11 @@ try {
         'productos'   => (int)$db->query("SELECT COUNT(*) FROM productos")->fetchColumn(),
         'clientes'    => (int)$db->query("SELECT COUNT(*) FROM clientes")->fetchColumn(),
         'proveedores' => (int)$db->query("SELECT COUNT(*) FROM proveedores")->fetchColumn(),
+        'ventas'      => (int)$db->query("SELECT COUNT(*) FROM ventas")->fetchColumn(),
     ];
-    $haySeed = $conteos['productos'] > 0 || $conteos['clientes'] > 0 || $conteos['proveedores'] > 0;
+    $haySeed = $conteos['productos'] > 0 || $conteos['clientes'] > 0 || $conteos['proveedores'] > 0 || $conteos['ventas'] > 0;
 } catch (\Throwable $e) {
-    $conteos   = ['productos' => '?', 'clientes' => '?', 'proveedores' => '?'];
+    $conteos   = ['productos' => '?', 'clientes' => '?', 'proveedores' => '?', 'ventas' => '?'];
     $totalReal = $conteos;
     $haySeed   = false;
     $error     = $e->getMessage();
@@ -259,9 +409,9 @@ h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
 .sub { font-size: 13px; color: #7C7872; margin-bottom: 32px; }
 .card { background: #fff; border: 1px solid #D5D0CA; padding: 24px; margin-bottom: 16px; }
 .card h2 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #7C7872; margin-bottom: 16px; }
-.stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
+.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 16px; }
 .stat { background: #F5F4F1; padding: 14px 16px; text-align: center; }
-.stat .n { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat .n { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
 .stat .n.seed { color: #E67E22; }
 .stat .lbl { font-size: 11px; color: #7C7872; text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
 .stat .sub-lbl { font-size: 11px; color: #9B9590; margin-top: 2px; }
@@ -313,6 +463,13 @@ h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
           <div class="sub-lbl"><?= number_format($conteos['proveedores']) ?> son seed</div>
         <?php endif; ?>
       </div>
+      <div class="stat">
+        <div class="n <?= $conteos['ventas'] > 0 ? 'seed' : '' ?>"><?= number_format($totalReal['ventas']) ?></div>
+        <div class="lbl">Ventas</div>
+        <?php if ($conteos['ventas'] > 0): ?>
+          <div class="sub-lbl"><?= number_format($conteos['ventas']) ?> son seed</div>
+        <?php endif; ?>
+      </div>
     </div>
 
     <?php if ($haySeed): ?>
@@ -339,16 +496,19 @@ h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
   <div class="card">
     <h2>Cargar datos de prueba</h2>
     <p class="spec" style="margin-bottom:16px">
-      Inserta <strong>50.000 productos</strong> en <strong>10 categorías</strong> distribuidos entre
-      <strong>50 proveedores ficticios</strong>, más <strong>100 clientes</strong>.<br>
-      Todos los registros llevan el prefijo <span class="tag">__SEED__</span> para identificarlos.
-      El proceso tarda ~30–60 segundos.
+      Inserta <strong><?= number_format(N_PRODUCTOS) ?> productos</strong> en <strong>10 categorías</strong> distribuidos entre
+      <strong><?= N_PROVEEDORES ?> proveedores ficticios</strong>, más <strong><?= N_CLIENTES ?> clientes</strong>,
+      más <strong><?= number_format(N_DIAS_VENTAS * VENTAS_POR_DIA) ?> ventas</strong>
+      (<?= VENTAS_POR_DIA ?>/día durante los últimos <?= N_DIAS_VENTAS ?> días) con sus ítems y pagos.<br>
+      Todos los registros llevan el prefijo <span class="tag">__SEED__</span> (las ventas, sin campo nombre, van marcadas en <code>observaciones</code>).
+      Requiere que el negocio ya tenga sucursal, caja de venta y usuario activos.
+      El proceso puede tardar unos minutos.
     </p>
     <form method="POST">
       <input type="hidden" name="action" value="seed">
       <div class="btn-row">
         <button class="btn btn-seed" <?= $haySeed ? 'disabled' : '' ?>>
-          Cargar 50.000 productos
+          Cargar datos de prueba
         </button>
         <?php if ($haySeed): ?>
           <span class="spec">Ya hay seed cargado — limpiá antes de volver a insertar.</span>
@@ -360,7 +520,8 @@ h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
   <div class="card">
     <h2>Limpiar datos de prueba</h2>
     <p class="spec" style="margin-bottom:16px">
-      Elimina todos los registros con prefijo <span class="tag">__SEED__</span>.
+      Elimina todos los registros con prefijo <span class="tag">__SEED__</span> (productos, clientes, proveedores)
+      y todas las ventas marcadas como seed, junto con sus ítems y pagos.
       No afecta ningún dato real.
     </p>
     <form method="POST" onsubmit="return confirm('¿Eliminar todos los datos seed?')">
@@ -378,7 +539,8 @@ h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
       <strong>Búsqueda en dropdown (F2):</strong> escribí un término corto ("tor", "cab") y observá la demora en el Network tab. La query hace LIKE '%%' sin índice de prefijo — el caso más exigente.<br><br>
       <strong>Modal F3:</strong> abrilo y buscá, filtrá por categoría/proveedor. Observá cuánto tarda cada request.<br><br>
       <strong>Filtros en productos.html:</strong> cargá la lista con paginación y aplicá filtros encadenados.<br><br>
-      <strong>FiltrosController (DISTINCT proveedor):</strong> abrí cualquier pantalla que cargue filtros. Con 50k productos + 50 proveedores text este query se va a notar si hay cuello de botella.<br><br>
+      <strong>Listado de ventas:</strong> con <?= number_format(N_DIAS_VENTAS * VENTAS_POR_DIA) ?> ventas históricas, probá filtrar por rango de fechas, buscar por cliente, y abrir el detalle de una venta con varios ítems.<br><br>
+      <strong>Dashboard/Reportes:</strong> con 4 meses de historial real de ventas, los agregados (totales por día, por producto, por cliente) dejan de ser triviales — es el mejor lugar para notar falta de índices.<br><br>
       <strong>Importación:</strong> intentá importar un CSV de 200 filas con proveedores seed. El paso de discontinuados hace un full scan sin índice en la columna <code>proveedor</code>.
     </p>
   </div>
