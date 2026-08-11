@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-'use strict';
 
 /**
  * publish.js — Firma el instalador de Logos POS (Tauri), arma latest.json
@@ -17,13 +16,14 @@
  * Uso: node scripts/publish.js
  */
 
-const path  = require('path');
-const fs    = require('fs');
-const https = require('https');
-const http  = require('http');
-const { URL } = require('url');
-const { execFileSync } = require('child_process');
+import path from 'path';
+import fs from 'fs';
+import https from 'https';
+import http from 'http';
+import { execFileSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT      = path.join(__dirname, '..');
 const SRC_TAURI = path.join(ROOT, 'src-tauri');
 const BUNDLE_DIR = path.join(SRC_TAURI, 'target', 'release', 'bundle', 'nsis');
@@ -32,6 +32,14 @@ const BUNDLE_DIR = path.join(SRC_TAURI, 'target', 'release', 'bundle', 'nsis');
 // nunca se le entregó nada firmado con ella a ningún cliente real, así que
 // no hay necesidad técnica de rotarla en este corte a producción.
 const SIGNING_KEY_PATH = path.join(process.env.USERPROFILE || process.env.HOME, '.tauri-keys', 'logos-poc-updater.key');
+
+// tauri.js del propio paquete instalado — se invoca con `node` directo (sin
+// pasar por npx/cmd.exe) porque en Windows execFileSync con shell:true
+// reprocesa el array de args a través de cmd.exe, que no cita bien ni
+// strings vacíos (rompe "-p ''") ni paths con espacios (parte "Logos POS_..."
+// en dos argumentos). Invocar el .js directo con `process.execPath` evita
+// ese doble parseo por completo.
+const TAURI_CLI_JS = path.join(ROOT, 'node_modules', '@tauri-apps', 'cli', 'tauri.js');
 
 function parseEnvFile(filePath) {
   const result = {};
@@ -141,10 +149,10 @@ async function main() {
 
   // ── Firma ───────────────────────────────────────────────────────────────────
   process.stdout.write('Firmando instalador... ');
-  execFileSync('npx', ['tauri', 'signer', 'sign', '-f', SIGNING_KEY_PATH, '-p', '', exePath], {
+  execFileSync(process.execPath, [TAURI_CLI_JS, 'signer', 'sign', '-f', SIGNING_KEY_PATH, exePath], {
     cwd: ROOT,
     stdio: ['ignore', 'ignore', 'pipe'],
-    shell: true,
+    env: { ...process.env, TAURI_SIGNING_PRIVATE_KEY_PASSWORD: '' },
   });
   const sigPath = `${exePath}.sig`;
   if (!fs.existsSync(sigPath)) {
@@ -178,8 +186,8 @@ async function main() {
     // (ya están en el servidor desde la publicación de Electron), fallan
     // gracefully si no existen localmente o si el servidor las rechaza.
     for (const [localFile, remoteFile] of [
-      ['../electron/scripts/serve-update.php', 'serve-update.php'],
-      ['../electron/scripts/htaccess-logos',   '.htaccess'],
+      ['../../electron/scripts/serve-update.php', 'serve-update.php'],
+      ['../../electron/scripts/htaccess-logos',   '.htaccess'],
     ]) {
       const localPath = path.join(__dirname, localFile);
       if (!fs.existsSync(localPath)) continue;

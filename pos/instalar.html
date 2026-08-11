@@ -460,6 +460,18 @@ function onEnterPaso(paso) {
 // ── Paso 0: Licencia — validar token contra el Hub antes de instalar ─
 let lcTokenValidado = null;
 
+// window.logos existe solo bajo Electron; window.__TAURI__ (con
+// withGlobalTauri:true en tauri.conf.json) es el equivalente bajo Tauri.
+// En un navegador puro (dev) ninguno existe, queda '' — no bloquea nada,
+// solo hace que el Hub reciba version_app vacío.
+async function obtenerVersionApp() {
+  try {
+    if (window.logos?.getAppVersion) return await window.logos.getAppVersion();
+    if (window.__TAURI__?.app?.getVersion) return await window.__TAURI__.app.getVersion();
+  } catch { /* sin versión disponible, no es bloqueante */ }
+  return '';
+}
+
 async function validarToken() {
   const token = $('lc-token').value.trim();
   if (!token) { aviso($('lc-resultado'), 'Pegá el token de licencia', 'err'); return; }
@@ -472,9 +484,7 @@ async function validarToken() {
   aviso($('lc-resultado'), '', '');
 
   try {
-    const version = window.logos?.getAppVersion
-      ? await window.logos.getAppVersion().catch(() => '')
-      : '';
+    const version = await obtenerVersionApp();
 
     const r = await fetch(`${API}/licencia/verificar`, {
       method: 'POST',
@@ -513,9 +523,9 @@ async function confirmarToken() {
   if (!lcTokenValidado) return;
   const btn = $('lc-btn-confirmar');
   btn.disabled = true;
-  if (window.logos?.saveLicenciaToken) {
-    await window.logos.saveLicenciaToken(lcTokenValidado);
-  }
+  // El guardado real ya ocurrió en el backend cuando validarToken() llamó
+  // a /licencia/verificar con éxito (LicenciaController lo persiste en
+  // licencia_estado.token) — no hace falta ningún guardado local acá.
   siguiente();
 }
 
@@ -925,11 +935,11 @@ $('ls-btn-entrar').addEventListener('click', () => {
     return;
   }
 
-  // Paso de licencia solo para rol Servidor en Electron (no para rol Cliente ni para web puro)
-  if (window.logos?.getConfig) {
-    const cfg = await window.logos.getConfig().catch(() => null);
-    if (!cfg || cfg.role !== 'client') pasos.push('licencia');
-  }
+  // Paso de licencia solo para rol Servidor (no para rol Cliente) — antes
+  // dependía de window.logos.getConfig(), que solo existe bajo Electron:
+  // bajo Tauri este paso nunca se agregaba, para ningún rol.
+  const info = await fetch(`${API}/instalacion/info`).then(r => r.json()).catch(() => null);
+  if (!info || info.role !== 'client') pasos.push('licencia');
 
   if (estado.requiere_conexion || estado.requiere_schema) pasos.push('conexion');
   pasos.push('admin');

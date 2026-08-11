@@ -13,8 +13,13 @@ class LicenciaController {
 
     /**
      * POST /api/licencia/verificar
-     * Llamada del timer de Electron (sin sesión). Recibe {token, version_app}
-     * en el body, llama al Hub y actualiza licencia_estado si tiene éxito.
+     * Llamada del timer de Electron/Tauri (sin sesión) o del wizard de
+     * instalación. Recibe {token, version_app} en el body — token es
+     * OPCIONAL: si no viene (o viene vacío), se usa el guardado en
+     * licencia_estado.token (así Tauri, que nunca maneja el token
+     * localmente, sigue funcionando con lo último guardado por acá mismo).
+     * Un token nuevo en el body solo se persiste si la verificación contra
+     * el Hub resulta exitosa — evita pisar un token bueno con un typo.
      * Siempre devuelve el estado_efectivo calculado.
      */
     public function verificar(): void {
@@ -26,13 +31,16 @@ class LicenciaController {
         }
 
         $body        = json_decode(file_get_contents('php://input'), true) ?? [];
-        $token       = trim((string)($body['token']       ?? ''));
+        $tokenBody   = trim((string)($body['token']       ?? ''));
         $version     = trim((string)($body['version_app'] ?? ''));
         $ipLocal     = trim((string)($body['ip_local']     ?? '')) ?: null;
         $puertoLocal = isset($body['puerto_local']) && is_numeric($body['puerto_local'])
                        ? (int)$body['puerto_local'] : null;
 
         $pdo = DB::get();
+
+        $tokenGuardado = (string)($pdo->query("SELECT token FROM licencia_estado WHERE id = 1")->fetchColumn() ?: '');
+        $token         = $tokenBody !== '' ? $tokenBody : $tokenGuardado;
 
         $verificacionOk = false;
         $motivoFallo    = null;
@@ -53,18 +61,25 @@ class LicenciaController {
                 $tz    = new DateTimeZone('America/Argentina/Buenos_Aires');
                 $ahora = (new DateTimeImmutable('now', $tz))->format('Y-m-d H:i:s');
 
+                // Solo pisamos el token guardado si vino uno nuevo en el body
+                // Y la verificación con ese token fue exitosa.
+                $nuevoToken = ($tokenBody !== '' && $tokenBody !== $tokenGuardado) ? $tokenBody : null;
+
                 $pdo->prepare("
                     INSERT INTO licencia_estado
-                        (id, estado_hub, dias_restantes_gracia, proximo_vencimiento, mensaje_hub,
+                        (id, token, estado_hub, dias_restantes_gracia, proximo_vencimiento, mensaje_hub,
                          fecha_ultima_verificacion_exitosa)
-                    VALUES (1, :estado, :dias_gracia, :prox_vto, :mensaje, :fecha)
+                    VALUES (1, :token, :estado, :dias_gracia, :prox_vto, :mensaje, :fecha)
                     ON DUPLICATE KEY UPDATE
+                        token                              = COALESCE(:token2, token),
                         estado_hub                        = VALUES(estado_hub),
                         dias_restantes_gracia             = VALUES(dias_restantes_gracia),
                         proximo_vencimiento               = VALUES(proximo_vencimiento),
                         mensaje_hub                       = VALUES(mensaje_hub),
                         fecha_ultima_verificacion_exitosa = VALUES(fecha_ultima_verificacion_exitosa)
                 ")->execute([
+                    ':token'       => $nuevoToken ?? $tokenGuardado,
+                    ':token2'      => $nuevoToken,
                     ':estado'      => $hubData['estado'],
                     ':dias_gracia' => $hubData['dias_restantes_gracia'],
                     ':prox_vto'    => $hubData['proximo_vencimiento'],
@@ -77,6 +92,8 @@ class LicenciaController {
                 // timeout, error de red, o cualquier otro código no-401
                 $motivoFallo = 'sin_conexion';
             }
+        } else {
+            $motivoFallo = 'sin_token';
         }
 
         $row = self::getLicenciaRow($pdo);

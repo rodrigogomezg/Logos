@@ -326,7 +326,11 @@ impl ServerManager {
         Ok(())
     }
 
-    fn run_migrations(&self) {
+    /// Corre las migraciones pendientes. Público porque en modo supervisor
+    /// (servicios NSSM ya corriendo) nadie más llama a start_database(), que
+    /// es donde esto corría antes — hay que invocarlo aparte desde ahí
+    /// (mismo patrón que runMigrations() en electron/services/server-manager.js).
+    pub fn run_migrations(&self) {
         let migrate_dir = self.app_dir.join("migrate");
         if !migrate_dir.is_dir() { return; }
 

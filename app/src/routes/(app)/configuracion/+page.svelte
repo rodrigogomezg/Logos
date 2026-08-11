@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { api } from '$lib/api';
+	import { api, apiJson } from '$lib/api';
 	import { toast_ } from '$lib/toast';
 	import { confirmar } from '$lib/confirm';
+	import { esRolServidor } from '$lib/instalacion';
 
 	type Vista = 'negocio' | 'contables' | 'avanzado';
 	type Config = Record<string, unknown>;
@@ -838,17 +839,17 @@
 	}
 
 	// ── Zona de peligro: restaurar backup ───────────────────────
+	// Solo tiene sentido en rol Servidor (es la única PC con MariaDB propia
+	// para restaurar) — antes dependía de window.logos.getConfig(), que solo
+	// existe bajo Electron: bajo Tauri el chequeo nunca corría y el control
+	// quedaba SIEMPRE visible, sin importar el rol real de la instalación.
 	let mostrarRestaurar = $state(true);
 	onMount(() => {
-		const logos = (window as unknown as { logos?: { getConfig?: () => Promise<{ role?: string }> } }).logos;
-		if (logos?.getConfig) {
-			logos
-				.getConfig()
-				.then((c) => {
-					if (c?.role === 'client') mostrarRestaurar = false;
-				})
-				.catch(() => {});
-		}
+		esRolServidor().then((esServidor) => {
+			if (!esServidor) mostrarRestaurar = false;
+			licMostrarControles = esServidor;
+		});
+		cargarLicencia();
 	});
 	let backupsDisponibles = $state<BackupOpt[]>([]);
 	async function cargarListaBackups() {
@@ -910,6 +911,77 @@
 			toast_('Error de conexión', 'err');
 		} finally {
 			rbRestaurando = false;
+		}
+	}
+
+	// ── Licencia ─────────────────────────────────────────────────
+	type LicenciaEstado = {
+		estado_efectivo: string;
+		modo_restringido: boolean;
+		mensaje: string | null;
+		fecha_ultima_verificacion_exitosa: string | null;
+	};
+	let licEstado = $state<LicenciaEstado | null>(null);
+	let licMostrarControles = $state(false); // solo rol Servidor: /licencia/verificar exige localhost
+	let licTokenNuevo = $state('');
+	let licVerificando = $state(false);
+
+	async function cargarLicencia() {
+		try {
+			licEstado = await apiJson<LicenciaEstado>('/licencia/estado');
+		} catch {
+			licEstado = null;
+		}
+	}
+
+	async function licenciaVerificarAhora() {
+		licVerificando = true;
+		try {
+			const r = await api('/licencia/verificar', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({})
+			});
+			const d = await r.json();
+			licEstado = d;
+			toast_(
+				d.verificacion_ok ? 'Licencia verificada correctamente.' : 'No se pudo verificar la licencia ahora.',
+				d.verificacion_ok ? 'ok' : 'err'
+			);
+		} catch {
+			toast_('Error de conexión al verificar la licencia.', 'err');
+		} finally {
+			licVerificando = false;
+		}
+	}
+
+	async function licenciaGuardarToken() {
+		const token = licTokenNuevo.trim();
+		if (!token) return;
+		licVerificando = true;
+		try {
+			const r = await api('/licencia/verificar', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ token })
+			});
+			const d = await r.json();
+			licEstado = d;
+			if (d.verificacion_ok) {
+				licTokenNuevo = '';
+				toast_('Token guardado y verificado correctamente.', 'ok');
+			} else {
+				toast_(
+					d.motivo_fallo === 'token_invalido'
+						? 'Token inválido. Verificá que lo copiaste completo y sin espacios.'
+						: 'No se pudo conectar a internet para validar el token.',
+					'err'
+				);
+			}
+		} catch {
+			toast_('Error de conexión al guardar el token.', 'err');
+		} finally {
+			licVerificando = false;
 		}
 	}
 
@@ -1433,6 +1505,62 @@
 								<button class="btn btn-ok" disabled={guardandoSmtp} onclick={guardarSmtp}>{guardandoSmtp ? 'Guardando...' : 'Guardar Email'}</button>
 								<button class="btn btn-sec" disabled={probandoSmtp} onclick={probarSmtp}>{probandoSmtp ? 'Probando...' : 'Probar conexión'}</button>
 							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="avz-seccion">Licencia</div>
+			<div class="row">
+				<div class="col">
+					<div class="card">
+						<div class="card-titulo">Estado de la licencia</div>
+						<div class="card-body">
+							{#if licEstado}
+								<div
+									style="margin-bottom:10px;font-size:13px;font-weight:600;color:{licEstado.modo_restringido
+										? 'var(--neo-danger)'
+										: licEstado.estado_efectivo === 'en_gracia'
+											? 'var(--neo-warning)'
+											: 'var(--neo-ok)'}"
+								>
+									{licEstado.modo_restringido ? '⚠ ' : '✓ '}{licEstado.mensaje ??
+										(licEstado.estado_efectivo === 'al_dia' ? 'Licencia al día.' : licEstado.estado_efectivo)}
+								</div>
+								{#if licEstado.fecha_ultima_verificacion_exitosa}
+									<div class="form-hint" style="margin-bottom:14px">
+										Última verificación exitosa: {licEstado.fecha_ultima_verificacion_exitosa}
+									</div>
+								{/if}
+							{:else}
+								<div class="form-hint" style="margin-bottom:14px">Cargando estado de licencia...</div>
+							{/if}
+
+							{#if licMostrarControles}
+								<div class="form-grid">
+									<div class="form-group full">
+										<label class="form-label" for="lic-token">Token de licencia</label>
+										<input
+											class="form-input"
+											id="lic-token"
+											placeholder="Pegá un token nuevo para actualizarlo"
+											autocomplete="off"
+											spellcheck="false"
+											bind:value={licTokenNuevo}
+										/>
+									</div>
+								</div>
+								<div class="btn-row" style="gap:8px">
+									<button
+										class="btn btn-ok"
+										disabled={licVerificando || !licTokenNuevo.trim()}
+										onclick={licenciaGuardarToken}>{licVerificando ? 'Verificando...' : 'Guardar token'}</button
+									>
+									<button class="btn btn-sec" disabled={licVerificando} onclick={licenciaVerificarAhora}
+										>{licVerificando ? 'Verificando...' : 'Verificar ahora'}</button
+									>
+								</div>
+							{/if}
 						</div>
 					</div>
 				</div>

@@ -308,6 +308,13 @@ pub fn run() {
                 eprintln!("[role] {msg}");
                 return;
             }
+            // A diferencia del modo initiator (start_database() ya corre
+            // migraciones), acá nadie las corría — la base quedaba clavada
+            // en lo último aplicado la última vez que este proceso corrió en
+            // modo initiator (ej. durante desarrollo), sin importar cuántas
+            // migraciones nuevas trajera cada actualización real. Mismo
+            // patrón que electron/main.js: runMigrations() explícito acá.
+            manager.run_migrations();
             println!("[role] supervisor — db_port={} php_port={}", config.db_port, config.server_port);
             (format!("http://127.0.0.1:{}", config.server_port), manager, false)
         }
@@ -443,11 +450,12 @@ pub fn run() {
 
                 // Tareas en tokio, no en JS del webview — tienen que seguir
                 // corriendo con la ventana minimizada (ver timers.rs).
-                // TODO gap real de producción (no resuelto en el corte a Tauri):
-                // Electron lee el token real desde configManager.get('licenciaApiToken')
-                // (persistido vía IPC 'save-licencia-token', ver pos/licencia.js). Acá
-                // todavía no hay ningún mecanismo para leer/guardar ese token — el
-                // heartbeat de licencia corre siempre sin token hasta que se porte.
+                // El token siempre se manda vacío a propósito: LicenciaController
+                // (PHP) ahora es el dueño del token — cae al que tiene guardado
+                // en licencia_estado.token cuando el body no trae uno. Tauri no
+                // necesita ningún mecanismo propio de leer/guardar el token (a
+                // diferencia de Electron, que sigue mandando el suyo local vía
+                // configManager — ambos caminos conviven, el backend resuelve).
                 tauri::async_runtime::spawn(timers::run_licencia_heartbeat(
                     base_url_task.clone(),
                     String::new(),

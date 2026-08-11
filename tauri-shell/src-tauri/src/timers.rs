@@ -55,6 +55,11 @@ const INTERVALO_LICENCIA_RAPIDO: Duration = Duration::from_secs(5 * 60);
 // "al_dia", 5min en cualquier otro caso (en_gracia/bloqueado/no se pudo
 // verificar), para no dejar a nadie bloqueado de más tiempo del necesario
 // después de que se registre un pago.
+//
+// `token` acá siempre viaja vacío desde lib.rs — no es un bug, es el diseño:
+// LicenciaController (PHP) guarda el token real en licencia_estado.token y
+// cae a ese valor cuando el body no trae uno. Tauri nunca necesita saber el
+// token en sí, a diferencia de Electron (que sí lo lee de su config local).
 pub async fn run_licencia_heartbeat(base_url: String, token: String, app_version: String) {
     let client = reqwest::Client::new();
     loop {

@@ -70,6 +70,7 @@ try {
             $ctrl = new InstalacionController();
             match (true) {
                 $metodo === 'GET'  && $accion === 'estado'           => $ctrl->estado(),
+                $metodo === 'GET'  && $accion === 'info'             => $ctrl->info(),
                 $metodo === 'GET'  && $accion === 'admin-id'         => $ctrl->adminId(),
                 $metodo === 'POST' && $accion === 'probar-conexion'   => $ctrl->probarConexion(),
                 $metodo === 'POST' && $accion === 'instalar'          => $ctrl->instalar(),

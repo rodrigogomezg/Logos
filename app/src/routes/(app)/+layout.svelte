@@ -2,7 +2,8 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
-	import { apiUrl, servidorCaido } from '$lib/api';
+	import { apiUrl, apiJson, servidorCaido } from '$lib/api';
+	import { toast_ } from '$lib/toast';
 	import {
 		leerSesion,
 		cerrarSesion,
@@ -33,7 +34,31 @@
 		}
 		sesion = s;
 		listo = true;
+		cargarLicencia();
 	});
+
+	// ── Licencia — badge + toast diario (port de pos/licencia.js) ──────────
+	// GET /licencia/estado no tiene gate de sesión ni de IP: refleja el mismo
+	// estado_efectivo en cualquier PC (Servidor o Cliente), todas comparten
+	// la misma DB. El toast se muestra una sola vez por día (misma clave de
+	// localStorage que usaba la página legacy, para no duplicar el aviso si
+	// el usuario también pasa por ahí el mismo día).
+	let licBadge = $state(false);
+	async function cargarLicencia() {
+		try {
+			const estado = await apiJson<{ estado_efectivo: string; mensaje: string | null }>('/licencia/estado');
+			if (estado.estado_efectivo === 'al_dia') return;
+			licBadge = true;
+			const hoy = new Date().toISOString().slice(0, 10);
+			const clave = `lic_toast_${hoy}`;
+			if (!localStorage.getItem(clave)) {
+				localStorage.setItem(clave, '1');
+				toast_(estado.mensaje ?? 'Hay un problema con la licencia. Revisá Configuración.', 'warn');
+			}
+		} catch {
+			// sin conexión al backend — no bloquear el nav por esto
+		}
+	}
 
 	// ── Item activo del nav — igual que $nav_activo de nav.php, calculado
 	// desde la URL en vez de recibido por parámetro de include. Extender este
@@ -275,6 +300,7 @@
 			<a href="/configuracion" class="nav-link nav-icon-link" class:activo={navActivo === 'configuracion'} title="Configuración">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
 				<span class="nav-icon-label">Config</span>
+				{#if licBadge}<span class="lic-badge" title="Hay un problema con la licencia"></span>{/if}
 			</a>
 		{/if}
 		<div class="nav-sep"></div>
@@ -443,9 +469,19 @@
 		display: flex;
 		align-items: center;
 		gap: 4px;
+		position: relative;
 	}
 	.nav-icon-label {
 		font-size: 11px;
+	}
+	.lic-badge {
+		position: absolute;
+		top: -3px;
+		right: -6px;
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--neo-danger);
 	}
 	.nav-fecha,
 	.nav-usuario {

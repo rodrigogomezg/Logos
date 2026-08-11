@@ -1,9 +1,42 @@
 <?php
 
 require_once __DIR__ . '/../helpers/SystemPaths.php';
+require_once __DIR__ . '/../config/db.php';
 
 class InstalacionController {
 
+    /**
+     * GET /api/instalacion/info
+     * Info de bajo nivel de ESTA instalación (rol Servidor/Cliente, puerto,
+     * IP del servidor si es Cliente) — lee logos-config.json directo, el
+     * mismo archivo que ya escriben tanto el instalador NSIS de Electron
+     * como el de Tauri en DB::dataRoot(). Reemplaza a window.logos.getConfig()
+     * (API que solo existe en Electron) para que el rol de la instalación se
+     * pueda leer desde cualquier shell — o desde un navegador común en dev.
+     * Sin sesión, de solo lectura, sin datos sensibles.
+     */
+    public function info(): void {
+        $path = DB::dataRoot() . '\\logos-config.json';
+        $role = null;
+        $serverPort = null;
+        $serverIp   = null;
+
+        if (is_file($path)) {
+            $raw  = @file_get_contents($path);
+            $data = $raw !== false ? json_decode($raw, true) : null;
+            if (is_array($data)) {
+                $role       = isset($data['role']) ? (string)$data['role'] : null;
+                $serverPort = isset($data['serverPort']) && is_numeric($data['serverPort']) ? (int)$data['serverPort'] : null;
+                $serverIp   = isset($data['serverIp']) ? $data['serverIp'] : null;
+            }
+        }
+
+        json(200, [
+            'role'        => $role,
+            'server_port' => $serverPort,
+            'server_ip'   => $serverIp,
+        ]);
+    }
 
     // ── Estado actual de la instalación ───────────────────────────────
     public function estado(): void {
