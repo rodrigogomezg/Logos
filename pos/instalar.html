@@ -18,8 +18,15 @@
   .paso-pill.activo { background: var(--neo-accent); box-shadow: 0 0 0 2px var(--neo-accent-glow); }
   .paso-pill.hecho  { background: var(--neo-sd); }
 
-  .panel { width: 100%; background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e3); padding: 28px; display: none; flex-direction: column; gap: 16px; border: none; }
+  /* max-height + scroll interno: body es 100vh/overflow:hidden (pos-base-core.css)
+     y algunos pasos (ej. AFIP, con sus 4 instrucciones + formulario) son más
+     altos que pantallas chicas — sin esto, el contenido que no entra queda
+     recortado arriba/abajo sin ninguna forma de llegar a él. */
+  .panel { width: 100%; max-height: calc(100vh - 48px); background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e3); padding: 28px; display: none; flex-direction: column; gap: 16px; border: none; overflow-y: auto; }
   .panel.activo { display: flex; }
+  .panel::-webkit-scrollbar        { width: 8px; }
+  .panel::-webkit-scrollbar-track  { background: var(--neo-bg); }
+  .panel::-webkit-scrollbar-thumb  { background: var(--neo-sd); border-radius: 4px; }
 
   .titulo { color: var(--neo-text); font-size: 20px; font-weight: 700; letter-spacing: -.2px; }
   .sub { color: var(--neo-text-2); font-size: 13px; line-height: 1.5; margin-top: -8px; }
