@@ -12,7 +12,3 @@ UPDATE cajas SET tipo = 'compra' WHERE nombre = 'Compras';
 
 ALTER TABLE ventas  ADD COLUMN caja_id INT NULL, ADD COLUMN usuario_id INT NULL;
 ALTER TABLE compras ADD COLUMN caja_id INT NULL, ADD COLUMN usuario_id INT NULL;
-
--- Admin por defecto, PIN inicial 1234 (cambiarlo desde Configuración > Usuarios)
-INSERT INTO usuarios (nombre, pin_hash, rol)
-VALUES ('Admin', '$2y$10$wW.dB/yyAQ2oKfnfPBGHgeDEvZWdxPrstxcNWUAZkfhr/tlNBs4nu', 'admin');

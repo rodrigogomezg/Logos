@@ -489,7 +489,10 @@
 	});
 
 	function aplicarAjusteSeleccion() {
-		if (!seleccionados.size) return;
+		if (!seleccionados.size) {
+			toast_('Marcá al menos un ítem antes de aplicar el ajuste', 'err');
+			return;
+		}
 		const val = parseFloat(selAjVal);
 		if (isNaN(val) || val <= 0) {
 			toast_('Ingresá un valor mayor a 0', 'err');

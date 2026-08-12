@@ -44,14 +44,159 @@ realmente terminó de descargarse e instalarse.
   de `resources/` (el árbol que empaqueta `electron-builder.yml` bajo
   `www/Logos/`) — ese árbol lo reempaqueta el instalador NSIS en cada
   actualización.
+- **`www\app`** (el build de la SPA, `tauri.conf.json` → `"../../app/build": "www/app"`)
+  se limpia por completo (`RMDir /r`) en `NSIS_HOOK_PREINSTALL` antes de cada
+  instalación/actualización — ver caso real 12/08/2026 más abajo. Si algún
+  cambio futuro toca ese hook, **no extender el `RMDir /r` a `www\Logos`** —
+  esa carpeta mezcla código de la app (que sí se puede regenerar sin
+  problema) con `www\Logos\uploads\` (comprobantes, adjuntos de compras,
+  archivos de importación — datos reales del negocio, no build). Borrarla
+  de más sería el mismo tipo de incidente que el de `db.local.php`, pero con
+  pérdida de datos real en vez de un falso "no instalado".
 - **Migraciones en `migrate/*.sql`** corren solas en cada arranque
-  (`electron/services/server-manager.js::_runMigrations()`). Si una migración
+  (`tauri-shell/src-tauri/src/server_manager.rs::run_migrations()` — Electron
+  quedó retirado del canal de updates, `electron/services/server-manager.js`
+  es la versión vieja, no la que corre en producción). Si una migración
   nueva falla a mitad de camino, puede dejar el estado de la base inconsistente
-  justo antes de que se evalúe si el sistema "ya está instalado".
+  justo antes de que se evalúe si el sistema "ya está instalado". Desde
+  12/08/2026 los fallos de migración también quedan en
+  `C:\ProgramData\LogosPOS\logs\migrations.log` (antes solo un `println!`
+  invisible en un cliente real con la ventana minimizada).
 - **Instalaciones nuevas vs. actualizaciones sobre una base existente son
   caminos de código distintos** — un fix o feature puede probarse OK en una
   instalación desde cero y romper igual el camino de actualización (y viceversa).
   Hay que pensar los dos casos por separado, no asumir que probar uno cubre el otro.
+
+### Convención al escribir una migración nueva en `migrate/*.sql`
+
+Caso real (12/08/2026): auditoría completa de `migrate/*.sql` (74 archivos)
+tras un incidente de datos de prueba filtrados a producción (ver caso
+"admin de fábrica" más abajo) encontró dos problemas de la misma familia,
+uno puntual y uno estructural. Ambos ya corregidos — `migrate/75_fix_orden_configuracion.sql`
+para el puntual, este apartado documenta cómo evitar que se repitan.
+
+**El orden de ejecución es alfabético simple, no numérico.** El runner
+(`server_manager.rs::run_migrations()`) hace un `sort()` de los nombres de
+archivo tal cual — `"11_afip_fantasia.sql"` y `"12_color_tema.sql"` ordenan
+**antes** que `"12_configuracion.sql"` (que es el archivo que efectivamente
+crea la tabla `configuracion`), porque comparando texto `"11_a" < "12_c"` y
+`"12_color" < "12_config"`. Antes de nombrar un archivo nuevo que hace
+`ALTER TABLE` sobre una tabla creada en otra migración, confirmar que el
+nombre nuevo ordena alfabéticamente **después** del archivo que la crea —
+no alcanza con que el número sea "razonable", hay que comparar el string
+completo. Correr `php tools/check_migraciones_orden.php` antes de cada
+publish detecta esto automáticamente (falla con exit code 1 si encuentra un
+`ALTER TABLE` que ordena antes que su `CREATE TABLE`).
+
+**Un archivo con varios bloques independientes es tan frágil como su primer
+error.** El runner le manda el archivo entero a `mysql` de una sola vez
+(`mysql_pipe_input`), y `mysql` aborta el resto del script en el primer
+error (confirmado con una prueba real, no es una suposición). Como el
+runner sella el archivo completo como "aplicado" ante cualquier fallo —sin
+importar en qué statement pasó—, un archivo con N tablas independientes
+donde la tabla 3 falla deja las tablas 4, 5, 6... sin su cambio, en
+silencio, para siempre (esto ya pasó una vez de verdad, ver
+`70_fix_tour_demo.sql`). **Convención:** si una migración nueva toca varias
+tablas/entidades que no dependen entre sí, partirla en un archivo por
+entidad — así el radio de daño de un fallo queda acotado a esa tabla, no a
+todo el archivo. Lo que SÍ tiene que quedar junto en un mismo archivo es una
+secuencia inherentemente atómica para una sola tabla (ej. agregar columna
+nullable → backfill de filas existentes → `NOT NULL` → trigger, el patrón
+que ya usa `54_sync_uuid.sql`) — ahí partirlo no gana nada, la secuencia
+depende de sí misma de todos modos.
+
+### Caso real (12/08/2026): admin "de fábrica" (PIN 1234) sembrado en toda instalación nueva
+
+`migrate/12_configuracion.sql` y `migrate/13_usuarios.sql` traían `INSERT`
+hardcodeados con datos de una instancia de prueba — negocio "BULFON
+GUILLERMO JESUS", cajas "Ferretería/Sanitarios/Compras" y un usuario
+"Admin" con PIN `1234` — que corrían en **toda instalación nueva**, no solo
+en desarrollo, porque las migraciones corren solas en cada arranque. Un
+cliente real vio exactamente esos datos en una PC completamente nueva
+durante una demo.
+
+Efecto colateral más grave que el dato de prueba en sí: como el admin
+sembrado ya existe al arrancar, `InstalacionController::estado()` calcula
+`requiere_admin` en `false` desde el primer arranque (antes de que el
+usuario toque una sola pantalla del wizard), y `POST /instalacion/admin`
+rechaza con 403 "ya existe un administrador". El wizard interpreta ese 403
+como "instalación interrumpida" (lógica agregada el 01/08/2026 para ese
+caso legítimo) y reusa el ID del admin sembrado en vez de crear el que el
+cliente tipeó — si cualquier paso posterior del commit falla (candidato:
+AFIP), el negocio y las cajas de prueba quedan como datos "reales" del
+cliente y el PIN de fábrica `1234` como único acceso al sistema.
+
+**Fix para instalaciones nuevas:** se sacaron los `INSERT` de esas dos
+migraciones — de acá en adelante el wizard crea admin/negocio/cajas reales
+sin pisarse con nada sembrado.
+
+**Fix para instalaciones que ya corrieron con el bug:** no se puede borrar
+ni desactivar esa cuenta sin más — puede ser el único acceso real que un
+cliente usa hoy (misma regla de "nunca cortar acceso a una instalación que
+ya funciona"). En cambio, `migrate/74_fix_admin_semilla.sql` agrega
+`usuarios.debe_cambiar_pin` y lo marca en `true` solo para la fila cuyo
+`pin_hash` coincide EXACTO con el hash bcrypt sembrado (el salt aleatorio
+de bcrypt hace que este match sea inequívoco — si un cliente cambió el PIN
+en algún momento, aunque haya vuelto a poner "1234", el hash sería
+distinto y no lo toca). El login (`app/src/routes/login/+page.svelte`)
+fuerza un paso de "elegí un PIN nuevo" antes de completar la sesión cuando
+ve ese flag — no bloquea el acceso, solo exige reemplazar el PIN antes de
+entrar. `UsuariosController::actualizar()` limpia el flag en cuanto se
+guarda cualquier PIN nuevo (por este flujo o desde Configuración > Usuarios
+como admin).
+
+### Caso real (12/08/2026): builds viejas de la SPA acumulándose sin límite en cada instalación
+
+Reporte de Rodrigo tras una demo: en su notebook de pruebas (versión 1.0.9),
+tocar "Cierre Parcial"/"Cierre Diario" en Caja no hacía nada, y tampoco
+funcionaba la barra de ajuste de precios en POS — sin ningún error visible,
+ni por mouse ni por teclado (Tab + Enter sobre el botón enfocado tampoco
+reaccionaba). El resto de la app andaba perfecto. Devtools deshabilitados
+en el build de release (`Cargo.toml` no tiene el feature `devtools` de
+`tauri`), así que no había consola para mirar.
+
+Se pidió un `.rar` de la carpeta de instalación real para inspeccionar
+directamente. Confirmado con evidencia concreta (fechas de archivo, no
+suposición): `www\app\_app\immutable\nodes` tenía **72 archivos** cuando
+un build limpio tiene ~26 — hasta 5 versiones distintas del mismo archivo
+lógico coexistiendo (ej. `1.CCrPyIdS.js`, `1.DktBCB27.js`, `1.HAycyUVD.js`,
+`1.IzSBu6ND.js`, `1.k4nW5acs.js`), con fechas que abarcaban desde
+11/08 20:50 hasta 12/08 13:42 — evidencia de ~5 publicaciones distintas
+acumuladas sin limpiar nunca.
+
+Causa: `tauri.conf.json` mapea `"../../app/build": "www/app"` como uno de
+los `resources` que el instalador NSIS extrae. Vite (adapter-static) le
+pone un hash de contenido a cada archivo de `_app/immutable/`, así que
+**cambia el nombre de archivo en cada build**, incluso para chunks sin
+cambios reales. NSIS solo tiene instrucciones para extraer/sobreescribir
+los archivos que están en el instalador actual — nunca tuvo instrucción de
+borrar lo que ya no forma parte del build nuevo, así que cada actualización
+sumaba archivos en vez de reemplazarlos. `index.html` (que si tenía la
+referencia correcta al build más nuevo) sí se sobreescribe limpio porque es
+un solo archivo con nombre fijo — el problema son específicamente los
+archivos con hash acumulados alrededor suyo.
+
+Se descartó que fuera caché del navegador (WebView2): los nombres de
+archivo son únicos por contenido, cachear una URL específica para siempre
+es correcto y no explica el síntoma. Se confirmó por diff que **`api/`,
+`pos/`, `migrate/`, `vendor/` no tienen este problema** — son archivos con
+nombre fijo (no hasheado), así que NSIS los sobreescribe correctamente
+archivo por archivo; el problema es específico del build de la SPA.
+
+**Fix:** `NSIS_HOOK_PREINSTALL` nuevo en `installer-hooks.nsh` —
+`RMDir /r "$INSTDIR\www\app"` antes de que arranque la extracción de
+archivos, en cada instalación/actualización. Mismo criterio que
+`setup-server.ps1` ya usa para el datadir de MariaDB ("vaciar por las
+dudas antes de inicializar" en vez de perseguir qué archivo puntual no se
+sobreescribió). Ver la nota en "Puntos de falla conocidos" más arriba sobre
+por qué este `RMDir /r` **no debe extenderse** a `www\Logos` completo (ahí
+vive `uploads/`, con datos reales del negocio).
+
+**Pendiente de confirmar:** que una actualización real (no una instalación
+limpia) sobre una instalación con este problema se auto-corrija sola — el
+fix limpia la carpeta antes de extraer, así que un update silencioso normal
+debería alcanzar, sin necesitar desinstalar. Falta la verificación en una
+PC real tras publicar la próxima versión.
 
 ### Cada arranque del programa pide usuario y clave de nuevo
 

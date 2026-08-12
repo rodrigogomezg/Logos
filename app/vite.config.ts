@@ -25,6 +25,16 @@ export default defineConfig({
 			})
 		})
 	],
+	preview: {
+		proxy: {
+			'/Logos/api': { target: 'http://localhost', changeOrigin: true },
+			'/Logos/pos/neo.css': { target: 'http://localhost', changeOrigin: true },
+			'/Logos/pos/pos-base.css': { target: 'http://localhost', changeOrigin: true },
+			'/Logos/pos/pos-base-core.css': { target: 'http://localhost', changeOrigin: true },
+			'/Logos/pos/fonts': { target: 'http://localhost', changeOrigin: true },
+			'/Logos/logos_logo.png': { target: 'http://localhost', changeOrigin: true }
+		}
+	},
 	server: {
 		proxy: {
 			// Fase 1A (POC): en dev, todo /Logos/api/* pega al backend PHP real

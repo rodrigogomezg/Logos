@@ -1,0 +1,21 @@
+-- Migración 75: fuerza a que 11_afip_fantasia.sql y 12_color_tema.sql se
+-- vuelvan a intentar correr.
+--
+-- Auditoría de migrate/*.sql (ver chat): el runner ordena los archivos con
+-- un sort() alfabético simple, y esos dos archivos hacen ALTER TABLE
+-- configuracion pero ordenan ANTES que 12_configuracion.sql — el que
+-- realmente crea esa tabla ("11_afip..." < "12_config..." y
+-- "12_color..." < "12_config..."). En cualquier instalación que haya tenido
+-- que correr esas dos migraciones de verdad (no solo pegar contra "ya
+-- existe"), habrían fallado con "la tabla configuracion no existe todavía"
+-- y quedado selladas como aplicadas sin agregar nombre_fantasia/afip_cert/
+-- afip_key/afip_entorno/color_tema.
+--
+-- No-op seguro en el caso normal: en cualquier instalación viva hoy la
+-- tabla configuracion ya existe con esas columnas (las trae schema_limpio.sql
+-- desde el principio), así que al reintentarlas fallan de nuevo pero ahora
+-- con "columna duplicada" — inofensivo — y quedan selladas otra vez bajo el
+-- mismo nombre. No hay pérdida de datos ni cambio de comportamiento salvo
+-- en el caso puntual que esto viene a corregir.
+
+DELETE FROM _schema_migrations WHERE nombre IN ('11_afip_fantasia.sql', '12_color_tema.sql');

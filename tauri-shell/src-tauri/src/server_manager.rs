@@ -364,7 +364,18 @@ impl ServerManager {
             };
             match self.mysql_pipe_input("logos", &sql) {
                 Ok(_) => println!("[migrations] OK {file}"),
-                Err(e) => println!("[migrations] fallo (sellada de todos modos) {file}: {e}"),
+                Err(e) => {
+                    println!("[migrations] fallo (sellada de todos modos) {file}: {e}");
+                    // Ver auditoría de migrate/*.sql (chat, ver también migrate/74 y
+                    // 75) — un fallo acá se sella igual (mysql aborta el resto del
+                    // archivo pero el runner no reintenta), y hasta ahora quedaba
+                    // solo en un println! que en un cliente real con la ventana
+                    // minimizada nadie ve nunca. Se persiste para poder diagnosticar
+                    // sin depender de que el cliente reporte síntomas confusos primero
+                    // (mismo problema que ya costó una investigación larga con el bug
+                    // de sync_uuid/tour).
+                    Self::log_migration_failure(&file, &e);
+                }
             }
             let _ = self.mysql_exec(
                 "logos",
@@ -374,6 +385,16 @@ impl ServerManager {
         }
         if applied > 0 {
             println!("[migrations] {applied} migración(es) aplicada(s).");
+        }
+    }
+
+    fn log_migration_failure(file: &str, error: &str) {
+        let log_path = PathBuf::from(r"C:\ProgramData\LogosPOS\logs\migrations.log");
+        if let Some(dir) = log_path.parent() {
+            let _ = fs::create_dir_all(dir);
+        }
+        if let Ok(mut f) = fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+            let _ = writeln!(f, "{} FALLO {file}: {error}", chrono::Local::now().to_rfc3339());
         }
     }
 

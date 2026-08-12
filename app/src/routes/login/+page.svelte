@@ -8,10 +8,12 @@
 		nombre: string;
 		rol: 'admin' | 'user';
 		permisos: Record<string, boolean>;
+		debe_cambiar_pin?: boolean;
 	};
 	type Caja = { id: number; nombre: string; sucursal_id: number };
+	type LoginData = { usuario: Usuario; token: string; sucursales: Sucursal[]; cajas: Caja[]; caja_default: Caja | null };
 
-	let paso = $state<'nombre' | 'pin' | 'caja' | 'sin-conexion'>('nombre');
+	let paso = $state<'nombre' | 'pin' | 'cambiar-pin' | 'caja' | 'sin-conexion'>('nombre');
 	let usuarios = $state<Usuario[]>([]);
 	let nombreInput = $state('');
 	let nombreError = $state('');
@@ -23,6 +25,11 @@
 	let cajasDisponibles = $state<Caja[]>([]);
 	let cajasVacio = $state(false);
 	let nombreInputEl = $state<HTMLInputElement | null>(null);
+	let loginPendiente: LoginData | null = null;
+	let nuevoPin = $state('');
+	let nuevoPinConfirm = $state('');
+	let cambiarPinError = $state('');
+	let cambiandoPin = $state(false);
 
 	const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'borrar', '0', 'ingresar'];
 
@@ -130,6 +137,22 @@
 		tokenSesion = data.token;
 		sucursalesData = data.sucursales || [];
 
+		if (data.usuario.debe_cambiar_pin) {
+			// Cuenta con PIN de fábrica sin cambiar (ver migrate/74_fix_admin_semilla.sql)
+			// — no se completa el login hasta que fije un PIN propio. El token ya
+			// es válido en el servidor, así que la llamada de cambio de PIN se
+			// autentica con él aunque todavía no se haya guardado la sesión local.
+			loginPendiente = data;
+			nuevoPin = '';
+			nuevoPinConfirm = '';
+			cambiarPinError = '';
+			paso = 'cambiar-pin';
+			return;
+		}
+		continuarLogin(data);
+	}
+
+	function continuarLogin(data: LoginData) {
 		if (data.usuario.rol === 'admin' && data.caja_default) {
 			iniciarSesion(data.usuario, data.caja_default);
 			return;
@@ -141,6 +164,37 @@
 		cajasVacio = data.cajas.length === 0;
 		cajasDisponibles = data.cajas;
 		paso = 'caja';
+	}
+
+	async function confirmarNuevoPin() {
+		if (!/^\d{4,6}$/.test(nuevoPin)) {
+			cambiarPinError = 'El PIN debe tener entre 4 y 6 dígitos';
+			return;
+		}
+		if (nuevoPin !== nuevoPinConfirm) {
+			cambiarPinError = 'Los PIN no coinciden';
+			return;
+		}
+		if (!loginPendiente) return;
+		cambiandoPin = true;
+		cambiarPinError = '';
+		try {
+			const res = await fetch(apiUrl(`/usuarios/${loginPendiente.usuario.id}`), {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json', 'X-Auth-Token': loginPendiente.token },
+				body: JSON.stringify({ pin: nuevoPin })
+			});
+			const data = await res.json();
+			if (!res.ok) {
+				cambiarPinError = data.error || 'No se pudo cambiar el PIN';
+				return;
+			}
+			const pendiente = loginPendiente;
+			loginPendiente = null;
+			continuarLogin(pendiente);
+		} finally {
+			cambiandoPin = false;
+		}
 	}
 
 	function iniciarSesion(usuario: Usuario, caja: Caja) {
@@ -223,6 +277,35 @@
 				<a class="volver" href={'#'} onclick={(e) => (e.preventDefault(), volver())}
 					>‹ Volver</a
 				>
+			</div>
+		{:else if paso === 'cambiar-pin'}
+			<div class="paso">
+				<div class="titulo">Elegí un PIN nuevo</div>
+				<p class="sin-conexion-text" style="max-width:320px">
+					Esta cuenta todavía tiene el PIN de fábrica. Por seguridad, tenés que
+					reemplazarlo por uno propio antes de continuar.
+				</p>
+				<input
+					type="password"
+					inputmode="numeric"
+					class="login-input"
+					placeholder="PIN nuevo (4 a 6 dígitos)"
+					autocomplete="off"
+					bind:value={nuevoPin}
+				/>
+				<input
+					type="password"
+					inputmode="numeric"
+					class="login-input"
+					placeholder="Repetí el PIN nuevo"
+					autocomplete="off"
+					bind:value={nuevoPinConfirm}
+					onkeydown={(e) => e.key === 'Enter' && confirmarNuevoPin()}
+				/>
+				<div class="error-msg">{cambiarPinError}</div>
+				<button class="login-btn" disabled={cambiandoPin} onclick={confirmarNuevoPin}>
+					{cambiandoPin ? 'Guardando…' : 'Guardar y continuar'}
+				</button>
 			</div>
 		{:else if paso === 'caja'}
 			<div class="paso">

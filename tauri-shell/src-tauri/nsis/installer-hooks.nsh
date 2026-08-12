@@ -106,6 +106,32 @@ FunctionEnd
 
 Page custom LogosRolePageCreate LogosRolePageLeave
 
+!macro NSIS_HOOK_PREINSTALL
+
+  ; Caso real (ver conversación con Rodrigo, 12/08/2026): el bundle de la SPA
+  ; (app/build, mapeado acá como "../../app/build": "www/app" en
+  ; tauri.conf.json) usa nombres de archivo con hash de contenido (Vite,
+  ; adapter-static) — cada build genera hashes distintos incluso para el
+  ; mismo archivo lógico. NSIS solo EXTRAE/sobreescribe lo que está en el
+  ; instalador nuevo; nunca borra archivos viejos que ya no forman parte de
+  ; la build actual. Resultado, confirmado inspeccionando una instalación
+  ; real que venía actualizándose desde hacía tiempo: "www\app\_app\immutable\nodes"
+  ; tenía 5 versiones distintas del mismo chunk acumuladas de builds
+  ; anteriores nunca borradas, y dos pantallas (Caja, ajuste de precios en
+  ; POS) habían quedado sirviendo JS de una build vieja mientras el resto de
+  ; la app tomaba la nueva — sin ningún error visible, los clicks
+  ; simplemente no hacían nada. Mismo principio que setup-server.ps1 ya usa
+  ; para el datadir de MariaDB: en vez de perseguir la carrera exacta de qué
+  ; archivo específico no se sobreescribió, se vacía la carpeta entera antes
+  ; de cada instalación/actualización — "www\app" viene ENTERO de una sola
+  ; fuente (app/build), así que no hay nada ahí que valga la pena conservar
+  ; de una build anterior. No-op seguro si la carpeta no existe todavía
+  ; (instalación nueva).
+  DetailPrint "Limpiando build anterior de la interfaz..."
+  RMDir /r "$INSTDIR\www\app"
+
+!macroend
+
 !macro NSIS_HOOK_POSTINSTALL
 
   SetDetailsPrint both

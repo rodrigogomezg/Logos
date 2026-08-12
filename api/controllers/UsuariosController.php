@@ -72,7 +72,7 @@ class UsuariosController {
             json(429, ['error' => "Demasiados intentos fallidos. Esperá $min minuto" . ($min > 1 ? 's' : '') . '.']);
         }
 
-        $stmt = $db->prepare("SELECT id, nombre, pin_hash, rol, permisos, sucursal_ids, activo FROM usuarios WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, nombre, pin_hash, rol, permisos, sucursal_ids, activo, debe_cambiar_pin FROM usuarios WHERE id = ?");
         $stmt->execute([$usuario_id]);
         $usuario = $stmt->fetch();
 
@@ -149,11 +149,12 @@ class UsuariosController {
             'ok'           => true,
             'token'        => $token,
             'usuario'      => [
-                'id'           => (int)$usuario['id'],
-                'nombre'       => $usuario['nombre'],
-                'rol'          => $usuario['rol'],
-                'permisos'     => $usuario['rol'] === 'admin' ? null : $permisos,
-                'sucursal_ids' => $sucursal_ids,
+                'id'               => (int)$usuario['id'],
+                'nombre'           => $usuario['nombre'],
+                'rol'              => $usuario['rol'],
+                'permisos'         => $usuario['rol'] === 'admin' ? null : $permisos,
+                'sucursal_ids'     => $sucursal_ids,
+                'debe_cambiar_pin' => (bool)$usuario['debe_cambiar_pin'],
             ],
             'cajas'        => $cajas,
             'caja_default' => $caja_default ?: null,
@@ -237,7 +238,10 @@ class UsuariosController {
         }
 
         if ($pin !== '') {
-            $db->prepare("UPDATE usuarios SET nombre = COALESCE(?, nombre), rol = COALESCE(?, rol), activo = COALESCE(?, activo), pin_hash = ? WHERE id = ?")
+            // Un PIN nuevo siempre limpia debe_cambiar_pin — ya sea que lo haya
+            // tocado un admin desde Configuración o el propio usuario desde el
+            // paso forzado de "PIN de fábrica" en el login (ver migrate/74_fix_admin_semilla.sql).
+            $db->prepare("UPDATE usuarios SET nombre = COALESCE(?, nombre), rol = COALESCE(?, rol), activo = COALESCE(?, activo), pin_hash = ?, debe_cambiar_pin = 0 WHERE id = ?")
                ->execute([$nombre, $rol, $activo, password_hash($pin, PASSWORD_DEFAULT), $id]);
         } else {
             $db->prepare("UPDATE usuarios SET nombre = COALESCE(?, nombre), rol = COALESCE(?, rol), activo = COALESCE(?, activo) WHERE id = ?")
