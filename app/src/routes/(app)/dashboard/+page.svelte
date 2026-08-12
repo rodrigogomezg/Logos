@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { ChartConfiguration } from 'chart.js';
 	import { api } from '$lib/api';
 	import { leerSesion, puede } from '$lib/session';
 	import { cajaOperativaId } from '$lib/operativa';
 	import { chartjs } from '$lib/chart-action';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type DashData = {
 		total_ventas?: number;
@@ -627,6 +629,54 @@
 		URL.revokeObjectURL(url);
 	}
 	if (puedeVendedores) cargarCom();
+
+	// ── Tour guiado — port de pos/dashboard.html (8 pasos, sin onEnter). ─
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Dashboard del negocio',
+			body: 'Esta pantalla te muestra en tiempo real cómo está yendo el negocio: ventas, caja, productos más vendidos y actividad del equipo. Todo en un vistazo.'
+		},
+		{
+			el: '.dash-tb',
+			title: 'Período de análisis',
+			body: 'Elegí <b>Hoy</b>, <b>Semana</b>, <b>Mes</b> o <b>Año</b>, o ingresá un rango de fechas a medida. El dashboard entero se actualiza con el período seleccionado.'
+		},
+		{
+			el: '.kpis-row',
+			title: 'Indicadores clave',
+			body: 'Los KPIs resumen lo más importante: total vendido, cantidad de transacciones, ticket promedio, ganancia bruta, efectivo en caja, estado del turno y saldo vencido de cuenta corriente. Hacé clic en <em>Ganancia</em> o <em>CC vencida</em> para ir directo al detalle.'
+		},
+		{
+			el: '.block-ven',
+			title: 'Ventas del período',
+			body: 'El gráfico de barras muestra la evolución diaria de ventas. La torta de la derecha desglosa el total por medio de pago (efectivo, tarjeta, MP, etc.).'
+		},
+		{
+			el: '.block-prod',
+			title: 'Productos',
+			body: 'La pestaña <b>Top ventas</b> lista los artículos que más facturaron. Cambiá a <b>Stock crítico</b> para ver los productos que están por debajo del stock mínimo y necesitan reposición urgente.'
+		},
+		{
+			el: '.block-caja',
+			title: 'Estado de caja',
+			body: 'A la izquierda el resumen del turno actual: quién lo abrió, cuándo y con cuánto efectivo. A la derecha los últimos cierres con el efectivo vendido vs. contado, para detectar diferencias rápidamente.'
+		},
+		{
+			el: '.block-feed',
+			title: 'Actividad reciente',
+			body: 'Registro de las últimas operaciones: ventas, anulaciones, ajustes de stock. Te permite detectar de un vistazo si pasó algo fuera de lo normal.'
+		},
+		{
+			el: '.block-tend',
+			title: 'Tendencia de ventas',
+			body: 'Compara el mes actual con los últimos 6 meses. Incluye una proyección de cierre de mes basada en el ritmo actual de ventas.'
+		}
+	];
+
+	onMount(() => {
+		setTourSteps('dashboard', TOUR_STEPS);
+	});
 </script>
 
 <svelte:head>

@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
 	import { puede, leerSesion } from '$lib/session';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type LogRow = {
 		fecha: string;
@@ -123,6 +124,30 @@
 		cargando = false;
 	}
 
+	// ── Tour guiado — port de pos/log.html (4 pasos, sin onEnter). ──────
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Bitácora de acciones',
+			body: 'El Log registra automáticamente todas las operaciones sensibles del sistema: anulaciones, ediciones, cierres de caja, ajustes de stock, logins y cambios de usuarios. No se puede editar ni borrar.'
+		},
+		{
+			el: '.filtros',
+			title: 'Filtros de búsqueda',
+			body: 'Filtrá por rango de fechas, tipo de acción y nombre del equipo desde el que se realizó la operación. Combiná filtros para encontrar exactamente lo que buscás.'
+		},
+		{
+			el: '#f-accion',
+			title: 'Tipo de acción',
+			body: 'Las acciones están agrupadas por categoría: Ventas, Compras, Caja y Usuarios. Seleccioná una para ver solo ese tipo de eventos y reducir el ruido.'
+		},
+		{
+			el: '.contenido table',
+			title: 'Registro de operaciones',
+			body: 'Cada fila muestra: fecha/hora exacta, qué usuario hizo qué, desde qué equipo y con qué detalle. Útil para auditorías, reclamos de clientes o detectar usos incorrectos del sistema.'
+		}
+	];
+
 	onMount(() => {
 		const sesion = leerSesion();
 		if (!(puede('log') || sesion?.rol === 'admin')) {
@@ -131,6 +156,7 @@
 		}
 		listo = true;
 		cargar();
+		setTourSteps('log', TOUR_STEPS);
 	});
 </script>
 

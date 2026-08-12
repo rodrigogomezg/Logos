@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { ChartConfiguration } from 'chart.js';
 	import { api } from '$lib/api';
 	import { toast_ } from '$lib/toast';
 	import { chartjs } from '$lib/chart-action';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type Vista = 'resumen-ejecutivo' | 'rotacion-inventario' | 'compras-proveedor' | 'flujo-caja';
 	type Kpi = { lbl: string; val: string; cls?: string; dtl?: string };
@@ -197,6 +199,39 @@
 	});
 
 	cargarVista();
+
+	// ── Tour guiado — port de pos/reportes.html (5 pasos, sin onEnter). ─
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Reportes de gestión',
+			body: 'Reportes operativos avanzados para analizar el negocio desde distintos ángulos: ventas consolidadas, rotación de inventario, compras por proveedor y flujo de caja.'
+		},
+		{
+			el: '.tab-grupo',
+			title: 'Tipo de reporte',
+			body: '<b>Resumen</b>: ventas totales, devoluciones y medios de pago del período. <b>Rotación</b>: qué productos se mueven rápido y cuáles están parados. <b>Compras x Prov.</b>: cuánto compraste a cada proveedor. <b>Flujo de Caja</b>: ingresos y egresos agrupados por día, semana o mes.'
+		},
+		{
+			el: '.kpis-row',
+			title: 'KPIs del reporte',
+			body: 'Los indicadores se adaptan al reporte activo. En Resumen muestran totales de ventas y devoluciones. En Rotación muestran productos en stock y rotación promedio.'
+		},
+		{
+			el: '.content-scroll',
+			title: 'Datos y gráficos',
+			body: 'El cuerpo del reporte combina tablas y gráficos según la vista. Podés filtrar por categoría en Rotación o agrupar por período en Flujo de Caja.'
+		},
+		{
+			el: '.btn-export',
+			title: 'Exportar a Excel',
+			body: 'Descargá los datos del reporte activo como planilla Excel para procesarlos fuera del sistema, compartirlos o archivarlos.'
+		}
+	];
+
+	onMount(() => {
+		setTourSteps('reportes', TOUR_STEPS);
+	});
 </script>
 
 <svelte:head>

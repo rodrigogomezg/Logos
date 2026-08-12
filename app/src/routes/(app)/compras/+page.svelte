@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
 	import { leerSesion } from '$lib/session';
 	import { toast_ } from '$lib/toast';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type Compra = {
 		id: number;
@@ -106,6 +108,78 @@
 		await initSucursales();
 		cargar();
 	})();
+
+	// ── Tour guiado — port de pos/compras.html (10 pasos). El último paso
+	// navega a Compras-nueva, que retoma su propio tour (ver
+	// tour_force_compras_nueva en compras-nueva/+page.svelte).
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Módulo de Compras',
+			body: 'Acá registrás las facturas y remitos de compra a proveedores. El stock se actualiza automáticamente al confirmar cada compra.',
+			onEnter: async ({ waitFor }) => {
+				try {
+					await waitFor('.table-wrap table.compras tbody tr', 5000);
+				} catch {
+					/* sin compras cargadas en esta instalación */
+				}
+			}
+		},
+		{
+			el: '.filtros-bar',
+			title: 'Filtros de búsqueda',
+			body: 'Filtrá las compras por rango de fechas y nombre de proveedor. Por defecto muestra los últimos 30 días.'
+		},
+		{
+			el: '#f-desde',
+			title: 'Rango de fechas',
+			body: 'Modificá el período para ver compras de cualquier intervalo. Los campos <strong>Desde</strong> y <strong>Hasta</strong> se inicializan con los últimos 30 días.'
+		},
+		{
+			el: '#f-proveedor',
+			title: 'Filtro por proveedor',
+			body: 'Escribí parte del nombre para acotar los resultados a un proveedor específico.'
+		},
+		{
+			el: '.btn-buscar-sec',
+			title: 'Buscar',
+			body: 'Aplicá los filtros para actualizar la lista.'
+		},
+		{
+			el: 'table.compras',
+			title: 'Lista de compras',
+			body: 'Cada fila muestra el número, fecha, proveedor, tipo de comprobante, medio de pago y total. Las filas anuladas aparecen en gris.'
+		},
+		{
+			el: '.table-wrap table.compras tbody tr:first-child',
+			title: 'Detalle de una compra',
+			body: 'Cada fila te muestra el tipo de comprobante, el número, el medio de pago y el total de esa compra.'
+		},
+		{
+			el: '.table-wrap table.compras tbody tr:first-child .btn-editar',
+			title: 'Editar / Ver detalle',
+			body: 'Abre el formulario completo con todos los datos: proveedor, comprobante, ítems y medio de pago. Podés modificarlos o solo consultarlos.'
+		},
+		{
+			el: '.btn-nueva',
+			title: 'Registrar nueva compra',
+			body: 'Para cargar una nueva factura o remito usás este formulario de 3 pasos. Vamos a recorrerlo ahora.'
+		},
+		{
+			el: null,
+			title: 'Abriendo formulario...',
+			body: 'Vamos al formulario de nueva compra.',
+			onEnter: async ({ delay }) => {
+				sessionStorage.setItem('tour_force_compras_nueva', '1');
+				await delay(200);
+				goto('/compras-nueva');
+			}
+		}
+	];
+
+	onMount(() => {
+		setTourSteps('compras', TOUR_STEPS);
+	});
 </script>
 
 <svelte:head>

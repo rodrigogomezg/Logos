@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import { toast_ } from '$lib/toast';
@@ -6,6 +7,7 @@
 	import { abrirContacto } from '$lib/contact-modal';
 	import { puede } from '$lib/session';
 	import { cajaOperativaId } from '$lib/operativa';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type ModoEntidad = 'cliente' | 'proveedor';
 
@@ -954,6 +956,122 @@
 			if (wantsAging) abrirModalAging();
 			actualizarBadgeAging();
 		});
+	});
+
+	// ── Tour guiado — port de pos/cuentacorriente.html (14 pasos). El
+	// intro busca "CLIENTE DEMO" para tener datos reales que mostrar en el
+	// resto del recorrido — si esa entidad no existe en esta instalación,
+	// los pasos siguientes simplemente muestran menos contenido, no rompen.
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Módulo de Cuenta Corriente',
+			body: 'Acá gestionás los saldos, deudas y pagos de clientes y proveedores que operan en cuenta corriente. Vamos a recorrerlo con un cliente de demo.',
+			onEnter: async ({ delay, waitFor }) => {
+				const inp = document.querySelector('.busq-wrap input') as HTMLInputElement | null;
+				if (!inp) return;
+				inp.value = 'CLIENTE DEMO';
+				inp.dispatchEvent(new Event('input', { bubbles: true }));
+				await delay(700);
+				const item = document.querySelector('.busq-dd .dd-item') as HTMLElement | null;
+				item?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+				try {
+					await waitFor('.cli-card', 3000);
+				} catch {
+					/* sin CLIENTE DEMO en esta instalación */
+				}
+			}
+		},
+		{
+			el: '.busq-wrap',
+			title: 'Búsqueda de entidad',
+			body: 'Escribí el nombre o CUIT del cliente (o proveedor) y el sistema autocompleta en tiempo real. El demo ya cargó <strong>CLIENTE DEMO</strong> para mostrarte las funciones.'
+		},
+		{
+			el: '.cli-card',
+			title: 'Ficha del cliente',
+			body: 'Muestra el nombre, saldo actual y datos de la ficha. El saldo en rojo indica que el cliente tiene deuda; en verde significa que tiene saldo a favor.'
+		},
+		{
+			el: '.cli-saldo-block',
+			title: 'Saldo actual',
+			body: 'El saldo se actualiza automáticamente cada vez que se registra una venta o un pago en cuenta corriente.'
+		},
+		{
+			el: '.pend-card',
+			title: 'Deuda por comprobante',
+			body: 'Desglosa cuánto debe el cliente comprobante por comprobante: tipo, número, total original y saldo pendiente. Muy útil para saber qué facturas o remitos están impagos.'
+		},
+		{
+			el: '.libro-tabla-wrap',
+			title: 'Libro de movimientos',
+			body: 'Historial completo de la cuenta: <strong>Débito</strong> (cargos por ventas), <strong>Crédito</strong> (pagos recibidos) y <strong>Saldo</strong> acumulado en cada movimiento. Hacé click en una fila de cargo para ver el comprobante.'
+		},
+		{
+			el: '.overlay.abierto .modal',
+			pad: 0,
+			title: 'Detalle del comprobante',
+			body: 'Al hacer click en una fila de cargo se abre el comprobante completo: productos, cantidades, precios y total. También muestra los pagos ya asignados a ese comprobante.',
+			onEnter: async ({ delay, waitFor }) => {
+				try {
+					const tr = (await waitFor('.libro-tabla .row-cargo', 2000)) as HTMLElement;
+					tr.click();
+					await delay(500);
+				} catch {
+					/* sin cargos en el libro de esta instalación */
+				}
+			}
+		},
+		{
+			el: '.remito-tabla',
+			title: 'Productos del comprobante',
+			body: 'Listado de todos los ítems con código, nombre, cantidad, precio unitario y subtotal. En la parte inferior aparece el total y cuánto ya fue pagado.'
+		},
+		{
+			el: '.overlay.abierto .modal',
+			pad: 0,
+			title: 'Registrar pago',
+			body: 'Ingresá el monto, la fecha y el medio de pago (efectivo, transferencia o cheque). Para transferencias podés adjuntar el comprobante bancario como imagen o PDF.',
+			onEnter: async ({ delay }) => {
+				cerrarModalRemito();
+				await delay(300);
+				abrirModalPago();
+				await delay(400);
+			}
+		},
+		{
+			el: '.asig-section',
+			title: 'Asignar a comprobantes',
+			body: 'Podés asignar el pago a comprobantes específicos para reducir su saldo pendiente. Si no asignás nada, el pago queda como crédito disponible para imputar después.'
+		},
+		{
+			el: '.btn-auto-dist',
+			title: 'Distribución automática',
+			body: 'Distribuye el monto ingresado entre los comprobantes en orden cronológico, cubriendo las deudas más antiguas primero. Una sola acción salda múltiples comprobantes.'
+		},
+		{
+			el: '.btn-edit-ficha',
+			title: 'Editar ficha del cliente',
+			body: 'Abrí la ficha para editar datos de contacto (email, teléfono, domicilio), límite de crédito y condición de IVA. Los cambios se reflejan en todos los módulos.',
+			onEnter: async ({ delay }) => {
+				cerrarModalPago();
+				await delay(300);
+			}
+		},
+		{
+			el: 'a[href="/cuentacorriente"]',
+			title: 'Modo proveedor',
+			body: 'El mismo módulo funciona para proveedores. Pasá el mouse por <strong>Cta. Cte.</strong> en la barra de navegación y elegí <strong>Proveedores</strong> para ver lo que le debés a tus proveedores.'
+		},
+		{
+			el: 'a[href="/contactos"]',
+			title: 'Contactos',
+			body: 'El próximo módulo es <strong>Contactos</strong>, donde gestionás toda la base de clientes y proveedores con sus datos completos. ¡Eso es todo para Cta. Cte.!'
+		}
+	];
+
+	onMount(() => {
+		setTourSteps('cuentacorriente', TOUR_STEPS);
 	});
 </script>
 

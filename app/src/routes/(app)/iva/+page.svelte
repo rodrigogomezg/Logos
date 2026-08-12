@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import { toast_ } from '$lib/toast';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type FilaVenta = {
 		fecha: string;
@@ -107,6 +109,46 @@
 	}
 
 	cargar();
+
+	// ── Tour guiado — port de pos/iva.html (5 pasos). ───────────────────
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Libro IVA',
+			body: 'Esta pantalla genera el Libro IVA Digital que necesitás para la declaración mensual ante AFIP. Muestra el detalle de IVA de cada comprobante emitido o recibido, con los totales por alícuota.'
+		},
+		{
+			el: '.tab-grupo',
+			title: 'Ventas o Compras',
+			body: '<b>Ventas</b> muestra las facturas emitidas a clientes (IVA débito fiscal). <b>Compras</b> muestra las facturas recibidas de proveedores (IVA crédito fiscal).'
+		},
+		{
+			el: '.tb-input',
+			title: 'Rango de fechas',
+			body: 'Seleccioná el período que necesitás. Lo habitual es el mes calendario que vas a declarar. Hacé clic en <b>Aplicar</b> para cargar los datos.'
+		},
+		{
+			el: '.totales-bar',
+			title: 'Totales por alícuota',
+			body: 'Muestra el neto gravado e IVA separados por alícuota (21%, 10,5%, exento) y las percepciones de IIBB. Estos son exactamente los importes que tenés que volcar en el F. 2002 de AFIP.',
+			onEnter: async ({ waitFor }) => {
+				try {
+					await waitFor('.totales-bar', 2000);
+				} catch {
+					/* sin comprobantes en el período por defecto */
+				}
+			}
+		},
+		{
+			el: '.btn-accion.export',
+			title: 'Exportar a CSV',
+			body: 'Descargá el Libro IVA como archivo CSV para importarlo en tu programa de liquidación (Bejerman, Contanet, Tango, etc.) o entregárselo al contador.'
+		}
+	];
+
+	onMount(() => {
+		setTourSteps('iva', TOUR_STEPS);
+	});
 </script>
 
 <svelte:head>

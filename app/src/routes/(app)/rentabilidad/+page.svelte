@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import type { ChartConfiguration } from 'chart.js';
 	import { api } from '$lib/api';
 	import { chartjs, colorSet } from '$lib/chart-action';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type Vista = 'resumen' | 'tendencia' | 'abc' | 'clientes' | 'margen';
 	type Grupo = { grupo: string; ventas: number; ganancia: number; margen_pct: number };
@@ -199,6 +201,34 @@
 	}
 
 	cargarVista();
+
+	// ── Tour guiado — port de pos/rentabilidad.html (4 pasos, sin onEnter). ─
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Rentabilidad del negocio',
+			body: 'Esta pantalla analiza la ganancia real del negocio: cuánto costó lo que vendiste vs. cuánto cobraste. Requiere tener el costo de compra cargado en cada producto.'
+		},
+		{
+			el: '.tab-grupo',
+			title: 'Vistas de análisis',
+			body: '<b>Resumen</b> da el panorama general. <b>Tendencia</b> muestra la evolución de margen mes a mes. <b>ABC Productos</b> clasifica artículos por ganancia (A = top, C = bajo). <b>Por Cliente</b> rankea clientes por rentabilidad. <b>Margen crítico</b> muestra los productos que vendés por debajo del margen mínimo configurado.'
+		},
+		{
+			el: '.kpis-row',
+			title: 'KPIs de rentabilidad',
+			body: 'Los números clave: total vendido, costo total, ganancia bruta y margen porcentual sobre ventas. Siempre referidos al período y vista seleccionados.'
+		},
+		{
+			el: '.content-scroll',
+			title: 'Análisis detallado',
+			body: 'El contenido cambia según la vista activa: gráficos de tendencia, rankings de productos con clasificación ABC, tabla de clientes por ganancia o lista de productos con margen insuficiente para corrección de precios.'
+		}
+	];
+
+	onMount(() => {
+		setTourSteps('rentabilidad', TOUR_STEPS);
+	});
 </script>
 
 <svelte:head>

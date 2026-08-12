@@ -1,10 +1,12 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { api } from '$lib/api';
 	import { leerSesion } from '$lib/session';
 	import { cajaOperativaId } from '$lib/operativa';
 	import { toast_ } from '$lib/toast';
 	import { confirmar } from '$lib/confirm';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type Proveedor = { id: number; nombre: string; cuit?: string | null; condicion_iva?: string | null };
 	type ProductoBusq = { id: number; nombre: string; codigo: string; proveedor?: string | null; costo_actual?: number | string; iva_porcentaje?: number | string };
@@ -631,6 +633,104 @@
 	}
 
 	if (editId) cargarModoEdicion(editId);
+
+	// ── Tour guiado — port de pos/compras-nueva.html (10 pasos). Retoma el
+	// tour que arrancó en Compras (ver tour_force_compras_nueva) — si venís
+	// de ese "next", se limpia el flag de "ya visto" para que arranque solo.
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Nueva compra — 3 pasos',
+			body: 'El formulario de carga tiene 3 pasos: <strong>1. Comprobante</strong> (proveedor y datos), <strong>2. Productos</strong> y <strong>3. Pago</strong>. El stock se actualiza automáticamente al confirmar.'
+		},
+		{
+			el: '.prov-wrap',
+			title: 'Proveedor',
+			body: 'Buscás el proveedor escribiendo su nombre. El sistema muestra sugerencias en tiempo real. Podés crear uno nuevo si no existe.',
+			onEnter: async ({ delay }) => {
+				if (proveedorSel) return;
+				const inp = document.getElementById('prov-input') as HTMLInputElement | null;
+				if (!inp) return;
+				inp.value = 'PROVEEDOR';
+				inp.dispatchEvent(new Event('input', { bubbles: true }));
+				await delay(1000);
+				const item = document.querySelector('.prov-dd-item') as HTMLElement | null;
+				item?.click();
+				await delay(200);
+			}
+		},
+		{
+			el: '#c1-tipo',
+			title: 'Tipo de comprobante',
+			body: 'Elegís el tipo: Factura A, Factura B o Remito. También podés ingresar el número y la fecha del comprobante del proveedor.'
+		},
+		{
+			el: '.btn-row .btn-pri',
+			title: 'Continuar al paso 2',
+			body: 'Una vez completados el proveedor y los datos del comprobante, pasás a cargar los productos.'
+		},
+		{
+			el: '.busq-wrap',
+			title: 'Buscar productos',
+			body: 'Buscás los productos por nombre o código. También podés importar un Excel o CSV con código, cantidad y costo.',
+			onEnter: async ({ delay, waitFor }) => {
+				if (pasoActual === 1) {
+					(document.querySelector('.btn-row .btn-pri') as HTMLElement | null)?.click();
+					await delay(400);
+				}
+				try {
+					const busq = (await waitFor('.busq-wrap input', 2000)) as HTMLInputElement;
+					busq.value = 'PRUEBA1';
+					busq.dispatchEvent(new Event('input', { bubbles: true }));
+					await delay(1000);
+					const item = document.querySelector('.dd-item') as HTMLElement | null;
+					item?.click();
+					await delay(200);
+				} catch {
+					/* sin resultados para "PRUEBA1" en esta instalación */
+				}
+			}
+		},
+		{
+			el: '.table-wrap table.items',
+			title: 'Ítems de la compra',
+			body: 'Cada producto aparece con cantidad, costo unitario, porcentaje de IVA, descuento y subtotal calculados. Podés editar los valores directamente en la tabla.'
+		},
+		{
+			el: '.totales-grid',
+			title: 'Totales automáticos',
+			body: 'El subtotal, IVA, percepción IIBB (si aplica) y total se recalculan en tiempo real al modificar cualquier campo.'
+		},
+		{
+			el: '.btn-row .btn-pri',
+			title: 'Continuar al paso 3',
+			body: 'Una vez confirmados todos los ítems, pasás a elegir la forma de pago.'
+		},
+		{
+			el: '#p3-medio-simple',
+			title: 'Medio de pago',
+			body: 'Elegís el medio: Efectivo, Transferencia, Tarjeta o Cuenta corriente del proveedor. También podés combinar varios medios con el modo <em>Mixto</em>.',
+			onEnter: async ({ delay }) => {
+				if (pasoActual === 2) {
+					(document.querySelector('.btn-row .btn-pri') as HTMLElement | null)?.click();
+					await delay(500);
+				}
+			}
+		},
+		{
+			el: null,
+			title: '¡Eso es todo para Compras!',
+			body: 'Ya viste el ciclo completo: filtros, lista de compras, y cómo registrar una compra nueva con proveedor, ítems y pago. El stock se actualiza automáticamente al confirmar.'
+		}
+	];
+
+	onMount(() => {
+		if (sessionStorage.getItem('tour_force_compras_nueva')) {
+			sessionStorage.removeItem('tour_force_compras_nueva');
+			localStorage.removeItem('tour_seen_compras_nueva');
+		}
+		setTourSteps('compras_nueva', TOUR_STEPS);
+	});
 </script>
 
 <svelte:head>

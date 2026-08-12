@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { api } from '$lib/api';
 	import { puede } from '$lib/session';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	// POC: subconjunto "core" de contacto-modal.php (pos/contacto-modal.php).
 	// Deliberadamente afuera de este spike: domicilios de envío (sub-lista
@@ -313,6 +315,102 @@
 		}
 		return out;
 	}
+
+	// ── Tour guiado — port de pos/contactos.html (14 pasos).
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Módulo de Contactos',
+			body: 'Acá gestionás todos tus clientes y proveedores. Podés buscarlos, editarlos, importarlos en masa y crear nuevos desde un mismo lugar.'
+		},
+		{
+			el: '.tab-grupo',
+			title: 'Clientes y Proveedores',
+			body: 'Dos solapas para alternar entre ambas listas. El sistema usa la misma interfaz para clientes y proveedores; solo cambian algunos campos.'
+		},
+		{
+			el: '.busqueda',
+			title: 'Búsqueda',
+			body: 'Buscá por nombre, CUIT o email. Los resultados se filtran en tiempo real mientras escribís, sin necesidad de confirmar.'
+		},
+		{
+			el: '.filtro-activo',
+			title: 'Filtro de estado',
+			body: 'Mostrá solo activos, inactivos o todos. Nunca se eliminan registros con historial; en su lugar se marcan como inactivos.'
+		},
+		{
+			el: 'table',
+			title: 'Lista de contactos',
+			body: 'Cada fila muestra nombre, CUIT, condición IVA, teléfono, estado de cuenta corriente, límite de crédito, lista de precios y estado. Hacé click en una fila para abrir la ficha.'
+		},
+		{
+			el: '.pagination',
+			title: 'Paginación',
+			body: 'Con más de 50 contactos la lista se divide en páginas. Navegá entre ellas o ajustá el buscador para reducir resultados.'
+		},
+		{
+			el: '.cm-overlay .cm-modal',
+			pad: 0,
+			title: 'Ficha de contacto',
+			body: 'La ficha tiene dos columnas: datos de contacto a la izquierda y configuración comercial a la derecha. Se abre al hacer click en cualquier fila.',
+			onEnter: async ({ delay, waitFor }) => {
+				try {
+					if (datos.length) await abrirEditar(datos[0]);
+					await waitFor('.cm-overlay .cm-modal');
+				} catch {
+					/* sin contactos cargados en esta instalación */
+				}
+				await delay(200);
+			}
+		},
+		{
+			el: '.cm-col:not(.cm-col-right)',
+			title: 'Datos de contacto',
+			body: 'Nombre, CUIT, condición IVA, email, teléfono, domicilio, localidad, provincia y observaciones.'
+		},
+		{
+			el: '.cm-col-right',
+			title: 'Cuenta corriente y configuración',
+			body: '<strong>CC</strong>: habilitá cuenta corriente y definí el límite de crédito. <strong>Configuración comercial</strong> (clientes): lista de precios y descuento extra. <strong>Estado</strong>: activo o inactivo.'
+		},
+		{
+			el: '[data-tour="cm-btn-guardar"]',
+			title: 'Guardar cambios',
+			body: 'Guardá la ficha. El nombre es obligatorio; el resto de los campos son opcionales. Los cambios se reflejan de inmediato en la lista.'
+		},
+		{
+			el: '[data-tour="btn-importar"]',
+			title: 'Importar CSV',
+			body: 'Importá muchos contactos de una vez desde un archivo CSV. Descargá la plantilla, completala y subila. Si ya existe el CUIT, el registro se actualiza en lugar de duplicarse.',
+			onEnter: async ({ delay }) => {
+				cerrarModal();
+				await delay(200);
+			}
+		},
+		{
+			el: '[data-tour="btn-nuevo"]',
+			title: 'Nuevo contacto',
+			body: 'Creá un nuevo cliente o proveedor desde acá. La ficha es la misma que al editar, con todos los campos en blanco.'
+		},
+		{
+			el: 'button.tab-tipo:nth-child(2)',
+			title: 'Cambiar a Proveedores',
+			body: 'Los mismos filtros e importación aplican para proveedores. La columna "Dto extra" (clientes) se reemplaza por "Plazo de pago".',
+			onEnter: async ({ delay }) => {
+				cambiarTipo('proveedores');
+				await delay(500);
+			}
+		},
+		{
+			el: 'a[href="/productos"]',
+			title: 'Productos',
+			body: 'El próximo módulo es <strong>Productos</strong>, donde gestionás el catálogo, precios y stock. ¡Eso es todo para Contactos!'
+		}
+	];
+
+	onMount(() => {
+		setTourSteps('contactos', TOUR_STEPS);
+	});
 </script>
 
 <svelte:head>
@@ -346,9 +444,9 @@
 		</select>
 		<div style="flex:1"></div>
 		{#if puede('importar')}
-			<button class="btn btn-sec" onclick={abrirImport}>Importar CSV</button>
+			<button class="btn btn-sec" data-tour="btn-importar" onclick={abrirImport}>Importar CSV</button>
 		{/if}
-		<button class="btn btn-ok" onclick={abrirNuevo}>+ Nuevo</button>
+		<button class="btn btn-ok" data-tour="btn-nuevo" onclick={abrirNuevo}>+ Nuevo</button>
 	</div>
 
 	<div class="card">
@@ -586,7 +684,7 @@
 					>
 				{/if}
 				<button class="cm-btn cm-btn-sec" onclick={cerrarModal}>Cancelar</button>
-				<button class="cm-btn cm-btn-ok" disabled={guardando} onclick={guardar}>
+				<button class="cm-btn cm-btn-ok" data-tour="cm-btn-guardar" disabled={guardando} onclick={guardar}>
 					{guardando ? 'Guardando…' : 'Guardar'}
 				</button>
 			</div>

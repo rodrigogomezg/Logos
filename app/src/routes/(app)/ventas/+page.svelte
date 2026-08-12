@@ -7,6 +7,7 @@
 	import { abrirContacto } from '$lib/contact-modal';
 	import { puede } from '$lib/session';
 	import { cajaOperativaId } from '$lib/operativa';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type Pago = { tipo: string; monto: number };
 	type Venta = {
@@ -1345,11 +1346,220 @@
 		}
 	}
 
+	// ── Tour guiado — port de pos/ventas.html (24 pasos). Esta pantalla
+	// cambió bastante de estructura en la migración a Svelte: varios ids
+	// legacy (#f-desde, #f-tipo, #f-monto-min, #btn-more, #sac-ver, etc.)
+	// ya no existen — los botones de acción comparten clase (.selec-btn)
+	// sin id individual, así que se agregaron atributos data-tour="..." a
+	// los que hacía falta distinguir. Verificado selector por selector
+	// contra el DOM real antes de escribir esto.
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Módulo de Ventas',
+			body: 'Acá aparece el historial completo de todas las ventas. Podés filtrar por nombre, número, fecha, tipo de comprobante, cliente, monto y más.',
+			onEnter: async ({ delay }) => {
+				setPeriodo('anio');
+				await delay(500);
+			}
+		},
+		{
+			el: '#f-q-input',
+			title: 'Búsqueda general',
+			body: 'El campo principal de búsqueda: escribí el nombre del cliente, el número de comprobante o cualquier texto y presioná Enter. Filtra en tiempo real sobre todos los resultados.'
+		},
+		{
+			el: '#pc-select',
+			title: 'Período rápido',
+			body: 'Elegí Hoy, Esta semana, Este mes o Este año para filtrar rápidamente. Las fechas se actualizan solas.'
+		},
+		{
+			el: '[data-tour="f-desde"]',
+			title: 'Rango de fechas',
+			body: 'También podés ingresar las fechas a mano. Útil para consultas de períodos específicos como el mes pasado o un trimestre.'
+		},
+		{
+			el: '[data-tour="f-tipo"]',
+			title: 'Tipo de comprobante',
+			body: 'Filtrá por Remito, Factura B, Factura A, Presupuesto o Nota de Crédito para ver solo ese tipo en la lista.'
+		},
+		{
+			el: '.f-cli-wrap',
+			title: 'Filtro por cliente',
+			body: 'Buscá ventas de un cliente específico escribiendo su nombre. El campo muestra sugerencias a medida que escribís.'
+		},
+		{
+			el: '[data-tour="f-monto-min"]',
+			title: 'Rango de monto',
+			body: 'Filtrá por monto mínimo y máximo para encontrar ventas dentro de un rango de valor.'
+		},
+		{
+			el: '.fbar-btn-more',
+			title: 'Más opciones',
+			body: 'Este botón despliega opciones adicionales: agrupar resultados por cliente, mostrar ventas anuladas y exportar la lista a Excel.',
+			onEnter: async ({ delay }) => {
+				if (!morePanelVisible) morePanelVisible = true;
+				await delay(250);
+			}
+		},
+		{
+			el: '.fbar-more-panel',
+			title: 'Opciones del panel',
+			body: '<strong>Agrupar</strong>: agrupa las filas por cliente o tipo. <strong>Mostrar anuladas</strong>: incluye las ventas anuladas. <strong>Exportar Excel</strong>: descarga la búsqueda actual como archivo .xlsx.'
+		},
+		{
+			el: '.tabla-wrap',
+			title: 'Listado de ventas',
+			body: 'Cada fila es una venta: fecha, tipo de comprobante, cliente, observaciones, medio de pago y total. Hacé click en una fila para seleccionarla.',
+			onEnter: async ({ delay }) => {
+				morePanelVisible = false;
+				await delay(250);
+			}
+		},
+		{
+			el: '.seleccion-bar',
+			title: 'Barra de selección',
+			body: 'Al hacer click en una fila, aparece esta barra con los datos de la venta y todas las acciones disponibles. Cada acción se explica a continuación.',
+			onEnter: async ({ delay, waitFor }) => {
+				// La carga de la tabla es async — esperar a que exista al menos
+				// una fila antes de clickear, no asumir que ya está en el DOM
+				// (carrera real: al llegar rápido a este paso, la fila todavía
+				// no había cargado y el click se perdía). Si "Agrupar" está
+				// activo la tabla tiene filas de encabezado de grupo
+				// (.grupo-header-row) y separadores (.grupo-sep) que no son
+				// ventas — hay que excluirlas, si no el click cae en una fila
+				// no clickeable y nunca selecciona nada.
+				try {
+					const tr = (await waitFor(
+						'.tabla-wrap tbody tr:not(.grupo-header-row):not(.grupo-sep)'
+					)) as HTMLElement;
+					tr.click();
+					await delay(200);
+					await waitFor('.seleccion-bar .selec-info');
+				} catch {
+					/* sin ventas cargadas en esta instalación — el highlight sigue funcionando igual */
+				}
+			}
+		},
+		{
+			el: '.selec-info',
+			title: 'Datos de la venta',
+			body: 'Muestra el número de comprobante, tipo, cliente, monto total y fecha de la venta seleccionada. Se actualiza instantáneamente al cambiar la selección.'
+		},
+		{
+			el: '.overlay.abierto .modal',
+			pad: 0,
+			title: 'Ver detalle',
+			body: 'Abre el comprobante completo: datos del cliente, todos los ítems con cantidades, precios, descuentos y total. Si tiene CAE de AFIP también aparece acá.',
+			onEnter: async ({ delay }) => {
+				await accionVer();
+				await delay(400);
+			}
+		},
+		{
+			el: '.modal-body',
+			title: 'Contenido del comprobante',
+			body: 'Acá ves todos los productos vendidos con sus cantidades y precios. Podés hacer scroll para ver el detalle completo.'
+		},
+		{
+			el: '[data-tour="comp-dd"]',
+			title: 'Opciones de comprobante',
+			body: '<strong>Imprimir</strong>: manda el comprobante a la impresora. <strong>Descargar PDF</strong>: genera y descarga el PDF. <strong>Enviar por mail</strong>: envía el comprobante al email del cliente.',
+			onEnter: async ({ delay }) => {
+				cerrarVer();
+				await delay(300);
+			}
+		},
+		{
+			el: '[data-tour="sac-nota-envio"]',
+			title: 'Nota de envío',
+			body: 'Genera una nota de envío para registrar la entrega total o parcial de los productos del remito, sin mostrar los precios.',
+			onEnter: async ({ delay }) => {
+				compDdVisible = false;
+				await delay(150);
+			}
+		},
+		{
+			el: '#ne-overlay .ne-modal',
+			pad: 0,
+			title: 'Modal de nota de envío',
+			body: 'Ingresás transportista, fecha de entrega y dirección. Los ítems se listan con su cantidad editable y un checkbox para excluir productos de esta entrega.',
+			onEnter: async ({ delay }) => {
+				await accionNotaEnvio();
+				await delay(500);
+			}
+		},
+		{
+			el: '.ne-body',
+			title: 'Artículos a entregar',
+			body: 'Cada producto aparece con la cantidad pendiente de entregar. Podés ajustar la cantidad que sale en esta nota. Si hubo entregas anteriores, se muestra el historial encima.'
+		},
+		{
+			el: '[data-tour="sac-copiar"]',
+			title: 'Copiar al POS',
+			body: 'Copia todos los ítems de esta venta al POS para generar un nuevo comprobante basado en ella. Muy útil para repetir pedidos frecuentes o para hacer cambios y rehacer una venta.',
+			onEnter: async ({ delay }) => {
+				cerrarNE();
+				await delay(300);
+			}
+		},
+		{
+			el: '.overlay.abierto .modal',
+			pad: 0,
+			title: 'Editar venta',
+			body: 'Cambiá el tipo de comprobante, la forma de pago u observaciones sin tocar los ítems. Para cambiar productos, usá "Editar ítems" que abre el POS con la venta cargada.',
+			onEnter: async ({ delay }) => {
+				accionModificarRapido();
+				await delay(400);
+			}
+		},
+		{
+			el: '[data-tour="sac-eliminar"]',
+			title: 'Anular venta',
+			body: 'Marca la venta como anulada — no se borra, queda en el historial. Si tiene CAE de AFIP, el sistema te avisa. Los usuarios no-administradores necesitan una clave de autorización.',
+			onEnter: async ({ delay }) => {
+				cerrarEdit();
+				await delay(300);
+			}
+		},
+		{
+			el: '.seleccion-bar',
+			title: 'Selección múltiple',
+			body: 'Con los checkboxes a la izquierda de cada fila podés seleccionar varias ventas a la vez para operar en bloque: anular varias o unificarlas en un solo comprobante.',
+			onEnter: async ({ delay }) => {
+				deseleccionar();
+				await delay(150);
+				const chks = Array.from(document.querySelectorAll('.tabla-wrap .uni-chk')) as HTMLInputElement[];
+				for (let i = 0; i < Math.min(2, chks.length); i++) {
+					if (!chks[i].checked) chks[i].click();
+					await delay(100);
+				}
+			}
+		},
+		{
+			el: '[data-tour="sac-unificar"]',
+			title: 'Unificar comprobantes',
+			body: 'Combina varias ventas del mismo cliente y tipo de comprobante en un único comprobante. Muy útil cuando se hicieron varios remitos para el mismo cliente y se quiere consolidarlos.'
+		},
+		{
+			el: 'a[href="/cuentacorriente"]',
+			title: 'Cuenta Corriente',
+			body: 'El próximo módulo es <strong>Cta. Cte.</strong>, donde gestionás los saldos pendientes de clientes y proveedores. ¡Eso es todo para Ventas!',
+			onEnter: async ({ delay }) => {
+				const chks = Array.from(document.querySelectorAll('.tabla-wrap .uni-chk')) as HTMLInputElement[];
+				chks.forEach((c) => { if (c.checked) c.click(); });
+				limpiarMultiSel();
+				await delay(100);
+			}
+		}
+	];
+
 	onMount(() => {
 		initSucursalFiltro();
 		initVendedorFiltro();
 		cargarIntegConfig();
 		setPeriodo('hoy');
+		setTourSteps('ventas', TOUR_STEPS);
 	});
 </script>
 
@@ -1381,13 +1591,13 @@
 		<option value="mes">Este mes</option>
 		<option value="anio">Este año</option>
 	</select>
-	<input type="date" class="fbar-ctrl" bind:value={fDesde} onchange={onFechaManualChange} />
+	<input type="date" class="fbar-ctrl" data-tour="f-desde" bind:value={fDesde} onchange={onFechaManualChange} />
 	<span class="fbar-arrow">→</span>
 	<input type="date" class="fbar-ctrl" bind:value={fHasta} onchange={onFechaManualChange} />
 
 	<div class="fbar-sep"></div>
 
-	<select class="fbar-ctrl" title="Tipo de comprobante" bind:value={fTipo} onchange={buscar}>
+	<select class="fbar-ctrl" data-tour="f-tipo" title="Tipo de comprobante" bind:value={fTipo} onchange={buscar}>
 		<option value="">Tipo</option>
 		<option value="REMITO">Remito</option>
 		<option value="FC B-ELECT">Fc B</option>
@@ -1424,7 +1634,7 @@
 		{/if}
 	</div>
 
-	<input type="number" class="fbar-ctrl" placeholder="$ mín" min="0" step="any" bind:value={fMontoMin} onchange={buscar} />
+	<input type="number" class="fbar-ctrl" data-tour="f-monto-min" placeholder="$ mín" min="0" step="any" bind:value={fMontoMin} onchange={buscar} />
 	<input type="number" class="fbar-ctrl" placeholder="$ máx" min="0" step="any" bind:value={fMontoMax} onchange={buscar} />
 
 	<span class="resultados-count">{countLabel}</span>
@@ -1517,7 +1727,7 @@
 	<div class="selec-sep"></div>
 	{#if multiSel.size === 0}
 		<div class="selec-acciones">
-			<button class="selec-btn sbtn-ghost" onclick={accionVer}
+			<button class="selec-btn sbtn-ghost" data-tour="sac-ver" onclick={accionVer}
 				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3" /><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" /></svg>Ver</button
 			>
 			{#if necesitaReintento}
@@ -1526,15 +1736,15 @@
 					>{reintentandoAfipBar ? 'Facturando…' : 'Reintentar AFIP'}</button
 				>
 			{/if}
-			<button class="selec-btn sbtn-ghost" onclick={accionModificarRapido}
+			<button class="selec-btn sbtn-ghost" data-tour="sac-modificar" onclick={accionModificarRapido}
 				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>Editar</button
 			>
 			<div class="comp-dd-wrap">
-				<button class="selec-btn sbtn-ghost" onclick={(e) => { e.stopPropagation(); compDdVisible = !compDdVisible; }}
+				<button class="selec-btn sbtn-ghost" data-tour="comp-dd" onclick={(e) => { e.stopPropagation(); compDdVisible = !compDdVisible; }}
 					><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg
 					>Comprobante<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.6"><polyline points="6 9 12 15 18 9" /></svg></button
 				>
-				<div class="comp-dd" class:visible={compDdVisible}>
+				<div class="comp-dd" data-tour="comp-dd-menu" class:visible={compDdVisible}>
 					<button class="comp-dd-item" onclick={accionImprimir}
 						><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>Imprimir</button
 					>
@@ -1556,10 +1766,10 @@
 					><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" /></svg>WhatsApp</button
 				>
 			{/if}
-			<button class="selec-btn sbtn-ghost" onclick={accionNotaEnvio}
+			<button class="selec-btn sbtn-ghost" data-tour="sac-nota-envio" onclick={accionNotaEnvio}
 				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13" rx="1" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" /></svg>Nota de envío</button
 			>
-			<button class="selec-btn sbtn-ghost" onclick={accionCopiar}
+			<button class="selec-btn sbtn-ghost" data-tour="sac-copiar" onclick={accionCopiar}
 				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg>Copiar al POS</button
 			>
 			{#if esPresupuestoActivo}
@@ -1575,7 +1785,7 @@
 					><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3.38" /></svg>Recuperar</button
 				>
 			{:else}
-				<button class="selec-btn sbtn-danger" onclick={accionEliminar}
+				<button class="selec-btn sbtn-danger" data-tour="sac-eliminar" onclick={accionEliminar}
 					><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>Eliminar</button
 				>
 			{/if}
@@ -1586,7 +1796,7 @@
 			<button class="selec-btn sbtn-danger" onclick={accionEliminarBulk}
 				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>Eliminar ({multiSel.size})</button
 			>
-			<button class="selec-btn sbtn-primary" disabled={!puedeUni} onclick={abrirModalUnificar}
+			<button class="selec-btn sbtn-primary" data-tour="sac-unificar" disabled={!puedeUni} onclick={abrirModalUnificar}
 				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M6 21V9a9 9 0 009 9" /></svg>Unificar</button
 			>
 			<button class="selec-cerrar" title="Limpiar selección" onclick={limpiarMultiSel}>×</button>

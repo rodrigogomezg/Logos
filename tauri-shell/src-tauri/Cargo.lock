@@ -3668,7 +3668,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-shell"
-version = "1.0.7"
+version = "1.0.9"
 dependencies = [
  "chrono",
  "reqwest 0.12.28",
