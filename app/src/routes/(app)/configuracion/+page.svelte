@@ -1358,6 +1358,54 @@
 								<div class="afip-estado warn"><span class="afip-dot"></span>Sin certificado — las facturas electrónicas no van a funcionar hasta que lo configures.</div>
 							{/if}
 
+							<details class="afip-pasos-details" open={!cfgAfipConfigurado}>
+								<summary>Cómo hacer el trámite en ARCA (paso a paso)</summary>
+								<div class="afip-pasos">
+									<div class="afip-paso">
+										<div class="afip-paso-num">1</div>
+										<div class="afip-paso-body">
+											<strong>Tener clave fiscal nivel 3</strong>
+											Si solo tenés nivel 2, pedí la suba de nivel en cualquier agencia de ARCA o por TAD.
+										</div>
+									</div>
+									<div class="afip-paso">
+										<div class="afip-paso-num">2</div>
+										<div class="afip-paso-body">
+											<strong>Adherir "Administración de Certificados Digitales"</strong>
+											En ARCA: Administrador de Relaciones → Adherir Servicio → ARCA → Servicios Interactivos → Administración de Certificados Digitales → confirmar.
+										</div>
+									</div>
+									<div class="afip-paso">
+										<div class="afip-paso-num">3</div>
+										<div class="afip-paso-body">
+											<strong>Generar la clave y el CSR acá abajo</strong>
+											Completá el alias y hacé clic en "Generar clave y CSR nuevo" — se descarga un archivo <code>.csr</code>. No hace falta entender qué es, solo guardalo.
+										</div>
+									</div>
+									<div class="afip-paso">
+										<div class="afip-paso-num">4</div>
+										<div class="afip-paso-body">
+											<strong>Subir el CSR a ARCA y volver con el certificado</strong>
+											En ARCA, misma sección → "Agregar alias" → subí el <code>.csr</code> que descargaste → ARCA te da para descargar el certificado firmado (no es un <code>.p12</code>). Volvé acá y subilo donde dice "Certificado firmado".
+										</div>
+									</div>
+									<div class="afip-paso">
+										<div class="afip-paso-num">5</div>
+										<div class="afip-paso-body">
+											<strong>Adherir "Facturación Electrónica"</strong>
+											En ARCA: Adherir Servicio → ARCA → WebServices → Facturación Electrónica. Al confirmar, hacé clic en "BUSCAR" al lado de "Representante" y elegí el alias del paso 3 — aunque ya aparezca cargado, si no hacés esto ARCA rechaza la adhesión.
+										</div>
+									</div>
+									<div class="afip-paso">
+										<div class="afip-paso-num">6</div>
+										<div class="afip-paso-body">
+											<strong>Punto de venta</strong>
+											Tiene que estar creado en ARCA. El número se carga en la pestaña "Datos del negocio" de esta misma pantalla.
+										</div>
+									</div>
+								</div>
+							</details>
+
 							<div class="form-grid" style="margin-top:12px">
 								<div class="form-group full">
 									<label class="form-label" for="afip-alias">Alias del certificado</label>
@@ -2163,6 +2211,63 @@
 	.afip-estado.warn {
 		background: rgba(243, 156, 18, 0.1);
 		color: var(--neo-warning);
+	}
+	.afip-pasos-details {
+		margin-bottom: 16px;
+		font-size: 12px;
+	}
+	.afip-pasos-details summary {
+		cursor: pointer;
+		font-weight: 600;
+		color: var(--neo-text);
+		padding: 4px 0;
+	}
+	.afip-pasos-details[open] summary {
+		margin-bottom: 10px;
+	}
+	.afip-pasos {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	.afip-paso {
+		display: flex;
+		gap: 10px;
+		background: var(--neo-bg);
+		border-radius: var(--neo-r-sm);
+		box-shadow: var(--neo-e1);
+		padding: 10px 12px;
+	}
+	.afip-paso-num {
+		width: 20px;
+		height: 20px;
+		border-radius: 50%;
+		background: var(--primary-soft-2);
+		color: var(--neo-accent);
+		font-size: 10px;
+		font-weight: 800;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		margin-top: 1px;
+	}
+	.afip-paso-body {
+		font-size: 12px;
+		color: var(--neo-text-2);
+		line-height: 1.5;
+	}
+	.afip-paso-body strong {
+		color: var(--neo-text);
+		font-weight: 700;
+		display: block;
+		margin-bottom: 2px;
+	}
+	.afip-paso-body code {
+		font-weight: 700;
+		font-size: inherit;
+		font-family: inherit;
+		color: var(--neo-text);
 	}
 	.afip-estado .afip-dot {
 		width: 8px;
