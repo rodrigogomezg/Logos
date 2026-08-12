@@ -95,7 +95,12 @@
   .prog-item.ejecutando .prog-icono { background: var(--primary-soft-2); color: var(--neo-accent); box-shadow: var(--neo-e1); animation: giro .9s linear infinite; }
   .prog-item.ok  .prog-icono { background: rgba(39,174,96,.12); color: var(--neo-success); box-shadow: var(--neo-e1); }
   .prog-item.err .prog-icono { background: rgba(231,76,60,.12); color: var(--neo-danger);  box-shadow: var(--neo-e1); }
+  .prog-item.warn .prog-icono { background: rgba(243,156,18,.12); color: var(--neo-warning); box-shadow: var(--neo-e1); }
   @keyframes giro { to { transform: rotate(360deg); } }
+
+  details.afip-avanzado { font-size: 12px; color: var(--neo-text-2); }
+  details.afip-avanzado summary { cursor: pointer; font-weight: 600; color: var(--neo-text); padding: 4px 0; }
+  details.afip-avanzado[open] summary { margin-bottom: 10px; }
 
   /* Resumen */
   .resumen-fila { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--borde); }
@@ -229,7 +234,7 @@
     <div class="sub">Necesario para emitir Facturas A y B electrónicas con CAE. Si todavía no hiciste los trámites en AFIP, omitilo y configuralo después.</div>
 
     <div class="aviso info" style="margin-top:0">
-      Antes de subir el certificado necesitás hacer <strong>4 pasos en el portal de AFIP</strong> (afip.gob.ar). Si ya los hiciste, subí el archivo abajo.
+      Necesitás hacer algunos trámites en el portal de ARCA (ex AFIP). Logos te genera la clave y el certificado — no hace falta que sepas nada de eso.
     </div>
 
     <div class="afip-pasos">
@@ -237,28 +242,42 @@
         <div class="afip-paso-num">1</div>
         <div class="afip-paso-body">
           <strong>Tener clave fiscal nivel 3</strong>
-          Necesitás clave fiscal con nivel de seguridad 3 o superior. Si solo tenés nivel 2, solicitá la suba de nivel en cualquier agencia de AFIP o por TAD.
+          Necesitás clave fiscal con nivel de seguridad 3 o superior. Si solo tenés nivel 2, solicitá la suba de nivel en cualquier agencia de ARCA o por TAD.
         </div>
       </div>
       <div class="afip-paso">
         <div class="afip-paso-num">2</div>
         <div class="afip-paso-body">
-          <strong>Adherir el servicio de Factura Electrónica</strong>
-          Ingresá con tu CUIT y clave fiscal → <code>Administrador de Relaciones</code> → <code>Adherir Servicio</code> → buscá <code>wsfe</code> (Facturación Electrónica versión 1) → seleccioná tu CUIT como representado y confirmá.
+          <strong>Adherir "Administración de Certificados Digitales"</strong>
+          Ingresá con tu CUIT y clave fiscal → <code>Administrador de Relaciones</code> → <code>Adherir Servicio</code> → <code>ARCA</code> → <code>Servicios Interactivos</code> → <code>Administración de Certificados Digitales</code> → confirmá.
         </div>
       </div>
       <div class="afip-paso">
         <div class="afip-paso-num">3</div>
         <div class="afip-paso-body">
-          <strong>Crear y descargar el certificado digital (.p12)</strong>
-          Desde el menú principal → <code>Administración de Certificados Digitales</code> → <code>Nueva solicitud de certificado</code> → completá los datos → descargá el archivo <code>.p12</code> y guardá bien la contraseña. El certificado tiene vigencia de 2 años.
+          <strong>Generar la clave acá abajo y descargar el CSR</strong>
+          Completá el alias y hacé clic en "Generar clave y CSR" — se descarga un archivo <code>.csr</code>. No hace falta que entiendas qué es, solo guardalo.
         </div>
       </div>
       <div class="afip-paso">
         <div class="afip-paso-num">4</div>
         <div class="afip-paso-body">
-          <strong>Habilitar un punto de venta para Web Services</strong>
-          Desde el menú principal → <code>Comprobantes en línea</code> → <code>Datos adicionales del comprobante</code> → <code>ABM Puntos de Venta</code> → creá un nuevo PV de tipo <code>BFEWS — Web Services</code>. El número que le asignes es el que tenés que usar en el campo "Punto de venta AFIP" del sistema.
+          <strong>Subir el CSR a ARCA y volver con el certificado</strong>
+          En ARCA, volvé a <code>Administración de Certificados Digitales</code> → <code>Agregar alias</code> → subí el <code>.csr</code> que descargaste → ARCA te va a dar para descargar el certificado firmado (no es un <code>.p12</code>, es otro tipo de archivo). Volvé acá y subilo abajo.
+        </div>
+      </div>
+      <div class="afip-paso">
+        <div class="afip-paso-num">5</div>
+        <div class="afip-paso-body">
+          <strong>Adherir "Facturación Electrónica"</strong>
+          En ARCA: <code>Adherir Servicio</code> → <code>ARCA</code> → <code>WebServices</code> → <code>Facturación Electrónica</code>. Al confirmar, hacé clic en "BUSCAR" al lado de "Representante" y elegí el alias que creaste en el paso 3 — aunque ya aparezca cargado, si no lo hacés así ARCA rechaza la adhesión.
+        </div>
+      </div>
+      <div class="afip-paso">
+        <div class="afip-paso-num">6</div>
+        <div class="afip-paso-body">
+          <strong>Punto de venta</strong>
+          Una vez que tengas un punto de venta para Web Services creado en ARCA (como sea que se llame el menú en tu caso), Logos lo va a detectar automáticamente al terminar este paso — no hace falta que lo tipees.
         </div>
       </div>
     </div>
@@ -267,17 +286,17 @@
 
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Punto de venta AFIP</label>
-        <input class="form-input" id="af-pv" type="number" min="1" max="9999" value="1">
-        <span class="form-hint">Número del PV que habilitaste en el paso 4 de arriba.</span>
-      </div>
-      <div class="form-group fg-full">
-        <label class="form-label">Archivo .p12</label>
-        <input class="form-input" id="af-archivo" type="file" accept=".p12,.pfx">
+        <label class="form-label">Razón social</label>
+        <input class="form-input" id="af-razon" disabled>
       </div>
       <div class="form-group">
-        <label class="form-label">Contraseña del certificado</label>
-        <input class="form-input" id="af-pass" type="password" placeholder="Contraseña del .p12" autocomplete="new-password">
+        <label class="form-label">CUIT</label>
+        <input class="form-input" id="af-cuit" disabled>
+      </div>
+      <div class="form-group fg-full">
+        <label class="form-label">Alias del certificado</label>
+        <input class="form-input" id="af-alias" placeholder="Ej: LogosPOS">
+        <span class="form-hint">Es el nombre que vas a usar en ARCA al hacer "Agregar alias". Podés dejarlo así.</span>
       </div>
       <div class="form-group">
         <label class="form-label">Entorno AFIP</label>
@@ -288,6 +307,38 @@
         <span class="form-hint">Usá Homologación para probar que todo funciona antes de pasar a Producción.</span>
       </div>
     </div>
+    <div class="btn-row">
+      <button class="btn-pri" id="af-btn-generar-csr">Generar clave y CSR</button>
+    </div>
+    <div id="af-resultado-csr"></div>
+
+    <div id="af-sec-subir" style="display:none">
+      <div class="form-group fg-full">
+        <label class="form-label">Certificado firmado (descargado de ARCA)</label>
+        <input class="form-input" id="af-cert-firmado" type="file" accept=".pem,.crt,.cer,.txt">
+      </div>
+    </div>
+
+    <details class="afip-avanzado">
+      <summary>Ya tengo un archivo .p12 armado (opción avanzada)</summary>
+      <div class="form-grid" style="margin-top:10px">
+        <div class="form-group fg-full">
+          <label class="form-label">Archivo .p12</label>
+          <input class="form-input" id="af-archivo" type="file" accept=".p12,.pfx">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña del certificado</label>
+          <input class="form-input" id="af-pass" type="password" placeholder="Contraseña del .p12" autocomplete="new-password">
+        </div>
+      </div>
+    </details>
+
+    <div class="form-group" style="margin-top:4px">
+      <label class="form-label">Punto de venta AFIP</label>
+      <input class="form-input" id="af-pv" type="number" min="1" max="9999" value="1">
+      <span class="form-hint">Se detecta automáticamente al finalizar. Si falla, se usa el número que pongas acá.</span>
+    </div>
+
     <div id="af-resultado"></div>
     <div class="btn-row">
       <button class="btn-sec" id="af-btn-omitir">Configurar después</button>
@@ -426,7 +477,9 @@ function aviso(el, msg, tipo) { el.innerHTML = msg ? `<div class="aviso ${tipo}"
 const wiz = {
   admin:    null,   // { nombre, pin }
   negocio:  null,   // { razon_social, cuit, ... }
-  afip:     null,   // { archivo: File, pass, entorno } o null si se omite
+  afip:     null,   // { certPemFile: File, key, entorno, punto_venta } (CSR) o
+                     // { archivo: File, pass, entorno, punto_venta } (.p12 manual) o
+                     // { punto_venta } (sin certificado) o null si se omite
   logo:     null,   // { archivo: File } o null si se omite
   impresora: null,  // 'Nombre impresora' o null
   carpetas: null,   // { comprobantes, backups } o null
@@ -460,6 +513,11 @@ function mostrarPaso() {
 function siguiente() { if (pasoIdx < pasos.length - 1) { pasoIdx++; mostrarPaso(); } }
 
 function onEnterPaso(paso) {
+  if (paso === 'afip') {
+    $('af-razon').value = wiz.negocio?.razon_social || '';
+    $('af-cuit').value  = wiz.negocio?.cuit || '';
+    if (!$('af-alias').value) $('af-alias').value = wiz.negocio?.nombre_fantasia || '';
+  }
   if (paso === 'impresora') cargarImpresoras();
   if (paso === 'listo')     renderResumen();
 }
@@ -634,14 +692,52 @@ $('ng-btn-siguiente').addEventListener('click', () => {
   siguiente();
 });
 
-// ── Paso 4: AFIP — guardar referencia de archivo en memoria ───────
+// ── Paso 4: AFIP — generar CSR, subir certificado firmado, o .p12 manual ─
+$('af-btn-generar-csr').addEventListener('click', async () => {
+  const btn = $('af-btn-generar-csr');
+  btn.disabled = true;
+  btn.textContent = 'Generando…';
+  try {
+    const r = await fetch(`${API}/instalacion/afip-csr`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        razon_social: wiz.negocio?.razon_social || '',
+        cuit: wiz.negocio?.cuit || '',
+        alias: $('af-alias').value.trim() || wiz.negocio?.nombre_fantasia || '',
+      }),
+    });
+    const d = await r.json();
+    if (!r.ok) { aviso($('af-resultado-csr'), d.error || 'Error al generar el CSR', 'err'); return; }
+
+    wiz.afipKeyPendiente = d.key; // clave privada, solo en memoria hasta el commit
+
+    const blob = new Blob([d.csr], { type: 'application/pkcs10' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'logos_certificado.csr';
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    aviso($('af-resultado-csr'), 'CSR descargado. Subilo a ARCA y volvé acá con el certificado firmado.', 'ok');
+    $('af-sec-subir').style.display = '';
+  } catch { aviso($('af-resultado-csr'), 'Error de conexión', 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Generar clave y CSR'; }
+});
+
 $('af-btn-omitir').addEventListener('click', () => { wiz.afip = null; siguiente(); });
 $('af-btn-siguiente').addEventListener('click', () => {
-  const archivo      = $('af-archivo').files[0];
-  const punto_venta  = parseInt($('af-pv').value) || 1;
-  wiz.afip = archivo
-    ? { archivo, pass: $('af-pass').value, entorno: $('af-entorno').value, punto_venta }
-    : { punto_venta };   // sin certificado pero con PV registrado igual
+  const punto_venta   = parseInt($('af-pv').value) || 1;
+  const entorno       = $('af-entorno').value;
+  const archivoP12    = $('af-archivo').files[0];
+  const certFirmado   = $('af-cert-firmado').files[0];
+
+  if (certFirmado && wiz.afipKeyPendiente) {
+    wiz.afip = { certPemFile: certFirmado, key: wiz.afipKeyPendiente, entorno, punto_venta };
+  } else if (archivoP12) {
+    wiz.afip = { archivo: archivoP12, pass: $('af-pass').value, entorno, punto_venta };
+  } else {
+    wiz.afip = { punto_venta };   // sin certificado pero con PV registrado igual
+  }
   siguiente();
 });
 
@@ -747,7 +843,7 @@ function renderResumen() {
       <div class="resumen-fila"><span class="resumen-lbl">Administrador</span>${resumenVal(wiz.admin?.nombre + ' — PIN •••')}</div>
       <div class="resumen-fila"><span class="resumen-lbl">Empresa</span>${resumenVal(wiz.negocio?.razon_social)}</div>
       <div class="resumen-fila"><span class="resumen-lbl">CUIT</span>${resumenVal(wiz.negocio?.cuit)}</div>
-      <div class="resumen-fila"><span class="resumen-lbl">Certificado AFIP</span>${resumenVal(wiz.afip?.archivo?.name)}</div>
+      <div class="resumen-fila"><span class="resumen-lbl">Certificado AFIP</span>${resumenVal(wiz.afip?.certPemFile?.name || wiz.afip?.archivo?.name)}</div>
       <div class="resumen-fila"><span class="resumen-lbl">Logo</span>${resumenVal(wiz.logo?.archivo?.name)}</div>
       <div class="resumen-fila"><span class="resumen-lbl">Impresora</span>${resumenVal(wiz.impresora)}</div>
       <div class="resumen-fila"><span class="resumen-lbl">Usuarios extra</span>${resumenVal(wiz.usuarios.length ? wiz.usuarios.map(u => u.nombre).join(', ') : null)}</div>
@@ -844,7 +940,33 @@ async function ejecutarCommit() {
     progEstado(pNeg, 'ok', '✓');
 
     // 3. Certificado AFIP
-    if (wiz.afip) {
+    if (wiz.afip?.certPemFile && wiz.afip?.key) {
+      const pAf = progAgregar('Cargando certificado AFIP…');
+      progEstado(pAf, 'ejecutando', '↻');
+      const fd = new FormData();
+      fd.append('cert_pem', await wiz.afip.certPemFile.text());
+      fd.append('key_pem', wiz.afip.key);
+      fd.append('entorno', wiz.afip.entorno || 'homologacion');
+      const rAf = await fetch(`${API}/configuracion/cert-afip`, { method: 'POST', headers: ah, body: fd });
+      if (!rAf.ok) { const d = await rAf.json(); throw new Error('Al cargar el certificado AFIP: ' + (d.error || '')); }
+      progEstado(pAf, 'ok', '✓');
+
+      // 3.5. Autodetección del punto de venta (best-effort, no bloqueante:
+      // si ARCA todavía no tiene todo adherido, queda el valor tipeado a mano).
+      const pPv = progAgregar('Detectando punto de venta en ARCA…');
+      progEstado(pPv, 'ejecutando', '↻');
+      try {
+        const rPv = await fetch(`${API}/configuracion/puntos-venta-afip`, { headers: ah });
+        const dPv = await rPv.json();
+        if (dPv.ok && dPv.puntos_venta?.length) {
+          const pv = dPv.puntos_venta[0].numero;
+          await fetch(`${API}/configuracion`, { method: 'PUT', headers: jh, body: JSON.stringify({ ...cfgBody, punto_venta: pv }) });
+          progEstado(pPv, 'ok', `✓ PV ${pv}`);
+        } else {
+          progEstado(pPv, 'warn', '⚠');
+        }
+      } catch { progEstado(pPv, 'warn', '⚠'); }
+    } else if (wiz.afip?.archivo) {
       const pAf = progAgregar('Cargando certificado AFIP…');
       progEstado(pAf, 'ejecutando', '↻');
       const fd = new FormData();

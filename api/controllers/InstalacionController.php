@@ -250,6 +250,35 @@ class InstalacionController {
         json(200, ['id' => (int)$admin['id']]);
     }
 
+    /**
+     * POST /instalacion/afip-csr — genera clave privada + CSR para el paso
+     * AFIP del wizard. Pre-auth a propósito: en este punto del wizard
+     * todavía no existe admin ni necesariamente una fila en `configuracion`
+     * (todo se persiste recién en el commit final, ver ejecutarCommit() en
+     * pos/instalar.html), así que no puede depender de Auth::requireAdmin()
+     * ni de datos ya guardados — recibe razón social/CUIT del body (vienen
+     * del panel "negocio" del wizard, ya en memoria del lado del cliente) y
+     * no escribe nada en la base.
+     */
+    public function generarCsrAfip(): void {
+        $body        = json_decode(file_get_contents('php://input'), true) ?: [];
+        $razonSocial = trim($body['razon_social'] ?? '');
+        $cuit        = trim($body['cuit'] ?? '');
+        $alias       = trim($body['alias'] ?? '') ?: $razonSocial;
+
+        if ($razonSocial === '' || $cuit === '') {
+            json(400, ['error' => 'Faltan razón social o CUIT.']);
+        }
+
+        require_once __DIR__ . '/../helpers/AfipCsr.php';
+        try {
+            $par = AfipCsr::generar($razonSocial, $cuit, $alias);
+            json(200, ['key' => $par['key'], 'csr' => $par['csr']]);
+        } catch (AfipCsrException $e) {
+            json(400, ['error' => $e->getMessage()]);
+        }
+    }
+
     // ── Crear el primer administrador (solo si no existe ninguno) ────
     public function crearAdmin(): void {
         $db = DB::get();

@@ -185,25 +185,41 @@ class ConfiguracionController {
     }
 
     public function subirCertAfip(): void {
-        if (empty($_FILES['cert_p12']) || $_FILES['cert_p12']['error'] !== UPLOAD_ERR_OK) {
-            json(400, ['error' => 'No se recibió el archivo .p12']);
-        }
-
-        $contenido = file_get_contents($_FILES['cert_p12']['tmp_name']);
-        $pass      = (string)($_POST['cert_pass'] ?? '');
-        $certs     = [];
-
-        if (!openssl_pkcs12_read($contenido, $certs, $pass)) {
-            json(400, ['error' => 'No se pudo leer el certificado. Verificá que el archivo y la contraseña sean correctos.']);
-        }
-
-        $cert = $certs['cert'] ?? null;
-        $key  = $certs['pkey'] ?? null;
-        if (!$cert || !$key) {
-            json(400, ['error' => 'El archivo .p12 no contiene certificado y clave válidos.']);
-        }
-
         $entorno = (($_POST['entorno'] ?? '') === 'produccion') ? 'produccion' : 'homologacion';
+
+        if (!empty($_POST['cert_pem']) && !empty($_POST['key_pem'])) {
+            // Camino nuevo: CSR generado por Logos, certificado firmado por ARCA.
+            // Ver AfipCsr::generar() (InstalacionController/ConfiguracionController::generarCsrAfip()).
+            require_once __DIR__ . '/../helpers/AfipCsr.php';
+            $certPem = (string)$_POST['cert_pem'];
+            $keyPem  = (string)$_POST['key_pem'];
+            try {
+                AfipCsr::validarCertContraClave($certPem, $keyPem);
+            } catch (AfipCsrException $e) {
+                json(400, ['error' => $e->getMessage()]);
+            }
+            $cert = $certPem;
+            $key  = $keyPem;
+        } else {
+            // Camino existente: .p12 armado a mano (ej. por el contador del cliente).
+            if (empty($_FILES['cert_p12']) || $_FILES['cert_p12']['error'] !== UPLOAD_ERR_OK) {
+                json(400, ['error' => 'No se recibió el archivo .p12']);
+            }
+
+            $contenido = file_get_contents($_FILES['cert_p12']['tmp_name']);
+            $pass      = (string)($_POST['cert_pass'] ?? '');
+            $certs     = [];
+
+            if (!openssl_pkcs12_read($contenido, $certs, $pass)) {
+                json(400, ['error' => 'No se pudo leer el certificado. Verificá que el archivo y la contraseña sean correctos.']);
+            }
+
+            $cert = $certs['cert'] ?? null;
+            $key  = $certs['pkey'] ?? null;
+            if (!$cert || !$key) {
+                json(400, ['error' => 'El archivo .p12 no contiene certificado y clave válidos.']);
+            }
+        }
 
         DB::get()->prepare("
             INSERT INTO configuracion (id, afip_cert, afip_key, afip_entorno, actualizado_en)
@@ -217,6 +233,52 @@ class ConfiguracionController {
 
         Configuracion::invalidar();
         json(200, ['ok' => true, 'entorno' => $entorno]);
+    }
+
+    /**
+     * POST /configuracion/afip-csr — genera clave privada + CSR para
+     * renovar/reemplazar el certificado ARCA desde Configuración (fuera del
+     * wizard). Autocompleta razón social/CUIT desde la config ya guardada, a
+     * diferencia de InstalacionController::generarCsrAfip() que los recibe
+     * del body porque en el wizard todavía no hay nada persistido.
+     */
+    public function generarCsrAfip(): void {
+        $config      = Configuracion::get();
+        $razonSocial = trim((string)($config['razon_social'] ?? ''));
+        $cuit        = trim((string)($config['cuit'] ?? ''));
+        if ($razonSocial === '' || $cuit === '') {
+            json(400, ['error' => 'Completá razón social y CUIT en Configuración antes de generar el CSR.']);
+        }
+
+        $body  = json_decode(file_get_contents('php://input'), true) ?: [];
+        $alias = trim($body['alias'] ?? '') ?: (trim((string)($config['nombre_fantasia'] ?? '')) ?: $razonSocial);
+
+        require_once __DIR__ . '/../helpers/AfipCsr.php';
+        try {
+            $par = AfipCsr::generar($razonSocial, $cuit, $alias);
+            json(200, ['key' => $par['key'], 'csr' => $par['csr']]);
+        } catch (AfipCsrException $e) {
+            json(400, ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * GET /configuracion/puntos-venta-afip — autodetección del punto de venta
+     * vía WSFE FEParamGetPtosVenta. Responde 200 con ok:false (no 500) si ARCA
+     * rechaza la consulta: "todavía no está adherido" o "el cert recién se
+     * subió y ARCA tarda en propagarlo" son resultados esperados, no errores
+     * de servidor — el frontend debe mostrar el mensaje y caer al ingreso
+     * manual, no tratarlo como una falla.
+     */
+    public function puntosVentaAfip(): void {
+        $config = Configuracion::get();
+        require_once __DIR__ . '/../helpers/AfipWs.php';
+        try {
+            $ptos = AfipWs::paramGetPtosVenta($config);
+            json(200, ['ok' => true, 'puntos_venta' => $ptos]);
+        } catch (AfipException $e) {
+            json(200, ['ok' => false, 'error' => $e->getMessage()]);
+        }
     }
 
     public function listarImpresoras(): void {

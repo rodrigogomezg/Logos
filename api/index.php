@@ -75,6 +75,7 @@ try {
                 $metodo === 'POST' && $accion === 'probar-conexion'   => $ctrl->probarConexion(),
                 $metodo === 'POST' && $accion === 'instalar'          => $ctrl->instalar(),
                 $metodo === 'POST' && $accion === 'admin'             => $ctrl->crearAdmin(),
+                $metodo === 'POST' && $accion === 'afip-csr'          => $ctrl->generarCsrAfip(),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
@@ -314,9 +315,11 @@ try {
             match (true) {
                 $metodo === 'GET'  && $accion === 'impresoras'      => $ctrl->listarImpresoras(),
                 $metodo === 'GET'  && $accion === 'logo'            => $ctrl->logo(),
+                $metodo === 'GET'  && $accion === 'puntos-venta-afip' => $ctrl->puntosVentaAfip(),
                 $metodo === 'GET'                                    => $ctrl->get(),
                 $metodo === 'PUT'                                    => $ctrl->actualizar(),
                 $metodo === 'POST' && $accion === 'cert-afip'         => $ctrl->subirCertAfip(),
+                $metodo === 'POST' && $accion === 'afip-csr'          => $ctrl->generarCsrAfip(),
                 $metodo === 'POST' && $accion === 'logo'             => $ctrl->subirLogo(),
                 $metodo === 'POST' && $accion === 'probar-impresion' => $ctrl->probarImpresion(),
                 $metodo === 'POST' && $accion === 'backup'           => $ctrl->backupAhora(),

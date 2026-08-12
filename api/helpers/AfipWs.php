@@ -322,6 +322,47 @@ class AfipWs {
 
     // ── WSFE ──────────────────────────────────────────────────────────
 
+    /**
+     * Lista los puntos de venta habilitados en ARCA para el CUIT/certificado
+     * configurados (WSFEv1 FEParamGetPtosVenta). Se usa para autodetección en
+     * el wizard/renovación (evita que el cliente tenga que tipear el número a
+     * mano) y de paso sirve como verificación indirecta de que el servicio de
+     * Facturación Electrónica quedó bien adherido: si ARCA rechaza la
+     * llamada, el error se propaga tal cual (AfipException) en vez de que el
+     * caller tenga que adivinar qué pasó.
+     *
+     * Devuelve [['numero' => int, 'tipo' => string, 'bloqueado' => bool], ...],
+     * omitiendo los puntos de venta bloqueados o dados de baja.
+     */
+    public static function paramGetPtosVenta(array $config): array {
+        if (empty($config['afip_cert']) || empty($config['afip_key'])) {
+            throw new AfipException('No hay certificado ARCA cargado.');
+        }
+        $cuit = (int)preg_replace('/\D/', '', (string)($config['cuit'] ?? ''));
+        if (!$cuit) throw new AfipException('El CUIT del negocio no está configurado.');
+        $entorno = ($config['afip_entorno'] ?? 'homologacion') === 'produccion' ? 'produccion' : 'homologacion';
+
+        $ta   = self::obtenerTA($config, $entorno);
+        $body = '<ar:FEParamGetPtosVenta>' . self::authXml($ta, $cuit) . '</ar:FEParamGetPtosVenta>';
+        $resp = self::wsfeCall('FEParamGetPtosVenta', $body, $entorno);
+        $r    = $resp->FEParamGetPtosVentaResult ?? null;
+        if ($r === null) throw new AfipException('Respuesta inesperada de ARCA al listar puntos de venta.');
+
+        self::tirarSiHayErrores($r, 'listar los puntos de venta');
+
+        $ptos = [];
+        foreach ($r->ResultGet->PtoVenta ?? [] as $pv) {
+            $bloqueado = (string)($pv->Bloqueado ?? 'N') === 'S';
+            if ($bloqueado || !empty($pv->FchBaja)) continue;
+            $ptos[] = [
+                'numero'    => (int)$pv->Nro,
+                'tipo'      => (string)($pv->EmisionTipo ?? ''),
+                'bloqueado' => $bloqueado,
+            ];
+        }
+        return $ptos;
+    }
+
     private static function feCompUltimoAutorizado(array $ta, int $cuit, int $ptoVta, int $tipoCmp, string $entorno): int {
         $body =
             '<ar:FECompUltimoAutorizado>' .

@@ -428,15 +428,11 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
       <div class="card-titulo">Facturación electrónica AFIP</div>
       <div class="card-body">
         <div id="afip-estado-row"></div>
-        <div class="form-grid">
+
+        <div class="form-grid" style="margin-top:12px">
           <div class="form-group full">
-            <label class="form-label">Nuevo certificado digital (.p12)</label>
-            <input type="file" class="form-input" id="afip-cert-file" accept=".p12,.pfx">
-            <div class="form-hint">Descargalo desde el portal de AFIP → Administración de Certificados Digitales. Subir un nuevo archivo reemplaza el anterior.</div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Contraseña del .p12</label>
-            <input type="password" class="form-input" id="afip-cert-pass" autocomplete="new-password">
+            <label class="form-label">Alias del certificado</label>
+            <input type="text" class="form-input" id="afip-alias" placeholder="Ej: LogosPOS">
           </div>
           <div class="form-group">
             <label class="form-label">Entorno</label>
@@ -447,8 +443,35 @@ table.cajas input[type="text"]:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(
           </div>
         </div>
         <div class="btn-row">
-          <button class="btn btn-ok" id="btn-subir-cert">Guardar certificado</button>
+          <button class="btn btn-ok" id="btn-generar-csr">Generar clave y CSR nuevo</button>
         </div>
+        <div id="afip-csr-resultado"></div>
+
+        <div class="form-group full" id="afip-subir-firmado-grupo" style="display:none;margin-top:10px">
+          <label class="form-label">Certificado firmado (descargado de ARCA)</label>
+          <input type="file" class="form-input" id="afip-cert-firmado" accept=".pem,.crt,.cer,.txt">
+          <div class="btn-row">
+            <button class="btn btn-ok" id="btn-subir-firmado">Guardar certificado</button>
+          </div>
+        </div>
+
+        <details style="margin-top:14px;font-size:12px">
+          <summary style="cursor:pointer;font-weight:600">Subir un archivo .p12 en vez (opción avanzada)</summary>
+          <div class="form-grid" style="margin-top:10px">
+            <div class="form-group full">
+              <label class="form-label">Nuevo certificado digital (.p12)</label>
+              <input type="file" class="form-input" id="afip-cert-file" accept=".p12,.pfx">
+              <div class="form-hint">Subir un nuevo archivo reemplaza el anterior.</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contraseña del .p12</label>
+              <input type="password" class="form-input" id="afip-cert-pass" autocomplete="new-password">
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-ok" id="btn-subir-cert">Guardar certificado</button>
+          </div>
+        </details>
       </div>
     </div>
 
@@ -972,6 +995,7 @@ async function cargarConfig() {
   renderPosnetTabla();
   renderAfipEstado(configActual);
   $('afip-entorno').value = configActual.afip_entorno || 'homologacion';
+  if (!$('afip-alias').value) $('afip-alias').value = configActual.nombre_fantasia || configActual.razon_social || '';
   // Integraciones — los tokens no se devuelven por la API, inputs quedan vacíos
   $('cfg-wa_phone_id').value      = configActual.wa_phone_id || '';
   $('cfg-wa_template_name').value = configActual.wa_template_name || 'envio_comprobante';
@@ -1801,7 +1825,60 @@ $('btn-reset-fabrica').addEventListener('click', async () => {
   }
 });
 
-// ── Certificado AFIP ────────────────────────────────────────
+// ── Certificado AFIP — generar CSR nuevo (renovación / primera vez) ──
+$('btn-generar-csr').addEventListener('click', async () => {
+  const btn = $('btn-generar-csr');
+  btn.disabled = true; btn.textContent = 'Generando…';
+  try {
+    const r = await fetch(`${API}/configuracion/afip-csr`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ alias: $('afip-alias').value.trim() }),
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error || 'Error al generar el CSR', 'err'); return; }
+
+    // sessionStorage: sobrevive un F5, se pierde si cierran la pestaña — si
+    // se pierde, el costo es solo volver a generar y subir a ARCA de nuevo.
+    sessionStorage.setItem('afip_key_pendiente', d.key);
+    const blob = new Blob([d.csr], { type: 'application/pkcs10' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'logos_certificado.csr';
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    toast('CSR descargado. Subilo a ARCA y volvé con el certificado firmado.', 'ok');
+    $('afip-subir-firmado-grupo').style.display = '';
+  } catch { toast('Error de conexión', 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Generar clave y CSR nuevo'; }
+});
+
+$('btn-subir-firmado').addEventListener('click', async () => {
+  const file = $('afip-cert-firmado').files[0];
+  const key  = sessionStorage.getItem('afip_key_pendiente');
+  if (!file) { toast('Seleccioná el certificado firmado', 'err'); return; }
+  if (!key)  { toast('Se perdió la clave generada (¿recargaste la página?). Generá el CSR de nuevo.', 'err'); return; }
+
+  const fd = new FormData();
+  fd.append('cert_pem', await file.text());
+  fd.append('key_pem', key);
+  fd.append('entorno', $('afip-entorno').value);
+  const btn = $('btn-subir-firmado');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    const res  = await fetch(`${API}/configuracion/cert-afip`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) { toast(data.error || 'Error al guardar el certificado', 'err'); return; }
+    sessionStorage.removeItem('afip_key_pendiente');
+    toast(`Certificado guardado — ${data.entorno === 'produccion' ? 'Producción' : 'Homologación'}`, 'ok');
+    $('afip-cert-firmado').value = '';
+    $('afip-subir-firmado-grupo').style.display = 'none';
+    await cargarConfig();
+  } catch { toast('Error de conexión', 'err'); }
+  finally { btn.disabled = false; btn.textContent = 'Guardar certificado'; }
+});
+
+// ── Certificado AFIP — .p12 manual (opción avanzada) ─────────
 $('btn-subir-cert').addEventListener('click', async () => {
   const file    = $('afip-cert-file').files[0];
   const pass    = $('afip-cert-pass').value;

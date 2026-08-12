@@ -88,4 +88,5 @@ $cont_tipo = $nav_activo === 'contactos'       && ($_GET['tipo'] ?? 'cliente') =
 <script src="/Logos/pos/auth.js?v=<?= @filemtime(__DIR__ . '/auth.js') ?: 0 ?>"></script>
 <script src="/Logos/pos/tour.js?v=<?= @filemtime(__DIR__ . '/tour.js') ?: 0 ?>"></script>
 <script src="/Logos/pos/licencia.js?v=<?= @filemtime(__DIR__ . '/licencia.js') ?: 0 ?>"></script>
+<script src="/Logos/pos/afip-cert-aviso.js?v=<?= @filemtime(__DIR__ . '/afip-cert-aviso.js') ?: 0 ?>"></script>
 <script src="/Logos/pos/backups.js?v=<?= @filemtime(__DIR__ . '/backups.js') ?: 0 ?>"></script>
