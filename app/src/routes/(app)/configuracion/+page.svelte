@@ -806,6 +806,16 @@
 		toast_('Depósito guardado', 'ok');
 	}
 
+	// Días hasta el vencimiento del certificado AFIP (negativo = ya vencido).
+	// Alimenta la escalada visual del estado de abajo — mismo umbral (30 días)
+	// que pos/afip-cert-aviso.js / cargarAfip() en (app)/+layout.svelte.
+	const afipDiasVencimiento = $derived.by(() => {
+		if (!cfgAfipVencimiento) return null;
+		const [d, m, y] = cfgAfipVencimiento.split('/').map(Number);
+		const venc = new Date(y, m - 1, d);
+		return Math.ceil((venc.getTime() - Date.now()) / 86400000);
+	});
+
 	// ── Certificado AFIP — autoservicio de CSR (Logos genera clave+CSR, el
 	// cliente sube el CSR a ARCA y vuelve con el certificado firmado) ──────
 	// La clave privada pendiente vive en sessionStorage (no en $state): tiene
@@ -1353,7 +1363,13 @@
 						<div class="card-titulo">Facturación electrónica AFIP</div>
 						<div class="card-body">
 							{#if cfgAfipConfigurado}
-								<div class="afip-estado ok"><span class="afip-dot"></span>Certificado cargado · {cfgAfipEntorno === 'produccion' ? 'Producción' : 'Homologación'}{cfgAfipVencimiento ? ` — vence el ${cfgAfipVencimiento}` : ''}</div>
+								{#if afipDiasVencimiento !== null && afipDiasVencimiento < 0}
+									<div class="afip-estado err"><span class="afip-dot"></span>Certificado vencido el {cfgAfipVencimiento} — las facturas electrónicas no van a funcionar hasta que lo renueves.</div>
+								{:else if afipDiasVencimiento !== null && afipDiasVencimiento <= 30}
+									<div class="afip-estado warn"><span class="afip-dot"></span>Certificado cargado · {cfgAfipEntorno === 'produccion' ? 'Producción' : 'Homologación'} — vence en {afipDiasVencimiento} día{afipDiasVencimiento === 1 ? '' : 's'} ({cfgAfipVencimiento}). Generá uno nuevo antes de que venza.</div>
+								{:else}
+									<div class="afip-estado ok"><span class="afip-dot"></span>Certificado cargado · {cfgAfipEntorno === 'produccion' ? 'Producción' : 'Homologación'}{cfgAfipVencimiento ? ` — vence el ${cfgAfipVencimiento}` : ''}</div>
+								{/if}
 							{:else}
 								<div class="afip-estado warn"><span class="afip-dot"></span>Sin certificado — las facturas electrónicas no van a funcionar hasta que lo configures.</div>
 							{/if}
@@ -2211,6 +2227,13 @@
 	.afip-estado.warn {
 		background: rgba(243, 156, 18, 0.1);
 		color: var(--neo-warning);
+	}
+	.afip-estado.err {
+		background: rgba(231, 76, 60, 0.1);
+		color: var(--neo-danger);
+	}
+	.afip-estado.err .afip-dot {
+		background: var(--neo-danger);
 	}
 	.afip-pasos-details {
 		margin-bottom: 16px;

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { goto, afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { apiUrl, apiJson, servidorCaido } from '$lib/api';
@@ -36,6 +36,27 @@
 		listo = true;
 		cargarLicencia();
 		cargarAfip();
+		cargarRazonSocial();
+	});
+
+	// ── Título de la ventana/pestaña con el nombre del negocio (port de
+	// auth.js:314-320) — cada página fija su propio <title>"Logos — X"</title>
+	// vía <svelte:head>, así que hay que reaplicar el reemplazo después de
+	// cada navegación, no solo una vez al arrancar.
+	let razonSocial = $state('');
+	async function cargarRazonSocial() {
+		try {
+			const cfg = await apiJson<{ razon_social?: string }>('/configuracion');
+			if (cfg.razon_social) {
+				razonSocial = cfg.razon_social;
+				document.title = document.title.replace(/^Logos/, razonSocial);
+			}
+		} catch {
+			// sin conexión al backend — dejar el título default
+		}
+	}
+	afterNavigate(() => {
+		if (razonSocial) document.title = document.title.replace(/^Logos/, razonSocial);
 	});
 
 	// ── Licencia — badge + toast diario (port de pos/licencia.js) ──────────

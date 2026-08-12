@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { api } from '$lib/api';
+	import { puede } from '$lib/session';
 
 	// POC: subconjunto "core" de contacto-modal.php (pos/contacto-modal.php).
 	// Deliberadamente afuera de este spike: domicilios de envío (sub-lista
@@ -131,6 +132,68 @@
 		errorModal = '';
 		await cargarListasYReglas();
 		modalAbierto = true;
+	}
+
+	// ── Importar CSV — port de pos/contactos.html (quedó deliberadamente
+	// afuera del spike inicial a SvelteKit, nunca se retomó). Si ya existe un
+	// registro con el mismo CUIT se actualiza en vez de duplicarse.
+	let modalImportAbierto = $state(false);
+	let csvFile = $state<File | null>(null);
+	let csvArrastrando = $state(false);
+	let importando = $state(false);
+	let importResultado = $state<{ creados: number; actualizados: number; errores?: string[] } | null>(null);
+	let importError = $state('');
+	let csvInput = $state<HTMLInputElement | undefined>();
+
+	function abrirImport() {
+		csvFile = null;
+		importResultado = null;
+		importError = '';
+		if (csvInput) csvInput.value = '';
+		modalImportAbierto = true;
+	}
+
+	function setCSV(file: File) {
+		csvFile = file;
+		importResultado = null;
+		importError = '';
+	}
+
+	function onDropCSV(e: DragEvent) {
+		e.preventDefault();
+		csvArrastrando = false;
+		const file = e.dataTransfer?.files?.[0];
+		if (file) setCSV(file);
+	}
+
+	async function subirCsv() {
+		if (!csvFile) return;
+		importando = true;
+		importError = '';
+		importResultado = null;
+		try {
+			const fd = new FormData();
+			fd.append('csv', csvFile);
+			const res = await api(`/${tipo}/importar`, { method: 'POST', body: fd });
+			const data = await res.json();
+			if (!res.ok) {
+				importError = data.error || 'Error al importar el archivo.';
+				return;
+			}
+			importResultado = data;
+			if (!data.errores?.length) {
+				pagina = 1;
+				await cargar();
+			}
+		} catch {
+			importError = 'Error de conexión.';
+		} finally {
+			importando = false;
+		}
+	}
+
+	function descargarPlantilla() {
+		window.location.href = `/Logos/api/${tipo}/plantilla-csv`;
 	}
 
 	async function abrirEditar(c: Contacto) {
@@ -282,6 +345,9 @@
 			<option value="0">Inactivos</option>
 		</select>
 		<div style="flex:1"></div>
+		{#if puede('importar')}
+			<button class="btn btn-sec" onclick={abrirImport}>Importar CSV</button>
+		{/if}
 		<button class="btn btn-ok" onclick={abrirNuevo}>+ Nuevo</button>
 	</div>
 
@@ -522,6 +588,68 @@
 				<button class="cm-btn cm-btn-sec" onclick={cerrarModal}>Cancelar</button>
 				<button class="cm-btn cm-btn-ok" disabled={guardando} onclick={guardar}>
 					{guardando ? 'Guardando…' : 'Guardar'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if modalImportAbierto}
+	<div class="cm-overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && (modalImportAbierto = false)}>
+		<div class="cm-modal" style="width:min(96vw,540px);height:auto">
+			<div class="cm-header">
+				<h3>Importar {tipo === 'clientes' ? 'clientes' : 'proveedores'} — CSV</h3>
+				<button class="cm-header-cerrar" onclick={() => (modalImportAbierto = false)}>✕</button>
+			</div>
+			<div class="cm-body cm-col" style="gap:12px">
+				<p style="font-size:13px;color:#9B9590;margin:0">
+					Subí un archivo CSV con los datos de {tipo === 'clientes' ? 'clientes' : 'proveedores'}. Si ya existe un
+					registro con el mismo CUIT se actualizan sus datos.
+					<button type="button" class="link-plantilla" onclick={descargarPlantilla}>Descargar plantilla</button>.
+				</p>
+				<div
+					class="drop-zone"
+					class:drag-over={csvArrastrando}
+					role="button"
+					tabindex="0"
+					onclick={() => csvInput?.click()}
+					onkeydown={(e) => e.key === 'Enter' && csvInput?.click()}
+					ondragover={(e) => (e.preventDefault(), (csvArrastrando = true))}
+					ondragleave={() => (csvArrastrando = false)}
+					ondrop={onDropCSV}
+				>
+					<div>Arrastrá el archivo aquí o hacé click para seleccionar</div>
+					<input
+						type="file"
+						accept=".csv,text/csv"
+						style="display:none"
+						bind:this={csvInput}
+						onchange={() => csvInput?.files?.[0] && setCSV(csvInput.files[0])}
+					/>
+				</div>
+				{#if csvFile}
+					<div style="font-size:12px;color:#9B9590">{csvFile.name} ({(csvFile.size / 1024).toFixed(1)} KB)</div>
+				{/if}
+				{#if importError}
+					<div class="import-result"><span class="err">Error: {importError}</span></div>
+				{/if}
+				{#if importResultado}
+					<div class="import-result">
+						<span class="ok">Creados: {importResultado.creados} · Actualizados: {importResultado.actualizados}</span>
+						{#if importResultado.errores?.length}
+							<div class="errores-lista">
+								{#each importResultado.errores as e (e)}
+									{e}<br />
+								{/each}
+							</div>
+						{/if}
+					</div>
+				{/if}
+			</div>
+			<div class="cm-footer">
+				<button class="cm-btn cm-btn-sec" onclick={() => (modalImportAbierto = false)}>Cancelar</button>
+				<button class="cm-btn cm-btn-ok" disabled={!csvFile || importando} onclick={subirCsv}>
+					{importando ? 'Importando…' : 'Subir e importar'}
 				</button>
 			</div>
 		</div>
@@ -958,5 +1086,56 @@
 	.cm-confirm p {
 		font-size: 13px;
 		margin: 0;
+	}
+
+	/* ── import CSV ──────────────────────────────────────────── */
+	.link-plantilla {
+		background: none;
+		border: none;
+		padding: 0;
+		font: inherit;
+		color: var(--color-primary);
+		cursor: pointer;
+		text-decoration: underline;
+	}
+	.drop-zone {
+		border: 1px dashed var(--borde-fuerte);
+		padding: 32px;
+		text-align: center;
+		cursor: pointer;
+		font-size: 13px;
+		color: #9b9590;
+		background: #fafaf9;
+		transition:
+			border-color 120ms,
+			background 120ms;
+	}
+	.drop-zone:hover,
+	.drop-zone.drag-over {
+		border-color: var(--color-primary);
+		background: var(--primary-soft);
+		color: #111;
+	}
+	.import-result {
+		font-size: 13px;
+		line-height: 1.7;
+		color: #111;
+	}
+	.import-result .ok {
+		color: #15803d;
+		font-weight: 600;
+	}
+	.import-result .err {
+		color: #b91c1c;
+	}
+	.errores-lista {
+		max-height: 120px;
+		overflow-y: auto;
+		background: #fff;
+		border: 1px solid var(--borde-fuerte);
+		padding: 8px 10px;
+		font-size: 12px;
+		color: #b91c1c;
+		margin-top: 6px;
 	}
 </style>
