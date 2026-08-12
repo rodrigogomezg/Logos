@@ -81,6 +81,7 @@
 		cfgAfipConfigurado = !!d.afip_configurado;
 		cfgAfipEntorno = d.afip_entorno || 'homologacion';
 		cfgAfipVencimiento = d.afip_cert_vencimiento || null;
+		if (!afipAlias) afipAlias = (d.nombre_fantasia as string) || (d.razon_social as string) || '';
 		cfgWaPhoneId = d.wa_phone_id || '';
 		cfgWaTemplateName = d.wa_template_name || 'envio_comprobante';
 		cfgMpConfigurado = !!d.mp_configurado;
@@ -805,7 +806,83 @@
 		toast_('Depósito guardado', 'ok');
 	}
 
-	// ── Certificado AFIP ────────────────────────────────────────
+	// ── Certificado AFIP — autoservicio de CSR (Logos genera clave+CSR, el
+	// cliente sube el CSR a ARCA y vuelve con el certificado firmado) ──────
+	// La clave privada pendiente vive en sessionStorage (no en $state): tiene
+	// que sobrevivir un F5 de la SPA mientras el cliente va y vuelve del
+	// portal de ARCA, igual que en pos/configuracion.html (versión legacy,
+	// ver commit de "autoservicio de certificado ARCA").
+	let afipAlias = $state('');
+	let generandoCsr = $state(false);
+	let afipCertFirmadoInput = $state<HTMLInputElement | undefined>();
+	let mostrarSubirFirmado = $state(false);
+	let guardandoFirmado = $state(false);
+
+	async function generarCsrAfip() {
+		generandoCsr = true;
+		try {
+			const res = await api('/configuracion/afip-csr', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ alias: afipAlias.trim() }),
+			});
+			const d = await res.json();
+			if (!res.ok) {
+				toast_(d.error || 'Error al generar el CSR', 'err');
+				return;
+			}
+			sessionStorage.setItem('afip_key_pendiente', d.key);
+			const blob = new Blob([d.csr], { type: 'application/pkcs10' });
+			const a = document.createElement('a');
+			a.href = URL.createObjectURL(blob);
+			a.download = 'logos_certificado.csr';
+			a.click();
+			URL.revokeObjectURL(a.href);
+			toast_('CSR descargado. Subilo a ARCA y volvé con el certificado firmado.', 'ok');
+			mostrarSubirFirmado = true;
+		} catch {
+			toast_('Error de conexión', 'err');
+		} finally {
+			generandoCsr = false;
+		}
+	}
+
+	async function subirCertFirmado() {
+		const file = afipCertFirmadoInput?.files?.[0];
+		if (!file) {
+			toast_('Seleccioná el certificado firmado', 'err');
+			return;
+		}
+		const key = sessionStorage.getItem('afip_key_pendiente');
+		if (!key) {
+			toast_('Se perdió la clave generada (¿recargaste la página?). Generá el CSR de nuevo.', 'err');
+			return;
+		}
+		const fd = new FormData();
+		fd.append('cert_pem', await file.text());
+		fd.append('key_pem', key);
+		fd.append('entorno', cfgAfipEntorno);
+		guardandoFirmado = true;
+		try {
+			const res = await api('/configuracion/cert-afip', { method: 'POST', body: fd });
+			const data = await res.json();
+			if (!res.ok) {
+				toast_(data.error || 'Error al guardar el certificado', 'err');
+				return;
+			}
+			sessionStorage.removeItem('afip_key_pendiente');
+			toast_(`Certificado guardado — ${data.entorno === 'produccion' ? 'Producción' : 'Homologación'}`, 'ok');
+			if (afipCertFirmadoInput) afipCertFirmadoInput.value = '';
+			mostrarSubirFirmado = false;
+			await cargarConfig();
+		} catch {
+			toast_('Error de conexión', 'err');
+		} finally {
+			guardandoFirmado = false;
+		}
+	}
+
+	// ── Certificado AFIP — .p12 manual (opción avanzada) ────────
 	let afipCertInput = $state<HTMLInputElement | undefined>();
 	let afipCertPass = $state('');
 	let subiendoCert = $state(false);
@@ -1280,13 +1357,12 @@
 							{:else}
 								<div class="afip-estado warn"><span class="afip-dot"></span>Sin certificado — las facturas electrónicas no van a funcionar hasta que lo configures.</div>
 							{/if}
-							<div class="form-grid">
+
+							<div class="form-grid" style="margin-top:12px">
 								<div class="form-group full">
-									<label class="form-label" for="afip-cert">Nuevo certificado digital (.p12)</label>
-									<input type="file" class="form-input" id="afip-cert" accept=".p12,.pfx" bind:this={afipCertInput} />
-									<div class="form-hint">Descargalo desde el portal de AFIP → Administración de Certificados Digitales. Subir un nuevo archivo reemplaza el anterior.</div>
+									<label class="form-label" for="afip-alias">Alias del certificado</label>
+									<input type="text" class="form-input" id="afip-alias" placeholder="Ej: LogosPOS" bind:value={afipAlias} />
 								</div>
-								<div class="form-group"><label class="form-label" for="afip-pass">Contraseña del .p12</label><input type="password" class="form-input" id="afip-pass" autocomplete="new-password" bind:value={afipCertPass} /></div>
 								<div class="form-group">
 									<label class="form-label" for="afip-ent">Entorno</label>
 									<select class="form-select" id="afip-ent" bind:value={cfgAfipEntorno}>
@@ -1296,8 +1372,33 @@
 								</div>
 							</div>
 							<div class="btn-row">
-								<button class="btn btn-ok" disabled={subiendoCert} onclick={subirCertAfip}>{subiendoCert ? 'Cargando…' : 'Guardar certificado'}</button>
+								<button class="btn btn-ok" disabled={generandoCsr} onclick={generarCsrAfip}>{generandoCsr ? 'Generando…' : 'Generar clave y CSR nuevo'}</button>
 							</div>
+
+							{#if mostrarSubirFirmado}
+								<div class="form-group full" style="margin-top:10px">
+									<label class="form-label" for="afip-cert-firmado">Certificado firmado (descargado de ARCA)</label>
+									<input type="file" class="form-input" id="afip-cert-firmado" accept=".pem,.crt,.cer,.txt" bind:this={afipCertFirmadoInput} />
+									<div class="btn-row">
+										<button class="btn btn-ok" disabled={guardandoFirmado} onclick={subirCertFirmado}>{guardandoFirmado ? 'Guardando…' : 'Guardar certificado'}</button>
+									</div>
+								</div>
+							{/if}
+
+							<details style="margin-top:14px;font-size:12px">
+								<summary style="cursor:pointer;font-weight:600">Subir un archivo .p12 en vez (opción avanzada)</summary>
+								<div class="form-grid" style="margin-top:10px">
+									<div class="form-group full">
+										<label class="form-label" for="afip-cert">Nuevo certificado digital (.p12)</label>
+										<input type="file" class="form-input" id="afip-cert" accept=".p12,.pfx" bind:this={afipCertInput} />
+										<div class="form-hint">Subir un nuevo archivo reemplaza el anterior.</div>
+									</div>
+									<div class="form-group"><label class="form-label" for="afip-pass">Contraseña del .p12</label><input type="password" class="form-input" id="afip-pass" autocomplete="new-password" bind:value={afipCertPass} /></div>
+								</div>
+								<div class="btn-row">
+									<button class="btn btn-ok" disabled={subiendoCert} onclick={subirCertAfip}>{subiendoCert ? 'Cargando…' : 'Guardar certificado'}</button>
+								</div>
+							</details>
 						</div>
 					</div>
 				</div>

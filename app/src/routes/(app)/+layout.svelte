@@ -35,6 +35,7 @@
 		sesion = s;
 		listo = true;
 		cargarLicencia();
+		cargarAfip();
 	});
 
 	// ── Licencia — badge + toast diario (port de pos/licencia.js) ──────────
@@ -54,6 +55,37 @@
 			if (!localStorage.getItem(clave)) {
 				localStorage.setItem(clave, '1');
 				toast_(estado.mensaje ?? 'Hay un problema con la licencia. Revisá Configuración.', 'warn');
+			}
+		} catch {
+			// sin conexión al backend — no bloquear el nav por esto
+		}
+	}
+
+	// ── Certificado AFIP — badge + toast si vence pronto (port de
+	// pos/afip-cert-aviso.js). Mismo GET /configuracion público que ya se usa
+	// en toda la SPA — cero endpoints nuevos para esto.
+	const AFIP_DIAS_AVISO = 30;
+	let afipBadge = $state(false);
+	async function cargarAfip() {
+		try {
+			const cfg = await apiJson<{ afip_configurado?: boolean; afip_cert_vencimiento?: string | null }>('/configuracion');
+			if (!cfg.afip_configurado || !cfg.afip_cert_vencimiento) return;
+			const [d, m, y] = cfg.afip_cert_vencimiento.split('/').map(Number);
+			const venc = new Date(y, m - 1, d);
+			const dias = Math.ceil((venc.getTime() - Date.now()) / 86400000);
+			if (dias > AFIP_DIAS_AVISO) return;
+			afipBadge = true;
+			const vencido = dias < 0;
+			const hoy = new Date().toISOString().slice(0, 10);
+			const clave = `afip_toast_${hoy}`;
+			if (!localStorage.getItem(clave)) {
+				localStorage.setItem(clave, '1');
+				toast_(
+					vencido
+						? 'Certificado AFIP vencido — renovalo en Configuración.'
+						: `Certificado AFIP vence en ${dias} día${dias === 1 ? '' : 's'} — renovalo en Configuración.`,
+					'warn'
+				);
 			}
 		} catch {
 			// sin conexión al backend — no bloquear el nav por esto
@@ -301,6 +333,7 @@
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
 				<span class="nav-icon-label">Config</span>
 				{#if licBadge}<span class="lic-badge" title="Hay un problema con la licencia"></span>{/if}
+				{#if afipBadge}<span class="lic-badge afip-badge" title="El certificado AFIP vence pronto o está vencido"></span>{/if}
 			</a>
 		{/if}
 		<div class="nav-sep"></div>
@@ -482,6 +515,10 @@
 		height: 8px;
 		border-radius: 50%;
 		background: var(--neo-danger);
+	}
+	.lic-badge.afip-badge {
+		right: -16px;
+		background: #f39c12;
 	}
 	.nav-fecha,
 	.nav-usuario {
