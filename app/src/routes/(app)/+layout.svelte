@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, afterNavigate } from '$app/navigation';
+	import { goto, afterNavigate, beforeNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { apiUrl, apiJson, servidorCaido } from '$lib/api';
@@ -13,6 +13,7 @@
 		type Sucursal
 	} from '$lib/session';
 	import { tieneMultiSucursal, setSucursalActiva, setCajaOperativa, cajaOperativaId } from '$lib/operativa';
+	import { tourDisponible, startTour, dismissTour } from '$lib/tour';
 	import Toast from '$lib/Toast.svelte';
 	import ConfirmModal from '$lib/ConfirmModal.svelte';
 	import PdfViewerModal from '$lib/PdfViewerModal.svelte';
@@ -57,6 +58,16 @@
 	}
 	afterNavigate(() => {
 		if (razonSocial) document.title = document.title.replace(/^Logos/, razonSocial);
+	});
+
+	// beforeNavigate (no afterNavigate) a propósito: tiene que correr ANTES
+	// de que la página nueva monte, para no pisar el setTourSteps() que esa
+	// página hace en su propio onMount. afterNavigate también dispara en la
+	// carga inicial (a diferencia de beforeNavigate) — con afterNavigate acá
+	// el reset corría DESPUÉS del onMount de la primera pantalla y pisaba el
+	// tour recién activado, dejando el botón "?" escondido siempre.
+	beforeNavigate(() => {
+		dismissTour();
 	});
 
 	// ── Licencia — badge + toast diario (port de pos/licencia.js) ──────────
@@ -357,6 +368,14 @@
 				{#if afipBadge}<span class="lic-badge afip-badge" title="El certificado AFIP vence pronto o está vencido"></span>{/if}
 			</a>
 		{/if}
+		{#if $tourDisponible}
+			<button
+				class="nav-tour-btn"
+				title="Tour guiado — conocé esta pantalla"
+				aria-label="Tour guiado"
+				onclick={() => startTour()}>?</button
+			>
+		{/if}
 		<div class="nav-sep"></div>
 		<div class="nav-fecha">{fechaHoy}</div>
 		<div class="nav-sep"></div>
@@ -540,6 +559,28 @@
 	.lic-badge.afip-badge {
 		right: -16px;
 		background: #f39c12;
+	}
+	.nav-tour-btn {
+		background: none;
+		border: 1px solid rgba(255, 255, 255, 0.28);
+		border-radius: 50%;
+		width: 26px;
+		height: 26px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		font-size: 13px;
+		font-weight: 700;
+		color: rgba(255, 255, 255, 0.62);
+		flex-shrink: 0;
+		transition:
+			border-color 0.15s,
+			color 0.15s;
+	}
+	.nav-tour-btn:hover {
+		border-color: rgba(255, 255, 255, 0.7);
+		color: #fff;
 	}
 	.nav-fecha,
 	.nav-usuario {

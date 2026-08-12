@@ -8,6 +8,28 @@
 		<!-- Sistema de diseño existente, reutilizado tal cual (ver vite.config.ts
 		     para el proxy de dev que lo resuelve contra el PHP real). -->
 		<link rel="stylesheet" href="/Logos/pos/pos-base.css" />
+		<script>
+			// Cada arranque real de la app (cierre y reapertura, reinicio tras
+			// auto-update, crash) tiene que pedir usuario y clave de nuevo — no
+			// alcanza con que se muera el proceso para que alguien físicamente
+			// frente a la PC quede adentro del POS sin loguearse. Port del
+			// mecanismo de Electron (preload.js + main.js, IPC "debe-limpiar-sesion")
+			// para la SPA/Tauri: en vez de IPC (que en Tauri sería async y podría
+			// perder la carrera contra el propio arranque de la SPA), se usa
+			// sessionStorage como flag — sobrevive un location.reload() dentro de
+			// la misma ventana (necesario: el botón "Reintentar" del overlay de
+			// servidor caído, y compras-nueva tras importar, hacen reload sin que
+			// deba cerrar la sesión), pero arranca vacío en un proceso nuevo de
+			// verdad (WebView2 nuevo) porque no es localStorage. Tiene que correr
+			// ANTES de cualquier script de SvelteKit (que lee logos_sesion). Ver
+			// CLAUDE.md y tray.rs (que cubre el otro caso: minimizar con la X).
+			try {
+				if (!sessionStorage.getItem('logos_sesion_check_hecho')) {
+					sessionStorage.setItem('logos_sesion_check_hecho', '1');
+					localStorage.removeItem('logos_sesion');
+				}
+			} catch (e) {}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

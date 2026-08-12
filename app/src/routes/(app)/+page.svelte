@@ -6,6 +6,7 @@
 	import { confirmar } from '$lib/confirm';
 	import { leerSesion } from '$lib/session';
 	import { cajaOperativaId } from '$lib/operativa';
+	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type Escala = { desde: number; precio: number };
 	type CartItem = {
@@ -1240,6 +1241,185 @@
 		actualizarLimiteCC();
 	});
 
+	// ── Tour guiado — port de pos/index.html (28 pasos). Selectores
+	// reverificados en vivo contra esta página en Svelte: la mayoría del
+	// naming se conservó igual, varios IDs de la versión legacy pasaron a
+	// ser clases acá (ej. #sel-panel → .sel-panel). Los onEnter llaman
+	// directo a las funciones/estado del componente en vez de simular clicks
+	// de DOM como hacía la versión legacy — más simple y más confiable.
+	const TOUR_STEPS: TourStep[] = [
+		{
+			el: null,
+			title: 'Bienvenido al POS',
+			body: 'Esta es la pantalla principal de ventas. En los próximos pasos te mostramos todas las funciones, paso a paso.'
+		},
+		{
+			el: '.tb-cliente',
+			title: 'Cliente',
+			body: 'Escribí el nombre o CUIT para buscar un cliente existente (atajo: F4). Con el botón <strong>+</strong> podés crear uno nuevo. Por defecto la venta queda como <em>Consumidor Final</em>.'
+		},
+		{
+			el: '#tipo-comp',
+			title: 'Tipo de comprobante',
+			body: 'Elegí entre Remito, Factura B, Factura A o Presupuesto. Las facturas electrónicas requieren cliente con CUIT y conectividad con AFIP.'
+		},
+		{
+			el: '.prod-bar',
+			title: 'Agregar productos',
+			body: 'Podés escribir el código o escanear con una lectora. Con <strong>F2</strong> buscás por nombre. El botón <strong>Catálogo</strong> (o F3) abre el buscador avanzado — te lo mostramos ahora.'
+		},
+		{
+			el: '.overlay .modal',
+			pad: 0,
+			title: 'Catálogo de productos',
+			body: 'Desde acá buscás en todo el catálogo. Podés buscar por nombre, marca o cualquier texto.',
+			onEnter: async ({ delay }) => {
+				abrirModal();
+				await delay(400);
+			}
+		},
+		{
+			el: '.modal-filtros',
+			title: 'Filtros',
+			body: 'Filtrá por proveedor, marca o rubro. El toggle <strong>Con stock</strong> muestra solo los productos con existencia disponible.'
+		},
+		{
+			el: '.modal-tabla',
+			title: 'Seleccionar productos',
+			body: 'Hacé click en una fila para seleccionarla (se resalta). Podés seleccionar varios productos antes de agregarlos al carrito.',
+			onEnter: async ({ delay }) => {
+				modalInput = 'PRUEBA';
+				await buscarModal();
+				await delay(300);
+				for (let i = 0; i < Math.min(2, modalResultados.length); i++) toggleSeleccion(modalResultados[i]);
+			}
+		},
+		{
+			el: '.sel-panel',
+			title: 'Panel de selección',
+			body: 'Cuando seleccionás productos aparece este panel mostrando los que elegiste. Revisá la lista antes de confirmar.'
+		},
+		{
+			el: '.items-card',
+			title: 'Carrito de productos',
+			body: 'Los productos agregados aparecen acá. Podés ver el código, nombre, cantidad y precio de cada ítem.',
+			onEnter: async ({ delay }) => {
+				confirmarSeleccionCatalogo();
+				await delay(500);
+			}
+		},
+		{
+			el: '.items-card',
+			pad: 0,
+			title: 'Editar cantidad y precio',
+			body: 'Con los botones <strong>+</strong> y <strong>−</strong> ajustás la cantidad, o hacés click directo en el número para editarlo. El precio unitario también es editable en cada fila.'
+		},
+		{
+			el: '.sel-bar',
+			title: 'Barra de acciones',
+			body: 'Seleccioná uno o más productos con el checkbox a la izquierda para activar esta barra. Permite aplicar cambios a todos los seleccionados a la vez.',
+			onEnter: async ({ delay }) => {
+				if (!todosMarcados) toggleTodos(true);
+				await delay(250);
+			}
+		},
+		{
+			el: '.sel-btn-del',
+			title: 'Eliminar seleccionados',
+			body: 'Elimina del carrito todos los ítems seleccionados de una sola vez.'
+		},
+		{
+			el: '.sel-aj-tipo-toggle',
+			title: 'Descuento o Incremento',
+			body: 'Elegí si querés aplicar un <strong>Descuento</strong> (−) o un <strong>Incremento</strong> (+) al precio de los ítems seleccionados.'
+		},
+		{
+			el: '.sel-aj-input-wrap',
+			title: 'Valor del ajuste',
+			body: 'Ingresá el valor. Con <strong>%</strong> aplicás un porcentaje; con <strong>$</strong> definís un monto fijo de descuento o aumento.'
+		},
+		{
+			el: '.sel-visible-wrap',
+			title: 'Mostrar en el comprobante',
+			body: 'Si está activo, el ajuste aparece detallado en el remito (ej: "−10%"). Si lo desactivás, el cliente ve solo el precio final, sin desglose.'
+		},
+		{
+			el: '.sel-aj-grupo + button',
+			title: 'Aplicar ajuste',
+			body: 'Presioná acá para aplicar el descuento o incremento configurado a todos los ítems seleccionados.'
+		},
+		{
+			el: '.sel-aj-grupo + button + button',
+			title: 'Limpiar ajustes',
+			body: 'Quita todos los ajustes manuales de los ítems seleccionados, dejando el precio modificado como estaba antes del ajuste.'
+		},
+		{
+			el: '[title="Restablecer al precio de lista original"]',
+			title: 'Precio de lista',
+			body: 'Restablece el precio de venta original del producto, deshaciendo cualquier ajuste o modificación manual.'
+		},
+		{
+			el: '.pago-grid',
+			title: 'Forma de pago',
+			body: 'Elegí entre 6 métodos: Efectivo, Transferencia, Cuenta Corriente, Tarjeta, Cheque o Mercado Pago. <strong>Cuenta Corriente</strong> suma el monto al saldo del cliente.'
+		},
+		{
+			el: '.pago-mixto-link',
+			title: 'Pago mixto',
+			body: 'Si el cliente paga con más de un método, usá esta opción para combinarlos. Te mostramos el modal ahora.'
+		},
+		{
+			el: '.pm-modal',
+			pad: 0,
+			title: 'Modal de pago mixto',
+			body: 'Acá ves el total a cobrar y configurás los distintos medios de pago con sus montos.',
+			onEnter: async ({ delay }) => {
+				abrirPM();
+				await delay(350);
+			}
+		},
+		{
+			el: '.pm-lineas',
+			title: 'Métodos y montos',
+			body: 'Elegí el medio de pago y el monto para cada línea. El botón <strong>Autocompletar</strong> calcula automáticamente el restante para cubrir el total.'
+		},
+		{
+			el: '.pm-estado',
+			title: 'Estado del cobro',
+			body: 'Muestra si el total está cubierto ✓, cuánto falta, o si excede. El botón <strong>Confirmar</strong> se habilita solo cuando los montos cuadran exactamente.'
+		},
+		{
+			el: '.pago-grid',
+			title: 'Forma de pago',
+			body: 'Seguimos con <strong>Efectivo</strong> para el resto del tour.',
+			onEnter: async ({ delay }) => {
+				cerrarPM();
+				await delay(300);
+				if (tipoPagoSel !== 'efectivo') elegirPagoTile('efectivo');
+			}
+		},
+		{
+			el: '.envio-toggle',
+			title: 'Envío a domicilio',
+			body: 'Activá este toggle para agregar un costo de envío y la dirección de entrega. El monto se suma automáticamente al total de la venta.'
+		},
+		{
+			el: '.top-bar',
+			title: 'Fecha y observaciones',
+			body: 'La fecha del comprobante es editable (útil para correcciones del día). En <strong>Observaciones</strong> podés dejar una nota interna que aparece impresa en el comprobante.'
+		},
+		{
+			el: '.col-der .btn.btn-ok',
+			title: 'Confirmar venta',
+			body: 'Con <strong>F10</strong> o este botón confirmás la venta: se descuenta stock, se genera el comprobante y queda guardada en el historial de Ventas.'
+		},
+		{
+			el: 'a[href="/ventas"]',
+			title: 'Ventas',
+			body: 'Todas las ventas confirmadas aparecen en <strong>Ventas</strong>. Desde ahí podés ver el historial, descargar PDFs, emitir notas de crédito y generar notas de envío. ¡Eso es todo para el POS!'
+		}
+	];
+
 	onMount(() => {
 		fechaVenta = todayStr();
 		verificarTurnoAbiertoInit();
@@ -1247,6 +1427,7 @@
 		filtrarTiposComprobanteInit();
 		codInputEl?.focus();
 		initEditarVenta().then(() => initCopiaVenta());
+		setTourSteps('index', TOUR_STEPS);
 	});
 </script>
 

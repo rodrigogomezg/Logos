@@ -791,6 +791,7 @@
 		depForm = { nombre: dep?.nombre || '', descripcion: dep?.descripcion || '', activo: dep ? !!dep.activo : true };
 		modalDeposito = true;
 	}
+	let guardandoDeposito = $state(false);
 	async function guardarDeposito() {
 		const nombre = depForm.nombre.trim();
 		if (!nombre) {
@@ -800,10 +801,22 @@
 		const body = { nombre, descripcion: depForm.descripcion.trim() || null, activo: depForm.activo, sucursal_id: sucActivaId };
 		const url = editDepId ? `/sucursales/deposito/${editDepId}` : '/sucursales/deposito';
 		const method = editDepId ? 'PUT' : 'POST';
-		await api(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-		modalDeposito = false;
-		if (sucActivaId) cargarDepositos(sucActivaId);
-		toast_('Depósito guardado', 'ok');
+		guardandoDeposito = true;
+		try {
+			const res = await api(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+			const data = await res.json();
+			if (!res.ok) {
+				toast_(data.error || 'Error al guardar el depósito', 'err');
+				return;
+			}
+			modalDeposito = false;
+			if (sucActivaId) await cargarDepositos(sucActivaId);
+			toast_('Depósito guardado', 'ok');
+		} catch {
+			toast_('Error de conexión', 'err');
+		} finally {
+			guardandoDeposito = false;
+		}
 	}
 
 	// Días hasta el vencimiento del certificado AFIP (negativo = ya vencido).
@@ -1809,6 +1822,9 @@
 		<div id="suc-floating-menu" class="suc-menu" style="top:{sucMenuPos.top}px;left:{sucMenuPos.left}px">
 			<label><input type="checkbox" checked={sucMenuDraftIds === null} onchange={(e) => toggleSucTodas(u, (e.target as HTMLInputElement).checked)} /> Todas</label>
 			<div class="suc-sep"></div>
+			{#if sucMenuDraftIds === null}
+				<div class="suc-menu-hint">Destildá "Todas" para elegir sucursales específicas</div>
+			{/if}
 			{#each sucursales as s (s.id)}
 				<label>
 					<input type="checkbox" checked={sucMenuDraftIds?.includes(s.id) ?? false} disabled={sucMenuDraftIds === null} onchange={(e) => toggleSucUna(u, s.id, (e.target as HTMLInputElement).checked)} />
@@ -1859,7 +1875,7 @@
 			</div>
 			<div class="modal-footer">
 				<button class="btn-sec" onclick={() => (modalDeposito = false)}>Cancelar</button>
-				<button class="btn-accion" onclick={guardarDeposito}>Guardar</button>
+				<button class="btn-accion" disabled={guardandoDeposito} onclick={guardarDeposito}>{guardandoDeposito ? 'Guardando…' : 'Guardar'}</button>
 			</div>
 		</div>
 	</div>
@@ -2653,6 +2669,13 @@
 	.suc-sep {
 		border-top: 1px solid var(--borde);
 		margin: 1px 0;
+	}
+	.suc-menu-hint {
+		font-size: 11px;
+		color: var(--neo-text-3);
+		line-height: 1.4;
+		white-space: normal;
+		max-width: 180px;
 	}
 	.perm-overlay {
 		position: fixed;
