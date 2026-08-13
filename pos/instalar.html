@@ -10,19 +10,33 @@
 <link rel="stylesheet" href="pos-base.css">
 <style>
   body { background: var(--neo-bg); align-items: center; justify-content: center; padding: 24px; }
-  .install-box { width: 560px; max-width: 100%; display: flex; flex-direction: column; align-items: center; gap: 24px; }
-  .install-box > img { height: 44px; }
 
-  .pasos-ind { display: flex; gap: 6px; width: 100%; }
+  /* Caso real (12/08/2026): con "max-height: calc(100vh - 48px)" en .panel
+     nada más, el cálculo solo restaba el padding del body (24+24) — nunca
+     el alto del logo + indicador de pasos + gaps que van ARRIBA del panel
+     dentro de .install-box. En pasos con mucho contenido (ej. AFIP) la caja
+     entera terminaba más alta que el viewport, y como body la centra como
+     un solo bloque (align-items/justify-content:center + overflow:hidden),
+     el sobrante se repartía mitad arriba/mitad abajo — empujando el logo
+     por ENCIMA del viewport, invisible. Fix: .install-box pasa a ser el que
+     limita su propio alto a la pantalla (con su propio overflow:hidden), y
+     .panel es un hijo flex:1 con min-height:0 (clave — sin esto un flex
+     item no se achica por debajo de su contenido) que absorbe el espacio
+     sobrante y scrollea internamente. Logo e indicador, al ser hermanos con
+     flex-shrink:0, quedan siempre fijos y visibles arriba. */
+  .install-box {
+    width: 560px; max-width: 100%; max-height: calc(100vh - 48px);
+    display: flex; flex-direction: column; align-items: center; gap: 24px;
+    overflow: hidden;
+  }
+  .install-box > img { height: 44px; flex-shrink: 0; }
+
+  .pasos-ind { display: flex; gap: 6px; width: 100%; flex-shrink: 0; }
   .paso-pill { flex: 1; height: 4px; border-radius: var(--neo-r-xs); background: var(--neo-bg-deep); box-shadow: var(--neo-i1); }
   .paso-pill.activo { background: var(--neo-accent); box-shadow: 0 0 0 2px var(--neo-accent-glow); }
   .paso-pill.hecho  { background: var(--neo-sd); }
 
-  /* max-height + scroll interno: body es 100vh/overflow:hidden (pos-base-core.css)
-     y algunos pasos (ej. AFIP, con sus 4 instrucciones + formulario) son más
-     altos que pantallas chicas — sin esto, el contenido que no entra queda
-     recortado arriba/abajo sin ninguna forma de llegar a él. */
-  .panel { width: 100%; max-height: calc(100vh - 48px); background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e3); padding: 28px; display: none; flex-direction: column; gap: 16px; border: none; overflow-y: auto; }
+  .panel { width: 100%; flex: 1 1 auto; min-height: 0; background: var(--neo-bg); border-radius: var(--neo-r-xl); box-shadow: var(--neo-e3); padding: 28px; display: none; flex-direction: column; gap: 16px; border: none; overflow-y: auto; }
   .panel.activo { display: flex; }
   .panel::-webkit-scrollbar        { width: 8px; }
   .panel::-webkit-scrollbar-track  { background: var(--neo-bg); }
@@ -62,6 +76,15 @@
   .btn-pri:disabled { background: var(--neo-bg-deep); color: var(--neo-text-3); cursor: not-allowed; box-shadow: var(--neo-i1); }
   .btn-sec { padding: 11px 22px; border: none; border-radius: var(--neo-r-sm); background: var(--neo-bg); color: var(--neo-text); box-shadow: var(--neo-e2); font-size: 13px; font-weight: 600; cursor: pointer; transition: box-shadow var(--neo-t-fast); }
   .btn-sec:hover { box-shadow: var(--neo-e3); }
+
+  /* Botón "Atrás" persistente — vive fuera de los paneles, arriba de todos
+     ellos, así no hay que repetirlo en cada uno. mostrarPaso() lo muestra/
+     esconde según el paso actual. */
+  #btn-atras { align-self: flex-start; flex-shrink: 0; padding: 6px 4px; border: none; background: none; color: var(--neo-text-3); font-size: 12px; font-weight: 600; cursor: pointer; display: none; }
+  #btn-atras:hover { color: var(--neo-accent); }
+
+  .af-clave-extra { font-size: 11px; color: var(--neo-text-3); background: none; border: none; text-decoration: underline; cursor: pointer; padding: 0; margin-top: 6px; }
+  .af-clave-extra:hover { color: var(--neo-accent); }
 
   .aviso { font-size: 13px; border-radius: var(--neo-r-sm); padding: 11px 13px; line-height: 1.5; border: none; box-shadow: var(--neo-e1); }
   .aviso.ok   { background: rgba(39,174,96,.08);  color: var(--neo-success);  box-shadow: var(--neo-e1), 0 0 0 1px rgba(39,174,96,.25); }
@@ -114,6 +137,7 @@
 <div class="install-box">
   <img src="/Logos/logos_logo.png" alt="Logos" id="wiz-logo">
   <div class="pasos-ind" id="pasos-ind"></div>
+  <button id="btn-atras" type="button">‹ Atrás</button>
 
   <!-- ── 0. Licencia ──────────────────────────────────────────── -->
   <div class="panel" id="panel-licencia">
@@ -233,54 +257,57 @@
     <div class="titulo">Facturación electrónica AFIP <span class="badge-opcional">Opcional</span></div>
     <div class="sub">Necesario para emitir Facturas A y B electrónicas con CAE. Si todavía no hiciste los trámites en AFIP, omitilo y configuralo después.</div>
 
-    <div class="aviso info" style="margin-top:0">
-      Necesitás hacer algunos trámites en el portal de ARCA (ex AFIP). Logos te genera la clave y el certificado — no hace falta que sepas nada de eso.
-    </div>
+    <details class="afip-avanzado" id="af-instrucciones">
+      <summary>Ver los pasos en el portal de ARCA (necesario solo la primera vez)</summary>
+      <div class="aviso info" style="margin-top:10px">
+        Necesitás hacer algunos trámites en el portal de ARCA (ex AFIP). Logos te genera la clave y el certificado — no hace falta que sepas nada de eso.
+      </div>
 
-    <div class="afip-pasos">
-      <div class="afip-paso">
-        <div class="afip-paso-num">1</div>
-        <div class="afip-paso-body">
-          <strong>Tener clave fiscal nivel 3</strong>
-          Necesitás clave fiscal con nivel de seguridad 3 o superior. Si solo tenés nivel 2, solicitá la suba de nivel en cualquier agencia de ARCA o por TAD.
+      <div class="afip-pasos" style="margin-top:10px">
+        <div class="afip-paso">
+          <div class="afip-paso-num">1</div>
+          <div class="afip-paso-body">
+            <strong>Tener clave fiscal nivel 3</strong>
+            Necesitás clave fiscal con nivel de seguridad 3 o superior. Si solo tenés nivel 2, solicitá la suba de nivel en cualquier agencia de ARCA o por TAD.
+          </div>
+        </div>
+        <div class="afip-paso">
+          <div class="afip-paso-num">2</div>
+          <div class="afip-paso-body">
+            <strong>Adherir "Administración de Certificados Digitales"</strong>
+            Ingresá con tu CUIT y clave fiscal → <code>Administrador de Relaciones</code> → <code>Adherir Servicio</code> → <code>ARCA</code> → <code>Servicios Interactivos</code> → <code>Administración de Certificados Digitales</code> → confirmá.
+          </div>
+        </div>
+        <div class="afip-paso">
+          <div class="afip-paso-num">3</div>
+          <div class="afip-paso-body">
+            <strong>Generar la clave acá abajo y descargar el CSR</strong>
+            Completá el alias y hacé clic en "Generar clave y CSR" — se descarga un archivo <code>.csr</code>. No hace falta que entiendas qué es, solo guardalo.
+          </div>
+        </div>
+        <div class="afip-paso">
+          <div class="afip-paso-num">4</div>
+          <div class="afip-paso-body">
+            <strong>Subir el CSR a ARCA y volver con el certificado</strong>
+            En ARCA, volvé a <code>Administración de Certificados Digitales</code> → <code>Agregar alias</code> → subí el <code>.csr</code> que descargaste → ARCA te va a dar para descargar el certificado firmado (no es un <code>.p12</code>, es otro tipo de archivo). Volvé acá y subilo abajo.
+          </div>
+        </div>
+        <div class="afip-paso">
+          <div class="afip-paso-num">5</div>
+          <div class="afip-paso-body">
+            <strong>Adherir "Facturación Electrónica"</strong>
+            En ARCA: <code>Adherir Servicio</code> → <code>ARCA</code> → <code>WebServices</code> → <code>Facturación Electrónica</code>. Al confirmar, hacé clic en "BUSCAR" al lado de "Representante" y elegí el alias que creaste en el paso 3 — aunque ya aparezca cargado, si no lo hacés así ARCA rechaza la adhesión.
+          </div>
+        </div>
+        <div class="afip-paso">
+          <div class="afip-paso-num">6</div>
+          <div class="afip-paso-body">
+            <strong>Punto de venta</strong>
+            Una vez que tengas un punto de venta para Web Services creado en ARCA (como sea que se llame el menú en tu caso), Logos lo va a detectar automáticamente al terminar este paso — no hace falta que lo tipees.
+          </div>
         </div>
       </div>
-      <div class="afip-paso">
-        <div class="afip-paso-num">2</div>
-        <div class="afip-paso-body">
-          <strong>Adherir "Administración de Certificados Digitales"</strong>
-          Ingresá con tu CUIT y clave fiscal → <code>Administrador de Relaciones</code> → <code>Adherir Servicio</code> → <code>ARCA</code> → <code>Servicios Interactivos</code> → <code>Administración de Certificados Digitales</code> → confirmá.
-        </div>
-      </div>
-      <div class="afip-paso">
-        <div class="afip-paso-num">3</div>
-        <div class="afip-paso-body">
-          <strong>Generar la clave acá abajo y descargar el CSR</strong>
-          Completá el alias y hacé clic en "Generar clave y CSR" — se descarga un archivo <code>.csr</code>. No hace falta que entiendas qué es, solo guardalo.
-        </div>
-      </div>
-      <div class="afip-paso">
-        <div class="afip-paso-num">4</div>
-        <div class="afip-paso-body">
-          <strong>Subir el CSR a ARCA y volver con el certificado</strong>
-          En ARCA, volvé a <code>Administración de Certificados Digitales</code> → <code>Agregar alias</code> → subí el <code>.csr</code> que descargaste → ARCA te va a dar para descargar el certificado firmado (no es un <code>.p12</code>, es otro tipo de archivo). Volvé acá y subilo abajo.
-        </div>
-      </div>
-      <div class="afip-paso">
-        <div class="afip-paso-num">5</div>
-        <div class="afip-paso-body">
-          <strong>Adherir "Facturación Electrónica"</strong>
-          En ARCA: <code>Adherir Servicio</code> → <code>ARCA</code> → <code>WebServices</code> → <code>Facturación Electrónica</code>. Al confirmar, hacé clic en "BUSCAR" al lado de "Representante" y elegí el alias que creaste en el paso 3 — aunque ya aparezca cargado, si no lo hacés así ARCA rechaza la adhesión.
-        </div>
-      </div>
-      <div class="afip-paso">
-        <div class="afip-paso-num">6</div>
-        <div class="afip-paso-body">
-          <strong>Punto de venta</strong>
-          Una vez que tengas un punto de venta para Web Services creado en ARCA (como sea que se llame el menú en tu caso), Logos lo va a detectar automáticamente al terminar este paso — no hace falta que lo tipees.
-        </div>
-      </div>
-    </div>
+    </details>
 
     <hr class="afip-sep">
 
@@ -311,6 +338,9 @@
       <button class="btn-pri" id="af-btn-generar-csr">Generar clave y CSR</button>
     </div>
     <div id="af-resultado-csr"></div>
+    <button type="button" class="af-clave-extra" id="af-btn-descargar-clave" style="display:none">
+      Descargar también la clave privada (opcional — para reusar este mismo certificado en otra instalación sin repetir los pasos de ARCA)
+    </button>
 
     <div id="af-sec-subir" style="display:none">
       <div class="form-group fg-full">
@@ -508,9 +538,23 @@ function mostrarPaso() {
   $('panel-' + pasos[pasoIdx]).classList.add('activo');
   renderIndicador();
   onEnterPaso(pasos[pasoIdx]);
+  // "Atrás" no tiene sentido en el primer paso, ni una vez que arrancó el
+  // commit final (ejecutarCommit() lo esconde a mano en ese momento — acá
+  // solo cubre el caso de cambiar de paso normalmente).
+  $('btn-atras').style.display = pasoIdx > 0 ? 'block' : 'none';
 }
 
 function siguiente() { if (pasoIdx < pasos.length - 1) { pasoIdx++; mostrarPaso(); } }
+// Vuelve al paso anterior preservando todo lo ya cargado en `wiz` — nada de
+// esto tiene efectos secundarios remotos salvo "conexion" (probar/crear la
+// base, idempotente: CREATE TABLE IF NOT EXISTS) y "licencia" (el token ya
+// validado no se vuelve a mandar al Hub solo por reabrir el panel, ver
+// lcTokenValidado más abajo). Corrige el problema real: si el usuario comete
+// un error en un paso posterior (ej. AFIP) después de haber validado el
+// token de licencia, hoy la única forma de corregirlo es cerrar la app —
+// y el Hub no siempre vuelve a aceptar el mismo token en un segundo intento.
+function anterior() { if (pasoIdx > 0) { pasoIdx--; mostrarPaso(); } }
+$('btn-atras').addEventListener('click', anterior);
 
 function onEnterPaso(paso) {
   if (paso === 'afip') {
@@ -720,8 +764,26 @@ $('af-btn-generar-csr').addEventListener('click', async () => {
 
     aviso($('af-resultado-csr'), 'CSR descargado. Subilo a ARCA y volvé acá con el certificado firmado.', 'ok');
     $('af-sec-subir').style.display = '';
+    $('af-btn-descargar-clave').style.display = '';
   } catch { aviso($('af-resultado-csr'), 'Error de conexión', 'err'); }
   finally { btn.disabled = false; btn.textContent = 'Generar clave y CSR'; }
+});
+
+// Descarga la clave privada por separado — nunca se guarda en ningún lado
+// más que en memoria de esta pestaña (wiz.afipKeyPendiente), así que si el
+// usuario la pierde acá, se pierde para siempre y el .crt que ARCA firme
+// con este CSR queda huérfano (sin la clave que le corresponde, no sirve
+// para nada). Pensado para el caso de instalaciones de prueba: guardar
+// cert+clave una vez permite reusarlos en instalaciones futuras vía la
+// opción avanzada de .p12, sin repetir el trámite de ARCA cada vez.
+$('af-btn-descargar-clave').addEventListener('click', () => {
+  if (!wiz.afipKeyPendiente) return;
+  const blob = new Blob([wiz.afipKeyPendiente], { type: 'application/x-pem-file' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'logos_certificado.key';
+  a.click();
+  URL.revokeObjectURL(a.href);
 });
 
 $('af-btn-omitir').addEventListener('click', () => { wiz.afip = null; siguiente(); });
@@ -880,6 +942,7 @@ async function ejecutarCommit() {
     }
   } catch { /* si esta verificación falla, seguimos con el flujo normal */ }
 
+  $('btn-atras').style.display        = 'none';
   $('ls-confirmar-row').style.display = 'none';
   $('ls-resumen').style.display       = 'none';
   $('ls-error').style.display         = 'none';
