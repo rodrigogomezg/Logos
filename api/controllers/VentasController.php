@@ -85,6 +85,51 @@ class VentasController {
         $this->get($id);
     }
 
+    // Tope de reintentos automáticos antes de dejar de insistir solo — a partir
+    // de acá el comprobante queda esperando un reintento manual desde Ventas
+    // (esos no cuentan para este tope, ver migrate/76_afip_intentos.sql).
+    private const AFIP_AUTO_MAX_INTENTOS = 5;
+    private const AFIP_AUTO_LOTE = 20;
+
+    /**
+     * POST /ventas/procesar-pendientes-afip — llamado sin sesión por el timer
+     * del shell Tauri (mismo patrón que backup/programado), cada 1-2 min. La
+     * caja YA NO dispara facturar() al confirmar una venta (decisión
+     * explícita: no atar el flujo de venta a la latencia de ARCA) — esta es
+     * la única vía automática que le pide CAE a ARCA. Reintento manual desde
+     * Ventas ("Reintentar AFIP") sigue disponible y no pasa por acá.
+     */
+    public function procesarPendientesAfip(): void {
+        require_once __DIR__ . '/LicenciaController.php';
+        $lic = LicenciaController::getEstadoEfectivo();
+        if ($lic['modo_restringido']) {
+            json(200, ['ok' => true, 'procesadas' => 0, 'motivo' => 'licencia_restringida']);
+        }
+
+        $db = DB::get();
+        $tipos = implode(',', array_fill(0, count(self::TIPOS_ELECTRONICOS), '?'));
+        $stmt = $db->prepare("
+            SELECT id FROM ventas
+            WHERE tipo_comprobante IN ($tipos)
+              AND (cae IS NULL OR cae = '')
+              AND afip_intentos < ?
+            ORDER BY id ASC
+            LIMIT " . self::AFIP_AUTO_LOTE
+        );
+        $stmt->execute([...self::TIPOS_ELECTRONICOS, self::AFIP_AUTO_MAX_INTENTOS]);
+        $ids = array_column($stmt->fetchAll(), 'id');
+
+        $exitosas = 0;
+        $fallidas = 0;
+        foreach ($ids as $ventaId) {
+            $db->prepare("UPDATE ventas SET afip_intentos = afip_intentos + 1 WHERE id = ?")->execute([$ventaId]);
+            $error = $this->solicitarCae((int)$ventaId);
+            if ($error === null) $exitosas++; else $fallidas++;
+        }
+
+        json(200, ['ok' => true, 'procesadas' => count($ids), 'exitosas' => $exitosas, 'fallidas' => $fallidas]);
+    }
+
     /**
      * POST /ventas/{id}/confirmar-presupuesto
      * Transforma un PRESUPUESTO en REMITO o Factura electrónica.
@@ -1591,6 +1636,20 @@ class VentasController {
     }
 
     public function imprimir(int $id): void {
+        // La caja ya no espera a ARCA para guardar la venta (ver
+        // procesarPendientesAfip()) — un comprobante electrónico puede llegar
+        // a este punto todavía sin CAE. Imprimirlo así no sería una factura
+        // válida (sin QR/CAE), así que se bloquea acá, en el único lugar que
+        // de verdad genera el PDF que se le entrega al cliente. Remitos y
+        // presupuestos nunca tienen CAE y no entran en este chequeo.
+        $chk = DB::get()->prepare("SELECT tipo_comprobante, cae FROM ventas WHERE id = ?");
+        $chk->execute([$id]);
+        $ventaChk = $chk->fetch();
+        if (!$ventaChk) json(404, ['error' => 'Venta no encontrada']);
+        if (in_array($ventaChk['tipo_comprobante'], self::TIPOS_ELECTRONICOS, true) && empty($ventaChk['cae'])) {
+            json(409, ['error' => 'Todavía no se recibió el CAE de ARCA para este comprobante. Esperá unos segundos o reintentá la facturación desde Ventas.']);
+        }
+
         require_once __DIR__ . '/../helpers/ComprobanteGenerador.php';
         require_once __DIR__ . '/../helpers/SilentPrint.php';
 

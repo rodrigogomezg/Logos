@@ -462,6 +462,7 @@ pub fn run() {
                     version,
                 ));
                 tauri::async_runtime::spawn(timers::run_backup_timer(base_url_task.clone()));
+                tauri::async_runtime::spawn(timers::run_afip_retry_timer(base_url_task.clone()));
                 tauri::async_runtime::spawn(timers::run_health_check(base_url_task.clone(), app_handle.clone()));
             });
 

@@ -126,6 +126,27 @@ pub async fn run_backup_timer(base_url: String) {
     }
 }
 
+// Igual patrón que run_backup_timer: la caja ya no llama a /facturar al
+// confirmar una venta (decisión explícita del 14/08/2026 — no atar el flujo
+// de venta a la latencia/disponibilidad de ARCA). Este timer es la única vía
+// automática que pide CAE; el backend (VentasController::procesarPendientesAfip())
+// decide cuáles ventas están pendientes y respeta su propio tope de reintentos
+// automáticos (ver migrate/76_afip_intentos.sql) — acá solo se garantiza que
+// alguien lo llame cada 90s pase lo que pase, mismo espíritu que el backup.
+pub async fn run_afip_retry_timer(base_url: String) {
+    let client = reqwest::Client::new();
+    loop {
+        let url = format!("{base_url}/Logos/api/ventas/procesar-pendientes-afip");
+        let result = tokio::time::timeout(Duration::from_secs(30), client.post(&url).send()).await;
+        match result {
+            Ok(Ok(resp)) => log_line(&format!("afip-retry: OK status={}", resp.status())),
+            Ok(Err(e)) => log_line(&format!("afip-retry: ERROR {e}")),
+            Err(_) => log_line("afip-retry: TIMEOUT tras 30s"),
+        }
+        tokio::time::sleep(Duration::from_secs(90)).await;
+    }
+}
+
 // JS inyectado vía WebviewWindow::eval — igual espíritu que
 // showClientDisconnectedError()/error.html en Electron, pero sin una ventana
 // overlay aparte: un div fullscreen inyectado en la propia SPA. Idempotente

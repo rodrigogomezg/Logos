@@ -53,6 +53,7 @@ $esRutaPublica =
     ($recurso === 'mercadopago'   && $metodo === 'POST' && $sub === 'webhook') ||
     ($recurso === 'licencia'      && $metodo === 'POST' && $accion === 'verificar') ||
     ($recurso === 'backup'        && $metodo === 'POST' && $accion === 'programado') ||
+    ($recurso === 'ventas'        && $metodo === 'POST' && $accion === 'procesar-pendientes-afip') ||
     ($recurso === 'configuracion' && $metodo === 'GET'  && $accion === 'logo');
 
 try {
@@ -202,6 +203,7 @@ try {
                 $metodo === 'GET'    && $id !== null && $subAccion === 'afip-estado'  => $ctrl->consultarAfip($id),
                 $metodo === 'GET'    && $accion === 'export'    => $ctrl->exportar(),
                 $metodo === 'GET'    && $accion === 'dashboard' => $ctrl->dashboard(),
+                $metodo === 'POST'   && $accion === 'procesar-pendientes-afip' => $ctrl->procesarPendientesAfip(),
                 $metodo === 'GET'    && $id !== null            => $ctrl->get($id),
                 $metodo === 'GET'                               => $ctrl->listar(),
                 $metodo === 'POST'   && $accion === 'unificar'  => $ctrl->unificar(),

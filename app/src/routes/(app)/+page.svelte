@@ -69,15 +69,6 @@
 	let seleccionados = $state<Set<number>>(new Set());
 	let editandoVentaId = $state<number | null>(null);
 	let ultimaVentaData = $state<{ id: number; tipo_comprobante: string; numero: string; total: number } | null>(null);
-	// Comprobantes rechazados por ARCA — deliberadamente separado de
-	// ultimaVentaData: ese panel se resetea en cada nuevaVenta(), así que un
-	// rechazo tardío (llega después de que el cajero ya arrancó la siguiente
-	// venta) quedaba sin ningún rastro visible salvo un toast ya desaparecido.
-	// Este array sobrevive nuevaVenta() y solo se vacía con un cierre explícito.
-	let facturaAlertas = $state<{ ventaId: number; tipoComprobante: string; numero: string; mensaje: string }[]>([]);
-	function cerrarFacturaAlerta(ventaId: number) {
-		facturaAlertas = facturaAlertas.filter((a) => a.ventaId !== ventaId);
-	}
 	let afipGuardActivo = $state(false);
 	let afipWarnMsg = $state('Este tipo de comprobante requiere cliente con CUIT registrado.');
 
@@ -706,22 +697,15 @@
 	}
 
 	// ── Última venta ──────────────────────────────────────────────
-	let uvCaeEstado = $state<'ok' | 'err' | 'pend' | null>(null);
-	let uvCaeMsg = $state('');
+	// La caja ya no le pide CAE a ARCA ni muestra su estado (decisión
+	// explícita, 14/08/2026): eso corre solo en segundo plano
+	// (VentasController::procesarPendientesAfip(), timer del shell Tauri) y
+	// se monitorea desde Ventas — acá no hay más badge/cartel que reflejarlo.
 	function mostrarUltimaVenta(data: { id: number; tipo_comprobante: string; numero: string; total: number }) {
 		ultimaVentaData = data;
-		uvCaeEstado = null;
 	}
 	function ocultarUltimaVenta() {
 		ultimaVentaData = null;
-		uvCaeEstado = null;
-	}
-	// Solo actualiza el badge si el panel sigue mostrando esta misma venta —
-	// nunca pisa una venta más reciente si el cajero ya siguió adelante.
-	function actualizarCaeUltimaVenta(ventaId: number, estado: 'ok' | 'err' | 'pend', mensaje?: string) {
-		if (!ultimaVentaData || ultimaVentaData.id !== ventaId) return;
-		uvCaeEstado = estado;
-		uvCaeMsg = estado === 'ok' ? 'Autorizada por ARCA' : estado === 'err' ? mensaje || 'ARCA no autorizó el comprobante — reintentá desde Ventas' : 'Solicitando autorización a ARCA...';
 	}
 	async function reimprimirUltimaVenta() {
 		if (!ultimaVentaData) return;
@@ -781,7 +765,6 @@
 			}))
 		};
 
-		const TIPOS_ELECT_POS = ['FC A-ELECT', 'FC B-ELECT', 'FC C-ELECT'];
 		try {
 			const esModoEdicion = !!editandoVentaId;
 			const url = editandoVentaId ? `/ventas/${editandoVentaId}` : '/ventas';
@@ -845,33 +828,14 @@
 			nuevaVenta();
 			mostrarUltimaVenta(uvData);
 
-			const esElectronico = !esModoEdicion && TIPOS_ELECT_POS.includes(body.tipo_comprobante as string);
-			if (esElectronico) {
-				toast_(`${body.tipo_comprobante} guardada — solicitando CAE a ARCA...`, 'ok');
-				actualizarCaeUltimaVenta(d.id, 'pend');
-				api(`/ventas/${d.id}/facturar`, { method: 'POST' })
-					.then(async (rf) => {
-						const df = await rf.json().catch(() => ({}));
-						if (!rf.ok) {
-							const msg = df.error ?? 'sin detalle';
-							toast_(`ARCA rechazó el comprobante: ${msg} — reintentá desde Ventas`, 'err');
-							actualizarCaeUltimaVenta(d.id, 'err', msg);
-							facturaAlertas = [...facturaAlertas, { ventaId: d.id, tipoComprobante: body.tipo_comprobante as string, numero: d.numero, mensaje: msg }];
-						} else {
-							actualizarCaeUltimaVenta(d.id, 'ok');
-						}
-					})
-					.catch(() => {
-						const msg = 'Sin conexión con ARCA';
-						toast_('No se pudo conectar con ARCA para pedir el CAE — reintentá desde Ventas', 'err');
-						actualizarCaeUltimaVenta(d.id, 'err', msg);
-						facturaAlertas = [...facturaAlertas, { ventaId: d.id, tipoComprobante: body.tipo_comprobante as string, numero: d.numero, mensaje: msg }];
-					});
-			} else {
-				const accion = esModoEdicion ? 'Actualizado' : '✓';
-				const sufijo = esMp ? ' — QR MercadoPago incluido en comprobante' : '';
-				toast_(`${accion}  ${body.tipo_comprobante} N° ${d.numero}  —  ${fmt(d.total)}${sufijo}`, 'ok');
-			}
+			// La caja NO le pide CAE a ARCA acá (decisión explícita, 14/08/2026):
+			// eso demoraba el flujo atado a la latencia/disponibilidad de ARCA.
+			// Corre solo en segundo plano (VentasController::procesarPendientesAfip(),
+			// timer del shell Tauri cada 90s) y se monitorea/reintenta a mano
+			// desde Ventas — acá no hay ningún estado ni aviso que reflejarlo.
+			const accion = esModoEdicion ? 'Actualizado' : '✓';
+			const sufijo = esMp ? ' — QR MercadoPago incluido en comprobante' : '';
+			toast_(`${accion}  ${body.tipo_comprobante} N° ${d.numero}  —  ${fmt(d.total)}${sufijo}`, 'ok');
 		} catch {
 			toast_('Error de conexión', 'err');
 		} finally {
@@ -1706,22 +1670,6 @@
 			</div>
 		</div>
 
-		{#if facturaAlertas.length}
-			<div class="factura-alertas">
-				{#each facturaAlertas as a (a.ventaId)}
-					<div class="factura-alerta" role="alert" aria-live="assertive">
-						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-						<div class="factura-alerta-txt">
-							<strong>ARCA rechazó {a.tipoComprobante} N° {a.numero}</strong>
-							<span>{a.mensaje} — la venta quedó guardada, pero sin CAE. Reintentá desde Ventas.</span>
-						</div>
-						<button class="factura-alerta-btn" type="button" onclick={() => goto('/ventas')}>Ir a Ventas</button>
-						<button class="factura-alerta-cerrar" type="button" title="Descartar" aria-label="Descartar aviso" onclick={() => cerrarFacturaAlerta(a.ventaId)}>×</button>
-					</div>
-				{/each}
-			</div>
-		{/if}
-
 		<div class="card totales">
 			<div class="t-row"><span>Ítems</span><span>{items.length}</span></div>
 			<div class="t-row"><span>Unidades</span><span>{totalUnidades}</span></div>
@@ -1766,9 +1714,6 @@
 				<div class="uv-data">
 					<span class="uv-comp-wrap">
 						<span class="uv-comp">{ultimaVentaData.tipo_comprobante} N° {ultimaVentaData.numero}</span>
-						{#if uvCaeEstado}
-							<span class="cae-badge cae-{uvCaeEstado}" role="status" aria-live="polite" title={uvCaeMsg}>{uvCaeEstado === 'ok' ? '✓' : uvCaeEstado === 'err' ? '!' : '…'}</span>
-						{/if}
 					</span>
 					<span class="uv-total">{fmt(ultimaVentaData.total)}</span>
 				</div>
@@ -2301,18 +2246,6 @@
 	.afip-warn-msg { color: var(--neo-text-2); }
 	.afip-fix-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 8px; padding: 4px 10px; background: var(--neo-bg); border: none; border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1); font-size: 11px; font-weight: 700; cursor: pointer; color: var(--neo-warning); font-family: inherit; }
 
-	/* Rechazo de ARCA persistente — no vive dentro de .ultima-venta a propósito:
-	   ese panel se resetea en cada nuevaVenta(), esto no. Se queda hasta que el
-	   cajero lo cierra a mano o va a Ventas a resolverlo. */
-	.factura-alertas { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-	.factura-alerta { display: flex; align-items: flex-start; gap: 8px; background: rgba(231,76,60,.09); border-radius: var(--neo-r-sm); box-shadow: var(--neo-e1), 0 0 0 1.5px var(--neo-danger); padding: 10px 12px; font-size: 12px; line-height: 1.5; color: var(--neo-danger); }
-	.factura-alerta-txt { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-	.factura-alerta-txt strong { color: var(--neo-danger); }
-	.factura-alerta-txt span { color: var(--neo-text-2); }
-	.factura-alerta-btn { flex-shrink: 0; padding: 5px 10px; background: var(--neo-bg); border: none; border-radius: var(--neo-r-xs); box-shadow: var(--neo-e1); font-size: 11px; font-weight: 700; cursor: pointer; color: var(--neo-danger); font-family: inherit; white-space: nowrap; }
-	.factura-alerta-cerrar { flex-shrink: 0; background: none; border: none; cursor: pointer; color: var(--neo-danger); font-size: 16px; line-height: 1; padding: 0 2px; opacity: .7; }
-	.factura-alerta-cerrar:hover { opacity: 1; }
-
 	.ultima-venta { background: rgba(39,174,96,.07); border-radius: var(--neo-r-md); box-shadow: var(--neo-e1), 0 0 0 1.5px var(--neo-success); padding: 11px 13px; border: none; }
 	.uv-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; }
 	.uv-etiqueta { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-success); }
@@ -2323,8 +2256,4 @@
 	.uv-total { font-size: 18px; font-weight: 800; color: var(--neo-success); }
 	.uv-btns { display: flex; gap: 6px; }
 	.uv-btn { flex: 1; padding: 6px 8px; border-radius: var(--neo-r-xs); border: none; background: var(--neo-bg); box-shadow: var(--neo-e1); font-size: 11px; font-weight: 600; color: var(--neo-success); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; font-family: inherit; }
-	.cae-badge { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; font-size: 9px; font-weight: 800; margin-left: 6px; vertical-align: middle; flex-shrink: 0; }
-	.cae-ok { background: rgba(39,174,96,.15); color: var(--neo-success); }
-	.cae-err { background: rgba(231,76,60,.15); color: var(--neo-danger); }
-	.cae-pend { background: rgba(255,255,255,.55); color: var(--neo-success-h); }
 </style>
