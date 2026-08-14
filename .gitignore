@@ -23,16 +23,11 @@ reglas_de.txt
 composer.phar
 composer-setup.php
 
-# Electron app
-electron/node_modules/
-electron/dist/
-electron/resources/php/
-electron/resources/mariadb/
-electron/resources/nssm.exe
-electron/resources/_tmp/
-electron/resources/www/
 # Credenciales y secretos para publicar actualizaciones (nunca commitear)
-electron/.env.publish
 tauri-shell/.env.publish
-# upload-handler.php contiene el secreto real — solo vive en Hostinger y localmente
-electron/scripts/upload-handler.php
+
+# Resto de electron/ (app Electron retirada, ver CLAUDE.md 14/08/2026) —
+# solo queda un build artifact viejo que un antivirus tenía trabado al
+# momento de borrar la carpeta; esto evita que se vuelva a colar a git
+# mientras no se pueda terminar de eliminar a mano.
+electron/

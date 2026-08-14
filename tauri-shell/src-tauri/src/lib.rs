@@ -57,9 +57,10 @@ fn resolve_paths() -> AppPaths {
         }
     }
     let root = repo_root();
+    let dev_resources = root.join("tauri-shell").join("src-tauri").join("resources");
     AppPaths {
-        resources: root.join("electron").join("resources"),
-        www: root.join("electron").join("www"),
+        www: dev_resources.join("www"),
+        resources: dev_resources,
         app_build_dir: root.join("app").join("build"),
         splash_argb: root.join("tauri-shell").join("src-tauri").join("nsis").join("assets").join("splash_argb.bin"),
         app_dir: root,

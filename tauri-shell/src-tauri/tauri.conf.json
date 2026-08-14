@@ -39,12 +39,12 @@
       }
     },
     "resources": {
-      "../../electron/resources/mariadb": "mariadb",
-      "../../electron/resources/php": "php",
-      "../../electron/resources/nssm.exe": "nssm.exe",
+      "resources/mariadb": "mariadb",
+      "resources/php": "php",
+      "resources/nssm.exe": "nssm.exe",
       "resources/setup-server.ps1": "setup-server.ps1",
       "resources/teardown-server.ps1": "teardown-server.ps1",
-      "../../electron/www/router.php": "www/router.php",
+      "resources/www/router.php": "www/router.php",
       "../../app/build": "www/app",
       "../../api": "www/Logos/api",
       "../../pos": "www/Logos/pos",

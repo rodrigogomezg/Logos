@@ -553,3 +553,48 @@ usuario real en la SPA, confirmado por auditoría) y migrar a `sessionStorage`
 o `IndexedDB` en general (perdería la persistencia entre pestañas/recargas
 que varias de estas claves necesitan a propósito, o agregaría complejidad
 async sin beneficio real dado el tamaño chico de los datos guardados acá).
+
+### `electron/` desapareció del repo (14/08/2026) — quedó consolidada en `tauri-shell/`
+
+La carpeta `electron/` mezclaba dos cosas sin que el nombre lo delatara:
+infraestructura que Tauri todavía usaba de verdad (binarios portables de
+MariaDB/PHP/nssm.exe, `router.php`) y la app Electron vieja en sí,
+retirada del canal de updates hace rato pero nunca borrada — el código
+Rust ya la reemplazó pieza por pieza (comentarios tipo "Port a Rust de
+electron/main.js" en `lib.rs`/`server_manager.rs`/`role.rs`/`timers.rs`/
+`tray.rs` siguen ahí a propósito, como nota histórica de dónde salió cada
+función — **si buscás esos archivos y no están, es porque se borraron acá,
+no por error**, revisá el historial de git si hace falta el original).
+
+Auditoría exhaustiva de las ~213 ocurrencias de "electron" en todo el repo
+confirmó cuáles eran referencias funcionales reales (rompían algo si el
+archivo desaparecía) contra cuáles eran solo comentarios. Las funcionales
+se movieron, se actualizaron las 3 referencias que las consumían
+(`tauri.conf.json`, `lib.rs::resolve_paths()` rama dev-mode,
+`tauri-shell/scripts/publish.js`), y se borró el resto.
+
+**Dónde quedó cada cosa:**
+- `tauri-shell/src-tauri/resources/{mariadb,php,nssm.exe}` — binarios
+  (gitignored, igual que antes en `electron/resources/`).
+- `tauri-shell/src-tauri/resources/www/router.php` — el router real que
+  corre en producción.
+- `tauri-shell/scripts/{serve-update.php,htaccess-logos,upload-handler.php,
+  download-deps.js}` — infraestructura de publish. `upload-handler.php` es
+  el único que sigue gitignored (tiene el secreto real de producción
+  adentro — no estaba en git antes tampoco, solo cambió de carpeta).
+- `tauri-shell/src-tauri/resources/{setup-server.ps1,teardown-server.ps1}`
+  — **no se tocaron**, ya eran forks propios de Tauri, divergentes de los
+  de `electron/resources/` (paths sin el prefijo `resources\`, variables
+  `LOGOS_APP_BUILD_DIR`/`LOGOS_DATA_ROOT` que Electron nunca tuvo) — los
+  de Electron se borraron directamente, no se pisó nada.
+
+**Confirmado huérfano y borrado sin mover a ningún lado:** el resto de la
+app Electron (`main.js`, `preload.js`, `services/`, `renderer/`,
+`electron-builder.yml`, tooling de build) y `electron/resources/tailscale/`
+(carpeta vacía, feature de acceso remoto que nunca se terminó de
+implementar ni se portó a Tauri).
+
+Verificado antes de dar el reorden por terminado: `cargo check` limpio,
+`cargo tauri dev` real levantando MariaDB/PHP desde la ubicación nueva, y
+un `tauri build` completo (build local, sin publicar) generando el
+instalador sin errores de recursos faltantes.

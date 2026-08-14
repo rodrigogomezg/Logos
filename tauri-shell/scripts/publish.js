@@ -183,11 +183,11 @@ async function main() {
 
   try {
     // Non-fatal uploads: infrastructure files that may not need re-uploading
-    // (ya están en el servidor desde la publicación de Electron), fallan
+    // (ya están en el servidor desde una publicación anterior), fallan
     // gracefully si no existen localmente o si el servidor las rechaza.
     for (const [localFile, remoteFile] of [
-      ['../../electron/scripts/serve-update.php', 'serve-update.php'],
-      ['../../electron/scripts/htaccess-logos',   '.htaccess'],
+      ['serve-update.php', 'serve-update.php'],
+      ['htaccess-logos',   '.htaccess'],
     ]) {
       const localPath = path.join(__dirname, localFile);
       if (!fs.existsSync(localPath)) continue;

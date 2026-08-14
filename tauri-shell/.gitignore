@@ -12,9 +12,16 @@ dist
 dist-ssr
 *.local
 
-# Binario vendored (vc_redist) — igual criterio que electron/resources/*
-# en el .gitignore raíz: se provee aparte, no se versiona.
+# Binario vendored (vc_redist) — se provee aparte, no se versiona. Mismo
+# criterio para los binarios portables de MariaDB/PHP/nssm (movidos acá
+# desde electron/resources/ el 14/08/2026, ver CLAUDE.md) y para
+# upload-handler.php (contiene el secreto real de producción — solo vive
+# en Hostinger y localmente, nunca en git).
 vendor/
+src-tauri/resources/mariadb/
+src-tauri/resources/php/
+src-tauri/resources/nssm.exe
+scripts/upload-handler.php
 
 # Carpetas de scratch de inspección manual del .nsi generado — sin valor
 # de código, quedaron de debugging puntual.

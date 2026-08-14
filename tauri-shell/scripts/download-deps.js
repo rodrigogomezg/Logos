@@ -1,6 +1,6 @@
 /**
- * Downloads PHP portable + MariaDB portable into electron/resources/.
- * Run once with: npm run setup-deps   (from inside the electron/ folder)
+ * Downloads PHP portable + MariaDB portable into tauri-shell/src-tauri/resources/.
+ * Run once with: node scripts/download-deps.js   (from inside tauri-shell/)
  * Use --force to re-download even if binaries already exist.
  *
  * Versions (pinned — update URLs here when upgrading):
@@ -14,7 +14,7 @@ const path     = require('path');
 const { execSync } = require('child_process');
 
 const FORCE     = process.argv.includes('--force');
-const RESOURCES = path.join(__dirname, '..', 'resources');
+const RESOURCES = path.join(__dirname, '..', 'src-tauri', 'resources');
 
 const DEPS = [
   {
