@@ -776,6 +776,32 @@
 		}
 	}
 
+	let eliminandoSucursal = $state(false);
+	async function eliminarSucursal() {
+		if (!sucActivaId) return;
+		const s = sucursales.find((x) => x.id === sucActivaId);
+		const ok = await confirmar(`Esto borra la sucursal "${s?.nombre ?? ''}" y su depósito. Solo se puede hacer si no tiene cajas, ventas, compras ni turnos registrados — si los tiene, desactivala en vez de borrarla.`, {
+			titulo: 'Eliminar sucursal',
+			confirmLabel: 'Eliminar',
+			danger: true
+		});
+		if (!ok) return;
+		eliminandoSucursal = true;
+		try {
+			const res = await api(`/sucursales/${sucActivaId}`, { method: 'DELETE' });
+			const data = await res.json();
+			if (!res.ok) {
+				toast_(data.error || 'Error al eliminar la sucursal', 'err');
+				return;
+			}
+			sucActivaId = null;
+			await cargarSucursales();
+			toast_('Sucursal eliminada', 'ok');
+		} finally {
+			eliminandoSucursal = false;
+		}
+	}
+
 	async function setPrincipal(depositoId: number) {
 		await api(`/sucursales/deposito/${depositoId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ es_principal: true }) });
 		if (sucActivaId) cargarDepositos(sucActivaId);
@@ -1230,6 +1256,9 @@
 							</div>
 							<div class="suc-form-footer">
 								<label><input type="checkbox" bind:checked={sucForm.activo} /> Activa</label>
+								{#if sucActivaId !== null && sucursales.length > 1}
+									<button class="btn-sec" disabled={eliminandoSucursal} onclick={eliminarSucursal}>Eliminar sucursal</button>
+								{/if}
 								<button class="btn-accion" disabled={guardandoSucursal} onclick={guardarSucursal}>Guardar sucursal</button>
 							</div>
 							{#if sucActivaId !== null}

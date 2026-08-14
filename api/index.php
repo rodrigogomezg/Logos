@@ -454,6 +454,7 @@ try {
                 $metodo === 'POST'                                  => $ctrl->crear(),
                 $metodo === 'PUT'  && $accion === 'deposito'       => $ctrl->actualizarDeposito($depId),
                 $metodo === 'PUT'                                   => $ctrl->actualizar($id ?? 0),
+                $metodo === 'DELETE'                                => $ctrl->eliminar($id ?? 0),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),

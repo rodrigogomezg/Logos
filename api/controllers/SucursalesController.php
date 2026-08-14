@@ -85,6 +85,48 @@ class SucursalesController {
         json(200, ['ok' => true]);
     }
 
+    public function eliminar(int $id): void {
+        Auth::requireAdmin();
+        $db    = DB::get();
+        $check = $db->prepare("SELECT id FROM sucursales WHERE id = ?");
+        $check->execute([$id]);
+        if (!$check->fetch()) json(404, ['error' => 'Sucursal no encontrada']);
+
+        // Tiene que quedar siempre al menos una — varias tablas dependen de
+        // que exista sucursal_id=1 (ver schema_limpio.sql, comentario del
+        // seed mínimo garantizado).
+        $total = (int)$db->query("SELECT COUNT(*) FROM sucursales")->fetchColumn();
+        if ($total <= 1) {
+            json(409, ['error' => 'Tiene que existir al menos una sucursal. No se puede eliminar la única que queda.']);
+        }
+
+        // Con historial (cajas, ventas, compras, turnos, cheques) no se
+        // elimina: se desactiva, para no dejar esos registros huérfanos.
+        foreach ([['cajas', 'sucursal_id'], ['ventas', 'sucursal_id'], ['compras', 'sucursal_id'], ['caja_turnos', 'sucursal_id'], ['cheques', 'sucursal_id']] as [$tabla, $col]) {
+            $s = $db->prepare("SELECT COUNT(*) FROM $tabla WHERE $col = ?");
+            $s->execute([$id]);
+            if ((int)$s->fetchColumn() > 0) {
+                json(409, ['error' => 'La sucursal tiene cajas u operaciones registradas. Desactivala en lugar de eliminarla.']);
+            }
+        }
+
+        // Stock real cargado en algún depósito de esta sucursal tampoco se
+        // puede perder.
+        $stockCheck = $db->prepare("
+            SELECT COUNT(*) FROM stock_depositos sd
+            JOIN depositos d ON d.id = sd.deposito_id
+            WHERE d.sucursal_id = ? AND sd.stock_actual <> 0
+        ");
+        $stockCheck->execute([$id]);
+        if ((int)$stockCheck->fetchColumn() > 0) {
+            json(409, ['error' => 'Hay stock cargado en depósitos de esta sucursal. Desactivala en lugar de eliminarla.']);
+        }
+
+        $db->prepare("DELETE FROM depositos WHERE sucursal_id = ?")->execute([$id]);
+        $db->prepare("DELETE FROM sucursales WHERE id = ?")->execute([$id]);
+        json(200, ['ok' => true]);
+    }
+
     public function depositos(): void {
         $sucursal_id = isset($_GET['sucursal_id']) && is_numeric($_GET['sucursal_id']) ? (int)$_GET['sucursal_id'] : null;
 

@@ -112,8 +112,10 @@
 
   /* Progreso del commit */
   .prog-lista { display: flex; flex-direction: column; gap: 4px; }
-  .prog-item { display: flex; align-items: center; gap: 12px; font-size: 13px; color: var(--neo-text-2); padding: 5px 0; }
+  .prog-item { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; color: var(--neo-text-2); padding: 5px 0; }
   .prog-icono { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; font-weight: 700; }
+  .prog-txt { display: flex; flex-direction: column; gap: 2px; padding-top: 2px; }
+  .prog-detalle { font-size: 11px; color: var(--neo-text-3); line-height: 1.4; }
   .prog-item.esperando .prog-icono { background: var(--neo-bg-deep); color: var(--neo-text-3); box-shadow: var(--neo-i1); }
   .prog-item.ejecutando .prog-icono { background: var(--primary-soft-2); color: var(--neo-accent); box-shadow: var(--neo-e1); animation: giro .9s linear infinite; }
   .prog-item.ok  .prog-icono { background: rgba(39,174,96,.12); color: var(--neo-success); box-shadow: var(--neo-e1); }
@@ -917,13 +919,27 @@ function renderResumen() {
 function progAgregar(msg) {
   const el = document.createElement('div');
   el.className = 'prog-item esperando';
-  el.innerHTML = `<div class="prog-icono">·</div><span>${esc(msg)}</span>`;
+  el.innerHTML = `<div class="prog-icono">·</div><div class="prog-txt"><span>${esc(msg)}</span></div>`;
   $('ls-progreso').appendChild(el);
   return el;
 }
-function progEstado(el, estado, icono) {
+// detalle es opcional — para pasos "warn"/"err" que fallan sin bloquear el
+// commit (ej. autodetección de punto de venta AFIP), mostrar por qué falló
+// en vez de solo un ícono amarillo sin explicación (caso real, Rodrigo no
+// tenía forma de saber si era un problema de ARCA, de la instalación, o
+// qué revisar).
+function progEstado(el, estado, icono, detalle) {
   el.className = 'prog-item ' + estado;
   el.querySelector('.prog-icono').textContent = icono;
+  if (detalle) {
+    let det = el.querySelector('.prog-detalle');
+    if (!det) {
+      det = document.createElement('div');
+      det.className = 'prog-detalle';
+      el.querySelector('.prog-txt').appendChild(det);
+    }
+    det.textContent = detalle;
+  }
 }
 
 let commitResult = null;
@@ -1026,9 +1042,11 @@ async function ejecutarCommit() {
           await fetch(`${API}/configuracion`, { method: 'PUT', headers: jh, body: JSON.stringify({ ...cfgBody, punto_venta: pv }) });
           progEstado(pPv, 'ok', `✓ PV ${pv}`);
         } else {
-          progEstado(pPv, 'warn', '⚠');
+          progEstado(pPv, 'warn', '⚠', (dPv.error || 'ARCA no devolvió puntos de venta') + ' — se usó el número tipeado a mano. Podés reintentar esto después desde Configuración.');
         }
-      } catch { progEstado(pPv, 'warn', '⚠'); }
+      } catch (e) {
+        progEstado(pPv, 'warn', '⚠', 'No se pudo conectar con ARCA para detectar el punto de venta: ' + (e?.message || 'error de red') + '. Se usó el número tipeado a mano.');
+      }
     } else if (wiz.afip?.archivo) {
       const pAf = progAgregar('Cargando certificado AFIP…');
       progEstado(pAf, 'ejecutando', '↻');
@@ -1051,11 +1069,21 @@ async function ejecutarCommit() {
       progEstado(pLg, 'ok', '✓');
     }
 
-    // 4.5. Sucursal y depósito principal
+    // 4.5. Sucursal principal — actualizar la fila id=1, no crear una nueva.
+    // schema_limpio.sql siembra sucursales.id=1 ("Principal") a propósito en
+    // TODA instalación (comentario ahí: "seed mínimo garantizado, sin esto
+    // los INSERTs en caja_turnos/caja_cierres/caja_movimientos fallan por FK
+    // sucursal_id NOT NULL DEFAULT 1") — corre antes de que el wizard
+    // muestre una sola pantalla. Antes acá se hacía POST /sucursales, que
+    // siempre inserta una fila nueva (y otro "Depósito Principal" al lado):
+    // el resultado real era terminar con DOS sucursales — "Principal" sin
+    // tocar más la con el nombre real que el cliente tipeó (caso real,
+    // 13/08/2026). El depósito principal de la sucursal 1 también ya viene
+    // sembrado por schema_limpio.sql, así que no hace falta crear nada más.
     const pSuc = progAgregar('Configurando sucursal principal…');
     progEstado(pSuc, 'ejecutando', '↻');
-    const rSuc = await fetch(`${API}/sucursales`, {
-      method: 'POST', headers: jh,
+    const rSuc = await fetch(`${API}/sucursales/1`, {
+      method: 'PUT', headers: jh,
       body: JSON.stringify({
         nombre:          wiz.negocio.razon_social,
         nombre_fantasia: wiz.negocio.nombre_fantasia || null,
@@ -1063,7 +1091,7 @@ async function ejecutarCommit() {
         telefono:        wiz.negocio.telefono  || null,
       }),
     });
-    if (!rSuc.ok) { const d = await rSuc.json(); throw new Error('Al crear sucursal: ' + (d.error || '')); }
+    if (!rSuc.ok) { const d = await rSuc.json(); throw new Error('Al guardar la sucursal: ' + (d.error || '')); }
     progEstado(pSuc, 'ok', '✓');
 
     // 5. Usuarios adicionales
