@@ -623,3 +623,49 @@ de prueba: sin violaciones de CSP en consola.
 usos de `URL.createObjectURL()` en `app/src` (hoy: `pdf.ts` para vista
 previa vía iframe — los demás son descargas por `<a download>`, que no
 pasan por `frame-src`) antes de asumir que una directiva nueva no rompe nada.
+
+### Caso real (15/08/2026): barra de selección del POS "cumple pero no es coherente" — `$state(new Set())` no trackea `.add()`/`.delete()`
+
+Reporte de Rodrigo con capturas: en el carrito del POS, tildar un ítem o
+"seleccionar todo" no activaba la barra de selección — pero si después pasaba
+cualquier otra cosa (agregar un producto, aplicar un descuento), la barra "se
+ponía al día" sola. Y lo más confuso: aplicar un descuento con la barra
+visualmente "apagada" **igual funcionaba** sobre los ítems realmente
+seleccionados, aunque ningún checkbox se viera tildado.
+
+Causa: `let seleccionados = $state<Set<number>>(new Set())`, y
+`toggleItemChk()`/`toggleTodos()` mutaban el Set en el lugar
+(`seleccionados.add(pid)`, `.delete(pid)`, `.clear()`) en vez de reasignar
+la variable. Svelte 5 solo trackea reactividad de `Set`/`Map` a través de
+`SvelteSet`/`SvelteMap` (`svelte/reactivity`) — un `Set` nativo envuelto en
+`$state()` sigue siendo un `Set` nativo por dentro; `$state()` no interceptó
+sus métodos de mutación. El *dato* (`seleccionados.has(...)`, leído en el
+momento de tocar un botón) siempre estuvo bien — por eso "el descuento se
+aplicaba igual". Lo que nunca se actualizaba solo era la *UI* (`checked` de
+cada checkbox, `.sel-bar.activo`, el conteo, el indeterminate del
+"seleccionar todo") — hasta que alguna OTRA reasignación de estado (ej.
+`items = [...]`) forzaba a Svelte a recalcular todo el árbol y de paso
+"pescaba" la mutación ya vieja del Set.
+
+**Fix:** `app/src/routes/(app)/+page.svelte` — `seleccionados` pasó a ser
+`new SvelteSet<number>()` (import de `svelte/reactivity`), sin el wrapper
+`$state()` (`SvelteSet` ya es reactivo por sí solo). Los dos lugares que
+reseteaban con `seleccionados = new Set()` pasaron a `new SvelteSet()`
+también — reasignar a un Set plano ahí habría vuelto a romper la
+reactividad en el próximo `.add()`. Verificado en vivo con esperas reales
+(no sincrónico — Svelte flushea al DOM en batch): tildar uno, "seleccionar
+todo", y destildar uno para ver el indeterminate, los tres casos actualizan
+la barra al toque.
+
+**Se revisaron los otros 6 usos de `$state(new Set()/new Map())` en la
+SPA** (`productos`, `taxonomias`, `importar` ×2, `configuracion::cfgTipos`,
+POS `catalogoSel`) — todos ya clonan (`new Set(actual)`), mutan la copia, y
+reasignan (`variable = copia`), que es el patrón seguro con `$state()`. Solo
+el carrito del POS mutaba el original directo. No hizo falta tocar los otros.
+
+**Convención a partir de ahora:** cualquier `Set`/`Map` nuevo en `$state`
+tiene que, o (a) ser un `SvelteSet`/`SvelteMap` de `svelte/reactivity` si en
+algún lugar se lo va a mutar con `.add()`/`.delete()`/`.set()`/`.clear()`
+directo, o (b) si se prefiere Set nativo, disciplina estricta de nunca
+mutar el original — siempre clonar y reasignar. (a) es más simple y menos
+propenso a errores; preferirlo para código nuevo.

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { api } from '$lib/api';
 	import { toast_ } from '$lib/toast';
@@ -66,7 +67,16 @@
 	// ── Estado principal ─────────────────────────────────────────
 	let items = $state<CartItem[]>([]);
 	let clienteActual = $state<Cliente | null>(null);
-	let seleccionados = $state<Set<number>>(new Set());
+	// SvelteSet, no $state(new Set()) — un Set plano envuelto en $state no
+	// engancha reactividad en .add()/.delete()/.clear() (Svelte 5 solo trackea
+	// mutaciones de Set/Map a través de SvelteSet/SvelteMap, no del Set nativo).
+	// Con Set plano el estado interno quedaba bien (los botones que leen
+	// seleccionados.has(...) al tocarlos funcionaban), pero la UI (checkboxes,
+	// barra de selección) no se refrescaba sola — solo "se ponía al día" si
+	// pasaba otra cosa que sí disparara reactividad (ej. agregar un ítem),
+	// dando la sensación de que "la barra cumple pero no es coherente" (caso
+	// real 15/08/2026).
+	let seleccionados = new SvelteSet<number>();
 	let editandoVentaId = $state<number | null>(null);
 	let ultimaVentaData = $state<{ id: number; tipo_comprobante: string; numero: string; total: number } | null>(null);
 	let afipGuardActivo = $state(false);
@@ -851,7 +861,7 @@
 		inputRapido = '';
 		inputCliente = '';
 		mostrarBuscadorCli = true;
-		seleccionados = new Set();
+		seleccionados = new SvelteSet();
 		esMixto = false;
 		pagosMixto = [];
 		tipoPagoSel = 'efectivo';
@@ -1538,7 +1548,7 @@
 		<div class="sel-bar" class:activo={seleccionados.size > 0}>
 			<span class="sel-count">{seleccionados.size > 0 ? `${seleccionados.size} ítem${seleccionados.size > 1 ? 's' : ''} seleccionado${seleccionados.size > 1 ? 's' : ''}` : 'Ninguno seleccionado'}</span>
 			<div class="sel-acciones">
-				<button class="sel-btn sel-btn-del" onclick={() => { items = items.filter((i) => !seleccionados.has(i.producto_id)); seleccionados = new Set(); }}
+				<button class="sel-btn sel-btn-del" onclick={() => { items = items.filter((i) => !seleccionados.has(i.producto_id)); seleccionados = new SvelteSet(); }}
 					><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /></svg>Eliminar</button
 				>
 				<div class="sel-sep"></div>
