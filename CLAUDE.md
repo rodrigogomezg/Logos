@@ -647,25 +647,52 @@ cada checkbox, `.sel-bar.activo`, el conteo, el indeterminate del
 `items = [...]`) forzaba a Svelte a recalcular todo el árbol y de paso
 "pescaba" la mutación ya vieja del Set.
 
-**Fix:** `app/src/routes/(app)/+page.svelte` — `seleccionados` pasó a ser
-`new SvelteSet<number>()` (import de `svelte/reactivity`), sin el wrapper
-`$state()` (`SvelteSet` ya es reactivo por sí solo). Los dos lugares que
-reseteaban con `seleccionados = new Set()` pasaron a `new SvelteSet()`
-también — reasignar a un Set plano ahí habría vuelto a romper la
-reactividad en el próximo `.add()`. Verificado en vivo con esperas reales
-(no sincrónico — Svelte flushea al DOM en batch): tildar uno, "seleccionar
-todo", y destildar uno para ver el indeterminate, los tres casos actualizan
-la barra al toque.
+**Primer intento de fix (incompleto, publicado igual en 1.0.21 sin querer):**
+`seleccionados` pasó a `new SvelteSet<number>()` sin envolver en `$state()`,
+razonando que "`SvelteSet` ya es reactivo por sí solo" — cierto para las
+MUTACIONES (`.add()`/`.delete()`/`.clear()`), pero incompleto: el código
+también tiene dos lugares que REASIGNAN la variable entera
+(`seleccionados = new SvelteSet()`, al arrancar una venta nueva y al
+eliminar seleccionados), y una reasignación de un `let` común — sin
+`$state()` — no dispara reactividad en Svelte 5, sin importar de qué esté
+hecho el valor nuevo. El compilador SÍ avisó esto con un warning real
+(`non_reactive_update`: "`seleccionados` is updated, but is not declared
+with `$state(...)`") que apareció en el log de `npm run build` — se pasó
+por alto en la revisión inicial porque solo se buscaron errores duros, no
+warnings, entre el ruido de accesibilidad (a11y) que ya existía de antes.
+Rodrigo llegó a publicar la 1.0.21 con este fix a medias antes de que se
+detectara al repasar su log de build completo.
+
+**Fix real:** `let seleccionados = $state(new SvelteSet<number>());` — las
+DOS capas hacen falta a la vez: `SvelteSet` trackea mutación,
+`$state()` trackea reasignación de la variable. Verificado: el warning
+`non_reactive_update` desaparece del build, y en vivo (con esperas reales
+de ~200ms — Svelte flushea al DOM en batch, no sincrónico) tildar uno,
+"seleccionar todo", destildar uno para ver el indeterminate, Y el camino
+de reasignación (botón "Eliminar seleccionados", que dispara justo el
+`seleccionados = new SvelteSet()` que el warning señalaba) — los cuatro
+casos actualizan la barra al toque.
 
 **Se revisaron los otros 6 usos de `$state(new Set()/new Map())` en la
 SPA** (`productos`, `taxonomias`, `importar` ×2, `configuracion::cfgTipos`,
 POS `catalogoSel`) — todos ya clonan (`new Set(actual)`), mutan la copia, y
-reasignan (`variable = copia`), que es el patrón seguro con `$state()`. Solo
-el carrito del POS mutaba el original directo. No hizo falta tocar los otros.
+reasignan (`variable = copia`), que es el patrón seguro con `$state()` de
+un Set nativo. Solo el carrito del POS mutaba el original directo. No hizo
+falta tocar los otros.
 
-**Convención a partir de ahora:** cualquier `Set`/`Map` nuevo en `$state`
-tiene que, o (a) ser un `SvelteSet`/`SvelteMap` de `svelte/reactivity` si en
-algún lugar se lo va a mutar con `.add()`/`.delete()`/`.set()`/`.clear()`
-directo, o (b) si se prefiere Set nativo, disciplina estricta de nunca
-mutar el original — siempre clonar y reasignar. (a) es más simple y menos
-propenso a errores; preferirlo para código nuevo.
+**Convención a partir de ahora:**
+1. Cualquier `Set`/`Map` nuevo en un componente Svelte tiene que ser
+   `$state(new SvelteSet())`/`$state(new SvelteMap())` (ambas capas juntas,
+   de `svelte/reactivity`) si en algún lugar se lo va a mutar directo
+   (`.add()`/`.delete()`/`.set()`/`.clear()`) **y también** reasignar la
+   variable en algún otro lugar — que es el caso más común. Un Set nativo
+   en `$state()` con disciplina de "siempre clonar y reasignar, nunca
+   mutar" también es válido, pero es más frágil (un solo `.add()` directo
+   que se cuele rompe todo) — preferir `$state(new SvelteSet())` para
+   código nuevo.
+2. **Repasar el log completo de `npm run build`/`vite build` en busca de
+   warnings de `vite-plugin-svelte`, no solo errores** — este caso puntual
+   (`non_reactive_update`) es exactamente el tipo de aviso que el propio
+   compilador da gratis y que se perdió entre ruido de a11y preexistente
+   sin relación. Antes de dar un fix de reactividad por verificado, buscar
+   el nombre de la variable tocada en el log de build completo.

@@ -67,16 +67,18 @@
 	// ── Estado principal ─────────────────────────────────────────
 	let items = $state<CartItem[]>([]);
 	let clienteActual = $state<Cliente | null>(null);
-	// SvelteSet, no $state(new Set()) — un Set plano envuelto en $state no
-	// engancha reactividad en .add()/.delete()/.clear() (Svelte 5 solo trackea
-	// mutaciones de Set/Map a través de SvelteSet/SvelteMap, no del Set nativo).
-	// Con Set plano el estado interno quedaba bien (los botones que leen
-	// seleccionados.has(...) al tocarlos funcionaban), pero la UI (checkboxes,
-	// barra de selección) no se refrescaba sola — solo "se ponía al día" si
-	// pasaba otra cosa que sí disparara reactividad (ej. agregar un ítem),
-	// dando la sensación de que "la barra cumple pero no es coherente" (caso
-	// real 15/08/2026).
-	let seleccionados = new SvelteSet<number>();
+	// $state(new SvelteSet()) — hacen falta las DOS capas, no alcanza con
+	// una sola (esto se me pasó en el primer intento, ver CLAUDE.md):
+	// SvelteSet trackea las MUTACIONES (.add/.delete/.clear), pero acá
+	// también hay dos lugares que REASIGNAN la variable entera
+	// (seleccionados = new SvelteSet(), al arrancar una venta nueva y al
+	// eliminar seleccionados) — y una reasignación de un `let` común no
+	// dispara reactividad en Svelte 5 sin $state() (el compilador lo avisa
+	// como warning "is updated, but is not declared with $state(...)", que
+	// se me pasó por alto en la primera pasada). Un Set nativo en $state()
+	// tiene el problema inverso (reasignación sí, mutación no) — hace falta
+	// $state() envolviendo un SvelteSet para cubrir ambos casos.
+	let seleccionados = $state(new SvelteSet<number>());
 	let editandoVentaId = $state<number | null>(null);
 	let ultimaVentaData = $state<{ id: number; tipo_comprobante: string; numero: string; total: number } | null>(null);
 	let afipGuardActivo = $state(false);
