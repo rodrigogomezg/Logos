@@ -93,6 +93,19 @@
 	let fDesde = $state('');
 	let fHasta = $state('');
 	let fTipo = $state('');
+	// Mismos 5 tipos que Configuración > Datos contables deja tildar/destildar
+	// (tipos_habilitados) — "Tipo" en este filtro solo debe ofrecer los que
+	// estén habilitados ahí. Arranca con los 5 (mismo criterio que el backend:
+	// "si ninguno está seleccionado, todos quedan habilitados") hasta que
+	// cargarIntegConfig() traiga la lista real.
+	const TIPOS_COMPROBANTE_FILTRO: { value: string; label: string }[] = [
+		{ value: 'REMITO', label: 'Remito' },
+		{ value: 'FC B-ELECT', label: 'Fc B' },
+		{ value: 'FC A-ELECT', label: 'Fc A' },
+		{ value: 'FC C-ELECT', label: 'Fc C' },
+		{ value: 'PRESUPUESTO', label: 'Presup.' }
+	];
+	let tiposHabilitadosFiltro = $state<string[]>(TIPOS_COMPROBANTE_FILTRO.map((t) => t.value));
 	let fVendedor = $state('');
 	let vendedores = $state<{ id: number; nombre: string }[]>([]);
 	let fMontoMin = $state('');
@@ -994,6 +1007,9 @@
 			if (!r.ok) return;
 			const d = await r.json();
 			integConfig = { mp_configurado: !!d.mp_configurado, wa_configurado: !!d.wa_configurado };
+			if (Array.isArray(d.tipos_habilitados) && d.tipos_habilitados.length > 0) {
+				tiposHabilitadosFiltro = d.tipos_habilitados;
+			}
 		} catch {
 			/* sin integraciones si falla */
 		}
@@ -1644,11 +1660,9 @@
 
 	<select class="fbar-ctrl" data-tour="f-tipo" title="Tipo de comprobante" bind:value={fTipo} onchange={buscar}>
 		<option value="">Tipo</option>
-		<option value="REMITO">Remito</option>
-		<option value="FC B-ELECT">Fc B</option>
-		<option value="FC A-ELECT">Fc A</option>
-		<option value="FC C-ELECT">Fc C</option>
-		<option value="PRESUPUESTO">Presup.</option>
+		{#each TIPOS_COMPROBANTE_FILTRO.filter((t) => tiposHabilitadosFiltro.includes(t.value)) as t (t.value)}
+			<option value={t.value}>{t.label}</option>
+		{/each}
 	</select>
 
 	{#if vendedores.length}

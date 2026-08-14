@@ -598,3 +598,28 @@ Verificado antes de dar el reorden por terminado: `cargo check` limpio,
 `cargo tauri dev` real levantando MariaDB/PHP desde la ubicación nueva, y
 un `tauri build` completo (build local, sin publicar) generando el
 instalador sin errores de recursos faltantes.
+
+### Caso real (15/08/2026): CSP nueva rompió la vista previa de PDF — "Este contenido está bloqueado"
+
+Reporte de Rodrigo: al tocar "Descargar PDF", la vista previa mostraba el
+mensaje genérico de Chrome/Edge "Este contenido está bloqueado. Contactá
+con el dueño del sitio para arreglar el problema" en vez del PDF.
+
+Causa: la CSP agregada el día anterior (`tauri-shell/src-tauri/resources/www/router.php::cspHeader()`,
+ver caso "Endurecimiento de localStorage") no tenía `frame-src` explícito,
+así que caía al fallback de `default-src 'self'`. `PdfViewerModal.svelte`
+mete el PDF en un `<iframe src="blob:...">` (`$lib/pdf.ts::abrirPdf()`,
+`URL.createObjectURL(blob)`) — y **`'self'` no cubre `blob:`** en
+`frame-src`/`default-src`, hay que listarlo aparte explícitamente aunque el
+blob se haya creado en el mismo origen. Gotcha conocido de CSP, no específico
+de esta app, pero fácil de pisar si se agrega una CSP nueva sin pensar en
+todos los mecanismos de carga de contenido que la app ya usa.
+
+**Fix:** agregado `frame-src 'self' blob:;` a la CSP. Verificado sirviendo
+la app real vía `php -S` + este router y creando un iframe con un blob PDF
+de prueba: sin violaciones de CSP en consola.
+
+**Convención:** cualquier ajuste futuro a la CSP tiene que repasar TODOS los
+usos de `URL.createObjectURL()` en `app/src` (hoy: `pdf.ts` para vista
+previa vía iframe — los demás son descargas por `<a download>`, que no
+pasan por `frame-src`) antes de asumir que una directiva nueva no rompe nada.

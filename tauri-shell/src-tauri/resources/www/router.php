@@ -42,6 +42,12 @@ function cspHeader(): void {
         "img-src 'self' data:; " .
         "font-src 'self'; " .
         "connect-src 'self'; " .
+        // Vista previa de PDF (PdfViewerModal.svelte, pdf.ts::abrirPdf()) mete
+        // el PDF en un <iframe src="blob:..."> — sin esto quedaba bloqueado
+        // ("Este contenido está bloqueado", el mensaje genérico de Chrome/Edge
+        // para un frame-src rechazado por CSP). 'self' solo NO cubre blob:,
+        // hay que listarlo aparte (caso real 15/08/2026).
+        "frame-src 'self' blob:; " .
         "object-src 'none'; " .
         "frame-ancestors 'none'; " .
         "base-uri 'self'; " .
