@@ -22,6 +22,33 @@ $appDir = rtrim(
     '/\\'
 );
 
+// CSP en los documentos HTML (SPA + pos/*.html legacy) — api/helpers/Seguridad.php
+// ya pone X-Content-Type-Options/X-Frame-Options/etc en las respuestas JSON de
+// la API, pero eso no protege nada acá: CSP tiene que viajar en la respuesta
+// del DOCUMENTO que carga los scripts, no en un fetch JSON aparte.
+//
+// 'unsafe-inline' en script-src/style-src es una concesión real, no un
+// descuido: tanto el bootstrap de SvelteKit (app.html) como CADA página
+// pos/*.html dependen de <script>/style="" inline — una CSP estricta sin esto
+// rompería el arranque de la app entera. Igual protege lo que más importa
+// contra un XSS: connect-src 'self' bloquea exfiltrar el token robado a un
+// servidor externo, y script-src 'self' bloquea cargar un <script src="https://...">
+// remoto, aunque el inline local siga permitido.
+function cspHeader(): void {
+    header(
+        "Content-Security-Policy: default-src 'self'; " .
+        "script-src 'self' 'unsafe-inline'; " .
+        "style-src 'self' 'unsafe-inline'; " .
+        "img-src 'self' data:; " .
+        "font-src 'self'; " .
+        "connect-src 'self'; " .
+        "object-src 'none'; " .
+        "frame-ancestors 'none'; " .
+        "base-uri 'self'; " .
+        "form-action 'self'"
+    );
+}
+
 $uri = rawurldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
 
 // Todo lo que no sea /Logos/* es la SPA nueva, servida en la raíz del dominio
@@ -92,6 +119,7 @@ if (!file_exists($filePath)) {
 // header de caché) — se notó recién al actualizar la app y no verse UI nueva.
 if (preg_match('#^/Logos/pos/[^/]+\.html$#', $uri)) {
     header('Cache-Control: no-store, no-cache, must-revalidate');
+    cspHeader();
     chdir(dirname($filePath));
     require $filePath;
     return true;
@@ -141,6 +169,7 @@ function serveSpa(string $uri): void
     if (is_file($index)) {
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Content-Type: text/html; charset=UTF-8');
+        cspHeader();
         readfile($index);
         return;
     }

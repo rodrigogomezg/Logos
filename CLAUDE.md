@@ -511,3 +511,45 @@ admin, `Auth::requireAdmin()` gatea esos endpoints). Otra PC/usuario con
 sesión ya abierta en simultáneo sigue con su lista vieja hasta su propio
 próximo login — no hay push entre sesiones, y no hacía falta para el caso
 reportado.
+
+### Endurecimiento de `localStorage` (14/08/2026) — sync, CSP, auto-logout por inactividad
+
+A raíz de auditar todos los usos de `localStorage` del proyecto, cinco
+mejoras de bajo riesgo, sin cambiar ningún comportamiento visible:
+
+- **`$lib/storage.ts`** (nuevo): `leerJSON`/`guardarJSON` genéricos con
+  `try/catch` adentro — `session.ts` ya lo usa para `leerSesion`/
+  `guardarSesion`. Reduce el boilerplate repetido, no cambia contrato.
+- **`+layout.svelte`**: además del `CustomEvent` puntual para sucursales
+  (ver caso de arriba), ahora también escucha el evento nativo `storage` —
+  cubre cambios a `logos_sesion` hechos desde OTRA pestaña/ventana (el
+  evento custom solo cubre la misma pestaña). Si `logos_sesion` desaparece
+  desde otra ventana, esta también redirige a `/login`.
+- **Limpieza de `*_toast_*` viejos**: `lic_toast_<fecha>`/`afip_toast_<fecha>`/
+  `backup_toast_<fecha>` nunca se borraban solos (no hay TTL nativo en
+  localStorage). Se limpia cualquiera de más de 2 días al montar el layout.
+- **CSP** (`electron/www/router.php`, nuevo `cspHeader()`): agregado en los
+  dos puntos donde se sirve un documento HTML real (`index.html` de la SPA
+  y `pos/*.html` legacy) — `api/helpers/Seguridad.php` solo cubre respuestas
+  JSON de la API, eso no protege nada del lado del documento. Necesita
+  `'unsafe-inline'` en `script-src`/`style-src` a propósito: tanto el
+  bootstrap de `app.html` como cada página `pos/*.html` dependen de
+  `<script>`/`style=""` inline — una CSP estricta rompería el arranque.
+  Igual bloquea lo más importante ante un XSS: `connect-src 'self'` impide
+  exfiltrar un token robado a un servidor externo, `script-src 'self'`
+  impide cargar un script remoto. Verificado sirviendo la app real con
+  `php -S` + este router: sin violaciones de CSP en consola, todos los
+  recursos cargan 200 OK.
+- **Auto-logout por inactividad** (`+layout.svelte`, 15 min): complementa
+  el logout forzado en cada arranque real del proceso (01/08) — ese cubre
+  "cerraron y reabrieron la app", este cubre "la dejaron abierta y
+  desatendida en el mostrador". Cuenta desde el último `mousedown`/
+  `keydown`/`touchstart`, sin importar si la ventana tiene foco.
+
+Se evaluó y se descartó a propósito: mover el token de sesión a una cookie
+`HttpOnly` (reescribiría el modelo de auth multi-PC entero para un riesgo
+que hoy no es explotable — no hay ningún `{@html}`/`innerHTML` con datos de
+usuario real en la SPA, confirmado por auditoría) y migrar a `sessionStorage`
+o `IndexedDB` en general (perdería la persistencia entre pestañas/recargas
+que varias de estas claves necesitan a propósito, o agregaría complejidad
+async sin beneficio real dado el tamaño chico de los datos guardados acá).

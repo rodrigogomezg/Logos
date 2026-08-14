@@ -1701,7 +1701,7 @@
 		{#if ccAlertaVisible}
 			{@const partes = ccAlertaTexto.split('|')}
 			<div style="display:block;background:rgba(231,76,60,.08);border-radius:var(--neo-r-sm);box-shadow:var(--neo-e1), 0 0 0 1.5px var(--neo-danger);padding:9px 12px;font-size:12px;line-height:1.55;color:var(--neo-text-2)">
-				<strong>{partes[0]}</strong><br />{@html partes[1]}<br />{@html partes[2]}
+				<strong>{partes[0]}</strong><br />{partes[1]}<br />{partes[2]}
 			</div>
 		{/if}
 

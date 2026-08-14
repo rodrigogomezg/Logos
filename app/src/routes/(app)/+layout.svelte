@@ -27,7 +27,27 @@
 	let sesion = $state<Sesion | null>(null);
 	let listo = $state(false);
 
+	// lic_toast_<fecha>/afip_toast_<fecha>/backup_toast_<fecha> (acá y en las
+	// páginas legacy) meten la fecha en la clave para simular un TTL que
+	// localStorage no tiene nativamente — nunca se borran solas. Housekeeping
+	// trivial: al arrancar, tirar cualquiera de más de 2 días. Sin riesgo, son
+	// solo el "ya avisé hoy" de un toast, no dato funcional.
+	function limpiarTostsViejos(): void {
+		const hoy = Date.now();
+		const DOS_DIAS_MS = 2 * 24 * 60 * 60 * 1000;
+		for (let i = localStorage.length - 1; i >= 0; i--) {
+			const clave = localStorage.key(i);
+			const m = clave?.match(/^(lic|afip|backup)_toast_(\d{4}-\d{2}-\d{2})$/);
+			if (!m) continue;
+			const fecha = new Date(m[2] + 'T00:00:00').getTime();
+			if (Number.isNaN(fecha) || hoy - fecha > DOS_DIAS_MS) {
+				localStorage.removeItem(clave!);
+			}
+		}
+	}
+
 	onMount(() => {
+		limpiarTostsViejos();
 		const s = leerSesion();
 		if (!s) {
 			goto('/login');
@@ -41,13 +61,56 @@
 
 		// Ver session.ts::actualizarSucursalesSesion() — Configuración dispara
 		// esto tras crear/editar/eliminar una sucursal, para que el nav no
-		// siga mostrando una ya borrada hasta el próximo login.
+		// siga mostrando una ya borrada hasta el próximo login. Evento custom
+		// porque localStorage no es reactivo dentro de la MISMA pestaña.
 		const onSesionActualizada = () => {
 			const s2 = leerSesion();
 			if (s2) sesion = s2;
 		};
 		window.addEventListener('logos:sesion-actualizada', onSesionActualizada);
-		return () => window.removeEventListener('logos:sesion-actualizada', onSesionActualizada);
+
+		// Complemento para OTRAS pestañas/ventanas: el evento nativo 'storage'
+		// sí dispara solo cuando localStorage cambia desde afuera de esta
+		// pestaña (nunca en la que hizo el cambio, por eso no reemplaza al
+		// evento custom de arriba). Cubre, por ejemplo, cerrar sesión en una
+		// ventana y que las demás lo reflejen sin esperar a la próxima acción.
+		const onStorage = (e: StorageEvent) => {
+			if (e.key !== null && e.key !== 'logos_sesion') return;
+			const s2 = leerSesion();
+			if (!s2) {
+				goto('/login');
+				return;
+			}
+			sesion = s2;
+		};
+		window.addEventListener('storage', onStorage);
+
+		// Auto-logout por inactividad: complementa (no reemplaza) el logout
+		// forzado en cada arranque real del proceso (ver CLAUDE.md, 01/08) —
+		// ese cubre "cerraron y reabrieron la app", este cubre "la dejaron
+		// abierta y desatendida en el mostrador". Cuenta desde la última
+		// interacción real (mouse/teclado/touch), sin importar si la ventana
+		// tiene foco — una caja desatendida sigue siendo una caja desatendida
+		// aunque el usuario haya cambiado a otra ventana.
+		const INACTIVIDAD_LIMITE_MS = 15 * 60 * 1000;
+		let inactividadTimer: ReturnType<typeof setTimeout>;
+		const onInactivo = () => {
+			cerrarSesion().finally(() => goto('/login'));
+		};
+		const resetInactividad = () => {
+			clearTimeout(inactividadTimer);
+			inactividadTimer = setTimeout(onInactivo, INACTIVIDAD_LIMITE_MS);
+		};
+		const eventosActividad = ['mousedown', 'keydown', 'touchstart'] as const;
+		eventosActividad.forEach((ev) => window.addEventListener(ev, resetInactividad, { passive: true }));
+		resetInactividad();
+
+		return () => {
+			window.removeEventListener('logos:sesion-actualizada', onSesionActualizada);
+			window.removeEventListener('storage', onStorage);
+			clearTimeout(inactividadTimer);
+			eventosActividad.forEach((ev) => window.removeEventListener(ev, resetInactividad));
+		};
 	});
 
 	// ── Título de la ventana/pestaña con el nombre del negocio (port de

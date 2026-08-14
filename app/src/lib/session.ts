@@ -24,22 +24,18 @@ export interface Sesion {
 	token: string;
 }
 
+import { leerJSON, guardarJSON } from './storage';
+
 const CLAVE = 'logos_sesion';
 
 export function leerSesion(): Sesion | null {
-	try {
-		const raw = localStorage.getItem(CLAVE);
-		if (!raw) return null;
-		const s = JSON.parse(raw) as Partial<Sesion>;
-		if (!s.usuario_id || !s.caja_id || !s.token) return null;
-		return s as Sesion;
-	} catch {
-		return null;
-	}
+	const s = leerJSON<Partial<Sesion>>(CLAVE);
+	if (!s || !s.usuario_id || !s.caja_id || !s.token) return null;
+	return s as Sesion;
 }
 
 export function guardarSesion(s: Sesion): void {
-	localStorage.setItem(CLAVE, JSON.stringify(s));
+	guardarJSON(CLAVE, s);
 }
 
 // La lista de sucursales del nav (app/src/routes/(app)/+layout.svelte) sale
