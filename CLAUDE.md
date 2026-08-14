@@ -410,3 +410,69 @@ va a renderizar puede referenciar cualquier archivo fuera del árbol de la
 app — no alcanza con que el archivo exista y sea legible por PHP en general,
 Dompdf tiene su propia lista de rutas permitidas, independiente del
 filesystem.
+
+### Caso real (14/08/2026): `npm run publish` no reconstruye la SPA — el `app/build` empaquetado puede quedar viejo sin que ningún número de versión lo delate
+
+Reporte de Rodrigo en v1.0.16: el botón "Nuevo depósito"/"Editar depósito" en
+Configuración no hacía nada, y el indicador nuevo de logo ("✓ Ya tenés un
+logo cargado") tampoco aparecía — pese a estar en el código fuente de esa
+misma versión. La vista previa del logo SÍ se veía bien (confirmado con
+Rodrigo), lo que descartó un problema de backend/Dompdf y aisló el síntoma
+al bundle de JS servido.
+
+Causa raíz: `tauri-shell/src-tauri/tauri.conf.json` → `build.beforeBuildCommand`
+es `"npm run build"`, que corre en el contexto de `tauri-shell/` (compila
+`tauri-shell/dist`, un frontend mínimo propio del shell) — **nunca toca
+`app/`**, el árbol real de la SPA SvelteKit. `app/build` (lo que
+`bundle.resources` empaqueta como `www/app`, ver "Puntos de falla conocidos")
+solo se genera corriendo `npm run build` a mano DENTRO de `app/`, un paso
+completamente separado que `npm run publish` (`tauri build && node
+scripts/publish.js`) nunca dispara solo. Bumpear la versión en
+`Cargo.toml`/`tauri.conf.json` y publicar no garantiza en absoluto que la
+SPA empaquetada sea la del código fuente actual — puede quedar congelada en
+lo que sea que `app/build` tenía de la última vez que alguien corrió el
+build de `app/` a mano, sin importar qué tan reciente sea el resto.
+
+**Fix:** `tauri-shell/package.json` → script `publish` ahora es
+`"npm --prefix ../app run build && tauri build && node scripts/publish.js"`
+— fuerza un build fresco de la SPA como primer paso, siempre, antes de
+empaquetar. Verificado corriendo el comando: resuelve el path correcto
+(`C:\xampp\htdocs\Logos\app`) y termina en `Wrote site to "build"` sin error.
+
+**Si en el futuro un cambio de la SPA "no aparece" en una versión ya
+publicada** (y no es el caso ya conocido de `pos/*.html` legacy vs SPA, ver
+más abajo): sospechar primero de esto — comparar la fecha de modificación de
+los archivos en `app/build/_app/immutable/` contra la fecha del último
+commit tocado, antes de asumir que el fix en sí está mal.
+
+### Caso real (14/08/2026): modal de "Nuevo depósito"/"Editar depósito" invisible e inclickeable — colisión de clase CSS con `pos/neo.css`
+
+Bug de larga data (no introducido en esta sesión), encontrado al investigar
+el reporte de arriba. `pos/neo.css` define un patrón para "modales legacy
+activados con JS via classList": `.overlay, .modal-overlay { opacity:0;
+visibility:hidden; pointer-events:none; ... }` con `.overlay.abierto,
+.modal-overlay.abierto { opacity:1; visibility:visible; pointer-events:auto;
+}` — pensado para un elemento SIEMPRE montado en el DOM que un script
+externo togglea agregando/sacando la clase `abierto`.
+
+El modal de depósito en `app/src/routes/(app)/configuracion/+page.svelte`
+reusa el nombre de clase `modal-overlay` pero sigue el patrón de Svelte
+(`{#if modalDeposito}<div class="modal-overlay">...`) — el div solo existe en
+el DOM mientras está abierto, nunca necesitó ni agregó la clase `abierto`. El
+`<style>` scoped del componente solo pisa `position/display/z-index/etc`,
+nunca `opacity`/`visibility`/`pointer-events` — así que esas tres propiedades
+caían solas en el valor de `neo.css` (oculto), dejando el modal presente en
+el DOM (confirmado con `getComputedStyle`) pero invisible y con `pointer-
+events:none`, indistinguible en pantalla de "el botón no hace nada".
+
+**Fix:** el div ahora es `class="modal-overlay abierto"` (fijo, no
+condicional) — como el `{#if}` ya controla el montaje/desmontaje, no hace
+falta la transición basada en classList que el patrón legacy sí necesita.
+Verificado con `getComputedStyle` antes/después (`opacity:0→1`,
+`visibility:hidden→visible`, `pointerEvents:none→auto`) y creando un depósito
+real de punta a punta contra la API.
+
+**Convención a partir de ahora:** cualquier `<div class="modal-overlay">` (o
+`.overlay`) nuevo en la SPA que esté gateado por `{#if}` tiene que incluir
+`abierto` en la clase desde el vamos — `neo.css` lo exige y lo oculta en
+silencio si no.

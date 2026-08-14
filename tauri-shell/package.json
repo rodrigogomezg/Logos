@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "publish": "tauri build && node scripts/publish.js"
+    "publish": "npm --prefix ../app run build && tauri build && node scripts/publish.js"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

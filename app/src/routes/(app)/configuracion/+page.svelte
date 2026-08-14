@@ -1908,7 +1908,13 @@
 {/if}
 
 {#if modalDeposito}
-	<div class="modal-overlay" role="presentation" onclick={(e) => e.target === e.currentTarget && (modalDeposito = false)}>
+	<!-- pos/neo.css define .modal-overlay oculto por defecto (opacity:0,
+	     visibility:hidden, pointer-events:none) — pensado para modales legacy
+	     que togglean .abierto por JS con classList sobre un elemento siempre
+	     montado. Acá el {#if} ya monta/desmonta el div entero, así que .abierto
+	     va fijo: si no, el estilo local (que solo pisa display/position/etc, no
+	     opacity/visibility) deja el modal invisible e inclickeable en silencio. -->
+	<div class="modal-overlay abierto" role="presentation" onclick={(e) => e.target === e.currentTarget && (modalDeposito = false)}>
 		<div class="modal" style="max-width:440px">
 			<div class="modal-header"><h3>{editDepId ? 'Editar depósito' : 'Nuevo depósito'}</h3><button class="modal-close" onclick={() => (modalDeposito = false)}>✕</button></div>
 			<div class="modal-body">
