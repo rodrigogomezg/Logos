@@ -696,3 +696,40 @@ falta tocar los otros.
    compilador da gratis y que se perdió entre ruido de a11y preexistente
    sin relación. Antes de dar un fix de reactividad por verificado, buscar
    el nombre de la variable tocada en el log de build completo.
+
+### Limpieza de warnings de accesibilidad (15/08/2026) — build queda en 0 warnings
+
+Los 34 warnings de a11y que tapaban el `non_reactive_update` de arriba se
+arreglaron todos, sin cambiar comportamiento con mouse:
+
+- **Dropdowns del nav** (`+layout.svelte`, Cta. Cte./Contactos/Productos/
+  Caja/Reportes): se agregó `onfocusin`/`onfocusout` junto a los
+  `onmouseenter`/`onmouseleave` existentes — tabular hasta el link del
+  desplegable ahora también lo abre, igual que pasarle el mouse por
+  encima. "Caja" y "Reportes" no tienen página propia (`href="#"`, inválido
+  para a11y) — pasaron a `<button>` con un reset de estilo nativo
+  (`button.nav-link { background:none; border:none; ... }`) para verse
+  idénticos a los `<a>`. "Cerrar sesión" (mismo problema de `href="#"`)
+  también pasó a `<button>`.
+- **Tarjetas clickeables del dashboard** (Ganancia bruta, CC vencida):
+  `role="button" tabindex="0"` + `onkeydown` (Enter/Espacio) además del
+  `onclick` que ya tenían, más un `:focus-visible` con outline (no existía
+  ningún indicador visual de foco antes).
+- **Dropdowns de búsqueda con selección por teclado ya implementada**
+  (proveedor/producto en `compras-nueva`, cliente en `ventas` al confirmar
+  presupuesto): estos YA tenían navegación completa por flechas+Enter en
+  el `<input>` (`onProvKeydown`/`onP2Keydown`) — el `onclick` de cada ítem
+  del desplegable es solo el atajo de mouse. El compilador igual pedía un
+  `onkeydown` en el propio `<div>` del ítem (aunque nunca vaya a recibir
+  foco con `tabindex="-1"`) — se agregó reflejando la misma acción del
+  `onclick`, honesto con la regla aunque en la práctica ese código nunca
+  dispare por esa vía específica.
+
+**Verificado:** `npm run build` queda en **0 warnings** de
+`vite-plugin-svelte` (antes: 34 de a11y + el de reactividad ya corregido
+arriba). Regresión probada en vivo: el dropdown "Caja" sigue abriendo con
+click igual que antes, "Cerrar sesión" sigue sin `href`. Se repasaron
+además, a pedido de Rodrigo, los atajos globales del POS
+(`onKeydownGlobal`, F2/F3/F4/F5/F10/Shift+1-6/Escape) uno por uno en vivo
+— todos funcionan, incluyendo los guardas que los suprimen mientras se
+escribe en un input o hay un modal abierto.

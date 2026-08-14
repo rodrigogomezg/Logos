@@ -2428,7 +2428,7 @@
 									{#if !cpCliResultados.length}
 										<div class="cp-cli-dd-item" style="color:#9B9590">Sin resultados</div>
 									{:else}
-										{#each cpCliResultados as c (c.id)}<div class="cp-cli-dd-item" onclick={() => cpSeleccionarCliente(c)} role="button" tabindex="-1">{c.nombre}</div>{/each}
+										{#each cpCliResultados as c (c.id)}<div class="cp-cli-dd-item" onclick={() => cpSeleccionarCliente(c)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cpSeleccionarCliente(c); } }} role="button" tabindex="-1">{c.nombre}</div>{/each}
 									{/if}
 								</div>
 							{/if}

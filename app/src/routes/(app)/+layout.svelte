@@ -341,7 +341,14 @@
 		<a href="/" class="nav-link" class:activo={navActivo === 'pos'}>POS</a>
 		<div class="nav-sep"></div>
 		<a href="/ventas" class="nav-link" class:activo={navActivo === 'ventas'}>Ventas</a>
-		<div class="nav-drop" onmouseenter={() => abrirDrop('ctacte')} onmouseleave={programarCierreDrop}>
+		<div
+			class="nav-drop"
+			role="group"
+			onmouseenter={() => abrirDrop('ctacte')}
+			onmouseleave={programarCierreDrop}
+			onfocusin={() => abrirDrop('ctacte')}
+			onfocusout={programarCierreDrop}
+		>
 			<a href="/cuentacorriente" class="nav-link nav-drop-toggle" class:activo={navActivo === 'cuentacorriente'}
 				>Cta. Cte.</a
 			>
@@ -350,7 +357,14 @@
 				<a href="/cuentacorriente?tipo=proveedor">Proveedores</a>
 			</div>
 		</div>
-		<div class="nav-drop" onmouseenter={() => abrirDrop('contactos')} onmouseleave={programarCierreDrop}>
+		<div
+			class="nav-drop"
+			role="group"
+			onmouseenter={() => abrirDrop('contactos')}
+			onmouseleave={programarCierreDrop}
+			onfocusin={() => abrirDrop('contactos')}
+			onfocusout={programarCierreDrop}
+		>
 			<a
 				href="/contactos"
 				class="nav-link nav-drop-toggle"
@@ -369,7 +383,14 @@
 				{/if}
 			</div>
 		</div>
-		<div class="nav-drop" onmouseenter={() => abrirDrop('productos')} onmouseleave={programarCierreDrop}>
+		<div
+			class="nav-drop"
+			role="group"
+			onmouseenter={() => abrirDrop('productos')}
+			onmouseleave={programarCierreDrop}
+			onfocusin={() => abrirDrop('productos')}
+			onfocusout={programarCierreDrop}
+		>
 			<a href="/productos" class="nav-link nav-drop-toggle" class:activo={productosGrupoActivo}
 				>Productos</a
 			>
@@ -384,8 +405,15 @@
 		{#if puede('compras')}
 			<a href="/compras" class="nav-link" class:activo={navActivo === 'compras'}>Compras</a>
 		{/if}
-		<div class="nav-drop" onmouseenter={() => abrirDrop('caja')} onmouseleave={programarCierreDrop}>
-			<a href="#" class="nav-link nav-drop-toggle" class:activo={cajaGrupoActivo}>Caja</a>
+		<div
+			class="nav-drop"
+			role="group"
+			onmouseenter={() => abrirDrop('caja')}
+			onmouseleave={programarCierreDrop}
+			onfocusin={() => abrirDrop('caja')}
+			onfocusout={programarCierreDrop}
+		>
+			<button type="button" class="nav-link nav-drop-toggle" class:activo={cajaGrupoActivo} onclick={() => (dropAbierto === 'caja' ? (dropAbierto = null) : abrirDrop('caja'))}>Caja</button>
 			<div class="nav-drop-menu" class:abierto={dropAbierto === 'caja'}>
 				<a href="/caja" class:activo={navActivo === 'caja'}>Abrir / Cerrar Caja</a>
 				<a href="/movimientos" class:activo={navActivo === 'movimientos'}>Movimientos</a>
@@ -395,8 +423,15 @@
 			</div>
 		</div>
 		{#if puede('reportes') || puede('costos')}
-			<div class="nav-drop" onmouseenter={() => abrirDrop('reportes')} onmouseleave={programarCierreDrop}>
-				<a href="#" class="nav-link nav-drop-toggle" class:activo={reportesGrupoActivo}>Reportes</a>
+			<div
+				class="nav-drop"
+				role="group"
+				onmouseenter={() => abrirDrop('reportes')}
+				onmouseleave={programarCierreDrop}
+				onfocusin={() => abrirDrop('reportes')}
+				onfocusout={programarCierreDrop}
+			>
+				<button type="button" class="nav-link nav-drop-toggle" class:activo={reportesGrupoActivo} onclick={() => (dropAbierto === 'reportes' ? (dropAbierto = null) : abrirDrop('reportes'))}>Reportes</button>
 				<div class="nav-drop-menu" class:abierto={dropAbierto === 'reportes'}>
 					{#if puede('reportes')}
 						<a href="/dashboard" class:activo={navActivo === 'dashboard'}>Dashboard</a>
@@ -457,15 +492,10 @@
 				<span>· {sesion.caja_nombre}</span>{/if}
 		</div>
 		<div class="nav-sep"></div>
-		<a
-			href="#"
-			class="nav-link nav-icon-link"
-			title="Cerrar sesión"
-			onclick={(e) => (e.preventDefault(), logout())}
-		>
+		<button type="button" class="nav-link nav-icon-link" title="Cerrar sesión" onclick={logout}>
 			<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
 			<span class="nav-icon-label">Salir</span>
-		</a>
+		</button>
 	</nav>
 
 	<main class="contenido">
@@ -543,6 +573,16 @@
 		text-decoration: none;
 		border-radius: 6px;
 		white-space: nowrap;
+	}
+	/* "Caja"/"Reportes" (sin página propia, solo agrupan el desplegable) y
+	   "Salir" pasaron de <a href="#"> a <button> — href="#" no es un link
+	   real y rompía accesibilidad (a11y_invalid_attribute). Reset del estilo
+	   nativo de botón para que se vean idénticos a los .nav-link que sí son <a>. */
+	button.nav-link {
+		background: none;
+		border: none;
+		font-family: inherit;
+		cursor: pointer;
 	}
 	.nav-link:hover,
 	.nav-link.activo {

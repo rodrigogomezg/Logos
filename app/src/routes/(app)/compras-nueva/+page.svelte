@@ -792,7 +792,15 @@
 						{#if provDDVisible}
 							<div class="prov-dd visible">
 								{#each provResultados as p, i (p.id)}
-									<div class="prov-dd-item" class:dd-activo={i === provDDIdx} onclick={() => seleccionarProveedor(p)}>
+									<div
+										class="prov-dd-item"
+										class:dd-activo={i === provDDIdx}
+										role="option"
+										aria-selected={i === provDDIdx}
+										tabindex="-1"
+										onclick={() => seleccionarProveedor(p)}
+										onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); seleccionarProveedor(p); } }}
+									>
 										<div>{p.nombre}</div>
 										<div class="cuit">{p.cuit || 'Sin CUIT'}</div>
 									</div>
@@ -893,7 +901,15 @@
 					{#if p2DDVisible}
 						<div class="dropdown visible">
 							{#each p2Resultados as p, i (p.id)}
-								<div class="dd-item" class:dd-activo={i === p2DDIdx} onclick={() => seleccionarProducto(p)}>
+								<div
+									class="dd-item"
+									class:dd-activo={i === p2DDIdx}
+									role="option"
+									aria-selected={i === p2DDIdx}
+									tabindex="-1"
+									onclick={() => seleccionarProducto(p)}
+									onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); seleccionarProducto(p); } }}
+								>
 									<span class="cod">{p.codigo}</span><span>{p.nombre}</span>
 								</div>
 							{/each}

@@ -720,7 +720,15 @@
 					<span class="kdtl">{cv > 0 ? 'por transacción' : 'Sin ventas'}{#if deltaTicket} <span class={deltaTicket.cls}>{deltaTicket.texto}</span>{/if}</span>
 				</div>
 				{#if veCosto}
-					<div class="kcard" style="cursor:pointer" title="Ver análisis de rentabilidad" onclick={irRentabilidad}>
+					<div
+						class="kcard"
+						style="cursor:pointer"
+						title="Ver análisis de rentabilidad"
+						role="button"
+						tabindex="0"
+						onclick={irRentabilidad}
+						onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); irRentabilidad(); } }}
+					>
 						<span class="klbl">Ganancia bruta</span>
 						<span class="kval {gb >= 0 ? 'g' : 'r'}">{moneyFmt(gb)}</span>
 						<span class="kdtl">Margen {mp.toFixed(1)}%</span>
@@ -755,7 +763,15 @@
 					</span>
 				</div>
 				{#if veCc}
-					<div class="kcard" style="cursor:pointer" title="Ver vencimientos de cuenta corriente" onclick={irCuentaCorriente}>
+					<div
+						class="kcard"
+						style="cursor:pointer"
+						title="Ver vencimientos de cuenta corriente"
+						role="button"
+						tabindex="0"
+						onclick={irCuentaCorriente}
+						onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); irCuentaCorriente(); } }}
+					>
 						<span class="klbl">CC vencida</span>
 						{#if !ccAgingData?.totales}
 							<span class="kval">$0</span>
@@ -1310,6 +1326,10 @@
 	}
 	.kcard:hover {
 		box-shadow: var(--neo-e3);
+	}
+	.kcard[role='button']:focus-visible {
+		outline: 2px solid var(--neo-accent, #2563eb);
+		outline-offset: 2px;
 	}
 	.klbl {
 		font-size: 9px;
