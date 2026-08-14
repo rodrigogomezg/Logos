@@ -1830,7 +1830,7 @@
 							<span class="tipo-badge {tipoBadgeClass(v.tipo_comprobante)}">{v.tipo_comprobante ?? '—'}</span><span class="comp-num">{v.numero}</span>{#if anulada}<span class="badge-anulada">anulada</span>{/if}
 							{#if TIPOS_ELECT.includes(v.tipo_comprobante ?? '')}
 								{#if v.cae}<span class="cae-badge cae-ok" title="CAE: {v.cae}">✓</span>
-								{:else if v.afip_error}<span class="cae-badge cae-err" title={v.afip_error}>!</span>
+								{:else if v.afip_error}<button type="button" class="cae-badge cae-err" title="Ver motivo del rechazo de ARCA" onclick={(e) => { e.stopPropagation(); ventaSeleccionada = v; ventaDetalleCache = null; accionVer(); }}>!</button>
 								{:else}<span class="cae-badge cae-pend" title="Pendiente de autorización ARCA">…</span>{/if}
 							{/if}
 						</td>
@@ -1864,7 +1864,7 @@
 								<span class="tipo-badge {tipoBadgeClass(v.tipo_comprobante)}">{v.tipo_comprobante ?? '—'}</span><span class="comp-num">{v.numero}</span>{#if anulada}<span class="badge-anulada">anulada</span>{/if}
 								{#if TIPOS_ELECT.includes(v.tipo_comprobante ?? '')}
 									{#if v.cae}<span class="cae-badge cae-ok" title="CAE: {v.cae}">✓</span>
-									{:else if v.afip_error}<span class="cae-badge cae-err" title={v.afip_error}>!</span>
+									{:else if v.afip_error}<button type="button" class="cae-badge cae-err" title="Ver motivo del rechazo de ARCA" onclick={(e) => { e.stopPropagation(); ventaSeleccionada = v; ventaDetalleCache = null; accionVer(); }}>!</button>
 									{:else}<span class="cae-badge cae-pend" title="Pendiente de autorización ARCA">…</span>{/if}
 								{/if}
 							</td>
@@ -2660,7 +2660,8 @@
 	.fila-anulada td { opacity: .5; }
 	.fila-anulada .comp-num { text-decoration: line-through; }
 	.badge-anulada { display: inline-block; padding: 1px 6px; border-radius: var(--neo-r-pill); font-size: 10px; font-weight: 700; text-transform: uppercase; background: rgba(231,76,60,.12); color: var(--neo-danger); margin-left: 5px; vertical-align: middle; }
-	.cae-badge { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; font-size: 10px; font-weight: 800; margin-left: 5px; vertical-align: middle; flex-shrink: 0; }
+	.cae-badge { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 50%; font-size: 10px; font-weight: 800; margin-left: 5px; vertical-align: middle; flex-shrink: 0; border: none; padding: 0; font-family: inherit; }
+	button.cae-badge { cursor: pointer; }
 	.cae-ok { background: rgba(39,174,96,.15); color: var(--neo-success); }
 	.cae-err { background: rgba(231,76,60,.15); color: var(--neo-danger); }
 	.cae-pend { background: var(--color-bg-alt); color: var(--neo-text-3); }
