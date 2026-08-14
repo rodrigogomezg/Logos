@@ -476,3 +476,38 @@ real de punta a punta contra la API.
 `.overlay`) nuevo en la SPA que esté gateado por `{#if}` tiene que incluir
 `abierto` en la clase desde el vamos — `neo.css` lo exige y lo oculta en
 silencio si no.
+
+### Caso real (14/08/2026): eliminar una sucursal no la sacaba del selector del nav
+
+Reporte de Rodrigo en una segunda PC (v1.0.16, actualizada por auto-update
+normal): borró la sucursal "Rodrigo Gaston Gomez" (la que el wizard crea con
+el nombre/razón social del negocio) desde Configuración, y desapareció ahí
+— pero siguió apareciendo en el selector de sucursal del nav.
+
+Causa: `app/src/routes/(app)/+layout.svelte` arma la lista del nav leyendo
+`sesion.sucursales`, y `sesion` sale de `leerSesion()` (`$lib/session.ts`) —
+un `onMount` que corre **una sola vez** al montar el layout (que a su vez
+solo se monta una vez por sesión de navegación de la SPA, no en cada
+cambio de ruta). Esa lista queda fijada en `localStorage` desde el momento
+del login. `eliminarSucursal()`/`guardarSucursal()` en
+`configuracion/+page.svelte` actualizaban la base y su propia lista local
+(vía `cargarSucursales()`), pero nunca tocaban `localStorage.logos_sesion`
+— el nav seguía sirviendo la foto vieja hasta el próximo login manual.
+
+**Fix:** `session.ts::actualizarSucursalesSesion()` (nuevo) reescribe
+`sesion.sucursales` en localStorage y dispara un `CustomEvent`
+(`logos:sesion-actualizada`) en `window`; `+layout.svelte` lo escucha (desde
+su mismo `onMount`) y relee la sesión, lo que dispara el `$effect` que ya
+existía para recalcular `sucursales` — sin necesitar logout/login.
+`cargarSucursales()` en Configuración llama esto cada vez que refresca su
+propia lista (crear, editar, eliminar, activar/desactivar), filtrando solo
+`activo` (mismo criterio que usa el login para armar esa lista). Verificado
+en vivo: borrar una sucursal por API hace desaparecer la opción del
+`<select>` del nav sin reload, y localStorage refleja la lista nueva al
+toque.
+
+**Alcance del fix:** solo la sesión de quien hizo el cambio (siempre un
+admin, `Auth::requireAdmin()` gatea esos endpoints). Otra PC/usuario con
+sesión ya abierta en simultáneo sigue con su lista vieja hasta su propio
+próximo login — no hay push entre sesiones, y no hacía falta para el caso
+reportado.

@@ -4,6 +4,7 @@
 	import { toast_ } from '$lib/toast';
 	import { confirmar } from '$lib/confirm';
 	import { esRolServidor } from '$lib/instalacion';
+	import { actualizarSucursalesSesion } from '$lib/session';
 
 	type Vista = 'negocio' | 'contables' | 'avanzado';
 	type Config = Record<string, unknown>;
@@ -736,7 +737,16 @@
 
 	async function cargarSucursales() {
 		const res = await api('/sucursales?todas=1');
-		sucursales = res.ok ? await res.json() : [];
+		const data: (Sucursal & { deposito_principal_id?: number | null })[] = res.ok ? await res.json() : [];
+		sucursales = data;
+		// El nav (fuera de esta página) cachea su lista de sucursales en la
+		// sesión — ver session.ts::actualizarSucursalesSesion(). Solo activas,
+		// mismo criterio que usa el login para armar esa lista.
+		actualizarSucursalesSesion(
+			data
+				.filter((s) => !!s.activo)
+				.map((s) => ({ id: s.id, nombre: s.nombre, nombre_fantasia: s.nombre_fantasia, deposito_principal_id: s.deposito_principal_id ?? null }))
+		);
 		if (!sucursales.find((s) => s.id === sucActivaId)) {
 			sucActivaId = sucursales[0]?.id ?? null;
 		}

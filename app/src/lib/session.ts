@@ -42,6 +42,25 @@ export function guardarSesion(s: Sesion): void {
 	localStorage.setItem(CLAVE, JSON.stringify(s));
 }
 
+// La lista de sucursales del nav (app/src/routes/(app)/+layout.svelte) sale
+// de sesion.sucursales, cacheada en localStorage solo al loguearse — crear/
+// editar/eliminar una sucursal desde Configuración no la tocaba, así que una
+// sucursal borrada seguía apareciendo en el nav hasta el próximo login (caso
+// real 14/08/2026). Configuración llama esto después de cualquier cambio a
+// sucursales; el evento 'logos:sesion-actualizada' es lo que le avisa al
+// layout (ya montado, con su propio $state fijado una sola vez en onMount)
+// que tiene que releer la sesión.
+export function actualizarSucursalesSesion(sucursales: Sucursal[]): void {
+	const s = leerSesion();
+	if (!s) return;
+	s.sucursales = sucursales;
+	if (!sucursales.find((x) => x.id === s.sucursal_id)) {
+		s.sucursal_id = sucursales[0]?.id ?? s.sucursal_id;
+	}
+	guardarSesion(s);
+	window.dispatchEvent(new CustomEvent('logos:sesion-actualizada'));
+}
+
 export function limpiarSesion(): void {
 	localStorage.removeItem(CLAVE);
 }

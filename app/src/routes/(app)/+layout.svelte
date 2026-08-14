@@ -38,6 +38,16 @@
 		cargarLicencia();
 		cargarAfip();
 		cargarRazonSocial();
+
+		// Ver session.ts::actualizarSucursalesSesion() — Configuración dispara
+		// esto tras crear/editar/eliminar una sucursal, para que el nav no
+		// siga mostrando una ya borrada hasta el próximo login.
+		const onSesionActualizada = () => {
+			const s2 = leerSesion();
+			if (s2) sesion = s2;
+		};
+		window.addEventListener('logos:sesion-actualizada', onSesionActualizada);
+		return () => window.removeEventListener('logos:sesion-actualizada', onSesionActualizada);
 	});
 
 	// ── Título de la ventana/pestaña con el nombre del negocio (port de
