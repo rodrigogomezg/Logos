@@ -365,3 +365,48 @@ puede garantizar al 100% contra archivos bloqueados/antivirus escaneando),
 `setup-server.ps1` ahora vacía `$dataDir` por las dudas, justo antes de
 inicializar, cada vez que decide que hace falta una inicialización fresca —
 autocorrige cualquier resto sin importar de dónde vino.
+
+### Caso real (14/08/2026): logo ausente en los PDFs — mismo patrón que `db.local.php`, pero en Dompdf
+
+Reporte de Rodrigo: el logo se sube bien en el wizard/Configuración (la
+preview lo muestra), pero nunca aparece en los comprobantes PDF generados.
+Diagnóstico inicial por lectura de código (comparar `comprobante_pdf.php`
+contra el patrón "funcionando" de `pedido_pdf.php`) no encontró nada — ambos
+calculan `$logo` igual y lo insertan en un `<img>` sin ninguna diferencia
+visible. Se confirmó la causa real reproduciendo el render con un script
+aislado (`Dompdf\Image\Cache::resolve_url()` llamado directo): Dompdf lo
+rechaza en silencio con `"Permission denied. The file could not be found
+under the paths specified by Options::chroot."` — sin ese diagnóstico
+puntual, el síntoma es indistinguible de "el archivo no existe" (no tira
+excepción visible, el PDF simplemente sale sin logo).
+
+Causa: los 4 generadores de PDF (`ComprobanteGenerador.php`,
+`ReciboGenerador.php`, `PedidoController.php`, `NotasEnvioController.php`)
+configuran `$options->setChroot([realpath(__DIR__ . '/../..')])` — el árbol
+de la app únicamente. El logo vive en `DB::dataRoot()`
+(`C:\ProgramData\LogosPOS\logo_background.png`, ver "Puntos de falla
+conocidos" más arriba sobre por qué vive ahí) — **fuera** de ese chroot.
+`Dompdf\Options::validateLocalUri()` exige que la ruta real del archivo
+empiece con uno de los directorios permitidos; como no matchea ninguno,
+descarta el `<img>` sin lanzar ningún error visible al llamador (queda
+como warning interno de Dompdf, no como excepción). Es el mismo patrón que
+ya rompió `db.local.php` en agosto: mover un archivo a ProgramData para
+protegerlo del reempaquetado de NSIS, sin actualizar todos los lugares que
+además restringen el acceso a rutas de archivo por seguridad. `PedidoController.php`
+tenía exactamente el mismo bug pese a asumirse como "el caso que sí
+funciona" — nunca se había verificado en la práctica, solo por lectura de
+código (tenía el guard `file_exists()`, pero el guard nunca hace `false`
+porque el archivo sí existe en disco — el rechazo pasa después, adentro de
+Dompdf).
+
+**Fix:** agregado `DB::dataRoot()` como segundo directorio permitido en el
+`setChroot()` de los 4 generadores. Verificado con un script aislado:
+contando `/Image`/`/XObject` en el PDF crudo generado, pasó de 0 referencias
+(sin el fix) a 6 (con el fix, PDF de ~230KB vs ~1.6KB antes).
+
+**Convención a partir de ahora:** cualquier `setChroot()` nuevo (o
+Dompdf `Options` nuevo) tiene que incluir `DB::dataRoot()` si el HTML que
+va a renderizar puede referenciar cualquier archivo fuera del árbol de la
+app — no alcanza con que el archivo exista y sea legible por PHP en general,
+Dompdf tiene su propia lista de rutas permitidas, independiente del
+filesystem.

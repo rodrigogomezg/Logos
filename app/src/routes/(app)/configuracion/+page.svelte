@@ -334,6 +334,12 @@
 
 	// ── Logo ─────────────────────────────────────────────────────
 	let logoSrc = $state('/Logos/api/configuracion/logo?t=0');
+	// El <input type="file"> nativo nunca muestra el nombre de un archivo ya
+	// subido en cargas anteriores (lo borra el navegador en cada recarga, por
+	// seguridad) — eso confunde ("dice que no cargué nada" aunque sí haya un
+	// logo). Este flag, derivado de si la preview carga o no, es el indicador
+	// real de si hay un logo guardado.
+	let logoExiste = $state(true);
 	async function subirLogo(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
@@ -347,6 +353,7 @@
 				return;
 			}
 			logoSrc = data.path;
+			logoExiste = true;
 			toast_('Logo actualizado', 'ok');
 		} catch {
 			toast_('Error de conexión', 'err');
@@ -1349,10 +1356,17 @@
 						<div class="card-titulo">Logo</div>
 						<div class="card-body">
 							<div class="logo-row">
-								<div class="logo-preview"><img src={logoSrc} alt="" /></div>
+								<div class="logo-preview">
+									<img src={logoSrc} alt="" onload={() => (logoExiste = true)} onerror={() => (logoExiste = false)} />
+								</div>
 								<div>
 									<input type="file" accept="image/png,image/jpeg,image/gif,image/webp" onchange={subirLogo} />
-									<div class="form-hint" style="margin-top:8px">Se usa en los comprobantes PDF.</div>
+									{#if logoExiste}
+										<div class="form-hint" style="margin-top:8px; color:var(--ok, #2a8c5e)">✓ Ya tenés un logo cargado (se ve en la vista previa).</div>
+									{:else}
+										<div class="form-hint" style="margin-top:8px">Todavía no cargaste un logo.</div>
+									{/if}
+									<div class="form-hint" style="margin-top:2px">Se usa en los comprobantes PDF.</div>
 								</div>
 							</div>
 						</div>

@@ -104,6 +104,14 @@
 	let mesesAnio = $state(0);
 	let mesActivo = $state<number | null>(null);
 	let morePanelVisible = $state(false);
+	// Último período realmente aplicado (a diferencia de pcSelect, que ya
+	// cambia a 'manual' apenas se elige la opción del combo, antes de
+	// confirmar nada en el modal) — permite revertir el combo si cancelan
+	// el modal sin aplicar.
+	let pcSelectConfirmado = $state('hoy');
+	let rangoModalAbierto = $state(false);
+	let rmDesde = $state('');
+	let rmHasta = $state('');
 
 	function mesLimite(anio: number): number {
 		const hoy = new Date();
@@ -152,7 +160,35 @@
 		}
 		fDesde = desde;
 		fHasta = hasta;
+		pcSelectConfirmado = pcSelect;
 		buscar();
+	}
+
+	function abrirRangoManual() {
+		rmDesde = fDesde || fmtDate(new Date());
+		rmHasta = fHasta || fmtDate(new Date());
+		rangoModalAbierto = true;
+	}
+	function aplicarRangoManual() {
+		if (!rmDesde || !rmHasta) {
+			toast_('Elegí las dos fechas', 'err');
+			return;
+		}
+		if (rmDesde > rmHasta) {
+			toast_('La fecha "desde" no puede ser posterior a "hasta"', 'err');
+			return;
+		}
+		fDesde = rmDesde;
+		fHasta = rmHasta;
+		pcSelect = 'manual';
+		pcSelectConfirmado = 'manual';
+		mesesVisible = false;
+		rangoModalAbierto = false;
+		buscar();
+	}
+	function cancelarRangoManual() {
+		rangoModalAbierto = false;
+		pcSelect = pcSelectConfirmado;
 	}
 
 	function onFechaManualChange() {
@@ -1370,13 +1406,8 @@
 		},
 		{
 			el: '#pc-select',
-			title: 'Período rápido',
-			body: 'Elegí Hoy, Esta semana, Este mes o Este año para filtrar rápidamente. Las fechas se actualizan solas.'
-		},
-		{
-			el: '[data-tour="f-desde"]',
-			title: 'Rango de fechas',
-			body: 'También podés ingresar las fechas a mano. Útil para consultas de períodos específicos como el mes pasado o un trimestre.'
+			title: 'Período',
+			body: 'Elegí Hoy, Esta semana, Este mes o Este año para filtrar rápidamente — las fechas se actualizan solas. O elegí "Rango manual…" para elegir vos las fechas de inicio y fin en una ventanita aparte, útil para consultas de un período específico como el mes pasado o un trimestre.'
 		},
 		{
 			el: '[data-tour="f-tipo"]',
@@ -1570,6 +1601,7 @@
 </svelte:head>
 
 <div class="filtros-bar">
+<div class="fbar-scroll">
 	<input type="text" class="fbar-ctrl" id="f-q-input" placeholder="Nombre, N°…" autocomplete="off" bind:value={fQ} onkeydown={(e) => e.key === 'Enter' && buscar()} />
 	<button class="fbar-btn fbar-btn-search" title="Buscar" onclick={buscar}>
 		<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4.35-4.35" /></svg>
@@ -1585,15 +1617,28 @@
 		<div class="fbar-sep"></div>
 	{/if}
 
-	<select class="fbar-ctrl" id="pc-select" title="Período rápido" bind:value={pcSelect} onchange={() => pcSelect && setPeriodo(pcSelect as 'hoy' | 'semana' | 'mes' | 'anio')}>
+	<select
+		class="fbar-ctrl"
+		id="pc-select"
+		data-tour="f-desde"
+		title="Período"
+		bind:value={pcSelect}
+		onchange={() => {
+			if (pcSelect === 'manual') abrirRangoManual();
+			else if (pcSelect) setPeriodo(pcSelect as 'hoy' | 'semana' | 'mes' | 'anio');
+		}}
+	>
 		<option value="hoy">Hoy</option>
 		<option value="semana">Esta semana</option>
 		<option value="mes">Este mes</option>
 		<option value="anio">Este año</option>
+		<option value="manual">Rango manual…</option>
 	</select>
-	<input type="date" class="fbar-ctrl" data-tour="f-desde" bind:value={fDesde} onchange={onFechaManualChange} />
-	<span class="fbar-arrow">→</span>
-	<input type="date" class="fbar-ctrl" bind:value={fHasta} onchange={onFechaManualChange} />
+	{#if pcSelect === 'manual'}
+		<button type="button" class="fbar-ctrl fbar-rango-btn" title="Cambiar el rango de fechas" onclick={abrirRangoManual}>
+			{fmtFechaCorta(fDesde)} → {fmtFechaCorta(fHasta)}
+		</button>
+	{/if}
 
 	<div class="fbar-sep"></div>
 
@@ -1636,6 +1681,7 @@
 
 	<input type="number" class="fbar-ctrl" data-tour="f-monto-min" placeholder="$ mín" min="0" step="any" bind:value={fMontoMin} onchange={buscar} />
 	<input type="number" class="fbar-ctrl" placeholder="$ máx" min="0" step="any" bind:value={fMontoMax} onchange={buscar} />
+</div>
 
 	<span class="resultados-count">{countLabel}</span>
 
@@ -1692,16 +1738,43 @@
 			</div>
 		{/if}
 	</div>
-
-	{#if mesesVisible}
-		<div class="meses-strip visible">
-			<span class="mes-sep">{mesesAnio} /</span>
-			{#each MESES as nm, i (i)}
-				<button class="mes-chip" class:activo={mesActivo === i} class:futuro={i > mesLimite(mesesAnio)} onclick={() => i <= mesLimite(mesesAnio) && setPeriodo({ mes: i })}>{nm}</button>
-			{/each}
-		</div>
-	{/if}
 </div>
+
+{#if mesesVisible}
+	<div class="meses-strip visible">
+		<span class="mes-sep">{mesesAnio} /</span>
+		{#each MESES as nm, i (i)}
+			<button class="mes-chip" class:activo={mesActivo === i} class:futuro={i > mesLimite(mesesAnio)} onclick={() => i <= mesLimite(mesesAnio) && setPeriodo({ mes: i })}>{nm}</button>
+		{/each}
+	</div>
+{/if}
+
+{#if rangoModalAbierto}
+	<div class="overlay abierto" role="presentation" onclick={(e) => e.target === e.currentTarget && cancelarRangoManual()}>
+		<div class="modal modal-sm" role="dialog" aria-modal="true">
+			<div class="modal-head">
+				<h2>Rango de fechas</h2>
+				<button class="modal-close" aria-label="Cerrar" onclick={cancelarRangoManual}>×</button>
+			</div>
+			<div class="modal-body">
+				<div class="rango-form">
+					<div class="form-group">
+						<label class="form-label" for="rm-desde">Desde</label>
+						<input id="rm-desde" type="date" class="form-input" bind:value={rmDesde} />
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="rm-hasta">Hasta</label>
+						<input id="rm-hasta" type="date" class="form-input" bind:value={rmHasta} />
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-sec" onclick={cancelarRangoManual}>Cancelar</button>
+				<button class="selec-btn sbtn-primary" onclick={aplicarRangoManual}>Aplicar</button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Barra de selección -->
 <div class="seleccion-bar" class:sin-sel={!ventaSeleccionada && multiSel.size === 0} class:modo-multi={multiSel.size > 0}>
@@ -2457,13 +2530,29 @@
 {/if}
 
 <style>
+	/* Caso real (13/08/2026): con flex-wrap:wrap, en ventanas angostas la
+	   fila desbordada de controles pasaba a un segundo renglón que quedaba
+	   tapado por la barra de selección (siguiente hermano en el flujo
+	   normal) — controles enteros (Agrupar, Mostrar anuladas, Exportar)
+	   ocultos sin ningún aviso. Fix: .filtros-bar nunca wrappea ni scrollea
+	   ella misma (así el dropdown de "Más opciones", position:absolute,
+	   nunca queda cortado por un overflow del contenedor) — el que
+	   scrollea horizontalmente es el sub-wrapper .fbar-scroll, que agrupa
+	   los filtros; el resultado, actualizar y "más opciones" quedan fijos
+	   a la derecha, siempre visibles. */
 	.filtros-bar {
 	  background: var(--neo-bg);
 	  box-shadow: 0 -1px 4px var(--neo-sl);
 	  padding: 0 16px;
 	  display: flex; gap: 6px; align-items: center;
-	  flex-shrink: 0; min-height: 50px; flex-wrap: wrap;
+	  flex-shrink: 0; height: 50px; flex-wrap: nowrap;
 	  position: relative; z-index: 10;
+	}
+	.fbar-scroll {
+	  display: flex; gap: 6px; align-items: center;
+	  flex: 1 1 auto; min-width: 0; height: 100%;
+	  overflow-x: auto; overflow-y: hidden;
+	  scrollbar-width: thin;
 	}
 	.fbar-sep { width: 1px; height: 18px; background: var(--neo-sd); opacity: .35; flex-shrink: 0; margin: 0 4px; }
 	.fbar-ctrl {
@@ -2476,6 +2565,8 @@
 	}
 	.fbar-ctrl:focus { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
 	select.fbar-ctrl { cursor: pointer; }
+	.fbar-rango-btn { cursor: pointer; white-space: nowrap; font-weight: 600; }
+	.fbar-rango-btn:hover { box-shadow: var(--neo-i1), 0 0 0 2px var(--neo-accent); }
 	#f-q-input { flex: 1; min-width: 80px; }
 	.fbar-arrow { font-size: 12px; color: var(--neo-text-3); flex-shrink: 0; font-weight: 600; }
 	.fbar-btn {
@@ -2872,6 +2963,8 @@
 	.cp-mixto-estado.err { color: var(--rojo); }
 	.cp-mixto-link { background: none; border: none; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--neo-accent); padding: 0; font-family: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
+	.rango-form { display: flex; gap: 12px; }
+	.rango-form .form-group { flex: 1; }
 	.form-group { display: flex; flex-direction: column; gap: 4px; }
 	.form-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3); }
 	.form-input {

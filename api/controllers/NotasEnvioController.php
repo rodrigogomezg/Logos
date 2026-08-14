@@ -346,7 +346,9 @@ class NotasEnvioController {
         $html = ob_get_clean();
 
         $options = new Dompdf\Options(['isRemoteEnabled' => true]);
-        $options->setChroot([realpath(__DIR__ . '/../..')]);
+        // Ver comentario equivalente en ComprobanteGenerador.php: el logo
+        // vive en ProgramData, fuera del árbol de la app.
+        $options->setChroot([realpath(__DIR__ . '/../..'), DB::dataRoot()]);
         $dompdf = new Dompdf\Dompdf($options);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');

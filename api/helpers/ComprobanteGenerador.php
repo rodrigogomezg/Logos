@@ -106,7 +106,11 @@ class ComprobanteGenerador {
         $html = ob_get_clean();
 
         $options = new Dompdf\Options(['isRemoteEnabled' => true]);
-        $options->setChroot([realpath(__DIR__ . '/../..')]);
+        // El logo vive en DB::dataRoot() (ProgramData), fuera del árbol de la
+        // app — sin este segundo chroot, Options::validateLocalUri() lo
+        // rechaza en silencio (mismo motivo que db.local.php, ver CLAUDE.md)
+        // y el <img> del logo queda vacío en el PDF sin ningún error visible.
+        $options->setChroot([realpath(__DIR__ . '/../..'), DB::dataRoot()]);
         $dompdf = new Dompdf\Dompdf($options);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
