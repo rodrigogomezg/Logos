@@ -56,7 +56,7 @@ class ComprobanteGenerador {
                 vi.id,
                 vi.producto_id,
                 p.codigo,
-                p.nombre,
+                COALESCE(vi.nombre_manual, p.nombre) AS nombre,
                 vi.cantidad,
                 vi.precio_unitario,
                 vi.precio_original,

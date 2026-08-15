@@ -246,7 +246,7 @@ class ProductosController {
         $categoria     = trim($body['categoria']    ?? '') ?: null;
         $subcategoria  = trim($body['subcategoria'] ?? '') ?: null;
         $regla_precio_id = isset($body['regla_precio_id']) && $body['regla_precio_id'] !== null ? (int)$body['regla_precio_id'] : null;
-        $stock_min     = isset($body['stock_minimo'])  && $body['stock_minimo']  !== null ? (float)$body['stock_minimo']  : null;
+        $stock_min     = isset($body['stock_minimo'])  && $body['stock_minimo']  !== null ? (float)$body['stock_minimo']  : 0;
         $stock_inicial = isset($body['stock_inicial']) && $body['stock_inicial'] !== null ? (float)$body['stock_inicial'] : 0;
         $iva_pct       = isset($body['iva_porcentaje']) && $body['iva_porcentaje'] !== null ? (float)$body['iva_porcentaje'] : 21;
         $unidad        = trim($body['unidad_medida'] ?? '') ?: null;

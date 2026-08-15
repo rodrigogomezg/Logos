@@ -213,10 +213,7 @@
 			token: tokenSesion!
 		};
 		guardarSesion(sesion);
-		// POC: todavía no migramos la pantalla de venta — el destino post-login
-		// es la otra página del spike (navegación SPA, sin recarga completa,
-		// que es justamente lo que este POC tiene que demostrar).
-		goto('/contactos');
+		goto('/');
 	}
 
 	function onKeydown(e: KeyboardEvent) {

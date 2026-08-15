@@ -129,7 +129,7 @@
 							<td><strong>{r.nombre}</strong></td>
 							<td>{r.porcentaje_recargo >= 0 ? '+' : ''}{r.porcentaje_recargo.toLocaleString('es-AR', { maximumFractionDigits: 2 })}%</td>
 							<td><span class={r.activa ? 'badge-on' : 'badge-off'}>{r.activa ? 'Activa' : 'Inactiva'}</span></td>
-							<td>
+							<td class="rgp-act">
 								<button class="btn-icon" title="Editar" onclick={() => abrirModal(r)}>✏️</button>
 								<button class="btn-icon danger" title="Eliminar" onclick={() => eliminar(r)}>🗑️</button>
 							</td>
@@ -265,6 +265,14 @@
 	}
 	table.rgp-tbl .c-act {
 		width: 90px;
+	}
+	/* Sin esto los dos <button> (inline, ancho angosto de 90px) se partían a
+	   dos renglones en vez de quedar uno al lado del otro (caso real 15/08/2026). */
+	.rgp-act {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		white-space: nowrap;
 	}
 	table.rgp-tbl th {
 		padding: 8px 10px;

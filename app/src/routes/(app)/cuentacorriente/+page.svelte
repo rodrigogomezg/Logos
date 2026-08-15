@@ -67,8 +67,13 @@
 	};
 
 	// ── Estado general ───────────────────────────────────────────
-	const modoEntidad: ModoEntidad = page.url.searchParams.get('tipo') === 'proveedor' ? 'proveedor' : 'cliente';
-	const recurso = modoEntidad === 'proveedor' ? 'proveedores' : 'clientes';
+	// $derived (no const) — el dropdown "Cta. Cte." del nav linkea a
+	// /cuentacorriente?tipo=cliente y ?tipo=proveedor: como es la MISMA ruta,
+	// SvelteKit no remonta el componente al pasar de uno a otro, solo cambia
+	// el query string. Con `const` esto quedaba congelado en lo que fuera al
+	// montar (caso real 15/08/2026) — con $derived se recalcula solo.
+	const modoEntidad = $derived<ModoEntidad>(page.url.searchParams.get('tipo') === 'proveedor' ? 'proveedor' : 'cliente');
+	const recurso = $derived(modoEntidad === 'proveedor' ? 'proveedores' : 'clientes');
 
 	let clienteActual = $state<Cliente | null>(null);
 	let ventasPendientes = $state<VentaPendiente[]>([]);
@@ -947,11 +952,16 @@
 	$effect(() => {
 		const idParam = parseInt(page.url.searchParams.get('id') || '');
 		const wantsAging = !!page.url.searchParams.get('vencimientos');
+		// Leído acá (no solo derivado arriba) para que este mismo efecto sea
+		// la única fuente de "hay que recargar" — cambiar ?tipo= sin id (el
+		// caso del dropdown del nav) tiene que volver a la vista de lista del
+		// modo nuevo, no solo recalcular el label.
+		page.url.searchParams.get('tipo');
 		queueMicrotask(() => {
 			if (idParam) {
 				cargarCC(idParam);
 			} else {
-				cargarLista(1);
+				volverALista();
 			}
 			if (wantsAging) abrirModalAging();
 			actualizarBadgeAging();

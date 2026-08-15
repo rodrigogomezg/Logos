@@ -415,6 +415,13 @@
 		if (isNaN(val) || val < 0) return;
 		items[idx].precio_unitario = val;
 	}
+	// Nombre editable por ítem (pedido 15/08/2026): el código nunca cambia
+	// (sigue atado a producto_id — stock y ganancia no se enteran de esto),
+	// pero lo que se imprime en el remito/factura y se ve en el detalle de
+	// ESTA venta puntual puede ser distinto al nombre del producto maestro.
+	function onItemNombreInput(idx: number, valor: string) {
+		items[idx].nombre = valor;
+	}
 	function cambiarCantidad(idx: number, delta: number) {
 		const nueva = Math.round((items[idx].cantidad + delta) * 1000) / 1000;
 		if (nueva <= 0) {
@@ -773,7 +780,8 @@
 				precio_unitario: i.precio_unitario,
 				precio_original: i.precio_original ?? null,
 				ajuste_desc: i.ajuste_desc ?? null,
-				ajuste_visible: i.ajuste_visible ?? null
+				ajuste_visible: i.ajuste_visible ?? null,
+				nombre_manual: i.nombre
 			}))
 		};
 
@@ -910,7 +918,7 @@
 		if (Array.isArray(v.items) && v.items.length) {
 			items = v.items.map((i: any) => ({
 				producto_id: i.producto_id,
-				nombre: i.nombre,
+				nombre: i.nombre_manual ?? i.nombre,
 				codigo: i.codigo ?? '',
 				cantidad: Number(i.cantidad),
 				precio_unitario: Number(i.precio_unitario),
@@ -967,7 +975,7 @@
 		if (Array.isArray(datos.items) && datos.items.length) {
 			items = datos.items.map((i: any) => ({
 				producto_id: i.producto_id,
-				nombre: i.nombre,
+				nombre: i.nombre_manual ?? i.nombre,
 				codigo: i.codigo ?? '',
 				cantidad: Number(i.cantidad),
 				precio_unitario: Number(i.precio_unitario)
@@ -1595,7 +1603,14 @@
 						<div class="item-row">
 							<input type="checkbox" class="item-chk" checked={seleccionados.has(item.producto_id)} onchange={(e) => toggleItemChk(item.producto_id, (e.target as HTMLInputElement).checked)} />
 							<div class="nom">
-								{item.nombre}<small>{item.codigo}{#if item.ajuste_desc}<span class="ajuste-badge {item.ajuste_desc.startsWith('+') ? 'inc' : 'desc'}">{item.ajuste_desc}</span>{/if}</small>
+								<input
+									class="nom-input"
+									type="text"
+									value={item.nombre}
+									title="Editable — se imprime así en este comprobante, sin afectar el producto ni su código"
+									onchange={(e) => onItemNombreInput(idx, (e.target as HTMLInputElement).value)}
+								/>
+								<small>{item.codigo}{#if item.ajuste_desc}<span class="ajuste-badge {item.ajuste_desc.startsWith('+') ? 'inc' : 'desc'}">{item.ajuste_desc}</span>{/if}</small>
 							</div>
 							<div class="cant-wrap">
 								<button class="cant-btn" onclick={() => cambiarCantidad(idx, -1)}>−</button>
@@ -1983,6 +1998,14 @@
 	.item-row:hover { background: var(--color-bg-alt); }
 	.item-row .nom { font-weight: 500; line-height: 1.3; min-width: 0; overflow-wrap: break-word; color: var(--neo-text); }
 	.item-row .nom small { display: block; color: var(--neo-text-2); font-size: 11px; font-weight: 400; }
+	/* Se ve como texto plano hasta que el cajero lo toca — mismo criterio que
+	   el resto de la fila (cantidad/precio), sin recuadro visible de más. */
+	.nom-input {
+		width: 100%; border: none; background: none; padding: 1px 2px; margin: -1px -2px;
+		font: inherit; font-weight: 500; color: var(--neo-text); border-radius: var(--neo-r-xs);
+	}
+	.nom-input:hover { box-shadow: var(--neo-i1); }
+	.nom-input:focus { outline: none; box-shadow: var(--neo-i1), 0 0 0 1.5px var(--neo-accent); }
 	.item-row .sub { text-align: right; font-weight: 600; color: var(--neo-text); white-space: nowrap; }
 	.cant-wrap { display: flex; align-items: center; gap: 2px; }
 	.cant-btn {

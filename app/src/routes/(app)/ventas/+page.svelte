@@ -30,6 +30,7 @@
 		producto_id: number;
 		codigo: string;
 		nombre: string;
+		nombre_manual?: string | null;
 		cantidad: number;
 		precio_unitario: number;
 		precio_original?: number | null;
@@ -355,6 +356,8 @@
 	}
 	const necesitaReintento = $derived(!!ventaSeleccionada && TIPOS_ELECT.includes(ventaSeleccionada.tipo_comprobante ?? '') && !ventaSeleccionada.cae && ventaSeleccionada.estado !== 'anulado');
 	const esPresupuestoActivo = $derived(!!ventaSeleccionada && ventaSeleccionada.tipo_comprobante === 'PRESUPUESTO' && ventaSeleccionada.estado !== 'anulado');
+	// Solo se puede acreditar (NC) una factura electrónica ya autorizada por ARCA.
+	const puedeEmitirNc = $derived(!!ventaSeleccionada && !!ventaSeleccionada.cae && (ventaSeleccionada.tipo_comprobante ?? '').startsWith('FC') && ventaSeleccionada.estado !== 'anulado');
 
 	function toggleMultiChk(v: Venta, checked: boolean) {
 		if (checked) multiSel.set(v.id, v);
@@ -627,6 +630,95 @@
 		}
 	}
 
+	// ── Nota de crédito (acredita ítems de una FC ya autorizada por ARCA) ──
+	let ncAbierto = $state(false);
+	let ncVentaActual = $state<VentaDetalle | null>(null);
+	let ncItems = $state<{ producto_id: number; nombre: string; vendido: number; disponible: number; precio: number; cant: number }[]>([]);
+	let ncMotivo = $state('');
+	let ncForma = $state<'caja' | 'cc'>('caja');
+	let ncMedioPago = $state('efectivo');
+	let ncConfirmando = $state(false);
+
+	async function accionEmitirNc() {
+		if (!ventaSeleccionada || !puedeEmitirNc) return;
+		try {
+			const v = await cargarDetalle(ventaSeleccionada.id);
+			await abrirModalNc(v);
+		} catch (e) {
+			toast_(e instanceof Error ? e.message : 'Error', 'err');
+		}
+	}
+	async function abrirModalNc(v: VentaDetalle) {
+		ncVentaActual = v;
+		// La cantidad ya acreditada por NCs previas se valida en el backend
+		// (emitirNc() rechaza con un error claro si se pide de más); acá se
+		// arranca siempre desde la cantidad vendida para no duplicar esa lógica.
+		ncItems = v.items.map((it) => {
+			const vendido = Number(it.cantidad);
+			return { producto_id: it.producto_id, nombre: it.nombre_manual ?? it.nombre, vendido, disponible: vendido, precio: it.precio_unitario, cant: 0 };
+		});
+		ncMotivo = '';
+		ncForma = 'caja';
+		ncMedioPago = 'efectivo';
+		ncAbierto = true;
+	}
+	const ncTotal = $derived(ncItems.reduce((s, it) => s + it.cant * it.precio, 0));
+	function cerrarNc() {
+		ncAbierto = false;
+	}
+	async function confirmarNc() {
+		const items = ncItems.filter((it) => it.cant > 0).map((it) => ({ producto_id: it.producto_id, cantidad: it.cant, precio_unitario: it.precio }));
+		const invalido = ncItems.some((it) => it.cant < 0 || it.cant > it.disponible);
+		if (invalido) {
+			toast_('Cantidad fuera de rango', 'err');
+			return;
+		}
+		if (!items.length) {
+			toast_('Ingresá al menos una cantidad a acreditar', 'err');
+			return;
+		}
+		if (ncForma === 'cc' && !ncVentaActual?.cliente_id) {
+			toast_('Esta venta no tiene cliente asignado — elegí "Descontar de caja"', 'err');
+			return;
+		}
+		ncConfirmando = true;
+		try {
+			const body: Record<string, unknown> = {
+				items,
+				forma: ncForma,
+				motivo: ncMotivo.trim() || null
+			};
+			if (ncForma === 'caja') {
+				body.medio_pago = ncMedioPago;
+				body.caja_id = cajaOperativaId();
+			}
+			const r = await api(`/ventas/${ncVentaActual!.id}/nota-credito`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(body)
+			});
+			const d = await r.json();
+			// 502 con nc_id: la NC ya se guardó (stock e importe ya se movieron),
+			// solo falló el pedido de CAE a ARCA — reintentar creando OTRA NC
+			// duplicaría el movimiento. El reintento correcto es sobre esta misma
+			// fila, vía el botón "Reintentar AFIP" que ya aparece al seleccionarla.
+			if (r.status === 502 && d.nc_id) {
+				ncAbierto = false;
+				toast_('La NC se guardó pero ARCA todavía no le dio CAE — seleccionala en la lista y usá "Reintentar AFIP"', 'err');
+				buscar();
+				return;
+			}
+			if (!r.ok) throw new Error(d.error || 'Error al emitir la Nota de Crédito');
+			ncAbierto = false;
+			toast_(`Nota de Crédito emitida · ${fmt(ncTotal)} ${ncForma === 'caja' ? 'descontado de caja' : 'acreditado en cuenta corriente'}`, 'ok');
+			buscar();
+		} catch (e) {
+			toast_(e instanceof Error ? e.message : 'Error', 'err');
+		} finally {
+			ncConfirmando = false;
+		}
+	}
+
 	// ── Nota de envío ────────────────────────────────────────────
 	let neAbierto = $state(false);
 	let neVenta = $state<VentaDetalle | null>(null);
@@ -665,7 +757,7 @@
 		neVentaItems = (v.items || []).map((item) => {
 			const env = enviado[item.id] || 0;
 			const pend = Math.max(0, item.cantidad - env);
-			return { id: item.id, producto_id: item.producto_id, codigo: item.codigo, nombre: item.nombre, cantidad: item.cantidad, enviado: env, pendiente: pend, incluido: pend > 0, cant: pend };
+			return { id: item.id, producto_id: item.producto_id, codigo: item.codigo, nombre: item.nombre_manual ?? item.nombre, cantidad: item.cantidad, enviado: env, pendiente: pend, incluido: pend > 0, cant: pend };
 		});
 		neEnvioPrecio = v.envio_precio != null ? String(v.envio_precio) : '';
 		neEnvioDir = v.envio_direccion || '';
@@ -763,7 +855,7 @@
 			const v = await cargarDetalle(ventaSeleccionada.id);
 			const datos = {
 				cliente: v.cliente_id ? { id: v.cliente_id, nombre: v.cliente_nombre } : null,
-				items: v.items.map((i) => ({ producto_id: i.producto_id, nombre: i.nombre, codigo: i.codigo ?? '', cantidad: i.cantidad, precio_unitario: i.precio_unitario }))
+				items: v.items.map((i) => ({ producto_id: i.producto_id, nombre: i.nombre_manual ?? i.nombre, codigo: i.codigo ?? '', cantidad: i.cantidad, precio_unitario: i.precio_unitario }))
 			};
 			try {
 				localStorage.setItem('logos_copia_venta', JSON.stringify(datos));
@@ -778,6 +870,10 @@
 	}
 	async function accionEditarItems() {
 		if (!ventaSeleccionada) return;
+		if (ventaSeleccionada.cae) {
+			toast_('Ya fue autorizada por ARCA (tiene CAE) — no se puede editar. Emití una Nota de Crédito para revertirla.', 'err');
+			return;
+		}
 		try {
 			const v = await cargarDetalle(ventaSeleccionada.id);
 			try {
@@ -804,6 +900,10 @@
 
 	function accionModificarRapido() {
 		if (!ventaSeleccionada) return;
+		if (ventaSeleccionada.cae) {
+			toast_('Ya fue autorizada por ARCA (tiene CAE) — no se puede editar. Emití una Nota de Crédito para revertirla.', 'err');
+			return;
+		}
 		const v = ventaSeleccionada;
 		editComp = v.tipo_comprobante ?? '';
 		const esCC = v.tipo_pago === 'cc';
@@ -1337,6 +1437,10 @@
 				cerrarDev();
 				return;
 			}
+			if (ncAbierto) {
+				cerrarNc();
+				return;
+			}
 			if (neAbierto) {
 				cerrarNE();
 				return;
@@ -1823,7 +1927,12 @@
 					>{reintentandoAfipBar ? 'Facturando…' : 'Reintentar AFIP'}</button
 				>
 			{/if}
-			<button class="selec-btn sbtn-ghost" data-tour="sac-modificar" onclick={accionModificarRapido}
+			<button
+				class="selec-btn sbtn-ghost"
+				data-tour="sac-modificar"
+				disabled={!!ventaSeleccionada?.cae}
+				title={ventaSeleccionada?.cae ? 'Ya fue autorizada por ARCA (tiene CAE) — no se puede editar. Emití una Nota de Crédito para revertirla.' : ''}
+				onclick={accionModificarRapido}
 				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>Editar</button
 			>
 			<div class="comp-dd-wrap">
@@ -1867,6 +1976,12 @@
 			<button class="selec-btn sbtn-ghost" onclick={accionDevolver}
 				><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3.38" /></svg>Devolver</button
 			>
+			{#if puedeEmitirNc}
+				<button class="selec-btn sbtn-ghost" onclick={accionEmitirNc}
+					title="Emite una Nota de Crédito (con CAE) que acredita ítems de esta factura y descuenta de caja o de la cuenta corriente del cliente"
+					><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="9" y1="15" x2="15" y2="15" /></svg>Nota de crédito</button
+				>
+			{/if}
 			{#if ventaSeleccionada?.estado === 'anulado'}
 				<button class="selec-btn sbtn-primary" onclick={accionRecuperar}
 					><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 1 0 .49-3.38" /></svg>Recuperar</button
@@ -2026,7 +2141,7 @@
 								<tr>
 									<td><span class="cod">{it.codigo}</span></td>
 									<td>
-										{it.nombre}
+										{it.nombre_manual ?? it.nombre}
 										{#if tieneAjuste}<span class="tipo-badge" style="background:{badgeDesc ? '#fee2e2' : '#dcfce7'};color:{badgeDesc ? '#991b1b' : '#166534'};font-size:10px;padding:1px 5px">{it.ajuste_desc}</span>{/if}
 									</td>
 									<td class="r">{Number(it.cantidad) % 1 === 0 ? Number(it.cantidad) : Number(it.cantidad).toFixed(2)}</td>
@@ -2262,6 +2377,76 @@
 			<div class="modal-footer">
 				<button class="btn btn-sec" onclick={cerrarDev}>Cancelar</button>
 				<button class="btn btn-ok" disabled={!devItems.length || devConfirmando} onclick={confirmarDevolucion}>{devConfirmando ? 'Procesando…' : 'Confirmar devolución'}</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Modal Nota de Crédito -->
+{#if ncAbierto}
+	<div class="overlay abierto" role="presentation" onclick={(e) => e.target === e.currentTarget && cerrarNc()}>
+		<div class="modal" style="width:560px;max-width:96vw" role="dialog" aria-modal="true">
+			<div class="modal-head">
+				<h2>Nota de crédito</h2>
+				<button class="modal-close" onclick={cerrarNc}>×</button>
+			</div>
+			<div class="modal-body" style="padding:20px">
+				<p style="margin:0 0 14px;font-size:13px;color:#666">Venta N° {ncVentaActual?.numero} · Cliente: {ncVentaActual?.cliente_nombre ?? '—'} · Total: {fmt(ncVentaActual?.total)}</p>
+				<table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px">
+					<thead>
+						<tr style="border-bottom:2px solid #eee;text-align:left">
+							<th style="padding:6px 8px;font-weight:600">Producto</th>
+							<th style="padding:6px 8px;font-weight:600;text-align:right">Vendido</th>
+							<th style="padding:6px 8px;font-weight:600;text-align:center">Acreditar</th>
+							<th style="padding:6px 8px;font-weight:600;text-align:right">Precio</th>
+						</tr>
+					</thead>
+					<tbody>
+						{#if !ncItems.length}
+							<tr><td colspan="4" style="padding:14px 8px;text-align:center;color:#aaa;font-style:italic">Esta venta no tiene ítems</td></tr>
+						{:else}
+							{#each ncItems as it, i (it.producto_id)}
+								<tr style="border-bottom:1px solid #f0f0f0">
+									<td style="padding:7px 8px">{it.nombre}</td>
+									<td style="padding:7px 8px;text-align:right;color:#666">{it.vendido % 1 === 0 ? it.vendido : it.vendido.toFixed(2)}</td>
+									<td style="padding:7px 8px;text-align:center">
+										<input type="number" min="0" max={it.disponible} step={it.vendido % 1 === 0 ? 1 : 0.01} style="width:70px;text-align:center;padding:4px 6px" bind:value={ncItems[i].cant} />
+									</td>
+									<td style="padding:7px 8px;text-align:right">{fmt(it.precio)}</td>
+								</tr>
+							{/each}
+						{/if}
+					</tbody>
+				</table>
+				<div class="form-group" style="margin-bottom:10px">
+					<span class="form-label">Acreditar como</span>
+					<div style="display:flex;gap:14px;margin-top:4px">
+						<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="nc-forma" value="caja" bind:group={ncForma} /> Descontar de caja</label>
+						<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer"><input type="radio" name="nc-forma" value="cc" bind:group={ncForma} /> Cuenta corriente del cliente</label>
+					</div>
+				</div>
+				{#if ncForma === 'caja'}
+					<div class="form-group" style="margin-bottom:10px">
+						<label class="form-label" for="nc-medio">Medio de pago</label>
+						<select id="nc-medio" class="form-input" bind:value={ncMedioPago}>
+							<option value="efectivo">Efectivo</option>
+							<option value="transferencia">Transferencia</option>
+							<option value="tarjeta">Tarjeta</option>
+							<option value="mercado_pago">Mercado Pago</option>
+						</select>
+					</div>
+				{:else if !ncVentaActual?.cliente_id}
+					<div style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;border-radius:6px;padding:8px 12px;font-size:12px;margin-bottom:10px">Esta venta no tiene cliente asignado — no se puede acreditar en cuenta corriente.</div>
+				{/if}
+				<div class="form-group" style="margin-bottom:10px">
+					<label class="form-label" for="nc-motivo">Motivo (opcional)</label>
+					<input type="text" id="nc-motivo" class="form-input" placeholder="Ej: producto defectuoso, corrección de precio…" bind:value={ncMotivo} />
+				</div>
+				<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:10px 14px;font-size:13px">Total de la NC: <strong style="font-size:15px">{fmt(ncTotal)}</strong> — se emite con CAE por ARCA, restaura el stock acreditado y {ncForma === 'caja' ? 'descuenta de la caja actual' : 'se acredita en la cuenta corriente del cliente'}.</div>
+			</div>
+			<div class="modal-footer">
+				<button class="btn btn-sec" onclick={cerrarNc}>Cancelar</button>
+				<button class="btn btn-ok" disabled={!ncItems.length || ncConfirmando || ncTotal <= 0} onclick={confirmarNc}>{ncConfirmando ? 'Emitiendo…' : 'Emitir NC'}</button>
 			</div>
 		</div>
 	</div>

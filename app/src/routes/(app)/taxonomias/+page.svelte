@@ -29,6 +29,23 @@
 		cargar();
 	}
 
+	// El dropdown "Productos" del nav linkea a /taxonomias?tipo=rubros y
+	// ?tipo=marcas — misma ruta, SvelteKit no remonta el componente, solo
+	// cambia el query string. cambiarTipo() ya cubre el cambio hecho con las
+	// tabs internas, pero no la navegación que llega desde afuera (caso real
+	// 15/08/2026). Guard contra tipoActual evita un doble-fetch cuando el
+	// cambio SÍ vino de cambiarTipo() (que ya actualizó tipoActual antes del
+	// goto).
+	$effect(() => {
+		const tipoUrl = page.url.searchParams.get('tipo') === 'marcas' ? 'marcas' : 'rubros';
+		if (tipoUrl !== tipoActual) {
+			tipoActual = tipoUrl;
+			busqueda = '';
+			selIds = new Set();
+			cargar();
+		}
+	});
+
 	async function cargarReglasPrecio() {
 		if (reglasCargadas) return;
 		const r = await api('/reglas-precio?activas=1');

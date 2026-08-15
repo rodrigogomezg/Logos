@@ -733,3 +733,71 @@ además, a pedido de Rodrigo, los atajos globales del POS
 (`onKeydownGlobal`, F2/F3/F4/F5/F10/Shift+1-6/Escape) uno por uno en vivo
 — todos funcionan, incluyendo los guardas que los suprimen mientras se
 escribe en un input o hay un modal abierto.
+
+### Caso real (14/08/2026): `stock_minimo` en null rompía crear un producto nuevo
+
+Pedido de Rodrigo: poder crear un producto dejando "Stock mínimo" vacío (no
+debería ser obligatorio). El frontend (`productos/+page.svelte`) ya mandaba
+`stock_minimo: null` cuando el campo queda vacío, y a simple vista el backend
+parecía tolerarlo (`ProductosController::crear()` tenía
+`$body['stock_minimo'] !== null ? (float)... : null` — un patrón que se ve
+"seguro"). El problema: la columna `productos.stock_minimo` es
+`decimal(14,4) NOT NULL DEFAULT 0.0000`, y mandar un `NULL` **explícito** en
+un INSERT nunca dispara el `DEFAULT` de la columna — el `DEFAULT` solo aplica
+cuando la columna se omite del todo de la lista de columnas del INSERT. El
+resultado era un 500 silencioso (`Column 'stock_minimo' cannot be null`) que
+solo se vio probando la creación real vía la UI, no por lectura de código.
+
+**Fix:** en `crear()` (no en `put()`, que usa `COALESCE(?, stock_minimo)` y
+ahí sí es seguro dejarlo en `null` porque significa "no tocar el valor
+existente"), el default pasó de `null` a `0` — mismo criterio que ya usaba
+`stock_inicial` un par de líneas arriba, por el mismo motivo.
+
+**Convención a partir de ahora:** en cualquier método `crear()`/INSERT nuevo,
+un campo opcional que mapea a una columna `NOT NULL DEFAULT x` en el schema
+tiene que defaultear a ese mismo valor en PHP cuando el body no lo manda —
+nunca a `null`. El patrón `null` para "no tocar" solo es válido en updates
+con `COALESCE`, donde ya existe una fila con un valor previo que preservar.
+
+### Caso real (14/08/2026): Notas de Crédito standalone — sobre-acreditar stock y plata si el CAE falla
+
+Al implementar Notas de Crédito A/B/C acreditables por ítems (con reversión
+de stock y descuento de caja/cuenta corriente), la validación de "cuánto ya
+se acreditó de esta factura" solo contaba NC con `cae IS NOT NULL` — clonando
+el criterio que ya usaba la versión anterior de `emitirNc()` (que era
+puramente monetaria y sin ningún efecto en stock/caja/CC, así que ahí ese
+criterio era inofensivo). Con el nuevo diseño, el stock se restaura y la
+plata se mueve **en el mismo commit que crea la fila de la NC, antes de
+pedirle el CAE a ARCA** (mismo desacople que el resto del sistema ya usa
+entre "crear el comprobante" y "que ARCA lo autorice" — ver la nota sobre
+facturación asincrónica). Eso significa que una NC con CAE pendiente o
+fallido (comprobado en dev: sin certificado ARCA cargado, cada intento
+falla) **ya movió stock y plata de verdad**, aunque no cuente todavía como
+"acreditada" para la validación. Se reprodujo en vivo: pedir una NC por 4
+unidades de un producto que ya tenía 2 acreditadas por una NC anterior sin
+CAE (de una venta de solo 5 unidades) **no fue rechazado** — el stock quedó
+sobre-restaurado y la cuenta corriente del cliente sobre-acreditada, muy por
+encima del total real de la factura original.
+
+**Fix:** la condición pasó a contar cualquier NC no anulada
+(`estado != 'anulado'`), sin filtrar por `cae`, ya que el efecto real
+(stock/caja/CC) ocurre al crear la fila, no al autorizarla. El único evento
+que libera esa cantidad de vuelta es anular la NC — que a su vez está
+bloqueado desde `eliminar()` para filas `NC *` (ver abajo), así que hoy la
+única forma de "liberar" una NC trabada sin CAE es reintentar la
+autorización sobre la misma fila (`POST /ventas/{id}/facturar`), nunca crear
+una NC nueva por los mismos ítems.
+
+**Por qué `eliminar()` (anular venta) rechaza las NC:** la reversión
+genérica de esa función asume la dirección de una venta normal (una venta
+restó stock al crearse → anular se lo devuelve; una venta con `tipo_pago='cc'`
+sumó deuda al cliente → anular se la saca). Una NC hace exactamente lo
+opuesto en ambos sentidos (restaura stock y descuenta plata **al crearse**),
+así que reutilizar esa misma lógica para "anular" una NC duplicaría el
+efecto en vez de deshacerlo — y ni siquiera toca `caja_movimientos`, así que
+una NC por caja quedaría con el retiro de caja aplicado para siempre aunque
+se la diera por "anulada". Se bloqueó explícitamente en vez de intentar una
+reversión correcta con criterio propio, dado el riesgo de introducir un
+segundo bug del mismo tipo bajo presión de tiempo — queda documentado acá
+como deuda pendiente si en algún momento hace falta poder anular una NC sin
+CAE de verdad.

@@ -151,6 +151,14 @@ if ($tieneCae && $tieneQrMp) {
 
   td.cab-letra { width:16mm; text-align:center; vertical-align:top; padding-top:2px; }
   .letra-box {
+    /* box-sizing:border-box (reset global de la línea 119) resta el border
+       del width/height declarados — el line-height:13mm quedaba pensado
+       para una caja de contenido de 13mm, pero con border-box el contenido
+       real quedaba en ~13mm menos 2×1.4px, así que el centrado vertical no
+       coincidía con el alto real de la caja (caso real 15/08/2026, letra
+       no centrada en el PDF). content-box acá restaura que width/height
+       sean el tamaño del contenido de verdad, como asume el resto del cálculo. */
+    box-sizing: content-box;
     border:1.4px solid #111;
     width:13mm; height:13mm;
     margin:0 auto;

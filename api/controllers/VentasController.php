@@ -295,10 +295,19 @@ class VentasController {
         $body = json_decode(file_get_contents('php://input'), true);
         if (!$body) json(400, ['error' => 'Body JSON inválido']);
 
-        $total_nc = isset($body['total']) && is_numeric($body['total']) ? round((float)$body['total'], 2) : null;
-        if ($total_nc === null || $total_nc <= 0) {
-            json(400, ['error' => 'total es requerido y debe ser mayor a 0']);
+        $itemsBody = $body['items'] ?? [];
+        if (empty($itemsBody)) json(400, ['error' => 'items requeridos']);
+
+        $forma = in_array($body['forma'] ?? '', ['caja', 'cc'], true) ? $body['forma'] : null;
+        if ($forma === null) json(400, ['error' => "forma es requerida y debe ser 'caja' o 'cc'"]);
+
+        $mediosValidos = ['efectivo', 'transferencia', 'tarjeta', 'mercado_pago'];
+        $medio_pago    = $body['medio_pago'] ?? null;
+        if ($forma === 'caja' && !in_array($medio_pago, $mediosValidos, true)) {
+            json(400, ['error' => 'medio_pago inválido']);
         }
+        $caja_id = isset($body['caja_id']) && is_numeric($body['caja_id']) ? (int)$body['caja_id'] : null;
+        if ($forma === 'caja' && !$caja_id) json(400, ['error' => 'caja_id es requerido para descontar de caja']);
 
         $motivo          = isset($body['motivo']) && trim($body['motivo']) !== '' ? trim($body['motivo']) : null;
         $confirmar_padron = !empty($body['confirmar_padron']);
@@ -306,14 +315,16 @@ class VentasController {
         $db     = DB::get();
         $config = Configuracion::get();
 
-        // Cargar factura original
+        // Cargar factura original + depósito de donde salió el stock vendido
         $stmt = $db->prepare("
             SELECT v.id, v.fecha, v.total, v.tipo_comprobante,
                    v.numero_afip, v.punto_venta, v.cae,
                    v.cliente_id,
                    c.cuit              AS cliente_cuit,
                    c.condicion_iva     AS cliente_condicion_iva,
-                   c.nombre            AS cliente_nombre
+                   c.nombre            AS cliente_nombre,
+                   (SELECT deposito_id FROM movimientos_stock
+                    WHERE referencia_id = v.id AND tipo = 'venta' LIMIT 1) AS deposito_id
             FROM ventas v
             LEFT JOIN clientes c ON c.id = v.cliente_id
             WHERE v.id = ?
@@ -324,6 +335,9 @@ class VentasController {
         if (!$original) json(404, ['error' => 'Comprobante original no encontrado']);
         if (empty($original['cae'])) {
             json(422, ['error' => 'El comprobante original no tiene CAE. Solo se pueden acreditar facturas electrónicas autorizadas por ARCA.']);
+        }
+        if ($forma === 'cc' && !$original['cliente_id']) {
+            json(422, ['error' => 'La venta no tiene cliente asignado — el crédito en cuenta corriente requiere un cliente']);
         }
 
         // Determinar tipo de NC según la letra de la factura original
@@ -345,28 +359,73 @@ class VentasController {
         if ($ptoVta < 1)    json(422, ['error' => 'El punto de venta no está configurado en el sistema.']);
         if ($nro_original < 1) json(422, ['error' => 'El comprobante original no tiene número AFIP válido.']);
 
-        // Saldo disponible: total original menos lo ya acreditado con NCs autorizadas
-        $stmt = $db->prepare("
-            SELECT COALESCE(SUM(total), 0) AS acreditado
-            FROM ventas
-            WHERE cbte_asoc_tipo = ? AND cbte_asoc_pto_vta = ? AND cbte_asoc_nro = ?
-              AND tipo_comprobante IN ('NC A-ELECT', 'NC B-ELECT', 'NC C-ELECT')
-              AND cae IS NOT NULL
-              AND estado != 'anulado'
+        // Ítems de la factura original (lo que se puede acreditar)
+        $stmtOrig = $db->prepare("
+            SELECT vi.producto_id, vi.cantidad, vi.precio_unitario,
+                   COALESCE(vi.nombre_manual, p.nombre) AS nombre
+            FROM venta_items vi
+            LEFT JOIN productos p ON p.id = vi.producto_id
+            WHERE vi.venta_id = ?
         ");
-        $stmt->execute([$tipoCmpAfip, $ptoVta, $nro_original]);
-        $acreditado = round((float)$stmt->fetchColumn(), 2);
-        $saldo      = round((float)$original['total'] - $acreditado, 2);
-
-        if ($total_nc > $saldo + 0.01) {
-            json(422, [
-                'error'      => "El importe de la NC ($" . number_format($total_nc, 2) . ") supera el saldo disponible ($" . number_format($saldo, 2) . ").",
-                'total_orig' => (float)$original['total'],
-                'acreditado' => $acreditado,
-                'saldo'      => $saldo,
-                'pedido'     => $total_nc,
-            ]);
+        $stmtOrig->execute([$venta_id]);
+        $itemsOrig = [];
+        foreach ($stmtOrig->fetchAll() as $r) {
+            $itemsOrig[(int)$r['producto_id']] = $r;
         }
+
+        // Cuánto ya se acreditó de esta factura con NCs previas, por producto.
+        // OJO: no filtrar por "cae IS NOT NULL" acá — el stock y la plata ya se
+        // mueven al crear la NC, antes de pedir el CAE (mismo motivo que el resto
+        // del sistema desacopla la creación del comprobante de su autorización
+        // fiscal). Si solo contáramos las NC ya autorizadas, una NC con CAE
+        // pendiente/fallido (ej. sin certificado ARCA cargado en dev, o un
+        // rechazo transitorio en producción) no bloquearía crear OTRA NC por los
+        // mismos ítems — duplicando la devolución de stock y el descuento de
+        // caja/CC. El único estado que libera la cantidad de vuelta es 'anulado'.
+        $stmtPrev = $db->prepare("
+            SELECT vi.producto_id, SUM(vi.cantidad) AS cant_acreditada
+            FROM venta_items vi
+            JOIN ventas v ON v.id = vi.venta_id
+            WHERE v.cbte_asoc_tipo = ? AND v.cbte_asoc_pto_vta = ? AND v.cbte_asoc_nro = ?
+              AND v.tipo_comprobante IN ('NC A-ELECT', 'NC B-ELECT', 'NC C-ELECT')
+              AND v.estado != 'anulado'
+            GROUP BY vi.producto_id
+        ");
+        $stmtPrev->execute([$tipoCmpAfip, $ptoVta, $nro_original]);
+        $yaAcreditado = [];
+        foreach ($stmtPrev->fetchAll() as $r) {
+            $yaAcreditado[(int)$r['producto_id']] = (float)$r['cant_acreditada'];
+        }
+
+        $itemsValidados = [];
+        $total_nc       = 0.0;
+        foreach ($itemsBody as $i => $item) {
+            $prod_id = (int)($item['producto_id'] ?? 0);
+            $cant    = (float)($item['cantidad']    ?? 0);
+            $precio  = isset($item['precio_unitario']) ? (float)$item['precio_unitario'] : null;
+
+            if ($prod_id <= 0) json(400, ['error' => "Ítem $i: producto_id inválido"]);
+            if ($cant <= 0)    json(400, ['error' => "Ítem $i: cantidad debe ser mayor a 0"]);
+            if (!isset($itemsOrig[$prod_id])) json(422, ['error' => "El producto #$prod_id no pertenece a esta venta"]);
+
+            $orig       = $itemsOrig[$prod_id];
+            $disponible = (float)$orig['cantidad'] - ($yaAcreditado[$prod_id] ?? 0.0);
+            if ($cant > $disponible + 0.001) {
+                json(422, ['error' => "\"{$orig['nombre']}\": solo quedan {$disponible} unidades disponibles para acreditar"]);
+            }
+
+            $precio_final = $precio ?? (float)$orig['precio_unitario'];
+            $total_nc    += $cant * $precio_final;
+
+            $itemsValidados[] = [
+                'producto_id'     => $prod_id,
+                'nombre'          => $orig['nombre'] ?? "Producto #$prod_id",
+                'cantidad'        => $cant,
+                'precio_unitario' => $precio_final,
+            ];
+        }
+        $total_nc = round($total_nc, 2);
+        if ($total_nc <= 0) json(400, ['error' => 'El total de la NC debe ser mayor a 0']);
 
         // Validación suave del padrón de ARCA.
         // FC C (Monotributista) va a cualquier receptor independientemente de su condición
@@ -391,28 +450,89 @@ class VentasController {
             }
         }
 
-        // Insertar NC en ventas
+        // Turno de caja abierto (solo si la NC se descuenta de caja)
+        $turno_id = null;
+        if ($forma === 'caja') {
+            $stmt = $db->prepare("SELECT id FROM cajas WHERE id = ?");
+            $stmt->execute([$caja_id]);
+            if (!$stmt->fetch()) json(404, ['error' => 'Caja no encontrada']);
+
+            $stmt = $db->prepare("SELECT id FROM caja_turnos WHERE caja_id = ? AND estado = 'abierto'");
+            $stmt->execute([$caja_id]);
+            $turno = $stmt->fetch();
+            if (!$turno) json(409, ['error' => 'No hay un turno abierto en esa caja — no se puede descontar de caja']);
+            $turno_id = (int)$turno['id'];
+        }
+
+        $deposito_id = (int)($original['deposito_id'] ?? 1);
+        $usuario_id  = Auth::usuarioActual()['id'] ?? null;
+
+        // Insertar NC en ventas + ítems + efecto en caja/CC
         try {
             $db->beginTransaction();
 
-            $usuario_id = Auth::usuarioActual()['id'] ?? null;
+            $tipo_pago_nc = $forma === 'caja' ? $medio_pago : 'cc';
 
             $db->prepare("
                 INSERT INTO ventas
                     (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado,
-                     observaciones, cbte_asoc_tipo, cbte_asoc_pto_vta, cbte_asoc_nro, usuario_id)
-                VALUES (CURDATE(), ?, ?, ?, 'nc', 'completado', ?, ?, ?, ?, ?)
+                     observaciones, cbte_asoc_tipo, cbte_asoc_pto_vta, cbte_asoc_nro, usuario_id, caja_id)
+                VALUES (CURDATE(), ?, ?, ?, ?, 'completado', ?, ?, ?, ?, ?, ?)
             ")->execute([
                 $original['cliente_id'],
                 $total_nc,
                 $tipo_nc,
+                $tipo_pago_nc,
                 $motivo,
                 $tipoCmpAfip,
                 $ptoVta,
                 $nro_original,
                 $usuario_id,
+                $forma === 'caja' ? $caja_id : null,
             ]);
             $nc_id = (int)$db->lastInsertId();
+
+            $insItem = $db->prepare("
+                INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
+                VALUES (?, ?, ?, ?, 0)
+            ");
+            foreach ($itemsValidados as $it) {
+                $insItem->execute([$nc_id, $it['producto_id'], $it['cantidad'], $it['precio_unitario']]);
+
+                // Restaurar stock (mismo patrón que DevolucionesController::crear())
+                $db->prepare("UPDATE productos SET stock_actual = stock_actual + ? WHERE id = ?")
+                   ->execute([$it['cantidad'], $it['producto_id']]);
+
+                $db->prepare("
+                    INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual)
+                    VALUES (?, ?, ?)
+                    ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)
+                ")->execute([$it['producto_id'], $deposito_id, $it['cantidad']]);
+
+                $db->prepare("
+                    INSERT INTO movimientos_stock (producto_id, deposito_id, tipo, cantidad, referencia_id, fecha)
+                    VALUES (?, ?, 'nc', ?, ?, NOW())
+                ")->execute([$it['producto_id'], $deposito_id, $it['cantidad'], $nc_id]);
+            }
+
+            $obsNumOrig = str_pad((string)$venta_id, 8, '0', STR_PAD_LEFT);
+            if ($forma === 'cc') {
+                $obsCc = "NC {$tipo_nc} — Venta N°{$obsNumOrig}" . ($motivo ? " — {$motivo}" : '');
+                $db->prepare("
+                    INSERT INTO cuenta_corriente_movimientos
+                        (entidad_tipo, entidad_id, tipo, monto, referencia_id, observaciones, fecha)
+                    VALUES ('cliente', ?, 'pago', ?, ?, ?, CURDATE())
+                ")->execute([$original['cliente_id'], $total_nc, $nc_id, $obsCc]);
+
+                $db->prepare("UPDATE clientes SET saldo_cuenta_corriente = saldo_cuenta_corriente - ? WHERE id = ?")
+                   ->execute([$total_nc, $original['cliente_id']]);
+            } else {
+                $obsCaja = "NC {$tipo_nc} — Venta N°{$obsNumOrig}" . ($original['cliente_nombre'] ? " ({$original['cliente_nombre']})" : '');
+                $db->prepare("
+                    INSERT INTO caja_movimientos (turno_id, tipo, medio_pago, monto, motivo, usuario_id, creado_en)
+                    VALUES (?, 'retiro', ?, ?, ?, ?, NOW())
+                ")->execute([$turno_id, $medio_pago, $total_nc, $obsCaja, $usuario_id]);
+            }
 
             $db->commit();
         } catch (Exception $e) {
@@ -700,6 +820,13 @@ class VentasController {
             $ajuste_desc     = isset($item['ajuste_desc']) && trim($item['ajuste_desc']) !== ''
                                ? trim($item['ajuste_desc']) : null;
             $ajuste_visible  = isset($item['ajuste_visible']) ? (int)(bool)$item['ajuste_visible'] : 1;
+            // Nombre editable por ítem, independiente del producto (pedido
+            // 15/08/2026): el código nunca cambia, stock/costo siguen atados
+            // a producto_id vía $producto de arriba — esto es solo lo que se
+            // imprime/muestra. NULL si coincide con el nombre real o viene
+            // vacío, para no duplicar el dato sin necesidad.
+            $nombreManual = isset($item['nombre_manual']) ? trim((string)$item['nombre_manual']) : '';
+            $nombreManual = ($nombreManual !== '' && $nombreManual !== $producto['nombre']) ? $nombreManual : null;
 
             $items_validados[] = [
                 'producto_id'     => $producto_id,
@@ -710,6 +837,7 @@ class VentasController {
                 'ajuste_visible'  => $ajuste_visible,
                 'costo_unitario'  => (float)$producto['costo_actual'],
                 'nombre'          => $producto['nombre'],
+                'nombre_manual'   => $nombreManual,
                 'stock_actual'    => (float)$producto['stock_actual'],
             ];
             $total += $cantidad * $precio_unitario;
@@ -766,8 +894,8 @@ class VentasController {
                 // 2. Insertar ítems
                 $stmt = $db->prepare("
                     INSERT INTO venta_items
-                        (venta_id, producto_id, cantidad, precio_unitario, precio_original, ajuste_desc, ajuste_visible, costo_unitario)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        (venta_id, producto_id, cantidad, precio_unitario, precio_original, ajuste_desc, ajuste_visible, costo_unitario, nombre_manual)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $stmt->execute([
                     $venta_id,
@@ -778,6 +906,7 @@ class VentasController {
                     $item['ajuste_desc'],
                     $item['ajuste_visible'],
                     $item['costo_unitario'],
+                    $item['nombre_manual'],
                 ]);
 
                 // 3. Descontar stock (total y por depósito)
@@ -961,7 +1090,7 @@ class VentasController {
                 json(400, ['error' => "Ítem $i inválido"]);
             }
 
-            $stmt = $db->prepare("SELECT id, costo_actual FROM productos WHERE id = ? AND activo = 1");
+            $stmt = $db->prepare("SELECT id, nombre, costo_actual FROM productos WHERE id = ? AND activo = 1");
             $stmt->execute([$producto_id]);
             $producto = $stmt->fetch();
             if (!$producto) json(404, ['error' => "Producto $producto_id no encontrado o inactivo"]);
@@ -971,6 +1100,8 @@ class VentasController {
             $ajuste_desc     = isset($item['ajuste_desc']) && trim((string)$item['ajuste_desc']) !== ''
                                ? trim($item['ajuste_desc']) : null;
             $ajuste_visible  = isset($item['ajuste_visible']) ? (int)(bool)$item['ajuste_visible'] : 1;
+            $nombreManual = isset($item['nombre_manual']) ? trim((string)$item['nombre_manual']) : '';
+            $nombreManual = ($nombreManual !== '' && $nombreManual !== $producto['nombre']) ? $nombreManual : null;
 
             $items_validados[] = [
                 'producto_id'     => $producto_id,
@@ -980,6 +1111,7 @@ class VentasController {
                 'ajuste_desc'     => $ajuste_desc,
                 'ajuste_visible'  => $ajuste_visible,
                 'costo_unitario'  => (float)$producto['costo_actual'],
+                'nombre_manual'   => $nombreManual,
             ];
             $nuevo_total += $cantidad * $precio_unitario;
         }
@@ -1068,8 +1200,8 @@ class VentasController {
 
             // Insertar nuevos ítems, descontar stock, registrar movimientos
             foreach ($items_validados as $item) {
-                $db->prepare("INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, precio_original, ajuste_desc, ajuste_visible, costo_unitario) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-                   ->execute([$id, $item['producto_id'], $item['cantidad'], $item['precio_unitario'], $item['precio_original'], $item['ajuste_desc'], $item['ajuste_visible'], $item['costo_unitario']]);
+                $db->prepare("INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, precio_original, ajuste_desc, ajuste_visible, costo_unitario, nombre_manual) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                   ->execute([$id, $item['producto_id'], $item['cantidad'], $item['precio_unitario'], $item['precio_original'], $item['ajuste_desc'], $item['ajuste_visible'], $item['costo_unitario'], $item['nombre_manual']]);
                 $db->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?")
                    ->execute([$item['cantidad'], $item['producto_id']]);
                 $db->prepare("INSERT INTO stock_depositos (producto_id, deposito_id, stock_actual) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE stock_actual = stock_actual + VALUES(stock_actual)")
@@ -1202,6 +1334,7 @@ class VentasController {
                         'ajuste_desc'     => $item['ajuste_desc'],
                         'ajuste_visible'  => (int)(bool)$item['ajuste_visible'],
                         'costo_unitario'  => (float)$item['costo_unitario'],
+                        'nombre_manual'   => $item['nombre_manual'] ?? null,
                     ];
                 } else {
                     $merged[$pid]['cantidad']        += (float)$item['cantidad'];
@@ -1211,6 +1344,7 @@ class VentasController {
                     $merged[$pid]['ajuste_desc']      = $item['ajuste_desc'];
                     $merged[$pid]['ajuste_visible']   = (int)(bool)$item['ajuste_visible'];
                     $merged[$pid]['costo_unitario']   = (float)$item['costo_unitario'];
+                    $merged[$pid]['nombre_manual']    = $item['nombre_manual'] ?? null;
                 }
             }
         }
@@ -1323,12 +1457,13 @@ class VentasController {
             foreach ($items_finales as $item) {
                 $db->prepare("
                     INSERT INTO venta_items
-                        (venta_id, producto_id, cantidad, precio_unitario, precio_original, ajuste_desc, ajuste_visible, costo_unitario)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        (venta_id, producto_id, cantidad, precio_unitario, precio_original, ajuste_desc, ajuste_visible, costo_unitario, nombre_manual)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ")->execute([
                     $nueva_id, $item['producto_id'], $item['cantidad'],
                     $item['precio_unitario'], $item['precio_original'],
                     $item['ajuste_desc'], $item['ajuste_visible'], $item['costo_unitario'],
+                    $item['nombre_manual'],
                 ]);
                 $db->prepare("UPDATE productos SET stock_actual = stock_actual - ? WHERE id = ?")
                    ->execute([$item['cantidad'], $item['producto_id']]);
@@ -1370,7 +1505,8 @@ class VentasController {
 
         $stmt = $db->prepare("
             SELECT vi.producto_id, vi.cantidad, vi.precio_unitario,
-                   vi.precio_original, vi.ajuste_desc, vi.ajuste_visible, vi.costo_unitario
+                   vi.precio_original, vi.ajuste_desc, vi.ajuste_visible, vi.costo_unitario,
+                   vi.nombre_manual
             FROM venta_items vi WHERE vi.venta_id = ?
         ");
         $stmt->execute([$id]);
@@ -1396,7 +1532,7 @@ class VentasController {
 
         $db = DB::get();
 
-        $stmt = $db->prepare("SELECT id, cliente_id, tipo_pago, total, cae, estado FROM ventas WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, cliente_id, tipo_pago, total, cae, estado, tipo_comprobante FROM ventas WHERE id = ?");
         $stmt->execute([$id]);
         $venta = $stmt->fetch();
         if (!$venta) json(404, ['error' => 'Venta no encontrada']);
@@ -1406,6 +1542,16 @@ class VentasController {
         // Libro IVA propio pero seguiría sumando débito fiscal ante el organismo.
         if (!empty($venta['cae'])) {
             json(422, ['error' => 'Este comprobante fue autorizado por ARCA (tiene CAE) y no se puede anular. Emití una Nota de Crédito para revertirlo.']);
+        }
+
+        // Las NC mueven stock y caja/CC en dirección inversa a una venta normal
+        // (emitirNc() ya restauró stock y descontó de caja/CC al crearla) — la
+        // reversión genérica de acá abajo asume la dirección de una venta y la
+        // duplicaría en vez de deshacerla. Si una NC quedó con CAE pendiente
+        // (ej. sin certificado ARCA cargado), el camino soportado es reintentar
+        // el CAE en la misma fila (POST /ventas/{id}/facturar), no anularla.
+        if (str_starts_with((string)$venta['tipo_comprobante'], 'NC ')) {
+            json(422, ['error' => 'Una Nota de Crédito no se puede anular desde acá. Si quedó sin CAE, reintentá la autorización con "Reintentar AFIP".']);
         }
 
         $stmt = $db->prepare("SELECT producto_id, cantidad FROM venta_items WHERE venta_id = ?");
@@ -1579,6 +1725,7 @@ class VentasController {
                 vi.producto_id,
                 p.codigo,
                 p.nombre,
+                vi.nombre_manual,
                 vi.cantidad,
                 vi.precio_unitario,
                 vi.precio_original,
