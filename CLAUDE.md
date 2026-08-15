@@ -801,3 +801,65 @@ reversión correcta con criterio propio, dado el riesgo de introducir un
 segundo bug del mismo tipo bajo presión de tiempo — queda documentado acá
 como deuda pendiente si en algún momento hace falta poder anular una NC sin
 CAE de verdad.
+
+### Caso real (14/08/2026): precio/costo en blanco rompían crear un producto — mismo bug de `stock_minimo`, no detectado por probar con "0" en vez de dejar vacío
+
+El fix de `stock_minimo` (más arriba) se probó creando un producto con ese
+campo realmente vacío — y por eso se detectó el 500. Pero el mismo día, al
+"confirmar" que precio y costo en 0 ya funcionaban, la prueba en vivo se hizo
+escribiendo el valor `"0"` en el campo (vía JS, no dejándolo vacío de
+verdad) — un caso que YA andaba bien de antes. Nunca se probó el caso real
+que pedía Rodrigo: dejar el campo completamente vacío. Rodrigo lo reprodujo
+él mismo con capturas reales (`Column 'precio_venta' cannot be null` y
+`Column 'costo_actual' cannot be null`) — exactamente el mismo patrón que
+`stock_minimo`: `ProductosController::crear()` mandaba `null` explícito
+cuando el campo viene vacío, contra columnas `decimal(14,4) NOT NULL
+DEFAULT 0.0000`.
+
+**Fix:** mismo criterio que `stock_minimo`/`stock_inicial` — default a `0`
+en vez de `null` cuando el body no manda el campo, en `crear()` únicamente
+(no en `put()`, que usa `COALESCE` y ahí `null` sigue significando "no
+tocar el valor existente", uso legítimo).
+
+**Lección de método:** "probar creando un producto" no es lo mismo que
+"probar dejando el campo vacío como lo haría un usuario real". Para
+cualquier campo opcional que mapee a una columna `NOT NULL DEFAULT x`, la
+prueba tiene que reproducir el formulario vacío de verdad (campo sin tocar,
+no un valor puesto a mano que simule "vacío"), porque son dos caminos de
+código distintos en el frontend (`campo !== '' ? parseFloat(campo) : null`)
+que solo el segundo ejercita.
+
+### Caso real (15/08/2026): letra del comprobante seguía sin centrar tras el primer intento — line-height centra la línea, no el glifo
+
+El primer intento de fix (`box-sizing: content-box` en `.letra-box`, caso
+de arriba en este mismo archivo) no se pudo verificar visualmente en el
+momento (sin `pdftoppm` disponible) y quedó pendiente de que Rodrigo lo
+confirmara con un comprobante real. Lo hizo, con captura: la letra seguía
+visiblemente corrida arriba-a-la-izquierda dentro del recuadro, sin cambios
+apreciables.
+
+Causa real: el truco de `line-height: 13mm` (igual al `height` de la caja)
+centra la **línea de texto**, no el glifo en sí. Ese cálculo reserva espacio
+simétrico arriba y abajo de la línea asumiendo la métrica completa de la
+fuente (que incluye espacio para descendentes como la cola de la "g" o la
+"y") — pero una letra mayúscula sola (A, B o C, que es siempre lo que va en
+ese recuadro) no usa ese espacio inferior, así que visualmente el glifo
+queda más arriba que el centro real de la caja. `box-sizing` no tiene nada
+que ver con esto — arregla una diferencia de ~1.4px por lado, invisible al
+lado de este efecto.
+
+**Fix real:** se reemplazó el truco de `line-height` por `display:table` en
+el contenedor + `display:table-cell; vertical-align:middle` en un `<span>`
+interno que envuelve la letra. Esta técnica centra según el contenido real
+renderizado, no según una asunción sobre la métrica de la fuente — y es la
+forma de centrado vertical que Dompdf soporta de manera más madura y
+predecible (calca layout de tablas HTML, mucho más probado en Dompdf que su
+soporte de flexbox, que es parcial/experimental según la versión).
+
+**Sigue sin verificación visual propia** — mismo motivo que el intento
+anterior (sin `pdftoppm`/`gs`/`magick` disponibles en este entorno, y el
+panel de navegador tampoco pudo generar una captura del PDF acá). Pendiente
+de que Rodrigo lo confirme con un comprobante real de nuevo. Si el problema
+persiste después de este segundo intento, el próximo paso sugerido es medir
+el offset real superponiendo una grilla sobre el PDF (o pedir una captura
+con zoom + regla) en vez de seguir ajustando CSS a ciegas.

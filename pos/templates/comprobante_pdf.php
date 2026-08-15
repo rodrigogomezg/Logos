@@ -151,21 +151,30 @@ if ($tieneCae && $tieneQrMp) {
 
   td.cab-letra { width:16mm; text-align:center; vertical-align:top; padding-top:2px; }
   .letra-box {
-    /* box-sizing:border-box (reset global de la línea 119) resta el border
-       del width/height declarados — el line-height:13mm quedaba pensado
-       para una caja de contenido de 13mm, pero con border-box el contenido
-       real quedaba en ~13mm menos 2×1.4px, así que el centrado vertical no
-       coincidía con el alto real de la caja (caso real 15/08/2026, letra
-       no centrada en el PDF). content-box acá restaura que width/height
-       sean el tamaño del contenido de verdad, como asume el resto del cálculo. */
-    box-sizing: content-box;
+    /* Centrado con line-height==height (intento anterior, caso real
+       15/08/2026) no alcanza: eso centra la LÍNEA, no el glifo — una
+       mayúscula sola (sin descendentes tipo "g"/"y") ocupa menos alto real
+       que el que el line-height reserva por abajo, así que visualmente
+       queda corrida hacia arriba (confirmado con captura real 15/08/2026,
+       la letra seguía desplazada arriba-izquierda incluso con
+       box-sizing:content-box). display:table + table-cell/vertical-align
+       es la técnica que Dompdf soporta de forma madura (calca layout de
+       tablas HTML, mucho más probado que su soporte de flexbox) y centra
+       de verdad según el contenido real, sin depender de métricas de
+       fuente. */
+    box-sizing: border-box;
+    display: table;
     border:1.4px solid #111;
     width:13mm; height:13mm;
     margin:0 auto;
+  }
+  .letra-box-txt {
+    display: table-cell;
+    width:13mm; height:13mm;
+    text-align:center;
+    vertical-align:middle;
     font-size:22px;
     font-weight:700;
-    text-align:center;
-    line-height:13mm;
   }
   .letra-cod { font-size:8.5px; margin-top:1px; }
 
@@ -238,7 +247,7 @@ if ($tieneCae && $tieneQrMp) {
     </td>
     <td class="cab-letra">
       <?php if ($letra): ?>
-        <div class="letra-box"><?= cp_esc($letra) ?></div>
+        <div class="letra-box"><span class="letra-box-txt"><?= cp_esc($letra) ?></span></div>
         <div class="letra-cod">COD. <?= cp_esc($letraCod) ?></div>
       <?php endif; ?>
     </td>

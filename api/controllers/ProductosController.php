@@ -236,10 +236,10 @@ class ProductosController {
         $codigo        = trim($body['codigo']           ?? '') ?: null;
         $codigo_sec    = trim($body['codigo_secundario'] ?? '') ?: null;
         $descripcion   = trim($body['descripcion']      ?? '') ?: null;
-        $precio        = isset($body['precio_venta']) && $body['precio_venta'] !== null ? (float)$body['precio_venta'] : null;
+        $precio        = isset($body['precio_venta']) && $body['precio_venta'] !== null ? (float)$body['precio_venta'] : 0;
         // Sin permiso 'costos' el body no puede fijar el costo: arranca en 0
         $costo         = Auth::puede('costos')
-                         ? (isset($body['costo_actual']) && $body['costo_actual'] !== null ? (float)$body['costo_actual'] : null)
+                         ? (isset($body['costo_actual']) && $body['costo_actual'] !== null ? (float)$body['costo_actual'] : 0)
                          : 0.0;
         $marca         = trim($body['marca']        ?? '') ?: null;
         $proveedor     = trim($body['proveedor']    ?? '') ?: null;
