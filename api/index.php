@@ -81,7 +81,7 @@ try {
             };
         })(),
 
-        'productos' => (function () use ($metodo, $id, $accion) {
+        'productos' => (function () use ($metodo, $id, $accion, $subAccion) {
             require_once __DIR__ . '/controllers/ProductosController.php';
             $ctrl = new ProductosController();
             if ($metodo === 'PUT' || $metodo === 'DELETE' ||
@@ -90,8 +90,14 @@ try {
                 Auth::requirePermiso('productos_editar');
             }
             match (true) {
-                $metodo === 'GET'    && $id !== null && $accion === 'escalas' => $ctrl->getEscalas($id),
-                $metodo === 'PUT'    && $id !== null && $accion === 'escalas' => $ctrl->saveEscalas($id),
+                // /productos/{id}/escalas: {id} es numérico, así que el parser de
+                // arriba lo pone en $subAccion (tercer segmento), no en $accion
+                // (pensado para /productos/{palabra}) — usar $accion acá dejaba
+                // esto sin ruta nunca y caía en el PUT/GET genérico de más abajo
+                // (caso real 18/08/2026: "Body JSON inválido" al modificar el
+                // precio de cualquier producto sin escalas de cantidad cargadas).
+                $metodo === 'GET'    && $id !== null && $subAccion === 'escalas' => $ctrl->getEscalas($id),
+                $metodo === 'PUT'    && $id !== null && $subAccion === 'escalas' => $ctrl->saveEscalas($id),
                 $metodo === 'GET'    && $id !== null              => $ctrl->get($id),
                 $metodo === 'GET'    && isset($_GET['page'])      => $ctrl->listar(),
                 $metodo === 'GET'                                 => $ctrl->search(),

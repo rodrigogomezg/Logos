@@ -1,6 +1,6 @@
 [package]
 name = "tauri-shell"
-version = "1.0.25"
+version = "1.0.26"
 description = "Logos POS"
 authors = ["Drilogs"]
 edition = "2021"

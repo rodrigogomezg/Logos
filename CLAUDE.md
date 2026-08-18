@@ -863,3 +863,63 @@ de que Rodrigo lo confirme con un comprobante real de nuevo. Si el problema
 persiste después de este segundo intento, el próximo paso sugerido es medir
 el offset real superponiendo una grilla sobre el PDF (o pedir una captura
 con zoom + regla) en vez de seguir ajustando CSS a ciegas.
+
+### Caso real (18/08/2026): "Body JSON inválido" al modificar el precio de cualquier producto — bug de ruteo preexistente, no de este batch
+
+Reporte de Rodrigo desde una instalación real de cliente (y reproducido en
+su propia PC con la 1.0.25): modificar el precio de un producto en
+Productos tira "Body JSON inválido". Reproducido en vivo con el navegador
+real (no solo curl): el `PUT /productos/{id}` que guarda el precio en sí
+**sí funciona** (200 OK, el precio queda guardado) — el error viene de un
+SEGUNDO request que `guardarProducto()` dispara siempre después, sin
+excepción: `guardarEscalas(id)` (`PUT /productos/{id}/escalas`), pensado
+para guardar las escalas de precio por cantidad. Para cualquier producto
+SIN escalas cargadas (la inmensa mayoría), ese segundo request manda un
+array vacío `[]` — y ESE es el que fallaba, tapando con un error al usuario
+un guardado que en el fondo sí había funcionado.
+
+Causa raíz, en `api/index.php` (el parser de URL, no algo tocado en esta
+sesión ni en ninguna reciente — bug preexistente): para `/productos/{id}/escalas`,
+el segundo segmento (`{id}`, numérico) se guarda en `$id`, y el TERCER
+segmento (`escalas`) se guarda en una variable separada, `$subAccion` — no
+en `$accion` (esa es para el caso `/productos/{palabra}`, segundo segmento
+no numérico). El handler de la ruta `'productos'` nunca capturaba
+`$subAccion` en su clausura y comparaba contra `$accion === 'escalas'`, que
+para esta URL siempre es `null` — la rama de escalas nunca podía matchear,
+y el `match(true)` caía en la rama genérica `PUT $id !== null => put($id)`.
+Ese `put()` recibe entonces el array de escalas como si fuera el body de un
+producto entero; con el array vacío, `!$body` en PHP es `true` (un array
+vacío es "falsy"), disparando exactamente el mismo mensaje genérico "Body
+JSON inválido" que usan casi todos los `crear()`/`put()` del proyecto — una
+coincidencia de texto que hizo mucho más difícil identificar qué endpoint
+realmente estaba fallando.
+
+**Alcance real, más amplio de lo que parecía al principio:** el mismo bug
+rompía tanto el guardado (`PUT`) como la LECTURA (`GET`) de escalas — para
+`GET /productos/{id}/escalas` la misma condición mal armada hacía que el
+`match(true)` cayera en `get($id)` (el producto completo, no sus escalas),
+y el frontend (`cargarEscalas()`, `productos/+page.svelte`) intentaba
+`data.map(...)` sobre ese objeto — tira una excepción de JS, pero atrapada
+en un `catch { /* sin escalas si falla */ }` silencioso, así que nunca se
+vio ningún error ahí. Resultado: la función "Escalas de precio por volumen"
+estuvo rota (ni cargaba las existentes ni guardaba nuevas) desde que se
+implementó, sin que nadie lo notara — el único síntoma visible terminó
+siendo este mensaje confuso al editar CUALQUIER precio, sin relación
+aparente con escalas.
+
+**Fix:** el closure de la ruta `'productos'` ahora captura `$subAccion` y
+las dos condiciones de escalas comparan contra `$subAccion === 'escalas'`
+en vez de `$accion`, siguiendo el mismo patrón que ya usan correctamente
+`ventas`, `cc`, `notas-envio`, `caja-turnos` y `cheques` para sus propias
+rutas `/{recurso}/{id}/{subacción}`. Verificado en vivo con el navegador
+real, en los dos casos: producto sin escalas (guarda un array vacío sin
+error, modal cierra limpio) y producto con una escala real cargada (se
+guarda y se relee correctamente en `escalas_precio`).
+
+**Convención a partir de ahora:** cualquier ruta nueva con forma
+`/{recurso}/{id}/{subacción}` tiene que comparar la subacción contra
+`$subAccion` (el tercer segmento), nunca contra `$accion` (pensado
+específicamente para `/{recurso}/{palabra}`, sin id numérico de por medio)
+— y el closure de esa ruta tiene que capturar `$subAccion` en su `use()`
+explícitamente, o la comparación contra esa variable ni siquiera tira error,
+simplemente nunca es `true`.
