@@ -570,7 +570,12 @@
 
 	async function aplicarBulk() {
 		if (!bulkCampo) return;
-		const val = bulkVal.trim();
+		// bulkVal está tipado como string, pero bind:value en <input type="number">
+		// (usado para precio_pct) lo pisa con un number en tiempo real — .trim()
+		// directo tira TypeError y corta la función en silencio antes de llegar
+		// al fetch (caso real 18/08/2026: "Aplicar" en Aumento de precio no hacía
+		// nada, sin ningún error visible para el usuario).
+		const val = String(bulkVal).trim();
 		let cambios: Record<string, unknown> = {};
 		if (bulkCampo === 'precio_pct') {
 			const pct = parseFloat(val);

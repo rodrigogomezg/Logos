@@ -923,3 +923,46 @@ específicamente para `/{recurso}/{palabra}`, sin id numérico de por medio)
 — y el closure de esa ruta tiene que capturar `$subAccion` en su `use()`
 explícitamente, o la comparación contra esa variable ni siquiera tira error,
 simplemente nunca es `true`.
+
+### Caso real (18/08/2026): "Aumento de precio" masivo en Productos no hacía nada al tocar "Aplicar"
+
+Reporte de Rodrigo: un cliente cargó una lista con un -38% de descuento del
+proveedor y quiso aplicarlo en masa desde Productos → seleccionar ítems →
+"Aumento de precio" → -38% → Aplicar. El botón no hacía absolutamente nada,
+sin ningún error visible.
+
+Causa: `aplicarBulk()` (`productos/+page.svelte`) arranca con
+`const val = bulkVal.trim();`, incondicional para los 5 tipos de cambio
+masivo que comparten ese mismo modal. `bulkVal` está declarado
+`$state('')` (string), y para proveedor/marca/categoría el input es
+`type="text"` — ahí `bind:value` sí mantiene un string, `.trim()` anda
+bien. Pero para "Aumento de precio" el input es `type="number"`
+(`<input type="number" bind:value={bulkVal}>`), y Svelte 5 coacciona
+`bind:value` a un **number** en runtime para ese tipo de input, sin que
+TypeScript lo marque (el tipo declarado sigue siendo `string`, el
+mismatch es puramente de runtime). Al tipear "-38", `bulkVal` pasaba a
+ser el number `-38`, y `(-38).trim` no existe — `TypeError` sin capturar,
+que cortaba `aplicarBulk()` ahí mismo, ANTES de llegar al `fetch` — cero
+requests de red, cero toast de error, el botón "no hacía nada" tal cual lo
+describió Rodrigo. Reproducido en vivo con el navegador real: la consola
+mostraba `$.get(...).trim is not a function` (nombre compilado de
+`bulkVal` en el bundle de producción) y `read_network_requests` confirmaba
+cero llamadas a `/productos/bulk`.
+
+**Bug real, no específico de negativos:** cualquier porcentaje —positivo o
+negativo— rompía igual, ya que el `TypeError` ocurre antes de que el signo
+importe. Coincidencia que el caso reportado fuera justo un descuento.
+
+**Fix:** `const val = String(bulkVal).trim();` — coacciona a string
+explícitamente antes de operar, sin importar si Svelte lo dejó como number
+o string. Verificado en vivo: -38% sobre 3 productos seleccionados
+(`$20.328,00 → $12.603,36`, `$5.000,00 → $3.100,00`, exactos), confirmado
+por request real a `/productos/bulk` (200 OK, `afectados: 3`) y lectura
+directa de `productos.precio_venta` en la base.
+
+**Convención a partir de ahora:** cualquier variable `$state('')` que se
+liga con `bind:value` a un `<input type="number">` en algún punto del
+código NO es confiablemente un string en runtime pese a su tipo declarado
+— cualquier método de string (`.trim()`, `.toLowerCase()`, etc.) sobre esa
+variable tiene que coaccionar con `String(...)` primero, incluso si el
+tipo de TypeScript no se queja.
