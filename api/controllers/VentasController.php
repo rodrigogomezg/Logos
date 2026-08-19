@@ -15,8 +15,13 @@ class VentasController {
      * Pide el CAE a AFIP para una venta ya guardada y persiste el resultado.
      * Devuelve null si salió bien, o el mensaje de error (que también queda
      * registrado en ventas.afip_error para reintentar después).
+     *
+     * Público (no solo uso interno de esta clase): CuentaCorrienteController
+     * lo reutiliza para la factura que se emite al registrar un pago de CC
+     * por medio bancario — mismo mecanismo de reintento asincrónico que el
+     * resto de los comprobantes electrónicos, sin duplicar la llamada a AFIP.
      */
-    private function solicitarCae(int $venta_id): ?string {
+    public function solicitarCae(int $venta_id): ?string {
         require_once __DIR__ . '/../helpers/AfipWs.php';
 
         $db = DB::get();

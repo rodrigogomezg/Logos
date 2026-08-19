@@ -4,6 +4,7 @@
 	import { confirmar } from '$lib/confirm';
 	import { puede } from '$lib/session';
 	import { abrirPdf } from '$lib/pdf';
+	import { abrirContacto } from '$lib/contact-modal';
 	import { combobox } from './combo-action';
 
 	type Producto = {
@@ -554,11 +555,13 @@
 	function abrirModalBulk(campo: typeof bulkCampo) {
 		bulkCampo = campo;
 		bulkVal = '';
+		taxQuickClose();
 		modalBulkAbierto = true;
 	}
 	function cerrarModalBulk() {
 		modalBulkAbierto = false;
 		bulkCampo = null;
+		taxQuickClose();
 	}
 	const bulkTipoExistente = $derived.by(() => {
 		if (bulkCampo !== 'marca' && bulkCampo !== 'categoria') return true;
@@ -903,7 +906,7 @@
 	}
 
 	// ── Taxonomías quick-add (marca/rubro) ────────────────────────
-	let taxQuickAbierto = $state<'e-marca' | 'e-categoria' | 'n-marca' | 'n-categoria' | null>(null);
+	let taxQuickAbierto = $state<'e-marca' | 'e-categoria' | 'n-marca' | 'n-categoria' | 'bulk-marca' | 'bulk-categoria' | null>(null);
 	let taxQuickValor = $state('');
 
 	function taxQuickOpen(campo: typeof taxQuickAbierto) {
@@ -935,11 +938,26 @@
 		asignarTax(campo, nombre);
 		taxQuickClose();
 	}
+	// Cambio masivo de Proveedor: no hay quick-add liviano como en marca/rubro
+	// (proveedor es una entidad real con más campos — CUIT, condición IVA,
+	// etc., no solo un nombre), así que reusa el mismo modal de alta que
+	// Contactos, dejando el nombre creado preseleccionado para confirmar.
+	function bulkCrearProveedor() {
+		abrirContacto(null, 'proveedores', {
+			onGuardado: (p) => {
+				if (!p) return;
+				if (!proveedores.includes(p.nombre)) proveedores = [...proveedores, p.nombre].sort((a, b) => a.localeCompare(b));
+				bulkVal = p.nombre;
+			}
+		});
+	}
+
 	function asignarTax(campo: NonNullable<typeof taxQuickAbierto>, nombre: string) {
 		if (campo === 'e-marca') editForm.marca = nombre;
 		else if (campo === 'e-categoria') editForm.categoria = nombre;
 		else if (campo === 'n-marca') nuevoForm.marca = nombre;
 		else if (campo === 'n-categoria') nuevoForm.categoria = nombre;
+		else if (campo === 'bulk-marca' || campo === 'bulk-categoria') bulkVal = nombre;
 	}
 
 	// ── Escape cierra modales (misma precedencia que legacy) ───────
@@ -1606,13 +1624,29 @@
 						</select>
 						<p class="bulk-hint">El precio de venta se recalcula al instante para los productos afectados.</p>
 					{:else}
-						<label class="form-label" for="bulk-val">Nuevo valor</label>
+						<div class="tax-lbl-row">
+							<label class="form-label" for="bulk-val">Nuevo valor</label>
+							{#if bulkCampo === 'marca'}
+								<button type="button" class="tax-quick-btn" onclick={() => taxQuickOpen('bulk-marca')}>+ Nuevo</button>
+							{:else if bulkCampo === 'categoria'}
+								<button type="button" class="tax-quick-btn" onclick={() => taxQuickOpen('bulk-categoria')}>+ Nuevo</button>
+							{:else}
+								<button type="button" class="tax-quick-btn" onclick={bulkCrearProveedor}>+ Nuevo</button>
+							{/if}
+						</div>
 						{#if bulkCampo === 'marca'}
 							<input id="bulk-val" type="text" class="form-input" autocomplete="off" placeholder="Elegí o escribí un valor…" bind:value={bulkVal} use:combobox={marcasNombres} />
 						{:else if bulkCampo === 'categoria'}
 							<input id="bulk-val" type="text" class="form-input" autocomplete="off" placeholder="Elegí o escribí un valor…" bind:value={bulkVal} use:combobox={rubrosNombres} />
 						{:else}
 							<input id="bulk-val" type="text" class="form-input" autocomplete="off" placeholder="Elegí o escribí un valor…" bind:value={bulkVal} use:combobox={proveedores} />
+						{/if}
+						{#if taxQuickAbierto === 'bulk-marca' || taxQuickAbierto === 'bulk-categoria'}
+							<div class="tax-quick-row open">
+								<input type="text" class="form-input" placeholder="Nombre…" maxlength="100" bind:value={taxQuickValor} onkeydown={(e) => { if (e.key === 'Enter') taxQuickSave(); if (e.key === 'Escape') taxQuickClose(); }} />
+								<button type="button" class="btn btn-primary btn-sm" style="padding:5px 9px" onclick={taxQuickSave}>✓</button>
+								<button type="button" class="btn btn-secondary btn-sm" style="padding:5px 9px" onclick={taxQuickClose}>✕</button>
+							</div>
 						{/if}
 					{/if}
 				</div>

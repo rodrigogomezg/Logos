@@ -966,3 +966,88 @@ código NO es confiablemente un string en runtime pese a su tipo declarado
 — cualquier método de string (`.trim()`, `.toLowerCase()`, etc.) sobre esa
 variable tiene que coaccionar con `String(...)` primero, incluso si el
 tipo de TypeScript no se queja.
+
+## Feature (19/08/2026): Cuenta Corriente — "Crear deuda" y "Registrar pago" con factura
+
+Pedido de Rodrigo: poder arrancar una cuenta corriente con saldo a favor o
+adeudando (ej. migrar un cliente que ya tenía deuda en el sistema anterior),
+y que un cobro por medio bancario pueda facturarse ahí mismo con CAE real.
+
+- **"Crear deuda"** (botón nuevo en Cuenta Corriente): modal liviano
+  (fecha, descripción, monto) que llama al endpoint `POST /cc` ya existente
+  con `tipo: 'cargo'` — ese endpoint genérico de cargo/pago ya soportaba
+  esto de antes, solo faltaba la pantalla. Nunca genera factura ni toca
+  caja: es asentar que la cuenta ya debe ese monto, no un cobro real.
+- **"Registrar pago"** (ya existía) se extendió: se agregaron tarjeta y
+  Mercado Pago como medio de pago (antes solo efectivo/transferencia/
+  cheque), y la posibilidad de generar una factura con CAE en el mismo
+  paso — **obligatoria** si el medio es bancario (transferencia, tarjeta,
+  Mercado Pago o cheque), **opcional** con un checkbox si es efectivo. La
+  letra (A/B/C) la elige el usuario a mano, igual que al confirmar una
+  venta. La factura queda con un único ítem fijo "Saldo a Cuenta
+  Corriente" — se creó un producto de servicio permanente (`codigo =
+  'SALDO-CC'`, auto-creado la primera vez que hace falta) porque
+  `venta_items.producto_id` es `NOT NULL`, no hay forma de facturar sin un
+  producto real detrás; este producto nunca ve movimiento de stock porque
+  la venta se inserta directo (no pasa por `VentasController::crear()`).
+- **Impacto en caja:** antes solo efectivo/transferencia tocaban
+  `caja_movimientos` al cobrar CC; ahora tarjeta/Mercado Pago/cheque
+  también (migración 78, agrega `'cheque'` al ENUM de
+  `caja_movimientos.medio_pago` — tarjeta y mercado_pago ya estaban ahí
+  por otros flujos de caja).
+- **CAE reutilizado, no duplicado:** `VentasController::solicitarCae()`
+  pasó de `private` a `public` para que `CuentaCorrienteController` lo
+  llame directo sobre la venta recién creada — mismo mecanismo de
+  reintento asincrónico que el resto de comprobantes electrónicos
+  (`POST /ventas/{id}/facturar` si ARCA falla en el momento, no bloquea
+  el registro del pago en sí).
+
+Verificado en vivo con el navegador real: "Crear deuda" (saldo sube
+exacto), "Registrar pago" en efectivo sin factura (solo mueve CC y caja),
+y "Registrar pago" en transferencia (factura obligatoria, `FC B-ELECT`
+creada con el ítem correcto, movimiento de caja de `ingreso`, `afip_error`
+poblado por falta de certificado en este entorno — comportamiento
+esperado) — la factura resultante aparece en el listado de `/ventas`
+(mismo endpoint que alimenta Ventas), tal como se pidió.
+
+## Feature (19/08/2026): Crear proveedor/marca/rubro desde el cambio masivo en Productos
+
+Pedido de Rodrigo: al cambiar marca/rubro/proveedor en masa desde
+Productos (seleccionar productos → "Cambiar marca/rubro/proveedor"), poder
+crear el valor nuevo ahí mismo si no existe, sin salir a otra pantalla —
+y que quede preseleccionado listo para aplicar.
+
+- **Marca/Rubro:** reutiliza el mismo quick-add liviano (solo nombre) que
+  ya existía en el modal de crear/editar un producto individual — mismo
+  patrón `taxQuickOpen`/`taxQuickSave`, con dos variantes nuevas
+  (`bulk-marca`/`bulk-categoria`) que asignan el resultado a `bulkVal` en
+  vez de a `editForm`/`nuevoForm`.
+- **Proveedor:** no tenía ningún quick-add — a diferencia de marca/rubro,
+  un proveedor es una entidad real con más campos (CUIT, condición IVA,
+  teléfono, etc.), así que en vez de reinventar un formulario reducido,
+  llama a `abrirContacto(null, 'proveedores', { onGuardado })` — el modal
+  compartido de Contactos (`$lib/ContactModal.svelte`, ya montado
+  globalmente en el layout), el mismo que usa la pantalla de Contactos
+  para dar de alta un proveedor real. `onGuardado` deja el nombre creado
+  preseleccionado en `bulkVal`.
+
+**Bug real encontrado y corregido durante la verificación en vivo, no
+relacionado con este cambio:** aplicar el cambio masivo de marca/rubro/
+proveedor (con CUALQUIER valor, nuevo o ya existente) tiraba 500
+`SQLSTATE[23000]: ... Column 'id' in WHERE is ambiguous`. Causa:
+`ProductosController::bulk()` llama a
+`ReglasPrecioHelper::recalcularPorFiltro($db, "id IN (...)", ...)` con un
+`id` sin calificar, pero esa consulta hace `UPDATE productos p LEFT JOIN
+... proveedores pv ...` — como `productos` y `proveedores` tienen columna
+`id` los dos, MySQL no puede resolver la referencia. El resto de
+`ReglasPrecioHelper` (`recalcularPrecio`, `recalcularPorRegla`,
+`recalcularPorGrupo`) ya calificaba correctamente (`p.id`, `r.id`); solo
+esta llamada puntual no. Como el `UPDATE` del campo en sí corre ANTES de
+esta llamada y sin transacción envolvente, el cambio de marca/rubro/
+proveedor **sí se guardaba** pese al 500 — el usuario veía un error pero
+el dato había cambiado igual (mismo patrón confuso que el bug de escalas
+del 18/08/2026). Nunca se había notado porque, hasta este pedido, cambiar
+marca/rubro/proveedor en masa nunca se había probado en vivo de punta a
+punta. **Fix:** `"p.id IN (...)"` en vez de `"id IN (...)"`. Verificado en
+vivo con marca y proveedor, ambos con valores recién creados vía los
+modales nuevos.

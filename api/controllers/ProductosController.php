@@ -529,7 +529,7 @@ class ProductosController {
 
         if ($tocaPrecio && !empty($idsAfectados)) {
             $ph = implode(',', array_fill(0, count($idsAfectados), '?'));
-            ReglasPrecioHelper::recalcularPorFiltro($db, "id IN ($ph)", $idsAfectados);
+            ReglasPrecioHelper::recalcularPorFiltro($db, "p.id IN ($ph)", $idsAfectados);
         }
 
         json(200, ['ok' => true, 'afectados' => $stmt->rowCount()]);

@@ -485,7 +485,7 @@ class CuentaCorrienteController {
         $asignaciones = isset($body['asignaciones']) && is_array($body['asignaciones'])
                         ? $body['asignaciones'] : [];
 
-        $medio_pago  = isset($body['medio_pago']) && in_array($body['medio_pago'], ['efectivo','transferencia','cheque'], true)
+        $medio_pago  = isset($body['medio_pago']) && in_array($body['medio_pago'], ['efectivo','transferencia','cheque','tarjeta','mercado_pago'], true)
                        ? $body['medio_pago'] : 'efectivo';
         $pago_datos  = isset($body['pago_datos']) && is_array($body['pago_datos'])
                        ? json_encode($body['pago_datos'], JSON_UNESCAPED_UNICODE) : null;
@@ -493,6 +493,28 @@ class CuentaCorrienteController {
 
         if (!$entidad_id || $monto <= 0 || !in_array($tipo, ['pago', 'cargo'], true)) {
             json(400, ['error' => 'entidad_id, monto > 0 y tipo (pago|cargo) son requeridos']);
+        }
+
+        // Factura de cuenta corriente: solo tiene sentido para pagos de
+        // CLIENTES (se le factura a quien nos paga, nunca a un proveedor al
+        // que le pagamos nosotros). Obligatoria para medios bancarios — dejan
+        // rastro fuera de la caja física y necesitan quedar documentados
+        // fiscalmente — y opcional para efectivo si el usuario la pide.
+        // Pedido de Rodrigo (19/08/2026): la letra (A/B/C) la elige el
+        // usuario a mano, igual que al confirmar una venta.
+        $mediosBancarios = ['transferencia', 'tarjeta', 'mercado_pago', 'cheque'];
+        $requiereFactura = $entidad_tipo === 'cliente' && $tipo === 'pago' && in_array($medio_pago, $mediosBancarios, true);
+        $quiereFactura   = $entidad_tipo === 'cliente' && $tipo === 'pago' && !empty($body['generar_factura']);
+        $hacerFactura    = $requiereFactura || $quiereFactura;
+
+        $tipoComprobanteFactura = null;
+        if ($hacerFactura) {
+            $tipoComprobanteFactura = $body['tipo_comprobante'] ?? null;
+            if (!in_array($tipoComprobanteFactura, ['FC A-ELECT', 'FC B-ELECT', 'FC C-ELECT'], true)) {
+                json(400, ['error' => $requiereFactura
+                    ? 'Los pagos por transferencia, tarjeta, Mercado Pago o cheque requieren generar una factura — elegí el tipo de comprobante (A/B/C).'
+                    : 'Elegí el tipo de comprobante (A/B/C) para la factura.']);
+            }
         }
 
         $db        = DB::get();
@@ -506,12 +528,15 @@ class CuentaCorrienteController {
         $entidad = $stmt->fetch();
         if (!$entidad) json(404, ['error' => ucfirst($entidad_tipo) . ' no encontrado']);
 
-        // Un pago de CC en efectivo o transferencia mueve plata real: entra a la
-        // caja (cobro de cliente) o sale de ella (pago a proveedor). Sin esto,
-        // el efectivo esperado del arqueo no coincide con el cajón.
+        // Un pago de CC mueve plata real sin importar el medio: entra a la
+        // caja (cobro de cliente) o sale de ella (pago a proveedor). Antes
+        // solo efectivo/transferencia tocaban caja; tarjeta/mercado_pago/
+        // cheque quedan igualados (pedido de Rodrigo 19/08/2026 — ver
+        // migración 78 para 'cheque', nuevo en el ENUM de
+        // caja_movimientos.medio_pago).
         $caja_id  = isset($body['caja_id']) && is_numeric($body['caja_id']) ? (int)$body['caja_id'] : null;
         $turno_id = null;
-        $tocaCaja = $tipo === 'pago' && in_array($medio_pago, ['efectivo', 'transferencia'], true) && $caja_id !== null;
+        $tocaCaja = $tipo === 'pago' && $caja_id !== null;
         if ($tocaCaja) {
             $stmt = $db->prepare("SELECT id FROM caja_turnos WHERE caja_id = ? AND estado = 'abierto'");
             $stmt->execute([$caja_id]);
@@ -612,12 +637,85 @@ class CuentaCorrienteController {
 
             $db->commit();
 
+            $factura = $hacerFactura
+                ? $this->emitirFacturaSaldoCC((int)$entidad_id, $monto, $tipoComprobanteFactura, $medio_pago, $caja_id, $mov_id)
+                : null;
+
             $stmt = $db->prepare("SELECT saldo_cuenta_corriente FROM $tablaEnt WHERE id = ?");
             $stmt->execute([$entidad_id]);
-            json(200, ['ok' => true, 'id' => $mov_id, 'saldo_actual' => (float)$stmt->fetchColumn()]);
+            $resp = ['ok' => true, 'id' => $mov_id, 'saldo_actual' => (float)$stmt->fetchColumn()];
+            if ($factura !== null) $resp['factura'] = $factura;
+            json(200, $resp);
         } catch (Throwable $e) {
             $db->rollBack();
             json(500, ['error' => $e->getMessage()]);
         }
+    }
+
+    /**
+     * Emite una factura electrónica (con CAE) para un pago de cuenta
+     * corriente de CLIENTE, con un único ítem "Saldo a Cuenta Corriente".
+     * Pedido de Rodrigo (19/08/2026): obligatoria para medios de pago
+     * bancarios, para dejar el cobro documentado fiscalmente además del
+     * movimiento de CC en sí.
+     *
+     * El pago de CC ya quedó comiteado en su propia transacción antes de
+     * llegar acá — la factura corre en una transacción aparte, mismo patrón
+     * desacoplado que emitirNc()/crear(): la venta se guarda siempre y el
+     * CAE se pide después, reintentable desde Ventas si ARCA falla. Un
+     * problema acá nunca revierte el pago, que es la parte que el usuario
+     * ya confirmó que quería asegurar.
+     */
+    private function emitirFacturaSaldoCC(int $cliente_id, float $monto, string $tipo_comprobante, string $medio_pago, ?int $caja_id, int $mov_id): array {
+        $db = DB::get();
+
+        // Producto de servicio fijo para el ítem "Saldo a Cuenta Corriente"
+        // — venta_items.producto_id es NOT NULL, no hay forma de facturar un
+        // ítem sin un producto real detrás. No pasa por
+        // VentasController::crear() (que sí descuenta stock): es un INSERT
+        // directo, así que este producto nunca ve movimiento de stock.
+        $stmt = $db->prepare("SELECT id FROM productos WHERE codigo = 'SALDO-CC' LIMIT 1");
+        $stmt->execute();
+        $prodId = $stmt->fetchColumn();
+        if (!$prodId) {
+            $db->prepare("
+                INSERT INTO productos
+                    (codigo, nombre, precio_venta, costo_actual, stock_actual, stock_minimo, activo, publicado_web, comisionable, iva_porcentaje)
+                VALUES ('SALDO-CC', 'Saldo a Cuenta Corriente', 0, 0, 0, 0, 1, 0, 0, 21)
+            ")->execute();
+            $prodId = (int)$db->lastInsertId();
+        }
+
+        $usuario_id = Auth::usuarioActual()['id'] ?? null;
+
+        $db->beginTransaction();
+        try {
+            $db->prepare("
+                INSERT INTO ventas
+                    (fecha, cliente_id, total, tipo_comprobante, tipo_pago, estado, observaciones, caja_id, usuario_id)
+                VALUES (CURDATE(), ?, ?, ?, ?, 'completado', ?, ?, ?)
+            ")->execute([
+                $cliente_id, $monto, $tipo_comprobante, $medio_pago,
+                'Pago de cuenta corriente (mov #' . $mov_id . ')',
+                $caja_id, $usuario_id,
+            ]);
+            $venta_id = (int)$db->lastInsertId();
+
+            $db->prepare("
+                INSERT INTO venta_items (venta_id, producto_id, cantidad, precio_unitario, costo_unitario)
+                VALUES (?, ?, 1, ?, 0)
+            ")->execute([$venta_id, $prodId, $monto]);
+
+            $db->commit();
+        } catch (Throwable $e) {
+            $db->rollBack();
+            return ['error' => 'El pago se registró, pero no se pudo crear la factura: ' . $e->getMessage()];
+        }
+
+        require_once __DIR__ . '/VentasController.php';
+        $ventasCtrl = new VentasController();
+        $afipError  = $ventasCtrl->solicitarCae($venta_id);
+
+        return ['venta_id' => $venta_id, 'afip_error' => $afipError];
     }
 }

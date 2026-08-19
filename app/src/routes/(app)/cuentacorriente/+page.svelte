@@ -422,12 +422,70 @@
 		cargarLista(1);
 	}
 
+	// ── Modal: Crear deuda ───────────────────────────────────────────
+	// Cargo manual — arrancar la cuenta con saldo adeudando (ej. migrar
+	// deuda de un cliente que viene de otro sistema). A diferencia de
+	// Registrar pago, nunca genera factura ni toca caja: no es un cobro
+	// real, es solo dejar asentado que la entidad ya debe ese monto.
+	let deudaAbierto = $state(false);
+	let deudaMonto = $state('');
+	let deudaFecha = $state('');
+	let deudaObs = $state('');
+	let deudaGuardando = $state(false);
+	let deudaError = $state('');
+
+	function abrirModalDeuda() {
+		if (!clienteActual) return;
+		deudaMonto = '';
+		deudaFecha = todayStr();
+		deudaObs = '';
+		deudaError = '';
+		deudaAbierto = true;
+	}
+	function cerrarModalDeuda() {
+		deudaAbierto = false;
+	}
+	async function confirmarDeuda() {
+		const monto = parseFloat(deudaMonto);
+		if (isNaN(monto) || monto <= 0) {
+			deudaError = 'Ingresá un monto válido';
+			return;
+		}
+		deudaGuardando = true;
+		deudaError = '';
+		try {
+			const r = await api('/cc', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					entidad_tipo: modoEntidad,
+					entidad_id: clienteActual!.id,
+					monto,
+					tipo: 'cargo',
+					fecha: deudaFecha,
+					observaciones: deudaObs.trim() || null
+				})
+			});
+			const d = await r.json();
+			if (!r.ok) throw new Error(d.error ?? 'Error al registrar');
+			cerrarModalDeuda();
+			toast_(`Deuda de ${fmt(monto)} registrada`, 'ok');
+			await cargarCC(clienteActual!.id);
+		} catch (e) {
+			deudaError = e instanceof Error ? e.message : 'Error al registrar';
+		} finally {
+			deudaGuardando = false;
+		}
+	}
+
 	// ── Modal: Registrar pago ────────────────────────────────────────
 	let pagoAbierto = $state(false);
 	let pagoMonto = $state('');
 	let pagoFecha = $state('');
 	let pagoObs = $state('');
-	let pagoMedio = $state<'efectivo' | 'transferencia' | 'cheque'>('efectivo');
+	let pagoMedio = $state<'efectivo' | 'transferencia' | 'cheque' | 'tarjeta' | 'mercado_pago'>('efectivo');
+	let pagoGenerarFactura = $state(false);
+	let pagoTipoComprobante = $state<'FC A-ELECT' | 'FC B-ELECT' | 'FC C-ELECT'>('FC B-ELECT');
 	let transfBanco = $state('');
 	let transfRef = $state('');
 	let transfFile = $state<FileList | null>(null);
@@ -467,7 +525,17 @@
 		}
 	}
 
-	const mostrarCajaPago = $derived(esAdminCC && pagoMedio !== 'cheque');
+	// Antes se ocultaba para cheque porque cheque nunca tocaba caja — ahora
+	// todos los medios impactan en caja igual (ver $tocaCaja en el backend),
+	// así que el selector tiene que estar disponible para cualquier medio.
+	const mostrarCajaPago = $derived(esAdminCC);
+
+	// Factura de cuenta corriente: obligatoria para medios bancarios (dejan
+	// rastro fuera de la caja física), opcional para efectivo. Solo aplica a
+	// pagos de clientes — a un proveedor no se le factura, se le paga.
+	const MEDIOS_BANCARIOS = ['transferencia', 'tarjeta', 'mercado_pago', 'cheque'];
+	const facturaObligatoria = $derived(modoEntidad === 'cliente' && MEDIOS_BANCARIOS.includes(pagoMedio));
+	const facturaVisible = $derived(modoEntidad === 'cliente' && (facturaObligatoria || pagoGenerarFactura));
 
 	function todayStr(): string {
 		const d = new Date();
@@ -480,6 +548,8 @@
 		pagoFecha = todayStr();
 		pagoObs = '';
 		pagoMedio = 'efectivo';
+		pagoGenerarFactura = false;
+		pagoTipoComprobante = 'FC B-ELECT';
 		transfBanco = '';
 		transfRef = '';
 		transfFile = null;
@@ -573,6 +643,10 @@
 			pagoError = 'Ingresá un monto válido';
 			return;
 		}
+		if (facturaVisible && !pagoTipoComprobante) {
+			pagoError = 'Elegí el tipo de comprobante (A/B/C) para la factura';
+			return;
+		}
 
 		const asignaciones: { venta_id?: number; cargo_id?: number; monto: number }[] = [];
 		for (const v of ventasPendientes) {
@@ -634,7 +708,9 @@
 					medio_pago: pagoMedio,
 					pago_datos: pagoDatos,
 					comprobante,
-					caja_id: cajaIdEnviar
+					caja_id: cajaIdEnviar,
+					generar_factura: facturaVisible,
+					tipo_comprobante: facturaVisible ? pagoTipoComprobante : null
 				})
 			});
 			const d = await r.json();
@@ -660,7 +736,15 @@
 			}
 
 			cerrarModalPago();
-			toast_(`Pago de ${fmt(monto)} registrado`, 'ok');
+			if (d.factura?.error) {
+				toast_(`Pago de ${fmt(monto)} registrado, pero la factura falló: ${d.factura.error}`, 'err');
+			} else if (d.factura?.afip_error) {
+				toast_(`Pago de ${fmt(monto)} registrado — la factura se guardó pero ARCA no le dio CAE todavía. Reintentá desde Ventas.`, 'err');
+			} else if (d.factura?.venta_id) {
+				toast_(`Pago de ${fmt(monto)} registrado y facturado — ver en Ventas`, 'ok');
+			} else {
+				toast_(`Pago de ${fmt(monto)} registrado`, 'ok');
+			}
 			await cargarCC(clienteActual!.id);
 		} catch (e) {
 			pagoError = e instanceof Error ? e.message : 'Error al registrar';
@@ -937,6 +1021,7 @@
 		if (agingAbierto) { cerrarModalAging(); return; }
 		if (remitoAbierto) { cerrarModalRemito(); return; }
 		if (devAbierto) { cerrarModalDev(); return; }
+		if (deudaAbierto) { cerrarModalDeuda(); return; }
 		if (pagoAbierto) { cerrarModalPago(); return; }
 	}
 
@@ -1280,6 +1365,7 @@
 					Vencimientos{#if agingBadge > 0}<span class="aging-badge">{agingBadge}</span>{/if}
 				</button>
 				{#if clienteActual && puedeCobrar}
+					<button class="btn-reg-pago btn-reg-pago-alt" style="display:block" onclick={abrirModalDeuda}>+ Crear deuda</button>
 					<button class="btn-reg-pago" style="display:block" onclick={abrirModalPago}>+ Registrar pago</button>
 				{/if}
 			</div>
@@ -1423,6 +1509,43 @@
 	</div>
 {/if}
 
+<!-- ── Modal: Crear deuda ── -->
+{#if deudaAbierto}
+	<div class="overlay abierto" role="presentation" onclick={(e) => e.target === e.currentTarget && cerrarModalDeuda()}>
+		<div class="modal" role="dialog" aria-modal="true">
+			<div class="modal-header">
+				<span class="modal-titulo">Crear deuda</span>
+				<span class="modal-subtitulo">{clienteActual?.nombre}</span>
+				<button class="modal-cerrar" aria-label="Cerrar" onclick={cerrarModalDeuda}>×</button>
+			</div>
+			<div class="modal-body">
+				<p style="font-size:12px;color:var(--neo-text-2);margin:0 0 14px">Registra un saldo que la cuenta ya adeuda (ej. migrar deuda previa) — no genera factura ni mueve caja.</p>
+				<div class="pago-form-row">
+					<div class="form-campo">
+						<label for="deuda-monto">Monto *</label>
+						<input id="deuda-monto" type="number" min="0.01" step="any" placeholder="0,00" bind:value={deudaMonto} />
+					</div>
+					<div class="form-campo">
+						<label for="deuda-fecha">Fecha</label>
+						<input id="deuda-fecha" type="date" max={todayStr()} bind:value={deudaFecha} />
+					</div>
+				</div>
+				<div class="form-campo pago-obs-row">
+					<label for="deuda-obs">Descripción</label>
+					<input id="deuda-obs" type="text" placeholder="Ej: saldo migrado del sistema anterior…" bind:value={deudaObs} />
+				</div>
+				{#if deudaError}<div style="color:#B91C1C;font-size:12px;margin-top:8px">{deudaError}</div>{/if}
+			</div>
+			<div class="modal-footer">
+				<button class="btn-sec" onclick={cerrarModalDeuda}>Cancelar</button>
+				<button class="btn-prim" disabled={deudaGuardando} onclick={confirmarDeuda}>
+					{deudaGuardando ? 'Guardando…' : 'Crear deuda'}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
 <!-- ── Modal: Registrar pago ── -->
 {#if pagoAbierto}
 	<div class="overlay abierto" role="presentation" onclick={(e) => e.target === e.currentTarget && cerrarModalPago()}>
@@ -1450,6 +1573,8 @@
 						<select id="pago-medio" bind:value={pagoMedio}>
 							<option value="efectivo">Efectivo</option>
 							<option value="transferencia">Transferencia</option>
+							<option value="tarjeta">Tarjeta</option>
+							<option value="mercado_pago">Mercado Pago</option>
 							<option value="cheque">Cheque</option>
 						</select>
 					</div>
@@ -1517,6 +1642,31 @@
 								<div class="file-drop-txt">{chequeFile?.[0] ? chequeFile[0].name : '📎 Seleccionar archivo…'}</div>
 							</div>
 						</div>
+					</div>
+				{/if}
+
+				{#if modoEntidad === 'cliente'}
+					<div class="medio-extra">
+						{#if facturaObligatoria}
+							<div class="form-campo span2" style="font-size:12px;color:var(--neo-text-2)">
+								Este medio de pago requiere generar factura con CAE.
+							</div>
+						{:else}
+							<label class="form-campo span2" style="flex-direction:row;align-items:center;gap:8px;font-weight:500;cursor:pointer">
+								<input type="checkbox" bind:checked={pagoGenerarFactura} />
+								Generar factura por este pago
+							</label>
+						{/if}
+						{#if facturaVisible}
+							<div class="form-campo">
+								<label for="pago-tipo-comp">Tipo de comprobante</label>
+								<select id="pago-tipo-comp" bind:value={pagoTipoComprobante}>
+									<option value="FC A-ELECT">Factura A</option>
+									<option value="FC B-ELECT">Factura B</option>
+									<option value="FC C-ELECT">Factura C</option>
+								</select>
+							</div>
+						{/if}
 					</div>
 				{/if}
 
@@ -1842,6 +1992,11 @@
 	  font-size: 12px; font-weight: 700; cursor: pointer; font-family: inherit;
 	}
 	.btn-reg-pago:hover { background: var(--neo-accent-h); }
+	.btn-reg-pago-alt {
+	  background: transparent; color: var(--neo-text-2); box-shadow: none;
+	  border: 1.5px solid var(--borde-fuerte);
+	}
+	.btn-reg-pago-alt:hover { background: transparent; border-color: var(--neo-accent); color: var(--neo-accent); }
 
 	.btn-aging {
 	  display: inline-flex; align-items: center; gap: 7px;
