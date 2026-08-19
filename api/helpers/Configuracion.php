@@ -78,6 +78,7 @@ class Configuracion {
             'backup_ultimo_ok'        => null,
             'backup_ultimo_error'     => null,
             'ventas_sin_stock'        => 0,
+            'auto_logout_inactividad' => 1,
             'mp_access_token'         => '',
             'mp_webhook_secret'       => '',
             'wa_phone_id'             => '',

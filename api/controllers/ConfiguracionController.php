@@ -71,6 +71,10 @@ class ConfiguracionController {
 
         $backupAutoCierre = isset($body['backup_auto_cierre']) ? (int)(bool)$body['backup_auto_cierre'] : 0;
         $ventasSinStock   = isset($body['ventas_sin_stock'])   ? (int)(bool)$body['ventas_sin_stock']   : 0;
+        // A diferencia de los dos de arriba, si el body no manda este campo
+        // el default es 1 (activado) — no 0 — para no apagar en silencio una
+        // protección de seguridad que el cliente ya tenía funcionando.
+        $autoLogoutInactividad = isset($body['auto_logout_inactividad']) ? (int)(bool)$body['auto_logout_inactividad'] : 1;
 
         DB::get()->prepare("
             INSERT INTO configuracion
@@ -79,9 +83,9 @@ class ConfiguracionController {
                  carpeta_backups_secundaria,
                  clave_autorizacion_hash, color_tema, tipos_habilitados,
                  mp_access_token, mp_webhook_secret, wa_phone_id, wa_token, wa_template_name,
-                 backup_auto_cierre, ventas_sin_stock,
+                 backup_auto_cierre, ventas_sin_stock, auto_logout_inactividad,
                  actualizado_en)
-            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             ON DUPLICATE KEY UPDATE
                 razon_social         = VALUES(razon_social),
                 nombre_fantasia      = VALUES(nombre_fantasia),
@@ -108,6 +112,7 @@ class ConfiguracionController {
                 wa_template_name     = COALESCE(VALUES(wa_template_name), wa_template_name),
                 backup_auto_cierre   = VALUES(backup_auto_cierre),
                 ventas_sin_stock     = VALUES(ventas_sin_stock),
+                auto_logout_inactividad = VALUES(auto_logout_inactividad),
                 actualizado_en       = NOW()
         ")->execute([
             $razonSocial,
@@ -135,6 +140,7 @@ class ConfiguracionController {
             $waTemplate,
             $backupAutoCierre,
             $ventasSinStock,
+            $autoLogoutInactividad,
             $claveHash,         // UPDATE COALESCE clave_autorizacion_hash
             $colorTema,         // UPDATE COALESCE color_tema
         ]);

@@ -43,6 +43,7 @@
 	let cfgCarpetaBackupsSecundaria = $state('');
 	let cfgBackupAutoCierre = $state(false);
 	let cfgVentasSinStock = $state(false);
+	let cfgAutoLogoutInactividad = $state(true);
 	let cfgClaveAutorizacion = $state('');
 	let cfgClaveConfigurada = $state(false);
 	let cfgWaPhoneId = $state('');
@@ -76,6 +77,7 @@
 		cfgCarpetaBackupsSecundaria = d.carpeta_backups_secundaria || '';
 		cfgBackupAutoCierre = !!d.backup_auto_cierre;
 		cfgVentasSinStock = !!d.ventas_sin_stock;
+		cfgAutoLogoutInactividad = d.auto_logout_inactividad === undefined ? true : !!d.auto_logout_inactividad;
 		cfgClaveAutorizacion = '';
 		cfgClaveConfigurada = !!d.clave_autorizacion_configurada;
 		posnetTerminales = Array.isArray(d.posnet_terminales) ? d.posnet_terminales : [];
@@ -126,6 +128,7 @@
 			carpeta_backups_secundaria: cfgCarpetaBackupsSecundaria.trim(),
 			backup_auto_cierre: cfgBackupAutoCierre ? 1 : 0,
 			ventas_sin_stock: cfgVentasSinStock ? 1 : 0,
+			auto_logout_inactividad: cfgAutoLogoutInactividad ? 1 : 0,
 			clave_autorizacion: cfgClaveAutorizacion,
 			wa_phone_id: cfgWaPhoneId.trim(),
 			wa_template_name: cfgWaTemplateName.trim()
@@ -1659,6 +1662,15 @@
 							{/if}
 							<div class="btn-row">
 								<button class="btn btn-sec" onclick={backupAhora}>Backup ahora</button>
+							</div>
+						</div>
+					</div>
+					<div class="card">
+						<div class="card-titulo">Sesión</div>
+						<div class="card-body">
+							<div class="form-group full">
+								<label class="check-label"><input type="checkbox" bind:checked={cfgAutoLogoutInactividad} onchange={marcarCambio} /> Cerrar sesión automáticamente tras 15 minutos sin uso</label>
+								<div class="form-hint">Protege la caja si queda desatendida. Si el negocio prefiere no interrumpir el trabajo, se puede desactivar.</div>
 							</div>
 						</div>
 					</div>

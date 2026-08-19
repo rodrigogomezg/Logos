@@ -26,6 +26,10 @@
 	// válida, no tiene sentido ni pintar el nav, redirige de una.
 	let sesion = $state<Sesion | null>(null);
 	let listo = $state(false);
+	// Default true hasta que cargarRazonSocial() traiga el valor real de
+	// Configuración — así una PC recién arrancada, sin conexión momentánea
+	// al backend, no queda con el auto-logout apagado por accidente.
+	let autoLogoutHabilitado = $state(true);
 
 	// lic_toast_<fecha>/afip_toast_<fecha>/backup_toast_<fecha> (acá y en las
 	// páginas legacy) meten la fecha en la clave para simular un TTL que
@@ -95,6 +99,7 @@
 		const INACTIVIDAD_LIMITE_MS = 15 * 60 * 1000;
 		let inactividadTimer: ReturnType<typeof setTimeout>;
 		const onInactivo = () => {
+			if (!autoLogoutHabilitado) return;
 			cerrarSesion().finally(() => goto('/login'));
 		};
 		const resetInactividad = () => {
@@ -120,11 +125,12 @@
 	let razonSocial = $state('');
 	async function cargarRazonSocial() {
 		try {
-			const cfg = await apiJson<{ razon_social?: string }>('/configuracion');
+			const cfg = await apiJson<{ razon_social?: string; auto_logout_inactividad?: boolean | number }>('/configuracion');
 			if (cfg.razon_social) {
 				razonSocial = cfg.razon_social;
 				document.title = document.title.replace(/^Logos/, razonSocial);
 			}
+			if (cfg.auto_logout_inactividad !== undefined) autoLogoutHabilitado = !!cfg.auto_logout_inactividad;
 		} catch {
 			// sin conexión al backend — dejar el título default
 		}

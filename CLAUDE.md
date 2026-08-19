@@ -1051,3 +1051,34 @@ marca/rubro/proveedor en masa nunca se había probado en vivo de punta a
 punta. **Fix:** `"p.id IN (...)"` en vez de `"id IN (...)"`. Verificado en
 vivo con marca y proveedor, ambos con valores recién creados vía los
 modales nuevos.
+
+## Feature (19/08/2026): checkbox para desactivar el auto-logout por inactividad
+
+El auto-logout de 15 minutos (agregado 15/08/2026, ver "Endurecimiento de
+localStorage" más arriba) quedó fijo, sin forma de apagarlo. Pedido de
+Rodrigo: hay clientes a los que no les conviene — se agregó un checkbox en
+Configuración > Configuración avanzada > "Sesión".
+
+- **Migración 79**: `configuracion.auto_logout_inactividad TINYINT(1) NOT
+  NULL DEFAULT 1` — default activado, para no cambiar el comportamiento de
+  ninguna instalación que ya lo tiene funcionando.
+- **Backend**: `ConfiguracionController::actualizar()` lo persiste igual
+  que `backup_auto_cierre`/`ventas_sin_stock`, con una diferencia a
+  propósito: si el body no manda el campo, el default en PHP es `1` (no
+  `0` como los otros dos) — para que un guardado desde un frontend viejo
+  nunca apague en silencio una protección de seguridad que el cliente ya
+  tenía activada. En la práctica no debería pasar nunca (frontend y
+  backend siempre se publican juntos, ver "npm run publish no reconstruye
+  la SPA" más arriba), pero es la opción más segura ante ese campo
+  faltante.
+- **Frontend**: `+layout.svelte::cargarRazonSocial()` (que ya pegaba a
+  `GET /configuracion` para el título de la ventana) se extendió para leer
+  también este campo, en vez de agregar un fetch nuevo — arranca en `true`
+  por default hasta que resuelve, para que una PC recién abierta sin
+  conexión momentánea al backend no quede con el auto-logout apagado por
+  accidente.
+
+Verificado en vivo con el navegador real: tildar/destildar el checkbox +
+Guardar cambios en Configuración persiste en la base, y `GET
+/configuracion` (la misma llamada que ya hacía `+layout.svelte`) refleja
+el valor nuevo al recargar cualquier pantalla.
