@@ -149,7 +149,7 @@
 
 	async function fetchCodigo(cod: string) {
 		try {
-			const r = await api(`/productos?q=${encodeURIComponent(cod)}&limit=10&carrito_id=${encodeURIComponent(CARRITO_ID)}`);
+			const r = await api(`/productos?q=${encodeURIComponent(cod)}&exacto=1&limit=10&carrito_id=${encodeURIComponent(CARRITO_ID)}`);
 			const d: ProductoBusqueda[] = await r.json();
 			if (!Array.isArray(d)) return;
 			const exacto = d.find((p) => p.codigo.toLowerCase() === cod.toLowerCase());

@@ -1139,3 +1139,51 @@ que puedan llevar esa venta al POS o a un formulario de edición — hoy son
 agregarla en uno solo. Y cualquier `window.location.href`/`location.href`
 que apunte a la app tiene que ir a `/` (SPA real), nunca a `/Logos/pos/*`
 salvo el caso explícito de `instalar.html`.
+
+### Caso real (20/08/2026): un código de producto real ("004") daba "no encontrado" al escanearlo en el POS
+
+Reporte de Rodrigo: un cliente creó un producto con código "004"; en
+Productos aparece bien, pero escribirlo en el campo "Código / scan" del
+POS tira `Código "004" no encontrado`.
+
+Causa: `fetchCodigo()` (POS, búsqueda por código exacto) llama a
+`GET /productos?q=004&limit=10...` **sin** `exacto=1`. Sin ese parámetro,
+`ProductosController::search()` usa el modo "similar" (`ORDER BY nombre`,
+sin ninguna prioridad para el que matchea exacto) en vez del modo exacto
+(`ORDER BY CASE WHEN codigo = ? THEN 0 ...`, que sí prioriza el match
+exacto a la posición 0). El frontend después busca el match exacto **solo
+entre los primeros 10 resultados** que trajo el `LIMIT 10` — si hay 10 o
+más productos cuyo nombre o código contienen "004" como substring en
+cualquier parte (ej. cualquier código termina en "004", o el nombre
+menciona "004" en una medida) y ordenan antes por nombre, el producto real
+queda afuera de esos 10 aunque exista.
+
+Reproducido en vivo con datos reales (no una suposición): con la base de
+20.001 productos de prueba de este entorno hay **1140 productos** que
+contienen "004" en nombre o código — de entrada el producto real
+aparecía primero por una coincidencia de collation (los nombres de prueba
+`__SEED__...` ordenan después de cualquier letra en `utf8mb4_general_ci`),
+así que hubo que crear 11 productos de prueba con nombres que sí ordenan
+antes (`AAAA01`...`AAAA11`) para reproducir la falla real — confirmado:
+sin `exacto=1` el producto real cae fuera de los primeros 10 y el POS dice
+"no encontrado"; con `exacto=1` vuelve a la posición 0, siempre.
+
+**Fix:** agregar `&exacto=1` a la llamada de `fetchCodigo()`. Es un
+parámetro que `ProductosController::search()` ya soportaba de antes (existe
+en el backend desde hace tiempo, con su propio `ORDER BY` que prioriza el
+match exacto), pero **ningún lugar del frontend lo estaba usando** — no
+hizo falta tocar el backend en absoluto, solo faltaba que el POS lo
+pidiera. Se revisó que no hubiera otro lugar con el mismo patrón
+(`.codigo.toLowerCase() === ...` sobre un resultado de búsqueda): el único
+otro uso de `/productos?q=` en el POS es `fetchRapido()` (F2, dropdown de
+búsqueda por nombre) — ese no necesita `exacto=1` porque el usuario elige
+a mano entre los resultados, no depende de que el match correcto esté en
+una posición específica.
+
+**Convención a partir de ahora:** cualquier búsqueda que dependa de
+encontrar un match EXACTO dentro de un `LIMIT` (código de barras, CUIT,
+etc.) tiene que pedir el modo que prioriza esa exactitud en el `ORDER BY`
+(`exacto=1` en este endpoint) — nunca confiar en que el orden por defecto
+("similar"/alfabético) vaya a traer ese resultado dentro de la ventana del
+`LIMIT`, sobre todo con catálogos grandes donde un substring corto como
+"004" puede matchear cientos de productos sin relación.
