@@ -14,6 +14,7 @@
 		tipo_pago: string;
 		total: number;
 		pagos?: Pago[];
+		cae: string | null;
 	};
 
 	const COLUMNAS_PAGO = ['efectivo', 'transferencia', 'tarjeta', 'cheque', 'cc'] as const;
@@ -90,6 +91,10 @@
 			const v = await r.json();
 			if (!r.ok) {
 				toast_(v.error || 'Error al cargar la venta', 'err');
+				return;
+			}
+			if (v.cae) {
+				toast_('Ya fue autorizada por ARCA (tiene CAE) — no se puede editar. Emití una Nota de Crédito para revertirla.', 'err');
 				return;
 			}
 			try {
@@ -169,7 +174,12 @@
 									<td class="r">{fmt(v.total)}</td>
 									<td>
 										<button class="acc-btn" onclick={() => accionVer(v.id)}>Ver</button>
-										<button class="acc-btn editar" onclick={() => accionEditar(v.id)}>Editar</button>
+										<button
+											class="acc-btn editar"
+											disabled={!!v.cae}
+											title={v.cae ? 'Ya fue autorizada por ARCA (tiene CAE) — no se puede editar.' : ''}
+											onclick={() => accionEditar(v.id)}>Editar</button
+										>
 									</td>
 								</tr>
 							{/each}
@@ -336,6 +346,13 @@
 	}
 	.acc-btn.editar {
 		color: var(--neo-warning);
+	}
+	.acc-btn:disabled {
+		opacity: 0.4;
+		cursor: not-allowed;
+	}
+	.acc-btn:disabled:hover {
+		background: none;
 	}
 	.vacio {
 		text-align: center;

@@ -863,7 +863,7 @@
 				toast_('Sin espacio en el navegador para copiar la venta.', 'err');
 				return;
 			}
-			window.location.href = '/Logos/pos/';
+			window.location.href = '/';
 		} catch (e) {
 			toast_(e instanceof Error ? e.message : 'Error', 'err');
 		}

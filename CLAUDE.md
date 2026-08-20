@@ -1082,3 +1082,60 @@ Verificado en vivo con el navegador real: tildar/destildar el checkbox +
 Guardar cambios en Configuración persiste en la base, y `GET
 /configuracion` (la misma llamada que ya hacía `+layout.svelte`) refleja
 el valor nuevo al recargar cualquier pantalla.
+
+### Caso real (20/08/2026): factura con CAE llegaba al POS para "editarla" por dos caminos distintos — uno sin guardia, otro por una URL muerta
+
+Reporte de Rodrigo: el sistema correctamente no deja editar una factura con
+CAE, pero igual la dejaba llegar al POS con los datos cargados — al intentar
+guardar, el backend la rechazaba bien, pero después quedaba trabado sin
+poder salir de esa pantalla limpiamente. Pedido explícito: mover el bloqueo
+a Ventas, que nunca llegue al POS.
+
+Investigando aparecieron **dos bugs distintos**, no uno:
+
+**1. `operaciones/+page.svelte::accionEditar()` no tenía ningún chequeo de
+CAE.** Esta pantalla (reporte de operaciones del día, con su propio botón
+"Editar" por fila) es un archivo aparte de `ventas/+page.svelte` — el
+guardado de CAE que se agregó el 18/08/2026 (`accionModificarRapido()`/
+`accionEditarItems()`) solo cubrió Ventas, nunca se replicó acá. Cualquier
+factura con CAE se cargaba a `logos_editar_venta` y mandaba al POS sin
+ninguna validación. **Fix:** mismo guard (`if (v.cae) { toast_(...); return;
+}`) más `disabled`/`title` en el botón, calcado del patrón ya usado en
+Ventas.
+
+**2. `ventas/+page.svelte::accionCopiar()` ("Copiar al POS") navegaba a
+`/Logos/pos/` — la página LEGACY vieja, no la SPA real.** Confirmado con
+`curl` directo contra Apache (no el proxy de Vite): esa URL devuelve 200 y
+sirve `pos/index.html`, el HTML pre-SvelteKit con su propio `config.js` y
+su propio manejo de sesión — un programa completamente distinto y
+desconectado, dejado de lado en la migración (ver "`electron/` desapareció
+del repo" y la memoria `pos/*.html legacy vs SPA Svelte` de este mismo
+archivo) pero nunca corregido en este único lugar. La función SÍ escribía
+bien `logos_copia_venta` en localStorage, y la pantalla POS real
+(`+page.svelte::initCopiaVenta()`, ya andando) SÍ sabía leerlo — el único
+error era el destino de la navegación.
+
+**Esto explica el reporte completo:** "Copiar al POS" aterrizaba en la
+página legacy (que a simple vista también parece una pantalla de POS,
+fácil de confundir), y algo en esa página vieja — sesión o estado
+distinto, nunca se investigó el detalle porque no hace falta — dejaba algo
+inconsistente al volver a la SPA. Reproducido y confirmado en vivo: ANTES
+del fix, después de "Copiar al POS" y volver a Ventas, reseleccionar la
+misma factura mostraba "Editar" habilitado (bug); DESPUÉS del fix
+(navegando a `/` en vez de `/Logos/pos/`), "Editar" se mantiene
+deshabilitado siempre, sin importar cuántas veces se vaya y vuelva.
+
+**Fix:** `window.location.href = '/'` en vez de `'/Logos/pos/'` — mismo
+destino que ya usa correctamente `accionEditarItems()` al lado. Se
+revisaron todas las demás apariciones de `/Logos/pos/` en `app/src`: las
+únicas dos restantes apuntan a `instalar.html` (excepción legítima
+documentada) y una hoja de estilos compartida (`pos-base.css`, un asset,
+no una navegación) — ninguna otra necesitaba corrección.
+
+**Convención a partir de ahora:** cualquier guardia nueva contra editar/
+eliminar una factura con CAE tiene que agregarse en **todos** los lugares
+que puedan llevar esa venta al POS o a un formulario de edición — hoy son
+`ventas/+page.svelte` y `operaciones/+page.svelte` — no alcanza con
+agregarla en uno solo. Y cualquier `window.location.href`/`location.href`
+que apunte a la app tiene que ir a `/` (SPA real), nunca a `/Logos/pos/*`
+salvo el caso explícito de `instalar.html`.
