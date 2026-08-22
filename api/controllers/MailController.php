@@ -12,6 +12,7 @@ class MailController {
         $ventaId = (int)($body['venta_id'] ?? 0);
         $para    = trim($body['para'] ?? '');
         $asunto  = trim($body['asunto'] ?? '');
+        $ocultarDescuentos = !empty($body['ocultar_descuentos']);
 
         if (!$ventaId) json(400, ['error' => 'venta_id requerido']);
         if (!$para || !filter_var($para, FILTER_VALIDATE_EMAIL)) {
@@ -22,7 +23,7 @@ class MailController {
         $this->validarSmtp($config);
 
         try {
-            $result = ComprobanteGenerador::generarPdf($ventaId);
+            $result = ComprobanteGenerador::generarPdf($ventaId, $ocultarDescuentos);
             $v      = $result['venta'];
             if ($asunto === '') {
                 $asunto = ($v['tipo_comprobante'] ?? 'Comprobante')

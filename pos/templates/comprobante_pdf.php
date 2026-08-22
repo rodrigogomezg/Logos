@@ -73,14 +73,43 @@ $logo = str_replace('\\', '/', realpath(Configuracion::rutaLogo()));
 
 $subtotalProductosGross = 0.0;
 foreach ($venta['items'] as $it) { $subtotalProductosGross += $it['subtotal']; }
+
+// Remito: si se pidió ocultar descuentos al generar ESTE documento
+// (elegido recién al imprimir/descargar/mandar por mail — no al cargar el
+// ítem en el POS, ver caso real 20/08/2026), cualquier ítem con descuento
+// se imprime con su precio ORIGINAL (sin descuento) y la diferencia se
+// suma al total impreso, para que el remito no deje ningún rastro del
+// descuento real. La venta real (lo efectivamente cobrado, guardado en la
+// base) no se toca — esto es solo cómo se ve ESTE documento puntual.
+// Nunca aplica a Factura/NC: ahí el monto tiene que coincidir siempre con
+// lo declarado a ARCA, la opción de ocultar ni se ofrece para esos tipos.
+$ocultarEnEsteDoc = $tipo === 'REMITO' && !empty($ocultarDescuentos);
+$deltaOcultoRemito = 0.0;
+foreach ($venta['items'] as &$it) {
+    $oculto = $ocultarEnEsteDoc && !empty($it['ajuste_desc']) && $it['precio_original'] !== null;
+    if ($oculto) {
+        $subtotalMostrar = $it['precio_original'] * $it['cantidad'];
+        $deltaOcultoRemito += $subtotalMostrar - $it['subtotal'];
+        $it['precio_unitario_mostrar'] = $it['precio_original'];
+        $it['subtotal_mostrar']        = $subtotalMostrar;
+    } else {
+        $it['precio_unitario_mostrar'] = $it['precio_unitario'];
+        $it['subtotal_mostrar']        = $it['subtotal'];
+    }
+}
+unset($it);
+
+$subtotalProductosGross += $deltaOcultoRemito;
 $envioGross = $venta['envio_precio'] ?? 0.0;
-$totalGross = $venta['total'];
+$totalGross = $venta['total'] + $deltaOcultoRemito;
 
 $mostrarColDesc = false;
-foreach ($venta['items'] as $it) {
-    if (!empty($it['ajuste_desc']) && !empty($it['ajuste_visible']) && $it['precio_original'] !== null) {
-        $mostrarColDesc = true;
-        break;
+if (!$ocultarEnEsteDoc) {
+    foreach ($venta['items'] as $it) {
+        if (!empty($it['ajuste_desc']) && $it['precio_original'] !== null) {
+            $mostrarColDesc = true;
+            break;
+        }
     }
 }
 
@@ -325,16 +354,16 @@ if ($tieneCae && $tieneQrMp) {
   </thead>
   <tbody>
     <?php foreach ($venta['items'] as $it): ?>
-      <?php $tieneAjuste = !empty($it['ajuste_desc']) && !empty($it['ajuste_visible']) && $it['precio_original'] !== null; ?>
+      <?php $tieneAjuste = !$ocultarEnEsteDoc && !empty($it['ajuste_desc']) && $it['precio_original'] !== null; ?>
       <tr>
         <td><?= cp_esc($it['codigo'] ?? '') ?></td>
         <td><?= cp_esc($it['nombre'] ?? '') ?></td>
         <td class="r"><?= cp_cantidad($it['cantidad']) ?></td>
-        <td class="r"><?= cp_fmt($it['precio_unitario']) ?></td>
+        <td class="r"><?= cp_fmt($it['precio_unitario_mostrar']) ?></td>
         <?php if ($mostrarColDesc): ?>
           <td class="r"><?= $tieneAjuste ? cp_esc($it['ajuste_desc']) : '—' ?></td>
         <?php endif; ?>
-        <td class="r"><?= cp_fmt($it['subtotal']) ?></td>
+        <td class="r"><?= cp_fmt($it['subtotal_mostrar']) ?></td>
       </tr>
     <?php endforeach; ?>
   </tbody>

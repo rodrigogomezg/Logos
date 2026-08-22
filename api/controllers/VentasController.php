@@ -1776,7 +1776,8 @@ class VentasController {
 
     public function comprobante(int $id): void {
         require_once __DIR__ . '/../helpers/ComprobanteGenerador.php';
-        ['pdf' => $pdf, 'venta' => $venta] = ComprobanteGenerador::generarPdf($id);
+        $ocultarDescuentos = !empty($_GET['ocultar_descuentos']);
+        ['pdf' => $pdf, 'venta' => $venta] = ComprobanteGenerador::generarPdf($id, $ocultarDescuentos);
 
         // Sin esto el navegador puede servir una copia vieja cacheada del PDF (mismo
         // URL para la misma venta) y esconder cambios de plantilla recién aplicados.
@@ -1805,7 +1806,9 @@ class VentasController {
         require_once __DIR__ . '/../helpers/ComprobanteGenerador.php';
         require_once __DIR__ . '/../helpers/SilentPrint.php';
 
-        ['pdf' => $pdf, 'venta' => $venta, 'config' => $config] = ComprobanteGenerador::generarPdf($id);
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $ocultarDescuentos = !empty($body['ocultar_descuentos']);
+        ['pdf' => $pdf, 'venta' => $venta, 'config' => $config] = ComprobanteGenerador::generarPdf($id, $ocultarDescuentos);
 
         // La copia automática solo se guarda al imprimir de verdad: si "carpeta_comprobantes"
         // está configurada como carpeta vigilada por un servicio de impresión externo, escribir

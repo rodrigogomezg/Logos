@@ -3,6 +3,7 @@
 	import { leerSesion, puede } from '$lib/session';
 	import { toast_ } from '$lib/toast';
 	import { abrirPdf } from '$lib/pdf';
+	import { preguntarOcultarDescuentos } from '$lib/descuento-prompt';
 
 	type Pago = { tipo: string; monto: number };
 	type Venta = {
@@ -73,7 +74,8 @@
 
 	async function accionVer(id: number) {
 		try {
-			const r = await api(`/ventas/${id}/comprobante`);
+			const ocultar = await preguntarOcultarDescuentos(id);
+			const r = await api(`/ventas/${id}/comprobante${ocultar ? '?ocultar_descuentos=1' : ''}`);
 			if (!r.ok) {
 				const d = await r.json();
 				toast_(d.error || 'Error al generar PDF', 'err');

@@ -5,6 +5,7 @@
 	import { toast_ } from '$lib/toast';
 	import { abrirPdf } from '$lib/pdf';
 	import { abrirContacto } from '$lib/contact-modal';
+	import { preguntarOcultarDescuentos } from '$lib/descuento-prompt';
 	import { puede } from '$lib/session';
 	import { cajaOperativaId } from '$lib/operativa';
 	import { setTourSteps, type TourStep } from '$lib/tour';
@@ -437,8 +438,13 @@
 	async function accionImprimir() {
 		compDdVisible = false;
 		if (!ventaSeleccionada) return;
+		const ocultar = await preguntarOcultarDescuentos(ventaSeleccionada.id);
 		try {
-			const r = await api(`/ventas/${ventaSeleccionada.id}/imprimir`, { method: 'POST' });
+			const r = await api(`/ventas/${ventaSeleccionada.id}/imprimir`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ ocultar_descuentos: ocultar })
+			});
 			const d = await r.json();
 			if (!r.ok) {
 				toast_(d.error || 'Error al imprimir', 'err');
@@ -452,8 +458,9 @@
 	async function accionPDF() {
 		compDdVisible = false;
 		if (!ventaSeleccionada) return;
+		const ocultar = await preguntarOcultarDescuentos(ventaSeleccionada.id);
 		try {
-			const r = await api(`/ventas/${ventaSeleccionada.id}/comprobante`);
+			const r = await api(`/ventas/${ventaSeleccionada.id}/comprobante${ocultar ? '?ocultar_descuentos=1' : ''}`);
 			if (!r.ok) {
 				const d = await r.json();
 				toast_(d.error || 'Error al generar PDF', 'err');
@@ -470,11 +477,13 @@
 	let mailEmail = $state('');
 	let mailAsunto = $state('');
 	let mailEnviando = $state(false);
+	let mailOcultarDescuentos = $state(false);
 
 	async function accionMail() {
 		compDdVisible = false;
 		if (!ventaSeleccionada) return;
 		const v = ventaSeleccionada;
+		mailOcultarDescuentos = await preguntarOcultarDescuentos(v.id);
 		mailDesc = `${v.tipo_comprobante ?? 'Comprobante'} #${v.numero}  ·  ${fmt(v.total)}  ·  ${v.cliente_nombre ?? 'Consumidor final'}`;
 		mailAsunto = `${v.tipo_comprobante ?? 'Comprobante'} N° ${v.numero} — Logos`;
 		mailEmail = '';
@@ -504,7 +513,7 @@
 			const r = await api('/mail/enviar', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ venta_id: ventaSeleccionada!.id, para: mailEmail.trim(), asunto: mailAsunto.trim() })
+				body: JSON.stringify({ venta_id: ventaSeleccionada!.id, para: mailEmail.trim(), asunto: mailAsunto.trim(), ocultar_descuentos: mailOcultarDescuentos })
 			});
 			if (r.ok) {
 				mailAbierto = false;
@@ -2136,7 +2145,7 @@
 						<thead><tr><th>Código</th><th>Producto</th><th class="r">Cant.</th><th class="r">Precio</th><th class="r">Subtotal</th></tr></thead>
 						<tbody>
 							{#each v.items as it (it.id)}
-								{@const tieneAjuste = it.ajuste_desc && it.ajuste_visible && it.precio_original}
+								{@const tieneAjuste = it.ajuste_desc && it.precio_original}
 								{@const badgeDesc = it.ajuste_desc?.startsWith('+') ? false : true}
 								<tr>
 									<td><span class="cod">{it.codigo}</span></td>

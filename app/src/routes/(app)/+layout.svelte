@@ -18,6 +18,7 @@
 	import ConfirmModal from '$lib/ConfirmModal.svelte';
 	import PdfViewerModal from '$lib/PdfViewerModal.svelte';
 	import ContactModal from '$lib/ContactModal.svelte';
+	import DescuentoPromptModal from '$lib/DescuentoPromptModal.svelte';
 
 	let { children } = $props();
 
@@ -546,6 +547,7 @@
 	<ConfirmModal />
 	<PdfViewerModal />
 	<ContactModal />
+	<DescuentoPromptModal />
 {/if}
 
 <style>

@@ -10,7 +10,14 @@ use Endroid\QrCode\Writer\PngWriter;
 class ComprobanteGenerador {
 
     // Retorna ['pdf' => string_binario, 'venta' => array, 'config' => array]
-    public static function generarPdf(int $id): array {
+    // $ocultarDescuentos: pedido de Rodrigo (20/08/2026) — decisión que se
+    // toma al generar el documento (no al cargar el ítem en el POS), y solo
+    // tiene efecto en Remitos (comprobante_pdf.php la ignora para cualquier
+    // otro tipo). Con true, cualquier ítem con descuento se imprime con su
+    // precio ORIGINAL (sin descuento) y el total sube en consecuencia — el
+    // remito no deja ningún rastro del descuento real, que sigue guardado
+    // sin cambios en la venta.
+    public static function generarPdf(int $id, bool $ocultarDescuentos = false): array {
         if (!extension_loaded('gd')) {
             json(500, ['error' => 'La extensión GD de PHP no está habilitada. Habilitá "extension=gd" en php.ini y reiniciá Apache.']);
         }

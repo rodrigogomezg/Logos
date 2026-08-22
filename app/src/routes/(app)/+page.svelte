@@ -7,6 +7,7 @@
 	import { confirmar } from '$lib/confirm';
 	import { leerSesion } from '$lib/session';
 	import { cajaOperativaId } from '$lib/operativa';
+	import { preguntarOcultarDescuentos } from '$lib/descuento-prompt';
 	import { setTourSteps, type TourStep } from '$lib/tour';
 
 	type Escala = { desde: number; precio: number };
@@ -22,7 +23,6 @@
 		ajuste_tipo?: 'desc' | 'inc';
 		ajuste_unit?: 'pct' | 'fijo';
 		ajuste_val?: number;
-		ajuste_visible?: boolean;
 		escalas?: Escala[];
 	};
 	type ProductoBusqueda = {
@@ -488,7 +488,6 @@
 	let selAjTipo = $state<'desc' | 'inc'>('desc');
 	let selAjUnit = $state<'pct' | 'fijo'>('pct');
 	let selAjVal = $state('');
-	let selVisible = $state(true);
 
 	$effect(() => {
 		const n = seleccionados.size;
@@ -530,7 +529,6 @@
 			item.ajuste_tipo = selAjTipo;
 			item.ajuste_unit = selAjUnit;
 			item.ajuste_val = val;
-			item.ajuste_visible = selVisible;
 		});
 		toast_(`Ajuste aplicado a ${n} ítem${n > 1 ? 's' : ''}`);
 	}
@@ -581,14 +579,6 @@
 		selAjVal = '';
 		toast_(`Precio de lista restaurado en ${n} ítem${n > 1 ? 's' : ''}`);
 	}
-	function onSelVisibleChange(checked: boolean) {
-		selVisible = checked;
-		if (!seleccionados.size) return;
-		items.forEach((item) => {
-			if (seleccionados.has(item.producto_id) && item.ajuste_desc) item.ajuste_visible = checked;
-		});
-	}
-
 	// ── Envío ─────────────────────────────────────────────────────
 	function onChkEnvioChange(checked: boolean) {
 		chkEnvio = checked;
@@ -729,7 +719,12 @@
 	async function reimprimirUltimaVenta() {
 		if (!ultimaVentaData) return;
 		try {
-			const r = await api(`/ventas/${ultimaVentaData.id}/imprimir`, { method: 'POST' });
+			const ocultar = await preguntarOcultarDescuentos(ultimaVentaData.id);
+			const r = await api(`/ventas/${ultimaVentaData.id}/imprimir`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ ocultar_descuentos: ocultar })
+			});
 			const d = await r.json();
 			if (!r.ok) {
 				toast_(d.error || 'Error al imprimir', 'err');
@@ -780,7 +775,6 @@
 				precio_unitario: i.precio_unitario,
 				precio_original: i.precio_original ?? null,
 				ajuste_desc: i.ajuste_desc ?? null,
-				ajuste_visible: i.ajuste_visible ?? null,
 				nombre_manual: i.nombre
 			}))
 		};
@@ -923,8 +917,7 @@
 				cantidad: Number(i.cantidad),
 				precio_unitario: Number(i.precio_unitario),
 				precio_original: i.precio_original ? Number(i.precio_original) : null,
-				ajuste_desc: i.ajuste_desc ?? null,
-				ajuste_visible: i.ajuste_visible ?? true
+				ajuste_desc: i.ajuste_desc ?? null
 			}));
 		}
 
@@ -1339,11 +1332,6 @@
 			body: 'Ingresá el valor. Con <strong>%</strong> aplicás un porcentaje; con <strong>$</strong> definís un monto fijo de descuento o aumento.'
 		},
 		{
-			el: '.sel-visible-wrap',
-			title: 'Mostrar en el comprobante',
-			body: 'Si está activo, el ajuste aparece detallado en el remito (ej: "−10%"). Si lo desactivás, el cliente ve solo el precio final, sin desglose.'
-		},
-		{
 			el: '.sel-aj-grupo + button',
 			title: 'Aplicar ajuste',
 			body: 'Presioná acá para aplicar el descuento o incremento configurado a todos los ítems seleccionados.'
@@ -1574,10 +1562,6 @@
 							<button class="sel-aj-unit-btn" class:activo={selAjUnit === 'fijo'} type="button" onclick={() => (selAjUnit = 'fijo')}>$</button>
 						</div>
 					</div>
-					<label class="sel-visible-wrap" title="Muestra el ajuste detallado en el comprobante">
-						<input type="checkbox" checked={selVisible} onchange={(e) => onSelVisibleChange((e.target as HTMLInputElement).checked)} />
-						<span>en remito</span>
-					</label>
 				</div>
 				<button class="sel-btn sel-btn-ghost" onclick={aplicarAjusteSeleccion}>Ajustar</button>
 				<button class="sel-btn sel-btn-ghost" onclick={limpiarAjusteSeleccion}>Limpiar</button>
@@ -2048,9 +2032,6 @@
 	.sel-aj-tipo-btn { padding: 4px 10px; border: none; background: var(--neo-bg); font-size: 11px; font-weight: 700; cursor: pointer; color: var(--neo-text-3); font-family: inherit; white-space: nowrap; }
 	.sel-aj-tipo-btn:first-child.activo { background: var(--neo-danger); color: white; }
 	.sel-aj-tipo-btn:last-child.activo { background: var(--neo-success); color: white; }
-	.sel-visible-wrap { display: flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; font-size: 11px; color: var(--neo-text-3); white-space: nowrap; }
-	.sel-visible-wrap input[type=checkbox] { accent-color: var(--neo-accent); cursor: pointer; }
-
 	.item-input {
 	  width: 100%; padding: 4px 6px; border: none; border-radius: var(--neo-r-xs);
 	  font-size: 13px; text-align: right; font-family: inherit;

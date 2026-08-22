@@ -1187,3 +1187,62 @@ etc.) tiene que pedir el modo que prioriza esa exactitud en el `ORDER BY`
 ("similar"/alfabético) vaya a traer ese resultado dentro de la ventana del
 `LIMIT`, sobre todo con catálogos grandes donde un substring corto como
 "004" puede matchear cientos de productos sin relación.
+
+## Feature (20/08/2026): ocultar descuentos en el Remito — movido de "al cargar el ítem" a "al generar el documento"
+
+Pedido de Rodrigo, en dos vueltas. Primero pidió que el checkbox "en
+remito" (barra de ajuste del POS) afectara de verdad los montos impresos —
+no solo una anotación — y que un descuento oculto no dejara NINGÚN rastro,
+ni en el ítem ni en el total. Implementado y verificado así. Pero antes de
+cerrar el pedido, Rodrigo cambió de diseño: en vez de decidir "mostrar u
+ocultar" al momento de cargar el descuento en el carrito (una decisión fija
+por ítem, tomada una sola vez), prefirió moverla al momento de **generar**
+el documento (imprimir/descargar/mandar por mail) — así la misma venta
+puede imprimirse una vez con descuentos visibles y otra vez sin, sin tener
+que haber decidido nada de antemano. Se sacó el checkbox del POS por
+completo.
+
+- **`ComprobanteGenerador::generarPdf($id, $ocultarDescuentos = false)`** —
+  nuevo parámetro. `comprobante_pdf.php` ya no lee `ajuste_visible` por
+  ítem (columna que sigue existiendo en `venta_items` pero quedó en desuso,
+  no se borró de la base — solo se dejó de escribir/leer); ahora un único
+  flag de request decide, de forma uniforme, si TODOS los ítems con
+  descuento de esa venta ocultan su descuento en ESE documento puntual.
+  Solo tiene efecto si `tipo_comprobante === 'REMITO'` — Factura/NC ignoran
+  el parámetro siempre, el monto ahí tiene que coincidir con lo declarado a
+  ARCA.
+- **Ítem oculto:** se imprime con su `precio_original` (no el precio con
+  descuento) y sin la columna "% Desc." — la diferencia se suma al total
+  impreso (`$deltaOcultoRemito`), que puede terminar siendo mayor al total
+  real de la venta (lo efectivamente cobrado, que sigue intacto en la base
+  — esto es solo cómo se ve este documento particular).
+- **Los 3 lugares que generan el PDF** (`VentasController::comprobante()`
+  vía `GET ?ocultar_descuentos=1`, `VentasController::imprimir()` y
+  `MailController::enviar()` vía body `ocultar_descuentos`) pasan por el
+  mismo `ComprobanteGenerador::generarPdf()` — un solo lugar para agregar
+  el parámetro, sin duplicar lógica.
+- **Modal compartido nuevo** (`$lib/descuento-prompt.ts` +
+  `DescuentoPromptModal.svelte`, montado en `+layout.svelte` junto a
+  `ContactModal`/`ConfirmModal`): `preguntarOcultarDescuentos(ventaId)`
+  trae los ítems de la venta, y **solo si hay algún descuento real**
+  muestra la pregunta "¿Mostrar los descuentos en este documento?" — si no
+  hay ninguno, resuelve `false` directo sin interrumpir nada. Conectado en
+  los 5 lugares que pueden generar un remito: Ventas (Imprimir / Descargar
+  PDF / Enviar por mail), Operaciones (botón Ver) y el POS (Reimprimir tras
+  confirmar la venta).
+- **Ventas → "Ver detalle"** (pantalla interna, no el documento impreso):
+  sigue mostrando el descuento real siempre — se sacó la dependencia de
+  `ajuste_visible` de ahí también, ya no tiene sentido que exista ningún
+  toggle en una vista para el personal del negocio.
+
+Verificado en vivo con el navegador real, contra el backend real: generé
+una venta REMITO real desde el POS con un ítem con -15% de descuento,
+confirmé que el checkbox viejo ya no existe en el DOM, y probé las tres
+rutas — Reimprimir (POS), Descargar PDF (Ventas) y el caso sin descuento
+(no aparece ningún prompt, genera directo). Además verifiqué el cálculo
+exacto por fuera del navegador (generando el HTML intermedio sin pasar por
+Dompdf, ya que este entorno no tiene forma de renderizar el PDF
+visualmente): con 3 ítems (uno sin ajuste, uno con -10% visible, uno con
+-20% "oculto"), `ocultar_descuentos=1` deja el ítem oculto en $100,00 (su
+precio original, no $80,00) y el total sube de $360,00 real a $400,00
+impreso — exacto, ítem por ítem.
