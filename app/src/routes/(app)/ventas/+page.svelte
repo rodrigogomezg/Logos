@@ -9,6 +9,7 @@
 	import { puede } from '$lib/session';
 	import { cajaOperativaId } from '$lib/operativa';
 	import { setTourSteps, type TourStep } from '$lib/tour';
+	import { fmtFechaCorta } from '$lib/fecha';
 
 	type Pago = { tipo: string; monto: number };
 	type Venta = {
@@ -59,9 +60,6 @@
 	}
 	function fmtDate(d: Date): string {
 		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-	}
-	function fmtFechaCorta(s: string | null | undefined): string {
-		return s ? s.slice(8, 10) + '/' + s.slice(5, 7) : '—';
 	}
 	const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 	const TIPO_PAGO_LBL: Record<string, string> = { efectivo: 'Efectivo', transferencia: 'Transferencia', cc: 'Cta. Corriente', tarjeta: 'Tarjeta', cheque: 'Cheque', mixto: 'Mixto', mercado_pago: 'Mercado Pago' };

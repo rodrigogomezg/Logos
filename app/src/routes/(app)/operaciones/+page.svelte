@@ -4,6 +4,7 @@
 	import { toast_ } from '$lib/toast';
 	import { abrirPdf } from '$lib/pdf';
 	import { preguntarOcultarDescuentos } from '$lib/descuento-prompt';
+	import { fmtFecha } from '$lib/fecha';
 
 	type Pago = { tipo: string; monto: number };
 	type Venta = {
@@ -166,7 +167,7 @@
 						{:else}
 							{#each datos as v (v.id)}
 								<tr>
-									<td>{new Date(v.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</td>
+									<td>{fmtFecha(v.fecha)}</td>
 									<td><span class="tipo-badge">{v.tipo_comprobante ?? '—'}</span>N° {v.numero}</td>
 									<td>{v.cliente_nombre ?? '— Consumidor final —'}</td>
 									{#each COLUMNAS_PAGO as tipo (tipo)}
