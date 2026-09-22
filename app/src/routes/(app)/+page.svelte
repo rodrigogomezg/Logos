@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { flip } from 'svelte/animate';
 	import { SvelteSet } from 'svelte/reactivity';
 	import { goto, beforeNavigate } from '$app/navigation';
 	import { api } from '$lib/api';
@@ -79,6 +80,13 @@
 	// tiene el problema inverso (reasignación sí, mutación no) — hace falta
 	// $state() envolviendo un SvelteSet para cubrir ambos casos.
 	let seleccionados = $state(new SvelteSet<number>());
+
+	// ── Reorder de ítems (drag & drop) ──────────────────────────
+	let draggingId = $state<number | null>(null);
+	let itemsListaEl: HTMLDivElement | undefined = $state();
+	let scrollRAF: number | null = null;
+	let autoScrollDir = 0; // -1 arriba, 0 quieto, 1 abajo
+
 	let editandoVentaId = $state<number | null>(null);
 	let ultimaVentaData = $state<{ id: number; tipo_comprobante: string; numero: string; total: number } | null>(null);
 	let afipGuardActivo = $state(false);
@@ -441,6 +449,78 @@
 	function toggleItemChk(pid: number, checked: boolean) {
 		if (checked) seleccionados.add(pid);
 		else seleccionados.delete(pid);
+	}
+
+	// ── Reorder de ítems (drag & drop) — patrón "swap + flip animado":
+	// mover el ítem en `items` en cuanto el cursor cruza a otra fila, y
+	// dejar que animate:flip del each block anime la reubicación de todas
+	// las filas. Nada de esto persiste en ningún lado hasta confirmarVenta()
+	// — el orden final en `items` es lo que se manda tal cual al backend.
+	function moverItem(from: number, to: number) {
+		if (from === to) return;
+		const [moved] = items.splice(from, 1);
+		items.splice(to, 0, moved);
+	}
+
+	function iniciarDrag(e: PointerEvent, item: CartItem) {
+		if (overlayAbierto || pmAbierto) return; // no arrastrar con un modal encima
+		if (e.button !== 0) return; // solo click izquierdo
+		e.preventDefault();
+		draggingId = item.producto_id;
+		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+	}
+
+	function onPointerMove(e: PointerEvent) {
+		if (draggingId === null) return;
+		const bajoElCursor = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+		const fila = bajoElCursor?.closest('.item-row') as HTMLElement | null;
+		if (fila) {
+			const pid = Number(fila.dataset.productoId);
+			if (!isNaN(pid) && pid !== draggingId) {
+				const from = items.findIndex((i) => i.producto_id === draggingId);
+				const to = items.findIndex((i) => i.producto_id === pid);
+				if (from !== -1 && to !== -1) moverItem(from, to);
+			}
+		}
+		actualizarAutoScroll(e.clientY);
+	}
+
+	function actualizarAutoScroll(clientY: number) {
+		const cont = itemsListaEl;
+		if (!cont) return;
+		const ZONA = 40; // px desde el borde donde arranca el auto-scroll
+		const rect = cont.getBoundingClientRect();
+		if (clientY < rect.top + ZONA) autoScrollDir = -1;
+		else if (clientY > rect.bottom - ZONA) autoScrollDir = 1;
+		else autoScrollDir = 0;
+
+		if (autoScrollDir !== 0 && scrollRAF === null) {
+			const step = () => {
+				if (autoScrollDir === 0 || draggingId === null || !itemsListaEl) {
+					scrollRAF = null;
+					return;
+				}
+				itemsListaEl.scrollTop += autoScrollDir * 12;
+				scrollRAF = requestAnimationFrame(step);
+			};
+			scrollRAF = requestAnimationFrame(step);
+		} else if (autoScrollDir === 0 && scrollRAF !== null) {
+			cancelAnimationFrame(scrollRAF);
+			scrollRAF = null;
+		}
+	}
+
+	function onPointerUp(e: PointerEvent) {
+		if (draggingId === null) return;
+		if (e.target instanceof Element && e.target.hasPointerCapture?.(e.pointerId)) {
+			e.target.releasePointerCapture(e.pointerId);
+		}
+		draggingId = null;
+		autoScrollDir = 0;
+		if (scrollRAF !== null) {
+			cancelAnimationFrame(scrollRAF);
+			scrollRAF = null;
+		}
 	}
 
 	const todosMarcados = $derived(items.length > 0 && seleccionados.size === items.length);
@@ -1230,6 +1310,12 @@
 		return () => document.removeEventListener('click', onDocClick);
 	});
 
+	// Evita que el navegador seleccione texto de otras filas mientras se
+	// arrastra un ítem para reordenar.
+	$effect(() => {
+		document.body.classList.toggle('dragging-activo', draggingId !== null);
+	});
+
 	$effect(() => {
 		actualizarLimiteCC();
 	});
@@ -1419,7 +1505,7 @@
 	});
 </script>
 
-<svelte:window onkeydown={onKeydownGlobal} onbeforeunload={onBeforeUnload} />
+<svelte:window onkeydown={onKeydownGlobal} onpointermove={onPointerMove} onpointerup={onPointerUp} onpointercancel={onPointerUp} onbeforeunload={onBeforeUnload} />
 
 <svelte:head>
 	<title>Logos — POS</title>
@@ -1572,6 +1658,7 @@
 
 		<div class="items-card">
 			<div class="items-header">
+				<span></span>
 				<input type="checkbox" class="hdr-chk" title="Seleccionar todo" checked={todosMarcados} indeterminate={algunosMarcados} onchange={(e) => toggleTodos((e.target as HTMLInputElement).checked)} />
 				<span>Producto</span>
 				<span class="r">Cant.</span>
@@ -1579,12 +1666,13 @@
 				<span class="r">Subtotal</span>
 				<span></span>
 			</div>
-			<div class="items-lista">
+			<div class="items-lista" bind:this={itemsListaEl}>
 				{#if !items.length}
 					<div class="items-vacio">Usá <strong>F3</strong> para buscar productos<br />o <strong>F2</strong> para búsqueda rápida por código</div>
 				{:else}
 					{#each items as item, idx (item.producto_id)}
-						<div class="item-row">
+						<div class="item-row" class:dragging={draggingId === item.producto_id} data-producto-id={item.producto_id} animate:flip={{ duration: 180 }}>
+							<button type="button" class="drag-handle" title="Arrastrar para reordenar" aria-label="Reordenar ítem" onpointerdown={(e) => iniciarDrag(e, item)}>⋮⋮</button>
 							<input type="checkbox" class="item-chk" checked={seleccionados.has(item.producto_id)} onchange={(e) => toggleItemChk(item.producto_id, (e.target as HTMLInputElement).checked)} />
 							<div class="nom">
 								<input
@@ -1973,13 +2061,23 @@
 	.items-header {
 	  padding: 9px 14px; border-bottom: 1px solid var(--borde-fuerte);
 	  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--neo-text-3);
-	  display: grid; grid-template-columns: 24px 1fr 90px 96px 108px 32px; gap: 8px; align-items: center;
+	  display: grid; grid-template-columns: 20px 24px 1fr 90px 96px 108px 32px; gap: 8px; align-items: center;
 	  background: var(--neo-bg-deep);
 	}
 	.items-header .r { text-align: right; }
 	.items-lista { overflow-y: auto; flex: 1; }
-	.item-row { display: grid; grid-template-columns: 24px 1fr 90px 96px 108px 32px; gap: 8px; align-items: center; padding: 7px 14px; border-bottom: 1px solid var(--borde); }
+	.item-row { display: grid; grid-template-columns: 20px 24px 1fr 90px 96px 108px 32px; gap: 8px; align-items: center; padding: 7px 14px; border-bottom: 1px solid var(--borde); }
 	.item-row:hover { background: var(--color-bg-alt); }
+	.item-row.dragging { box-shadow: var(--neo-e1); opacity: .85; position: relative; z-index: 2; background: var(--neo-bg-deep); }
+	.drag-handle {
+	  width: 20px; height: 28px; padding: 0; border: none; background: none;
+	  display: flex; align-items: center; justify-content: center;
+	  cursor: grab; color: var(--neo-text-3); font-size: 14px; line-height: 1; letter-spacing: -1px;
+	  touch-action: none;
+	}
+	.drag-handle:hover { color: var(--neo-accent); }
+	.item-row.dragging .drag-handle { cursor: grabbing; }
+	:global(body.dragging-activo) { user-select: none; }
 	.item-row .nom { font-weight: 500; line-height: 1.3; min-width: 0; overflow-wrap: break-word; color: var(--neo-text); }
 	.item-row .nom small { display: block; color: var(--neo-text-2); font-size: 11px; font-weight: 400; }
 	/* Se ve como texto plano hasta que el cajero lo toca — mismo criterio que
