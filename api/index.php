@@ -77,6 +77,8 @@ try {
                 $metodo === 'POST' && $accion === 'instalar'          => $ctrl->instalar(),
                 $metodo === 'POST' && $accion === 'admin'             => $ctrl->crearAdmin(),
                 $metodo === 'POST' && $accion === 'afip-csr'          => $ctrl->generarCsrAfip(),
+                $metodo === 'POST' && $accion === 'completo-subir'    => $ctrl->completoSubir(),
+                $metodo === 'POST' && $accion === 'completo-aplicar'  => $ctrl->completoAplicar(),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),
@@ -578,6 +580,10 @@ try {
                 $metodo === 'GET'  && $accion === 'estado'      => $ctrl->estado(),
                 $metodo === 'GET'  && $accion === 'listar'      => $ctrl->listar(),
                 $metodo === 'POST' && $accion === 'restaurar'   => $ctrl->restaurar(),
+                $metodo === 'POST' && $accion === 'liviano-generar'   => $ctrl->livianoGenerar(),
+                $metodo === 'GET'  && $accion === 'liviano-listar'    => $ctrl->livianoListar(),
+                $metodo === 'POST' && $accion === 'liviano-restaurar' => $ctrl->livianoRestaurar(),
+                $metodo === 'POST' && $accion === 'completo-generar'  => $ctrl->completoGenerar(),
                 default => json(405, ['error' => 'Método no permitido']),
             };
         })(),

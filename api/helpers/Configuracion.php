@@ -219,11 +219,115 @@ class Configuracion {
     }
 
     /**
+     * Vuelca SOLO las tablas de BackupTablas::LIVIANO en $archivo (backup
+     * liviano: productos/clientes/proveedores/movimientos). A diferencia de
+     * dumpBase(), pasa los nombres de tabla como argumentos posicionales
+     * después del nombre de la base — sintaxis estándar de mysqldump para
+     * volcar un subconjunto, cada uno escapado individualmente igual que el
+     * resto de los argumentos del comando.
+     */
+    public static function dumpLiviano(string $archivo): void {
+        require_once __DIR__ . '/SystemPaths.php';
+        require_once __DIR__ . '/BackupTablas.php';
+
+        $c   = DB::config();
+        $cmd = escapeshellarg(SystemPaths::findMysqldumpBin())
+             . ' -h' . escapeshellarg($c['host'])
+             . ' -P' . escapeshellarg((string)$c['port'])
+             . ' -u' . escapeshellarg($c['user'])
+             . ($c['pass'] !== '' ? ' -p' . escapeshellarg($c['pass']) : '')
+             . ' ' . escapeshellarg($c['dbname'])
+             . ' ' . implode(' ', array_map('escapeshellarg', BackupTablas::LIVIANO))
+             . ' > ' . escapeshellarg($archivo) . ' 2>&1';
+
+        exec($cmd, $salida, $codigo);
+        if ($codigo !== 0 || !file_exists($archivo) || filesize($archivo) === 0) {
+            @unlink($archivo);
+            throw new \RuntimeException('Falló el backup liviano: ' . implode(' ', $salida));
+        }
+    }
+
+    /**
+     * Reimporta SOLO las tablas de BackupTablas::LIVIANO desde $archivo — a
+     * diferencia de restaurarDesde(), NO hace DROP DATABASE. mysqldump ya
+     * emite DROP TABLE IF EXISTS + CREATE TABLE por cada tabla volcada, así
+     * que un import directo alcanza para reemplazarlas por completo sin
+     * tocar el resto de la base (usuarios, configuracion, licencia_estado,
+     * sucursales, etc. quedan intactas).
+     *
+     * FOREIGN_KEY_CHECKS se fuerza a 0 alrededor del import en la MISMA
+     * sesión de mysql (hay FKs reales desde tablas del liviano hacia
+     * sucursales/depositos, que no viajan en este dump pero siguen
+     * presentes en el destino con los mismos IDs — no rompen nada, pero se
+     * blinda igual en vez de depender del comportamiento por default de
+     * mysqldump).
+     */
+    public static function restaurarLiviano(string $archivo): void {
+        require_once __DIR__ . '/SystemPaths.php';
+
+        $c     = DB::config();
+        $mysql = SystemPaths::findMysqlBin();
+        $base  = ' -h' . escapeshellarg($c['host'])
+               . ' -P' . escapeshellarg((string)$c['port'])
+               . ' -u' . escapeshellarg($c['user'])
+               . ($c['pass'] !== '' ? ' -p' . escapeshellarg($c['pass']) : '');
+
+        $wrapper = sys_get_temp_dir() . '/logos_restaurar_liviano_' . uniqid() . '.sql';
+        $origenSource = str_replace('\\', '/', $archivo);
+        file_put_contents($wrapper, "SET FOREIGN_KEY_CHECKS=0;\nSOURCE {$origenSource};\nSET FOREIGN_KEY_CHECKS=1;\n");
+
+        $cmd = escapeshellarg($mysql) . $base
+             . ' ' . escapeshellarg($c['dbname'])
+             . ' < ' . escapeshellarg($wrapper) . ' 2>&1';
+        exec($cmd, $salida, $codigo);
+        @unlink($wrapper);
+
+        if ($codigo !== 0) {
+            throw new \RuntimeException(
+                'Falló la restauración del backup liviano: ' . implode(' ', array_slice($salida, -20))
+            );
+        }
+    }
+
+    /**
+     * Vuelca TODA la base excepto BackupTablas::COMPLETO_TABLAS_EXCLUIDAS
+     * (licencia_estado + _schema_migrations — ver el comentario de esa
+     * constante). Usado por el backup completo / "súper backup" para
+     * migrar una instalación a una PC nueva.
+     */
+    public static function dumpCompleto(string $archivo): void {
+        require_once __DIR__ . '/SystemPaths.php';
+        require_once __DIR__ . '/BackupTablas.php';
+
+        $c = DB::config();
+        $ignorar = '';
+        foreach (BackupTablas::COMPLETO_TABLAS_EXCLUIDAS as $tabla) {
+            $ignorar .= ' --ignore-table=' . escapeshellarg($c['dbname'] . '.' . $tabla);
+        }
+        $cmd = escapeshellarg(SystemPaths::findMysqldumpBin())
+             . ' -h' . escapeshellarg($c['host'])
+             . ' -P' . escapeshellarg((string)$c['port'])
+             . ' -u' . escapeshellarg($c['user'])
+             . ($c['pass'] !== '' ? ' -p' . escapeshellarg($c['pass']) : '')
+             . $ignorar
+             . ' ' . escapeshellarg($c['dbname'])
+             . ' > ' . escapeshellarg($archivo) . ' 2>&1';
+
+        exec($cmd, $salida, $codigo);
+        if ($codigo !== 0 || !file_exists($archivo) || filesize($archivo) === 0) {
+            @unlink($archivo);
+            throw new \RuntimeException('Falló el backup completo: ' . implode(' ', $salida));
+        }
+    }
+
+    /**
      * Copia el backup a la carpeta secundaria (unidad de red o carpeta
      * sincronizada a la nube) si está configurada. Best effort: un fallo acá
-     * no invalida el backup principal, pero queda en el log.
+     * no invalida el backup principal, pero queda en el log. Pública: la
+     * reusan también los backups liviano/completo (agnóstica de extensión,
+     * solo hace copy()).
      */
-    private static function copiaSecundaria(string $archivo, array $config): void {
+    public static function copiaSecundaria(string $archivo, array $config): void {
         $carpeta = trim((string)($config['carpeta_backups_secundaria'] ?? ''));
         if ($carpeta === '' || !is_dir($carpeta)) return;
 

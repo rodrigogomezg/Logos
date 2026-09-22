@@ -1246,3 +1246,122 @@ visualmente): con 3 ítems (uno sin ajuste, uno con -10% visible, uno con
 -20% "oculto"), `ocultar_descuentos=1` deja el ítem oculto en $100,00 (su
 precio original, no $80,00) y el total sube de $360,00 real a $400,00
 impreso — exacto, ítem por ítem.
+
+## Feature (21/09/2026): Backup Liviano y Backup Completo ("súper backup") — migrar de PC saltando el wizard
+
+Pedido de Rodrigo: poder cambiar de PC sin tener que recargar todo a mano.
+Se agregaron dos tipos de backup nuevos, **además** del dump automático de
+~20h que ya existía (ese no se tocó):
+
+- **Liviano** (`BackupController::livianoGenerar/livianoRestaurar`,
+  `Configuracion::dumpLiviano/restaurarLiviano`) — solo la lista fija de
+  tablas de `BackupTablas::LIVIANO` (productos, clientes, proveedores,
+  cajas, movimientos — ver esa constante para la lista exacta y el porqué
+  de cada exclusión). Solo a mano desde Configuración, nunca automático.
+  Restaurar reemplaza esas tablas por completo (no merge) — se pierde lo
+  posterior al backup en esas tablas puntuales, trade-off aceptado a
+  propósito. Requiere admin + frase de confirmación distinta a la del
+  restore total (`RESTAURAR BACKUP LIVIANO`) para no confundirlas, y genera
+  un backup de seguridad **completo** (no liviano) antes de tocar nada.
+- **Completo / "súper backup"** (`BackupController::completoGenerar`,
+  `InstalacionController::completoSubir/completoAplicar`) — toda la base
+  (excepto `licencia_estado` y `_schema_migrations`, ver
+  `BackupTablas::COMPLETO_TABLAS_EXCLUIDAS`) + `uploads/comprobantes|compras|importaciones`
+  + el logo, empaquetado en un `.zip` con un `manifest.json` (razón social,
+  fecha, conteos) para poder mostrar un preview antes de aplicar. Solo a
+  mano, solo rol Servidor. Se restaura **únicamente desde el wizard**
+  (`pos/instalar.html`, paso nuevo `panel-origen` → `panel-restaurar-completo`),
+  nunca desde una instalación ya configurada. Al terminar, la licencia se
+  registra sola contra el Hub como si fuera la primera vez — por eso se
+  excluye `licencia_estado` del dump.
+
+Verificado primero con bases descartables (no contra la base real de esta
+PC) simulando el flujo completo — generación, restore, y hasta una
+simulación del wizard completo (extraer zip, crear base, importar dump,
+copiar uploads/logo) por reflexión sobre los métodos reales. Esas pruebas
+pasaron limpio, pero **dos bugs reales aparecieron recién en la prueba en
+vivo real, entre dos PCs de verdad** — las pruebas aisladas no los
+agarraron porque no replicaban con exactitud el estado de una base real
+con migraciones ya aplicadas.
+
+### Caso real (21/09/2026): "El sistema ya está instalado" en una instalación recién instalada de verdad
+
+Al probar `completo-subir` en una PC recién instalada (rol Servidor, sin
+admin/negocio/caja todavía), el wizard rechazaba con "El sistema ya está
+instalado" — sobre una instalación que jamás había pasado por ninguna
+pantalla.
+
+Causa: el guard de `completoSubir()`/`completoAplicar()` se copió tal cual
+del de `instalar()` (`DB::estaConfigurado()` + `SELECT 1 FROM usuarios`) —
+pero ese chequeo significa cosas distintas en cada contexto. Para
+`instalar()` tiene sentido: solo necesita saber si el ESQUEMA ya existe,
+para no reimportar `schema_limpio.sql` encima. Pero en rol Servidor,
+`setup-server.ps1` (parte del instalador NSIS) **ya crea `db.local.php` y
+corre `schema_limpio.sql` antes de que el wizard siquiera arranque** — por
+eso el paso "conexión" del wizard normal se salta solo
+(`estado.requiere_conexion`/`requiere_schema` ya son `false` de entrada).
+Una tabla `usuarios` vacía existiendo es el caso NORMAL de una instalación
+nueva, no evidencia de un sistema en uso. El flujo de "instalación nueva"
+nunca pisaba este guard porque nunca llama a `instalar()` en ese escenario
+— pero el flujo nuevo de "restaurar completo" sí fuerza el paso de conexión
+siempre, y ahí quedó expuesto.
+
+**Fix:** nuevo `InstalacionController::yaInstaladoDeVerdad()` — replica el
+chequeo real que ya usa `estado()` (admin + negocio + caja configurados),
+no la mera existencia del esquema. Usado en los dos endpoints nuevos.
+
+**Convención a partir de ahora:** cualquier guard nuevo de "¿ya está
+instalado?" tiene que preguntarse qué significa eso en SU contexto — para
+algo que solo importa si hay ESQUEMA, alcanza con `SELECT 1 FROM usuarios`;
+para algo que le importa si hay una instalación REAL EN USO, hace falta el
+mismo criterio de `estado()` (`hayAdmin && negocioOk && hayCaja`). Copiar
+un guard de un endpoint a otro sin pensar cuál de los dos significados
+aplica es exactamente lo que pasó acá.
+
+### Caso real (21/09/2026): import del backup completo fallaba por triggers con DEFINER
+
+Con el guard ya corregido, `completo-aplicar` fallaba al importar el dump
+real: `ERROR 1227 (42000): Access denied; you need (at least one of) the
+SUPER, SET USER privilege(s) for this operation`, en la creación de
+`trg_caja_cierres_sync_uuid`.
+
+Causa: `completoAplicar()` importaba el dump con el usuario `logos_app`
+recién creado (mismo patrón que `instalar()` usa para
+`install/schema_limpio.sql`) — pero **`schema_limpio.sql` no tiene ningún
+`DEFINER`** (confirmado, 0 ocurrencias), mientras que `dump.sql` sale de un
+`mysqldump` real contra una base con migraciones aplicadas (ej.
+`54_sync_uuid.sql`), y mysqldump vuelca los triggers con
+`DEFINER=usuario@host` tal cual quedaron creados. Crear algo con un
+`DEFINER` explícito requiere privilegio `SUPER` (o `SET USER`) del lado de
+quien importa — privilegio que `logos_app` no tiene a propósito (principio
+de mínimo privilegio para el usuario de la app en uso normal). Por eso
+`instalar()` nunca pisó este problema: su fuente (`schema_limpio.sql`) es
+mantenida a mano, sin `DEFINER`.
+
+**Fix:** `completoAplicar()` importa el dump con las credenciales
+ORIGINALES que el admin tipeó en el wizard (root u otro usuario
+administrativo — las mismas que ya se usaron para crear la base y el
+usuario `logos_app`), no con `logos_app`. `db.local.php` se sigue
+escribiendo con las credenciales de `logos_app` para el uso normal de la
+app después — el usuario privilegiado solo se usa para este import puntual.
+
+Reproducido y verificado con una base descartable: dump generado con
+`mysqldump` real (con `DEFINER` de verdad) confirmado fallando al importar
+con un usuario sin `SUPER`, y confirmado funcionando al importar con root —
+mismo patrón que el bug real, antes de volver a publicar.
+
+**Convención a partir de ahora:** cualquier import nuevo de un `.sql` que
+pueda venir de un `mysqldump` real (no de un archivo de esquema mantenido
+a mano como `schema_limpio.sql`) tiene que hacerse con un usuario con
+privilegios administrativos, nunca con el usuario de mínimo privilegio de
+la app — los dumps reales pueden traer `DEFINER` en triggers/vistas/rutinas
+sin que sea evidente de antemano.
+
+Verificado de punta a punta en vivo, real, entre dos PCs (no simulado):
+generé el backup completo en una PC con datos reales de prueba, restauré
+en una segunda PC recién instalada (1.0.35) vía el wizard, y confirmé
+contra la base resultante: productos/clientes/ventas presentes, logo
+copiado a `ProgramData\LogosPOS\logo_background.png`, y `licencia_estado`
+con un token y una verificación exitosa **propios y nuevos** (no arrastró
+nada de la PC origen) — el registro contra el Hub se resolvió solo, sin
+ninguna intervención manual.

@@ -53,12 +53,34 @@ class BackupController {
 
     /**
      * GET /api/backup/listar
-     * Lista los .sql disponibles en carpeta_backups y carpeta_backups_secundaria
-     * para elegir uno para restaurar, sin tener que subirlo a mano. Solo admin.
+     * Lista los .sql de backup TOTAL disponibles en carpeta_backups y
+     * carpeta_backups_secundaria para elegir uno para restaurar, sin tener
+     * que subirlo a mano. Solo admin. Excluye los backups liviano (nombre
+     * con "_liviano_") — un archivo parcial nunca debe ofrecerse acá, sería
+     * fácil confundirlo con un backup total y romper la base al restaurar.
      */
     public function listar(): void {
         Auth::requireAdmin();
+        echo json_encode(
+            self::listarArchivos('*.sql', fn(string $nombre) => strpos($nombre, '_liviano_') === false),
+            JSON_UNESCAPED_UNICODE
+        );
+    }
 
+    /**
+     * GET /api/backup/liviano-listar
+     * Mismo mecanismo que listar(), pero solo los backups liviano — para el
+     * picker de "Restaurar backup liviano" en Configuración.
+     */
+    public function livianoListar(): void {
+        Auth::requireAdmin();
+        echo json_encode(
+            self::listarArchivos('*_liviano_*.sql', fn(string $nombre) => true),
+            JSON_UNESCAPED_UNICODE
+        );
+    }
+
+    private static function listarArchivos(string $patronGlob, callable $incluir): array {
         $config   = Configuracion::get();
         $carpetas = [
             'principal'  => trim((string)($config['carpeta_backups'] ?? '')) ?: Configuracion::carpetaBackupsPorDefecto(),
@@ -68,7 +90,8 @@ class BackupController {
         $archivos = [];
         foreach ($carpetas as $origen => $carpeta) {
             if ($carpeta === '' || !is_dir($carpeta)) continue;
-            foreach (glob(rtrim($carpeta, '\\/') . '/*.sql') ?: [] as $ruta) {
+            foreach (glob(rtrim($carpeta, '\\/') . '/' . $patronGlob) ?: [] as $ruta) {
+                if (!$incluir(basename($ruta))) continue;
                 $archivos[] = [
                     'nombre'     => basename($ruta),
                     'origen'     => $origen,
@@ -78,8 +101,7 @@ class BackupController {
             }
         }
         usort($archivos, fn($a, $b) => strcmp($b['modificado'], $a['modificado']));
-
-        echo json_encode($archivos, JSON_UNESCAPED_UNICODE);
+        return $archivos;
     }
 
     /**
@@ -155,6 +177,211 @@ class BackupController {
 
         Configuracion::invalidar();
         json(200, ['ok' => true, 'restaurado_desde' => $nombreMostrado, 'backup_previo' => $backupPrevio]);
+    }
+
+    /**
+     * POST /api/backup/liviano-generar
+     * Genera el backup liviano (productos/clientes/proveedores/movimientos
+     * — ver BackupTablas::LIVIANO) en carpeta_backups. Solo admin. A
+     * diferencia de restaurar(), esto no toca la base — no hace falta
+     * backup de seguridad previo ni frase de confirmación.
+     */
+    public function livianoGenerar(): void {
+        Auth::requireAdmin();
+
+        $config  = Configuracion::get();
+        $carpeta = trim((string)($config['carpeta_backups'] ?? '')) ?: Configuracion::carpetaBackupsPorDefecto();
+        if (!is_dir($carpeta) && !@mkdir($carpeta, 0777, true)) {
+            json(500, ['error' => 'No se pudo crear la carpeta de backups: ' . $carpeta]);
+        }
+
+        $archivo = rtrim($carpeta, '\\/') . '/logos_backup_liviano_' . date('Ymd_His') . '.sql';
+        try {
+            Configuracion::dumpLiviano($archivo);
+            Configuracion::copiaSecundaria($archivo, $config);
+        } catch (\Throwable $e) {
+            json(500, ['error' => $e->getMessage()]);
+        }
+
+        json(200, ['ok' => true, 'archivo' => $archivo, 'nombre' => basename($archivo)]);
+    }
+
+    /**
+     * POST /api/backup/liviano-restaurar
+     * Reemplaza SOLO las tablas de BackupTablas::LIVIANO (productos/
+     * clientes/proveedores/movimientos) — el resto de la base (usuarios,
+     * configuracion, AFIP, licencia) queda intacto. Mismo nivel de fricción
+     * que restaurar(), pero con una frase de confirmación distinta a
+     * propósito, para no confundir un restore parcial con uno total.
+     *
+     * Genera un backup de seguridad COMPLETO previo (no liviano) — si algo
+     * sale mal se puede volver atrás con el estado entero de antes, no solo
+     * con las tablas tocadas.
+     */
+    public function livianoRestaurar(): void {
+        Auth::requireAdmin();
+        set_time_limit(0);
+
+        $confirmacion = trim($_POST['confirmacion'] ?? '');
+        if ($confirmacion !== 'RESTAURAR BACKUP LIVIANO') {
+            json(400, ['error' => 'Confirmación inválida']);
+        }
+
+        $config = Configuracion::get();
+        $hash   = $config['clave_autorizacion_hash'] ?? null;
+        if ($hash) {
+            $clave = trim($_POST['clave_autorizacion'] ?? '');
+            if ($clave === '' || !password_verify($clave, $hash)) {
+                json(403, ['error' => 'Clave de autorización incorrecta']);
+            }
+        }
+
+        if (!empty($_FILES['backup']) && $_FILES['backup']['error'] === UPLOAD_ERR_OK) {
+            $rutaOrigen     = $_FILES['backup']['tmp_name'];
+            $nombreMostrado = basename($_FILES['backup']['name']);
+        } else {
+            $nombre  = basename(trim($_POST['archivo'] ?? '')); // basename(): evita path traversal
+            $origen  = ($_POST['origen'] ?? '') === 'secundaria' ? 'secundaria' : 'principal';
+            $carpeta = $origen === 'secundaria'
+                ? trim((string)($config['carpeta_backups_secundaria'] ?? ''))
+                : (trim((string)($config['carpeta_backups'] ?? '')) ?: Configuracion::carpetaBackupsPorDefecto());
+            if ($nombre === '' || $carpeta === '') {
+                json(400, ['error' => 'No se especificó ningún archivo de backup']);
+            }
+            $rutaOrigen     = rtrim($carpeta, '\\/') . '/' . $nombre;
+            $nombreMostrado = $nombre;
+        }
+
+        if (!is_file($rutaOrigen) || filesize($rutaOrigen) === 0) {
+            json(400, ['error' => 'El archivo de backup no existe o está vacío']);
+        }
+        $muestra = file_get_contents($rutaOrigen, false, null, 0, 4096) ?: '';
+        if (stripos($muestra, 'MySQL dump') === false && stripos($muestra, 'CREATE TABLE') === false) {
+            json(400, ['error' => 'El archivo no parece ser un backup válido de Logos POS']);
+        }
+
+        try {
+            $backupPrevio = Configuracion::ejecutarBackup(); // backup de seguridad COMPLETO, no liviano
+        } catch (\Throwable $e) {
+            json(500, ['error' => 'No se pudo generar el backup de seguridad previo. Se abortó sin tocar nada: ' . $e->getMessage()]);
+        }
+
+        try {
+            Configuracion::restaurarLiviano($rutaOrigen);
+        } catch (\Throwable $e) {
+            json(500, ['error' => $e->getMessage() . ' — el estado de antes quedó guardado en: ' . $backupPrevio]);
+        }
+
+        Configuracion::invalidar();
+        json(200, ['ok' => true, 'restaurado_desde' => $nombreMostrado, 'backup_previo' => $backupPrevio]);
+    }
+
+    /**
+     * POST /api/backup/completo-generar
+     * Arma el "súper backup": toda la base (salvo licencia_estado) +
+     * uploads/comprobantes|compras|importaciones + logo, todo comprimido en
+     * un .zip con un manifest.json adentro (para que el wizard pueda
+     * mostrar un preview sin tener que importar nada primero). Solo admin.
+     */
+    public function completoGenerar(): void {
+        Auth::requireAdmin();
+        set_time_limit(0);
+
+        if (!class_exists('ZipArchive')) {
+            json(500, ['error' => 'La extensión zip de PHP no está disponible en este servidor.']);
+        }
+
+        $config  = Configuracion::get();
+        $carpeta = trim((string)($config['carpeta_backups'] ?? '')) ?: Configuracion::carpetaBackupsPorDefecto();
+        if (!is_dir($carpeta) && !@mkdir($carpeta, 0777, true)) {
+            json(500, ['error' => 'No se pudo crear la carpeta de backups: ' . $carpeta]);
+        }
+
+        $tmpDir = sys_get_temp_dir() . '/logos_completo_' . uniqid();
+        @mkdir($tmpDir, 0777, true);
+
+        try {
+            $dumpFile = $tmpDir . '/dump.sql';
+            Configuracion::dumpCompleto($dumpFile);
+
+            $manifest = $this->armarManifestCompleto($config);
+            file_put_contents($tmpDir . '/manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+            $zipPath = rtrim($carpeta, '\\/') . '/logos_backup_completo_' . date('Ymd_His') . '.zip';
+            $zip = new \ZipArchive();
+            if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+                throw new \RuntimeException('No se pudo crear el archivo zip');
+            }
+            $zip->addFile($dumpFile, 'dump.sql');
+            $zip->addFile($tmpDir . '/manifest.json', 'manifest.json');
+
+            $raiz = __DIR__ . '/../../';
+            foreach (['uploads/comprobantes', 'uploads/compras', 'uploads/importaciones'] as $carpetaUploads) {
+                $this->agregarCarpetaAlZip($zip, $raiz . $carpetaUploads, $carpetaUploads);
+            }
+            $rutaLogo = Configuracion::rutaLogo();
+            if (is_file($rutaLogo)) $zip->addFile($rutaLogo, 'logo_background.png');
+
+            $zip->close();
+            self::limpiarCarpeta($tmpDir);
+
+            Configuracion::copiaSecundaria($zipPath, $config);
+            json(200, ['ok' => true, 'archivo' => $zipPath, 'nombre' => basename($zipPath)]);
+        } catch (\Throwable $e) {
+            self::limpiarCarpeta($tmpDir);
+            json(500, ['error' => $e->getMessage()]);
+        }
+    }
+
+    private function armarManifestCompleto(array $config): array {
+        $db = DB::get();
+        $contar = function (string $tabla) use ($db): int {
+            try {
+                return (int)$db->query("SELECT COUNT(*) FROM `$tabla`")->fetchColumn();
+            } catch (\Throwable $e) {
+                return 0;
+            }
+        };
+
+        $rutaUploads = __DIR__ . '/../../uploads/';
+        return [
+            'razon_social' => $config['razon_social'] ?? '',
+            'cuit'         => $config['cuit'] ?? '',
+            'generado_en'  => date('c'),
+            'version_app'  => self::obtenerVersionApp(),
+            'conteos'      => [
+                'productos'   => $contar('productos'),
+                'clientes'    => $contar('clientes'),
+                'proveedores' => $contar('proveedores'),
+                'ventas'      => $contar('ventas'),
+            ],
+            'tiene_logo'    => is_file(Configuracion::rutaLogo()),
+            'tiene_uploads' => is_dir($rutaUploads . 'comprobantes') || is_dir($rutaUploads . 'compras') || is_dir($rutaUploads . 'importaciones'),
+        ];
+    }
+
+    private static function obtenerVersionApp(): ?string {
+        $confPath = __DIR__ . '/../../../tauri-shell/src-tauri/tauri.conf.json';
+        if (!is_file($confPath)) return null;
+        $data = json_decode(file_get_contents($confPath) ?: '', true);
+        return is_array($data) ? ($data['version'] ?? null) : null;
+    }
+
+    private function agregarCarpetaAlZip(\ZipArchive $zip, string $carpetaDisco, string $prefijoZip): void {
+        if (!is_dir($carpetaDisco)) return;
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($carpetaDisco, \FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $archivo) {
+            $rel = $prefijoZip . '/' . substr($archivo->getPathname(), strlen($carpetaDisco) + 1);
+            $zip->addFile($archivo->getPathname(), str_replace('\\', '/', $rel));
+        }
+    }
+
+    private static function limpiarCarpeta(string $dir): void {
+        if (!is_dir($dir)) return;
+        foreach (glob("$dir/*") ?: [] as $archivo) {
+            if (is_file($archivo)) @unlink($archivo);
+        }
+        @rmdir($dir);
     }
 
     private static function resumen(): array {

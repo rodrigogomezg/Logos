@@ -417,6 +417,43 @@
 		}
 	}
 
+	let livianoGenerando = $state(false);
+	async function livianoGenerar() {
+		livianoGenerando = true;
+		try {
+			const res = await api('/backup/liviano-generar', { method: 'POST' });
+			const data = await res.json();
+			if (!res.ok) {
+				toast_(data.error || 'Error al generar el backup liviano', 'err');
+				return;
+			}
+			toast_('Backup liviano creado: ' + data.archivo, 'ok');
+			cargarListaBackupsLiviano();
+		} catch {
+			toast_('Error de conexión', 'err');
+		} finally {
+			livianoGenerando = false;
+		}
+	}
+
+	let completoGenerando = $state(false);
+	async function completoGenerar() {
+		completoGenerando = true;
+		try {
+			const res = await api('/backup/completo-generar', { method: 'POST' });
+			const data = await res.json();
+			if (!res.ok) {
+				toast_(data.error || 'Error al generar el backup completo', 'err');
+				return;
+			}
+			toast_('Backup completo creado: ' + data.archivo, 'ok');
+		} catch {
+			toast_('Error de conexión', 'err');
+		} finally {
+			completoGenerando = false;
+		}
+	}
+
 	// ── Cajas ────────────────────────────────────────────────────
 	let cajas = $state<Caja[]>([]);
 	let cajaNuevoNombre = $state('');
@@ -1060,6 +1097,70 @@
 		}
 	}
 
+	// ── Zona de peligro: restaurar backup liviano ───────────────
+	// Mismo mecanismo que restaurarBackup(), pero reemplaza SOLO productos/
+	// clientes/proveedores/movimientos (ver BackupTablas::LIVIANO en el
+	// backend) — el resto de la base (usuarios, configuración, AFIP) queda
+	// intacto. Frase de confirmación distinta a propósito, para no
+	// confundir un restore parcial con el total de arriba.
+	let backupsLivianoDisponibles = $state<BackupOpt[]>([]);
+	async function cargarListaBackupsLiviano() {
+		try {
+			const res = await api('/backup/liviano-listar');
+			backupsLivianoDisponibles = res.ok ? await res.json() : [];
+		} catch {
+			backupsLivianoDisponibles = [];
+		}
+	}
+	let rlArchivoSeleccionado = $state('');
+	let rlArchivoInput = $state<HTMLInputElement | undefined>();
+	let rlConfirmacion = $state('');
+	let rlClave = $state('');
+	let rlRestaurando = $state(false);
+	let rlArchivoFileNombre = $state('');
+	const rlBotonHabilitado = $derived(rlConfirmacion.trim() === 'RESTAURAR BACKUP LIVIANO' && (rlArchivoFileNombre !== '' || rlArchivoSeleccionado !== ''));
+
+	function onRlArchivoChange() {
+		rlArchivoFileNombre = rlArchivoInput?.files?.[0]?.name || '';
+	}
+
+	async function restaurarBackupLiviano() {
+		const ok = await confirmar('Esto reemplaza productos, clientes, proveedores, cajas y movimientos (ventas, compras, cuenta corriente, etc.) por los del backup elegido. Se pierde lo cargado en esas áreas DESPUÉS de generarse el backup. Se guarda un backup completo del estado de ahora antes de empezar.', {
+			titulo: 'Restaurar backup liviano',
+			confirmLabel: 'Restaurar',
+			danger: true
+		});
+		if (!ok) return;
+		rlRestaurando = true;
+		const fd = new FormData();
+		const file = rlArchivoInput?.files?.[0];
+		if (file) {
+			fd.append('backup', file);
+		} else {
+			const [nombre, origen] = rlArchivoSeleccionado.split('|');
+			fd.append('archivo', nombre);
+			fd.append('origen', origen);
+		}
+		fd.append('confirmacion', rlConfirmacion.trim());
+		fd.append('clave_autorizacion', rlClave);
+		try {
+			const res = await api('/backup/liviano-restaurar', { method: 'POST', body: fd });
+			const data = await res.json();
+			if (!res.ok) {
+				toast_(data.error || 'Error al restaurar', 'err');
+				return;
+			}
+			toast_('Backup liviano restaurado. Backup de seguridad previo: ' + data.backup_previo, 'ok');
+			rlConfirmacion = '';
+			rlClave = '';
+			cargarListaBackupsLiviano();
+		} catch {
+			toast_('Error de conexión', 'err');
+		} finally {
+			rlRestaurando = false;
+		}
+	}
+
 	// ── Licencia ─────────────────────────────────────────────────
 	type LicenciaEstado = {
 		estado_efectivo: string;
@@ -1170,6 +1271,7 @@
 		await cargarSucursales();
 		cargarEstadoBackup();
 		cargarListaBackups();
+		cargarListaBackupsLiviano();
 	})();
 </script>
 
@@ -1663,6 +1765,20 @@
 							<div class="btn-row">
 								<button class="btn btn-sec" onclick={backupAhora}>Backup ahora</button>
 							</div>
+							<div class="form-group full" style="margin-top:14px">
+								<label class="form-label">Backup liviano</label>
+								<div class="form-hint">Solo productos, clientes, proveedores, cajas y movimientos (ventas, compras, cuenta corriente) — para recuperar un punto anterior sin tocar usuarios ni configuración.</div>
+							</div>
+							<div class="btn-row">
+								<button class="btn btn-sec" disabled={livianoGenerando} onclick={livianoGenerar}>{livianoGenerando ? 'Generando…' : 'Backup liviano'}</button>
+							</div>
+							<div class="form-group full" style="margin-top:6px">
+								<label class="form-label">Backup completo</label>
+								<div class="form-hint">Toda la instalación (incluye configuración, usuarios, AFIP, comprobantes adjuntos y logo) en un .zip — para migrar a una PC nueva desde el asistente de instalación.</div>
+							</div>
+							<div class="btn-row">
+								<button class="btn btn-sec" disabled={completoGenerando} onclick={completoGenerar}>{completoGenerando ? 'Generando…' : 'Backup completo'}</button>
+							</div>
 						</div>
 					</div>
 					<div class="card">
@@ -1850,6 +1966,47 @@
 						</div>
 						<div class="btn-row">
 							<button class="btn" disabled={!rbBotonHabilitado || rbRestaurando} onclick={restaurarBackup}>{rbRestaurando ? 'Restaurando… no cierres la ventana' : 'Restaurar backup'}</button>
+						</div>
+					</div>
+				</div>
+
+				<div class="card danger-card">
+					<div class="card-body">
+						<div class="card-titulo" style="margin-bottom:10px">Restaurar backup liviano</div>
+						<div class="form-hint" style="margin-bottom:16px">
+							Reemplaza <b>solo</b> productos, clientes, proveedores, cajas y movimientos (ventas, compras, cuenta corriente) por los de un backup liviano elegido. Usuarios, configuración y AFIP quedan intactos. Se pierde lo cargado en esas áreas DESPUÉS de generarse el backup. Se genera automáticamente un backup completo del estado actual antes de tocar nada.
+						</div>
+						<div class="form-grid">
+							<div class="form-group full">
+								<label class="form-label" for="rl-sel">Backup liviano a restaurar (de la carpeta configurada)</label>
+								<select class="form-select" id="rl-sel" bind:value={rlArchivoSeleccionado}>
+									{#if !backupsLivianoDisponibles.length}
+										<option value="">No hay backups livianos en la carpeta configurada</option>
+									{:else}
+										<option value="">Elegí un backup…</option>
+										{#each backupsLivianoDisponibles as b (b.nombre + b.origen)}
+											<option value="{b.nombre}|{b.origen}">{b.nombre} — {new Date(b.modificado.replace(' ', 'T')).toLocaleString('es-AR')} ({(b.tamano / 1024 / 1024).toFixed(1)} MB){b.origen === 'secundaria' ? ' [carpeta secundaria]' : ''}</option>
+										{/each}
+									{/if}
+								</select>
+							</div>
+							<div class="form-group full">
+								<label class="form-label" for="rl-file">…o subí un archivo .sql de otro lado</label>
+								<input type="file" class="form-input" id="rl-file" accept=".sql" bind:this={rlArchivoInput} onchange={onRlArchivoChange} />
+							</div>
+							<div class="form-group full">
+								<label class="form-label" for="rl-conf">Escribí RESTAURAR BACKUP LIVIANO para habilitar el botón</label>
+								<input class="form-input" id="rl-conf" placeholder="RESTAURAR BACKUP LIVIANO" autocomplete="off" bind:value={rlConfirmacion} />
+							</div>
+							{#if cfgClaveConfigurada}
+								<div class="form-group full">
+									<label class="form-label" for="rl-clave">Clave de autorización</label>
+									<input class="form-input" type="password" id="rl-clave" autocomplete="new-password" bind:value={rlClave} />
+								</div>
+							{/if}
+						</div>
+						<div class="btn-row">
+							<button class="btn" disabled={!rlBotonHabilitado || rlRestaurando} onclick={restaurarBackupLiviano}>{rlRestaurando ? 'Restaurando…' : 'Restaurar backup liviano'}</button>
 						</div>
 					</div>
 				</div>
