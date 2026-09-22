@@ -244,12 +244,69 @@ async fn mostrar_ventana_actualizando(
     }
 }
 
+// Identifier de tauri.conf.json — determina la carpeta del perfil de
+// WebView2 bajo %LOCALAPPDATA%. No se puede leer desde tauri.conf.json acá
+// (todavía no existe tauri::Builder/contexto) — se hardcodea, igual que la
+// versión se mantiene sincronizada a mano entre Cargo.toml y tauri.conf.json.
+const WEBVIEW2_APP_IDENTIFIER: &str = "com.drilogs.logos-pos";
+
+// Bug real (cliente en vivo, ver CLAUDE.md): WebView2 cachea el JS/HTML de
+// la SPA en %LOCALAPPDATA%\<identifier>\EBWebView\Default\, sobreviviendo
+// incluso a una desinstalación + reinstalación completa — esa carpeta está
+// fuera de todo lo que el instalador NSIS toca.
+//
+// Restricción crítica: NO se puede borrar EBWebView entera — ahí vive
+// también Local Storage\ (logos_device_name, flags de tours ya vistos por
+// pantalla, ver app/src/routes/+layout.svelte). Solo se tocan Cache\ y
+// Code Cache\ — la causa raíz del JS viejo servido. Local Storage\,
+// Session Storage\, Cookies/Network\, History, etc. quedan intactas.
+//
+// Solo corre si la versión cambió desde el último arranque (marcador
+// last_version.txt junto al perfil de WebView2 en %LOCALAPPDATA% — NO en
+// C:\ProgramData\LogosPOS\logos-config.json, que es config de rol
+// machine-wide, no por-usuario-de-Windows).
+//
+// 100% best-effort (mismo criterio que init_data_dir() en
+// server_manager.rs) — jamás puede impedir que la app arranque.
+fn limpiar_cache_webview_si_actualizo() {
+    let version_actual = env!("CARGO_PKG_VERSION");
+
+    let local_app_data = match std::env::var("LOCALAPPDATA") {
+        Ok(v) => PathBuf::from(v),
+        Err(_) => return,
+    };
+
+    let app_data_dir = local_app_data.join(WEBVIEW2_APP_IDENTIFIER);
+    let marker_path = app_data_dir.join("last_version.txt");
+
+    let version_previa = std::fs::read_to_string(&marker_path).ok();
+    if version_previa.as_deref().map(str::trim) == Some(version_actual) {
+        return; // ya limpio (o no hacía falta) para esta versión
+    }
+
+    println!(
+        "[webview_cache] versión anterior={version_previa:?} actual={version_actual} — limpiando caché de WebView2"
+    );
+
+    let webview_default_dir = app_data_dir.join("EBWebView").join("Default");
+    for carpeta in ["Cache", "Code Cache"] {
+        let _ = std::fs::remove_dir_all(webview_default_dir.join(carpeta));
+    }
+
+    let _ = std::fs::create_dir_all(&app_data_dir);
+    let _ = std::fs::write(&marker_path, version_actual);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     #[cfg(windows)]
     instalar_panic_hook_visible();
 
     let paths = resolve_paths();
+
+    // Ver comentario grande en limpiar_cache_webview_si_actualizo(): tiene que
+    // correr ACÁ, síncrono y antes de cualquier WebviewWindowBuilder.
+    limpiar_cache_webview_si_actualizo();
 
     // Splash nativo (Win32 crudo, no WebviewWindow — ver splash.rs) mientras
     // arrancan los servicios y todavía no hay ninguna ventana de Tauri
