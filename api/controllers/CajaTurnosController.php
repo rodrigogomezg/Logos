@@ -27,11 +27,15 @@ class CajaTurnosController {
         $filtroFecha = $desde_dt ? "AND v.fecha >= ?" : "";
         $params      = $desde_dt ? [$turno_id, $desde_dt] : [$turno_id];
 
-        // Ventas simples — totales y conteos
+        // Ventas simples — totales y conteos. Un PRESUPUESTO es un
+        // comprobante NO contabilizado (nunca se cobró) — se excluye acá y
+        // en el resto de este breakdown() para que no infle el efectivo/
+        // medios de pago esperados al cerrar la caja.
         $stmt = $db->prepare("
             SELECT v.tipo_pago, SUM(v.total) AS total, COUNT(*) AS cnt
             FROM ventas v
             WHERE v.turno_id = ? AND v.estado = 'completado' AND v.tipo_pago != 'mixto'
+              AND v.tipo_comprobante != 'PRESUPUESTO'
             $filtroFecha
             GROUP BY v.tipo_pago
         ");
@@ -52,6 +56,7 @@ class CajaTurnosController {
             FROM venta_pagos vp
             JOIN ventas v ON v.id = vp.venta_id
             WHERE v.turno_id = ? AND v.estado = 'completado' AND v.tipo_pago = 'mixto'
+              AND v.tipo_comprobante != 'PRESUPUESTO'
             $filtroFechaMixto
             GROUP BY vp.tipo_pago
         ");
@@ -68,6 +73,7 @@ class CajaTurnosController {
             SELECT COUNT(*) AS cnt
             FROM ventas v
             WHERE v.turno_id = ? AND v.estado = 'completado' AND v.tipo_pago = 'mixto'
+              AND v.tipo_comprobante != 'PRESUPUESTO'
             $filtroFecha
         ");
         $stmt->execute($params);
@@ -78,6 +84,7 @@ class CajaTurnosController {
             SELECT COUNT(*) AS cnt, COALESCE(SUM(total), 0) AS total
             FROM ventas v
             WHERE v.turno_id = ? AND v.estado = 'anulado'
+              AND v.tipo_comprobante != 'PRESUPUESTO'
             $filtroFecha
         ");
         $stmt->execute($params);
@@ -200,7 +207,7 @@ class CajaTurnosController {
         $stmt = DB::get()->prepare("
             SELECT DATE_FORMAT(v.creado_en, '%Y-%m-%d %H') AS hora, COUNT(*) AS cnt, SUM(v.total) AS total
             FROM ventas v
-            WHERE v.turno_id = ? AND v.estado = 'completado'
+            WHERE v.turno_id = ? AND v.estado = 'completado' AND v.tipo_comprobante != 'PRESUPUESTO'
             GROUP BY hora
             ORDER BY hora
         ");
@@ -210,7 +217,7 @@ class CajaTurnosController {
         $stmt = DB::get()->prepare("
             SELECT MIN(creado_en) AS primera, MAX(creado_en) AS ultima
             FROM ventas
-            WHERE turno_id = ? AND estado = 'completado'
+            WHERE turno_id = ? AND estado = 'completado' AND tipo_comprobante != 'PRESUPUESTO'
         ");
         $stmt->execute([(int)$turno['id']]);
         $rangoVentas = $stmt->fetch();

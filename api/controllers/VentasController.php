@@ -642,9 +642,16 @@ class VentasController {
         $monto_max        = isset($_GET['monto_max']) && is_numeric($_GET['monto_max']) ? (float)$_GET['monto_max'] : null;
         $limit            = min((int)($_GET['limit']  ?? 50), 500);
         $offset           = max((int)($_GET['offset'] ?? 0),  0);
-        $mostrar_anuladas = !empty($_GET['mostrar_anuladas']);
+        $mostrar_anuladas    = !empty($_GET['mostrar_anuladas']);
+        $excluir_presupuestos = !empty($_GET['excluir_presupuestos']);
 
         if (!$mostrar_anuladas) { $where[] = "v.estado != 'anulado'"; }
+        // Opt-out, no opt-in por default: la lista general de Ventas necesita
+        // seguir mostrando presupuestos (son documentos reales, solo que no
+        // cobrados). Pantallas de operaciones/caja contabilizadas piden este
+        // parámetro explícitamente para excluirlos — un PRESUPUESTO nunca es
+        // una "operación" real, ver CLAUDE.md.
+        if ($excluir_presupuestos) { $where[] = "v.tipo_comprobante != 'PRESUPUESTO'"; }
 
         if ($fecha_desde)      { $where[] = 'v.fecha >= ?';              $params[] = $fecha_desde;      }
         if ($fecha_hasta)      { $where[] = 'v.fecha <= ?';              $params[] = $fecha_hasta;      }

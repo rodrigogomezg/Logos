@@ -54,6 +54,9 @@
 		cargando = true;
 		const params = new URLSearchParams();
 		params.set('limit', '500');
+		// Un presupuesto no es una operación contabilizada — no se cobró, no
+		// debe sumar a ningún medio de pago ni al total de este listado.
+		params.set('excluir_presupuestos', '1');
 		const cajaId = esAdmin ? cajaFiltro : String(leerSesion()?.caja_id ?? '');
 		if (cajaId) params.set('caja_id', cajaId);
 		if (desde) params.set('fecha_desde', desde);
